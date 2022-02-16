@@ -21,11 +21,11 @@ public interface ApplicationInteractionContext<T extends InteractionCreateEvent>
 
     Mono<Message> getReply();
 
-    Mono<Void> reply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec);
+    Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec);
 
     @Override
     default Mono<Void> softReply(Response response) {
-        return this.reply(response.getD4jComponentCallbackSpec(this))
+        return this.interactionReply(response.getD4jComponentCallbackSpec(this))
             .then(this.getReply())
             .onErrorMap(throwable -> SimplifiedException.wrapNative(throwable).build())
             .doOnError(throwable -> this.getDiscordBot().handleUncaughtException(

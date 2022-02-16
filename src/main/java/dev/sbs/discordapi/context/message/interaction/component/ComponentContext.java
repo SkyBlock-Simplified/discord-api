@@ -85,7 +85,7 @@ public interface ComponentContext extends UserInteractionContext<ComponentIntera
     }
 
     @Override
-    default Mono<Void> reply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
+    default Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
         return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
     }
 
