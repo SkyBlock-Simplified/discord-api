@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 public final class Parameter {
 
-    public static final Parameter DEFAULT = new Parameter("", Type.TEXT, "", false, true);
+    public static final Parameter DEFAULT = new Parameter("", "", Type.TEXT, false, true);
     private static final BiFunction<String, CommandContext<?>, Boolean> NOOP_HANDLER = (s_, c_) -> true;
     private static final Pattern MENTIONABLE_PATTERN = Pattern.compile("<(?:@!?&?|#)[\\d]+>");
     private static final Pattern MENTIONABLE_USER_PATTERN = Pattern.compile("<@!?[\\d]+>");
@@ -33,46 +33,46 @@ public final class Parameter {
     @Getter private final Optional<Emoji> emoji;
     @Getter private final BiFunction<String, CommandContext<?>, Boolean> validator;
 
-    public Parameter(String name, Type type, String description) {
-        this(name, type, description, true);
+    public Parameter(String name, String description, Type type) {
+        this(name, description, type, true);
     }
 
-    public Parameter(String name, Type type, String description, boolean required) {
-        this(name, type, description, required, (Emoji) null);
+    public Parameter(String name, String description, Type type, boolean required) {
+        this(name, description, type, required, (Emoji) null);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, boolean remainder) {
-        this(name, type, description, required, remainder, (Emoji) null);
+    public Parameter(String name, String description, Type type, boolean required, boolean remainder) {
+        this(name, description, type, required, remainder, (Emoji) null);
     }
 
-    public Parameter(String name, Type type, String description, Emoji emoji) {
-        this(name, type, description, true, emoji);
+    public Parameter(String name, String description, Type type, Emoji emoji) {
+        this(name, description, type, true, emoji);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, Emoji emoji) {
-        this(name, type, description, required, false, emoji, null);
+    public Parameter(String name, String description, Type type, boolean required, Emoji emoji) {
+        this(name, description, type, required, false, emoji, null);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, boolean remainder, Emoji emoji) {
-        this(name, type, description, required, remainder, emoji, null);
+    public Parameter(String name, String description, Type type, boolean required, boolean remainder, Emoji emoji) {
+        this(name, description, type, required, remainder, emoji, null);
     }
 
-    public Parameter(String name, Type type, String description, BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, type, description, true, validator);
+    public Parameter(String name, String description, Type type, BiFunction<String, CommandContext<?>, Boolean> validator) {
+        this(name, description, type, true, validator);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, type, description, required, false, null, validator);
+    public Parameter(String name, String description, Type type, boolean required, BiFunction<String, CommandContext<?>, Boolean> validator) {
+        this(name, description, type, required, false, null, validator);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, boolean remainder, BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, type, description, required, remainder, null, validator);
+    public Parameter(String name, String description, Type type, boolean required, boolean remainder, BiFunction<String, CommandContext<?>, Boolean> validator) {
+        this(name, description, type, required, remainder, null, validator);
     }
 
-    public Parameter(String name, Type type, String description, boolean required, boolean remainder, Emoji emoji, BiFunction<String, CommandContext<?>, Boolean> validator) {
+    public Parameter(String name, String description, Type type, boolean required, boolean remainder, Emoji emoji, BiFunction<String, CommandContext<?>, Boolean> validator) {
         this.name = name;
-        this.type = type;
         this.description = description;
+        this.type = type;
         this.required = required;
         this.remainder = remainder;
         this.emoji = Optional.ofNullable(emoji);
