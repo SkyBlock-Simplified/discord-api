@@ -1,0 +1,19 @@
+<solver xmlns="https://www.optaplanner.org/xsd/solver">
+    <moveThreadCount>AUTO</moveThreadCount>
+    <solutionClass>dev.sbs.discordapi.optimizer.modules.damage_per_hit.DamagePerHitSolution</solutionClass>
+    <entityClass>dev.sbs.discordapi.optimizer.modules.damage_per_hit.DamagePerHitItemEntity</entityClass>
+    <scoreDirectorFactory>
+        <easyScoreCalculatorClass>dev.sbs.discordapi.optimizer.modules.damage_per_hit.DamagePerHitCalculator</easyScoreCalculatorClass>
+    </scoreDirectorFactory>
+    <termination>
+        <secondsSpentLimit>5</secondsSpentLimit>
+    </termination>
+    <!--Initialize a configuration with all the best reforges selected-->
+    <constructionHeuristic>
+        <constructionHeuristicType>STRONGEST_FIT</constructionHeuristicType>
+    </constructionHeuristic>
+    <!--Refine the configuration-->
+    <localSearch>
+        <localSearchType>TABU_SEARCH</localSearchType>
+    </localSearch>
+</solver>
