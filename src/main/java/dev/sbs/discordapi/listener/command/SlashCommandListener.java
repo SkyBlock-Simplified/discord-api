@@ -79,39 +79,22 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                         remainingArguments.remove(0);
 
                     // Build Arguments
-                    ConcurrentList<Argument> arguments = Concurrent.newList();
-                    if (ListUtil.notEmpty(relationship.getInstance().getParameters())) {
-                        ConcurrentList<Parameter> parameters = relationship.getInstance().getParameters();
-
-                        for (int i = 0; i < parameters.size(); i++) {
-                            Parameter parameter = parameters.get(i);
-
-                            if (parameter.isRemainder()) {
-                                arguments.add(new Argument(parameter, this.getRemainder(remainingArguments)));
-                                break;
-                            }
-
-                            // Parse Argument Data
-                            Argument.Data argumentData = ListUtil.notEmpty(remainingArguments) ? this.getArgumentData(remainingArguments.remove(0)) : new Argument.Data();
-                            arguments.add(new Argument(parameter, argumentData));
-                        }
-                    }
-
-                    // Handle Remaining Arguments
-                    if (ListUtil.notEmpty(remainingArguments))
-                        arguments.add(new Argument(Parameter.DEFAULT, this.getRemainder(remainingArguments)));
+                    ConcurrentList<Argument> arguments = relationship.getInstance()
+                        .getParameters()
+                        .stream()
+                        .map(parameter -> remainingArguments.stream()
+                            .filter(optionData -> optionData.name().equals(parameter.getName()))
+                            .findFirst()
+                            .map(optionData -> new Argument(parameter, this.getArgumentData(optionData)))
+                            .orElse(new Argument(parameter, new Argument.Data()))
+                        )
+                        .collect(Concurrent.toList());
 
                     // Build Context
                     return SlashCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
                 })
             )
             .flatMap(this::applyCommand);
-    }
-
-    private ConcurrentList<Argument.Data> getRemainder(ConcurrentList<ApplicationCommandInteractionOptionData> interactionOptionDataList) {
-        return interactionOptionDataList.stream()
-            .map(this::getArgumentData)
-            .collect(Concurrent.toList());
     }
 
     private Argument.Data getArgumentData(ApplicationCommandInteractionOptionData interactionOptionData) {
