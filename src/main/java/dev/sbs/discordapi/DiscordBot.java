@@ -168,8 +168,11 @@ public abstract class DiscordBot {
 
                     this.getLog().info("Connecting to Database");
                     SimplifiedApi.connectDatabase();
-                    this.getLog().debug("Database Initialized in {0}ms", SimplifiedApi.getSqlSession().getInitializationTime());
-                    this.getLog().debug("Database Cached in {0}ms", SimplifiedApi.getSqlSession().getStartupTime());
+                    this.getLog().debug(
+                        "Database Initialized in {0}ms and Cached in {1}ms",
+                        SimplifiedApi.getSqlSession().getInitializationTime(),
+                        SimplifiedApi.getSqlSession().getStartupTime()
+                    );
                     this.onDatabaseConnected();
 
                     this.getLog().info("Registering Built-in Event Listeners");
