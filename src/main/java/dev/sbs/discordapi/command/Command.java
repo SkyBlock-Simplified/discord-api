@@ -1,8 +1,10 @@
 package dev.sbs.discordapi.command;
 
+import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
@@ -19,7 +21,9 @@ import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
 import dev.sbs.discordapi.command.exception.HelpCommandException;
-import dev.sbs.discordapi.command.exception.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
+import dev.sbs.discordapi.command.exception.parameter.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
@@ -71,6 +75,10 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             throw SimplifiedException.of(CommandException.class)
                 .withMessage("''{0}'' command name ''{1}'' must only contain english characters!", this.getClass().getName(), this.getCommandInfo().name())
                 .build();
+    }
+
+    public static Optional<Emoji> getEmoji(String key) {
+        return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).map(Emoji::of);
     }
 
     public final @NotNull ConcurrentList<RelationshipData> getParentCommandList() {
@@ -170,15 +178,24 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                     if (argument.getParameter().isRemainder())
                         break;
 
-                    if (!argument.getParameter().getType().isValid(argument.getValue().orElse("")))
-                        throw SimplifiedException.of(InvalidParameterException.class)
-                            .addData("ARGUMENT", argument)
-                            .build();
+                    if (argument.getValue().isEmpty()) {
+                        if (argument.getParameter().isRequired())
+                            throw SimplifiedException.of(MissingParameterException.class)
+                                .addData("MISSING", true)
+                                .build();
+                    } else {
+                        if (!argument.getParameter().getType().isValid(argument.getValue().orElse("")))
+                            throw SimplifiedException.of(InvalidParameterException.class)
+                                .addData("ARGUMENT", argument)
+                                .addData("MISSING", false)
+                                .build();
 
-                    if (!argument.getParameter().isValid(argument.getValue().orElse(""), commandContext))
-                        throw SimplifiedException.of(InvalidParameterException.class)
-                            .addData("ARGUMENT", argument)
-                            .build();
+                        if (!argument.getParameter().isValid(argument.getValue().orElse(""), commandContext))
+                            throw SimplifiedException.of(InvalidParameterException.class)
+                                .addData("ARGUMENT", argument)
+                                .addData("MISSING", false)
+                                .build();
+                    }
                 }
 
                 // Process Command
@@ -219,7 +236,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                                 permissionMap.stream()
                                     .map(Map.Entry::getValue)
                                     .filter(value -> !value)
-                                    .map(value -> "no") // TODO: Emoji
+                                    .map(value -> getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
                                     .collect(Concurrent.toList()),
                                 "\n"
                             ),
@@ -231,40 +248,52 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 userErrorBuilder = Optional.of(embedBuilder);
             } catch (HelpCommandException helpCommandException) {
                 userErrorBuilder = Optional.of(createHelpEmbedBuilder(commandContext.getRelationship()));
-            } catch (InvalidParameterException invalidParameterException) {
-                Argument argument = (Argument) invalidParameterException.getData().get("ARGUMENT");
+            } catch (ParameterException parameterException) {
+                Argument argument = (Argument) parameterException.getData().get("ARGUMENT");
                 Parameter parameter = argument.getParameter();
+                boolean missing = (boolean) parameterException.getData().get("MISSING");
+                String missingDescription = "You did not provide a required parameter.";
+                String invalidDescription = "The provided argument does not validate against the expected parameter.";
 
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("Invalid Parameter", Emoji.of(929250313821638666L, "status_info").getUrl())
-                        .withDescription("Your provided argument does not validate against expected parameter.")
-                        .withFields(
-                            Field.of(
-                                "Parameter",
-                                parameter.getName(),
-                                true
-                            ),
-                            Field.of(
-                                "Description",
-                                parameter.getDescription(),
-                                true
-                            ),
-                            Field.of(
-                                "Type",
-                                parameter.getType().name(),
-                                true
-                            )
+                Embed.EmbedBuilder embedBuilder = Embed.builder()
+                    .withAuthor(
+                        FormatUtil.format("{0} Parameter", (missing ? "Missing" : "Invalid")),
+                        Emoji.of(929250313821638666L, "status_info").getUrl()
+                    )
+                    .withDescription(missing ? missingDescription : invalidDescription)
+                    .withFields(
+                        Field.of(
+                            "Parameter",
+                            parameter.getName(),
+                            true
+                        ),
+                        Field.of(
+                            "Required",
+                            parameter.isRequired() ? "Yes" : "No",
+                            true
+                        ),
+                        Field.of(
+                            "Type",
+                            parameter.getType().name(),
+                            true
                         )
-                        .withField(
-                            "Argument",
-                            argument.getValue().orElse("")
-                        )
-                );
+                    )
+                    .withField(
+                        "Description",
+                        parameter.getDescription()
+                    );
+
+                if (!missing)
+                    embedBuilder.withField(
+                        "Argument",
+                        argument.getValue().orElse(getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("*<null>*"))
+                    );
+
+                userErrorBuilder = Optional.of(embedBuilder);
             } catch (MojangApiException mojangApiException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
-                        .withAuthor("Mojang Api Error", Emoji.of(929250169973780480L, "cloud_disabled").getUrl())
+                        .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                         .withDescription(mojangApiException.getMessage())
                         .withFields(
                             Field.of(
@@ -291,7 +320,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             } catch (HypixelApiException hypixelApiException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
-                        .withAuthor("Hypixel Api Error", Emoji.of(929250169973780480L, "cloud_disabled").getUrl())
+                        .withAuthor("Hypixel Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                         .withDescription(hypixelApiException.getMessage())
                         .withFields(
                             Field.of(
