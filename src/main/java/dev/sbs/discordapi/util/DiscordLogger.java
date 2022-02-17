@@ -1,9 +1,6 @@
 package dev.sbs.discordapi.util;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.turbo.TurboFilter;
-import ch.qos.logback.core.spi.FilterReply;
 import dev.sbs.api.util.ConsoleLogger;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
@@ -16,9 +13,7 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Marker;
 
 public class DiscordLogger extends ConsoleLogger {
 
@@ -32,13 +27,11 @@ public class DiscordLogger extends ConsoleLogger {
     public DiscordLogger(DiscordBot discordBot, Class<?> tClass) {
         super(tClass);
         this.discordBot = discordBot;
-        this.getLog().getLoggerContext().addTurboFilter(new DiscordFilter(this));
     }
 
     public DiscordLogger(DiscordBot discordBot, String name) {
         super(name);
         this.discordBot = discordBot;
-        this.getLog().getLoggerContext().addTurboFilter(new DiscordFilter(this));
     }
 
     public Level getChannelLevel(@NotNull GuildChannel guildChannel) {
@@ -111,21 +104,6 @@ public class DiscordLogger extends ConsoleLogger {
 
     public void setMemberLevel(@NotNull Snowflake memberId, Level level) {
         this.memberLevel.put(memberId, level);
-    }
-
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    private static class DiscordFilter extends TurboFilter {
-
-        @Getter
-        private final DiscordLogger discordLogger;
-
-        @Override
-        public FilterReply decide(Marker marker, Logger logger, Level level, String format, Object[] params, Throwable t) {
-            // TODO: Implement whatever this was for
-
-            return FilterReply.NEUTRAL;
-        }
-
     }
 
 }
