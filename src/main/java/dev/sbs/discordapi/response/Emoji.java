@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.response;
 
 import dev.sbs.api.SimplifiedException;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
+import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.helper.FormatUtil;
@@ -63,11 +65,23 @@ public abstract class Emoji {
         return this.raw.isPresent();
     }
 
-    public static Optional<Emoji> of(CommandInfo commandInfo) {
+    public static Optional<Emoji> of(@NotNull CommandInfo commandInfo) {
         return commandInfo.emojiId() == -1 ? Optional.empty() : Optional.of(commandInfo.emojiId() == 0 ? of(commandInfo.emojiName()) : of(commandInfo.emojiId(), commandInfo.emojiName(), commandInfo.emojiAnimated()));
     }
 
-    public static Emoji of(ReactionEmoji emoji) {
+    public static Emoji of(@NotNull ProfileModel profileModel) {
+        return of(profileModel.getEmoji());
+    }
+
+    public static Emoji of(@NotNull EmojiModel emojiModel) {
+        return of(emojiModel, null);
+    }
+
+    public static Emoji of(@NotNull EmojiModel emojiModel, Consumer<ReactionContext> interaction) {
+        return new Custom(Snowflake.of(emojiModel.getEmojiId()), emojiModel.getName(), emojiModel.isAnimated(), interaction);
+    }
+
+    public static Emoji of(@NotNull ReactionEmoji emoji) {
         return emoji instanceof ReactionEmoji.Custom ? new Custom((ReactionEmoji.Custom) emoji) : new Unicode((ReactionEmoji.Unicode) emoji);
     }
 
@@ -75,7 +89,7 @@ public abstract class Emoji {
         return of(Snowflake.of(id), name);
     }
 
-    public static Emoji of(Snowflake id, @NotNull String name) {
+    public static Emoji of(@NotNull Snowflake id, @NotNull String name) {
         return of(id, name, false);
     }
 
@@ -83,11 +97,11 @@ public abstract class Emoji {
         return of(Snowflake.of(id), name, animated);
     }
 
-    public static Emoji of(Snowflake id, @NotNull String name, boolean animated) {
+    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated) {
         return of(id, name, animated, null);
     }
 
-    public static Emoji of(Snowflake id, @NotNull String name, boolean animated, Consumer<ReactionContext> interaction) {
+    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated, Consumer<ReactionContext> interaction) {
         return new Custom(id, name, animated, interaction);
     }
 
