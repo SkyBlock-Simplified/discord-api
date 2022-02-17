@@ -64,19 +64,23 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                     ConcurrentList<ApplicationCommandInteractionOptionData> remainingArguments = Concurrent.newList(commandData.options().toOptional().orElse(Concurrent.newList()));
 
                     // Trim Parent Commands
-                    this.getParentCommandList(relationship.getCommandClass())
-                        .stream()
-                        .map(Command.RelationshipData::getOptionalCommandInfo)
-                        .flatMap(Optional::stream)
-                        .filter(parentCommandInfo -> this.doesCommandMatch(parentCommandInfo, remainingArguments.get(0).name()))
-                        .forEach(__ -> remainingArguments.remove(0));
+                    if (ListUtil.notEmpty(remainingArguments)) {
+                        this.getParentCommandList(relationship.getCommandClass())
+                            .stream()
+                            .map(Command.RelationshipData::getOptionalCommandInfo)
+                            .flatMap(Optional::stream)
+                            .filter(parentCommandInfo -> this.doesCommandMatch(parentCommandInfo, remainingArguments.get(0).name()))
+                            .forEach(__ -> remainingArguments.remove(0));
+                    }
 
                     // Store Used Alias
                     String commandAlias = ListUtil.notEmpty(remainingArguments) ? remainingArguments.get(0).name() : relationship.getCommandInfo().name();
 
                     // Trim Command
-                    if (this.doesCommandMatch(relationship.getCommandInfo(), remainingArguments.get(0).name()))
-                        remainingArguments.remove(0);
+                    if (ListUtil.notEmpty(remainingArguments)) {
+                        if (this.doesCommandMatch(relationship.getCommandInfo(), remainingArguments.get(0).name()))
+                            remainingArguments.remove(0);
+                    }
 
                     // Build Arguments
                     ConcurrentList<Argument> arguments = relationship.getInstance()
