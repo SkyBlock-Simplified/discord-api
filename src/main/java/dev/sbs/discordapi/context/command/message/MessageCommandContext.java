@@ -52,6 +52,11 @@ public interface MessageCommandContext extends CommandContext<MessageCreateEvent
         return this.getEvent().getMessage().getId();
     }
 
+    @Override
+    default boolean isSlashCommand() {
+        return false;
+    }
+
     static MessageCommandContext of(DiscordBot discordBot, MessageCreateEvent event, Command.Relationship commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
         return new MessageCommandContextImpl(discordBot, event, commandRelationship, commandAlias, arguments);
     }

@@ -59,6 +59,11 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().getReply();
     }
 
+    @Override
+    default boolean isSlashCommand() {
+        return true;
+    }
+
     static SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, Command.Relationship commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
         return new SlashCommandContextImpl(discordBot, event, commandRelationship, commandAlias, arguments);
     }
