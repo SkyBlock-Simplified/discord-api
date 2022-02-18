@@ -73,7 +73,7 @@ public abstract class Emoji {
     }
 
     public static Emoji of(@NotNull EmojiModel emojiModel, Consumer<ReactionContext> interaction) {
-        return new Custom(Snowflake.of(emojiModel.getEmojiId()), emojiModel.getName(), emojiModel.isAnimated(), interaction);
+        return new Custom(Snowflake.of(emojiModel.getEmojiId()), emojiModel.getKey(), emojiModel.isAnimated(), interaction);
     }
 
     public static Emoji of(@NotNull ReactionEmoji emoji) {
