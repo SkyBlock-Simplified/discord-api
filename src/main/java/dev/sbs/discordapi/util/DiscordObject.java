@@ -1,7 +1,10 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
+import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
+import dev.sbs.api.data.model.discord.guilds.GuildModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
@@ -65,6 +68,18 @@ public abstract class DiscordObject {
 
     public final Optional<CommandInfo> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
         return this.getAnnotation(CommandInfo.class, command);
+    }
+
+    public final Optional<CommandConfigModel> getCommandConfig(@NotNull CommandInfo commandInfo) {
+        return SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findFirst(CommandConfigModel::getName, commandInfo.name());
+    }
+
+    public final Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
+        return SimplifiedApi.getRepositoryOf(GuildCommandConfigModel.class).findFirst(GuildCommandConfigModel::getName, commandInfo.name());
+    }
+
+    public final Optional<GuildModel> getGuild(@NotNull Snowflake guildId) {
+        return SimplifiedApi.getRepositoryOf(GuildModel.class).findFirst(GuildModel::getGuildId, guildId.asLong());
     }
 
     public final ConcurrentList<Command.RelationshipData> getCompactedRelationships() {
