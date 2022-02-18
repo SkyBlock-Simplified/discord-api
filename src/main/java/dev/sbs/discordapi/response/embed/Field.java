@@ -26,6 +26,14 @@ public final class Field {
     @Getter private final String value;
     @Getter private final boolean inline;
 
+    public static Field empty() {
+        return empty(false);
+    }
+
+    public static Field empty(boolean inline) {
+        return of(Optional.empty(), Optional.empty(), inline);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
