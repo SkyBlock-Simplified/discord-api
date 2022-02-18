@@ -76,11 +76,19 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 .build();
     }
 
-    public final Optional<CommandConfigModel> getCommandConfig() {
+    public final @NotNull Optional<CommandConfigModel> getCommandConfig() {
         return this.getCommandConfig(this.getCommandInfo());
     }
 
-    public final Optional<GuildCommandConfigModel> getGuildCommandConfig() {
+    public final @NotNull Optional<String> getDescription() {
+        return Optional.ofNullable(this.getCommandConfig().map(CommandConfigModel::getDescription).orElse(this.getCommandInfo().description()));
+    }
+
+    public final @NotNull Optional<String> getLongDescription() {
+        return Optional.ofNullable(this.getCommandConfig().map(CommandConfigModel::getLongDescription).orElse(this.getCommandInfo().longDescription()));
+    }
+
+    public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig() {
         return this.getGuildCommandConfig(this.getCommandInfo());
     }
 
@@ -123,7 +131,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final boolean isEnabled() {
-        return this.getCommandInfo().enabled() && this.getCommandConfig().map(CommandConfigModel::isEnabled).orElse(true);
+        return this.getCommandConfig().map(CommandConfigModel::isEnabled).orElse(true);
     }
 
     protected abstract void process(CommandContext<?> commandContext) throws DiscordException;
@@ -424,7 +432,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         Embed.EmbedBuilder embedBuilder = Embed.builder()
             .withAuthor("Help", Emoji.of(929250313821638666L, "status_info").getUrl())
             .withTitle("Command :: {0}", commandInfo.name())
-            .withDescription(commandInfo.longDescription())
+            .withDescription(relationship.getInstance().getLongDescription())
             .withTimestamp(Instant.now())
             .withColor(Color.DARK_GRAY);
 

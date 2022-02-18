@@ -18,13 +18,6 @@ import java.lang.annotation.Target;
 public @interface CommandInfo {
 
     /**
-     * Gets if the command is enabled.
-     *
-     * @return True if enabled.
-     */
-    boolean enabled() default true;
-
-    /**
      * Gets the description.
      *
      * @return Description of the command.
@@ -37,15 +30,6 @@ public @interface CommandInfo {
      * @return The slash command group of the parent command.
      */
     String group() default "";
-
-    /**
-     * Gets the guild this command is locked to.
-     * <br><br>
-     * Use -1 to disable.
-     *
-     * @return True if enabled
-     */
-    long guildId() default -1;
 
     /**
      * Gets the long description.
