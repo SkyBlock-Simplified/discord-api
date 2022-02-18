@@ -1,13 +1,11 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.helper.FormatUtil;
-import dev.sbs.discordapi.command.data.CommandInfo;
 import dev.sbs.discordapi.context.message.interaction.reaction.ReactionContext;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -64,10 +62,6 @@ public abstract class Emoji {
 
     public final boolean isUnicode() {
         return this.raw.isPresent();
-    }
-
-    public static Optional<Emoji> of(@NotNull CommandInfo commandInfo) {
-        return commandInfo.emoji().matches("[\\w]+") ? SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, commandInfo.emoji().toUpperCase()).map(Emoji::of) : Optional.of(of(commandInfo.emoji()));
     }
 
     public static Emoji of(@NotNull ProfileModel profileModel) {

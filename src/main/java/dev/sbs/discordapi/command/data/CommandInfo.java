@@ -18,20 +18,6 @@ import java.lang.annotation.Target;
 public @interface CommandInfo {
 
     /**
-     * The aliases of the discord command.
-     *
-     * @return An array of regex discord command aliases.
-     */
-    String[] aliases() default { };
-
-    /**
-     * Gets the emoji key or raw unicode.
-     *
-     * @return Emoji key or raw unicode.
-     */
-    String emoji() default "";
-
-    /**
      * Gets if the command is enabled.
      *
      * @return True if enabled.

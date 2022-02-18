@@ -185,7 +185,7 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
             .forEach(commandInfo -> {
                 // Compare Prefix Command
                 optionalPrefixCommandInfo.ifPresent(prefixCommandInfo -> {
-                    if (this.hasConflicts(commandInfo, prefixCommandInfo))
+                    if (this.doesCommandMatch(commandInfo, prefixCommandInfo))
                         throw SimplifiedException.of(CommandException.class)
                             .withMessage("Command ''{0}'' conflicts with ''{1}''!", commandInfo.name(), prefixCommandInfo.name())
                             .build();
@@ -197,7 +197,7 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
                     .flatMap(Optional::stream)
                     .filter(compareCommand -> !commandInfo.equals(compareCommand))
                     .filter(compareCommand -> commandInfo.parent().equals(compareCommand.parent()))
-                    .filter(compareCommand -> this.hasConflicts(commandInfo, compareCommand))
+                    .filter(compareCommand -> this.doesCommandMatch(commandInfo, compareCommand))
                     .findAny()
                     .ifPresent(compareCommand -> {
                         throw SimplifiedException.of(CommandException.class)
@@ -205,20 +205,6 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
                             .build();
                     });
             });
-    }
-
-    private boolean hasConflicts(CommandInfo commandInfo1, CommandInfo commandInfo2) {
-        boolean conflicts = commandInfo1.name().equalsIgnoreCase(commandInfo2.name());
-
-        // Compare Aliases
-        for (String alias : commandInfo1.aliases()) {
-            conflicts |= commandInfo2.name().equalsIgnoreCase(alias); // Compare Name
-
-            for (String compareAlias : commandInfo2.aliases())
-                conflicts |= compareAlias.equalsIgnoreCase(alias);
-        }
-
-        return conflicts;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

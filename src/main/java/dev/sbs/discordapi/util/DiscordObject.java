@@ -9,7 +9,6 @@ import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
 import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.helper.WordUtil;
@@ -58,8 +57,12 @@ public abstract class DiscordObject {
     }
 
     // --- Command Searching ---
+    public final boolean doesCommandMatch(@NotNull CommandInfo commandInfo1, @NotNull CommandInfo commandInfo2) {
+        return this.doesCommandMatch(commandInfo1, commandInfo2.name());
+    }
+
     public final boolean doesCommandMatch(@NotNull CommandInfo commandInfo, @NotNull String argument) {
-        return commandInfo.name().equalsIgnoreCase(argument) || Arrays.stream(commandInfo.aliases()).anyMatch(alias -> argument.matches(FormatUtil.format("(?i:{0})", alias)));
+        return commandInfo.name().equalsIgnoreCase(argument);
     }
 
     public final <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandData> command) {

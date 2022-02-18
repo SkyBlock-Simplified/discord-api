@@ -3,6 +3,8 @@ package dev.sbs.discordapi.command;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
+import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
+import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
@@ -74,6 +76,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 .build();
     }
 
+    public final Optional<CommandConfigModel> getCommandConfig() {
+        return this.getCommandConfig(this.getCommandInfo());
+    }
+
+    public final Optional<GuildCommandConfigModel> getGuildCommandConfig() {
+        return this.getGuildCommandConfig(this.getCommandInfo());
+    }
+
     public final @NotNull ConcurrentList<RelationshipData> getParentCommandList() {
         return this.getParentCommandList(this.getClass());
     }
@@ -88,7 +98,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final Optional<Emoji> getEmoji() {
-        return Emoji.of(this.getCommandInfo());
+        return this.getCommandConfig().map(CommandConfigModel::getEmoji).map(Emoji::of);
     }
 
     public @NotNull ConcurrentUnmodifiableList<String> getExamples() {
@@ -113,7 +123,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final boolean isEnabled() {
-        return this.getCommandInfo().enabled();
+        return this.getCommandInfo().enabled() && this.getCommandConfig().map(CommandConfigModel::isEnabled).orElse(true);
     }
 
     protected abstract void process(CommandContext<?> commandContext) throws DiscordException;
@@ -127,7 +137,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             try {
                 // Handle Disabled Command
                 if (!this.isEnabled())
-                    throw SimplifiedException.of(DisabledCommandException.class).build();
+                    throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is currently disabled!").build();
 
                 // Handle Guild Permissions
                 if (!commandContext.isPrivateChannel()) {
@@ -161,6 +171,30 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                     throw SimplifiedException.of(UserPermissionException.class)
                         .withMessage("You are missing permissions required to run this command!")
                         .build();
+
+                // Handle Database Overrides
+                this.getCommandConfig().ifPresent(commandConfig -> {
+                    // Handle Developer Overrides
+                    if (commandConfig.isDeveloperOnly() && !this.doesUserHavePermissions(commandContext.getInteractUserId(), commandContext.getGuild(), UserPermission.BOT_OWNER))
+                        throw SimplifiedException.of(UserPermissionException.class)
+                            .withMessage("You are missing permissions required to run this command!")
+                            .build();
+
+                    commandContext.getGuildId()
+                        .flatMap(this::getGuild)
+                        .ifPresent(guild -> {
+                            if (!guild.isDeveloperBotEnabled())
+                                throw SimplifiedException.of(DisabledCommandException.class).withMessage("The bot was disabled in this guild by the developer!").build();
+                        });
+
+                    // Handle Guild Overrides
+                    if (commandConfig.isGuildToggleable()) {
+                        this.getGuildCommandConfig().ifPresent(guildCommandConfig -> {
+                            if (!guildCommandConfig.isEnabled())
+                                throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is disabled in this guild!").build();
+                        });
+                    }
+                });
 
                 // Handle Help Arguments
                 if (commandContext.getArguments().size() > 0 && helpArguments.contains(commandContext.getArguments().get(commandContext.getArguments().size() - 1).getValue().orElse("")))
@@ -425,16 +459,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         .map(example -> FormatUtil.format("{0} {1} {2}", parentCommands, commandInfo.name(), example))
                         .collect(Concurrent.toList()),
                     "\n"
-                )
-            );
-        }
-
-        if (ListUtil.notEmpty(commandInfo.aliases())) {
-            embedBuilder.withField(
-                "Aliases",
-                StringUtil.join(
-                    commandInfo.aliases(),
-                    ", "
                 )
             );
         }
