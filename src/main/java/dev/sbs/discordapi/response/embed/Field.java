@@ -73,11 +73,31 @@ public final class Field {
         return of(name, value, false);
     }
 
+    public static Field of(@NotNull Optional<String> name, @Nullable String value) {
+        return of(name, Optional.ofNullable(value));
+    }
+
+    public static Field of(@Nullable String name, @NotNull Optional<String> value) {
+        return of(Optional.ofNullable(name), value);
+    }
+
+    public static Field of(@NotNull Optional<String> name, @NotNull Optional<String> value) {
+        return of(name, value, false);
+    }
+
     public static Field of(@Nullable String name, @Nullable String value, boolean inline) {
         return of(Optional.ofNullable(name), Optional.ofNullable(value), inline);
     }
 
-    public static Field of(Optional<String> name, Optional<String> value, boolean inline) {
+    public static Field of(@NotNull Optional<String> name, @Nullable String value, boolean inline) {
+        return of(name, Optional.ofNullable(value), inline);
+    }
+
+    public static Field of(@Nullable String name, @NotNull Optional<String> value, boolean inline) {
+        return of(Optional.ofNullable(name), value, inline);
+    }
+
+    public static Field of(@NotNull Optional<String> name, @NotNull Optional<String> value, boolean inline) {
         name.ifPresent(nameValue -> Embed.EmbedBuilder.validateLength(Field.class, "name", nameValue));
         value.ifPresent(valueValue -> Embed.EmbedBuilder.validateLength(Field.class, "value", valueValue));
         String fieldName = StringUtil.defaultIfEmpty(name.orElse("").trim(), ZERO_WIDTH_SPACE);
