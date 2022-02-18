@@ -25,28 +25,11 @@ public @interface CommandInfo {
     String[] aliases() default { };
 
     /**
-     * Gets the emoji snowflake id.
-     * <br><br>
-     * Use -1 to disable.<br>
-     * Use 0 for unicode.
+     * Gets the emoji key or raw unicode.
      *
-     * @return Emoji id.
+     * @return Emoji key or raw unicode.
      */
-    long emojiId() default -1;
-
-    /**
-     * Gets the emoji name.
-     *
-     * @return Emoji name.
-     */
-    String emojiName() default "";
-
-    /**
-     * Gets if the emoji is animated.
-     *
-     * @return True if animated.
-     */
-    boolean emojiAnimated() default false;
+    String emoji() default "";
 
     /**
      * Gets if the command is enabled.

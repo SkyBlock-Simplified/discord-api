@@ -1,10 +1,8 @@
 package dev.sbs.discordapi.command;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
@@ -37,7 +35,6 @@ import dev.sbs.discordapi.util.DiscordObject;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.rest.util.Permission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -77,10 +74,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 .build();
     }
 
-    public static Optional<Emoji> getEmoji(String key) {
-        return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).map(Emoji::of);
-    }
-
     public final @NotNull ConcurrentList<RelationshipData> getParentCommandList() {
         return this.getParentCommandList(this.getClass());
     }
@@ -94,8 +87,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             .collect(Concurrent.toList());
     }
 
-    public final Optional<ReactionEmoji> getEmoji() {
-        return this.getCommandEmoji(this.getClass());
+    public final Optional<Emoji> getEmoji() {
+        return Emoji.of(this.getCommandInfo());
     }
 
     public @NotNull ConcurrentUnmodifiableList<String> getExamples() {

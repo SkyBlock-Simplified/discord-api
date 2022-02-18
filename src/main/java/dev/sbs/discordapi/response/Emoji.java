@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
@@ -66,7 +67,7 @@ public abstract class Emoji {
     }
 
     public static Optional<Emoji> of(@NotNull CommandInfo commandInfo) {
-        return commandInfo.emojiId() == -1 ? Optional.empty() : Optional.of(commandInfo.emojiId() == 0 ? of(commandInfo.emojiName()) : of(commandInfo.emojiId(), commandInfo.emojiName(), commandInfo.emojiAnimated()));
+        return commandInfo.emoji().matches("[\\w]+") ? SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, commandInfo.emoji().toUpperCase()).map(Emoji::of) : Optional.of(of(commandInfo.emoji()));
     }
 
     public static Emoji of(@NotNull ProfileModel profileModel) {

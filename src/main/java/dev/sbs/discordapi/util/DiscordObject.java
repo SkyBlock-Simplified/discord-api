@@ -1,23 +1,27 @@
 package dev.sbs.discordapi.util;
 
+import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
 import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
+import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.helper.WordUtil;
 import dev.sbs.api.util.mutable.MutableBoolean;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.UserPermission;
 import dev.sbs.discordapi.command.data.CommandData;
 import dev.sbs.discordapi.command.data.CommandInfo;
+import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.rest.util.Permission;
@@ -42,6 +46,14 @@ public abstract class DiscordObject {
         this.log = new DiscordLogger(this.getDiscordBot(), this.getClass());
     }
 
+    public static String capitalizeEnum(Enum<?> value) {
+        return capitalizeFully(value.name());
+    }
+
+    public static String capitalizeFully(String value) {
+        return WordUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
+    }
+
     // --- Command Searching ---
     public final boolean doesCommandMatch(@NotNull CommandInfo commandInfo, @NotNull String argument) {
         return commandInfo.name().equalsIgnoreCase(argument) || Arrays.stream(commandInfo.aliases()).anyMatch(alias -> argument.matches(FormatUtil.format("(?i:{0})", alias)));
@@ -53,21 +65,6 @@ public abstract class DiscordObject {
 
     public final Optional<CommandInfo> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
         return this.getAnnotation(CommandInfo.class, command);
-    }
-
-    public final Optional<ReactionEmoji> getCommandEmoji(@NotNull Class<? extends Command> command) {
-        Optional<CommandInfo> opAnnoCommand = getCommandAnnotation(command);
-
-        // Get Custom Emoji
-        if (opAnnoCommand.isPresent()) {
-            CommandInfo annoCommandInfo = opAnnoCommand.get();
-            Long emojiId = annoCommandInfo.emojiId() <= 0 ? null : annoCommandInfo.emojiId();
-
-            if (annoCommandInfo.emojiId() > -1)
-                return Optional.of(ReactionEmoji.of(emojiId, annoCommandInfo.emojiName(), annoCommandInfo.emojiAnimated()));
-        }
-
-        return Optional.empty();
     }
 
     public final ConcurrentList<Command.RelationshipData> getCompactedRelationships() {
@@ -88,6 +85,18 @@ public abstract class DiscordObject {
             return this.getCommandName(commandOptionData.options().toOptional().orElse(Concurrent.newList()).get(0));
 
         return commandOptionData.name();
+    }
+
+    public static Optional<Emoji> getEmoji(String key) {
+        return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).map(Emoji::of);
+    }
+
+    public static String getEmojiAsFormat(String key) {
+        return getEmojiAsFormat(key, "");
+    }
+
+    public static String getEmojiAsFormat(String key, String defaultValue) {
+        return getEmoji(key).map(Emoji::asFormat).orElse(defaultValue);
     }
 
     public final Optional<Command.Relationship> getDeepestCommand(ApplicationCommandInteractionData commandInteractionData) {
