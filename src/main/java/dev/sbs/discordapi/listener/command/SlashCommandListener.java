@@ -143,7 +143,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                 .map(relationship -> ApplicationCommandRequest.builder() // Create Command
                     .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
                     .name(relationship.getCommandInfo().name())
-                    .description(StringUtil.defaultIfEmpty(relationship.getCommandInfo().description(), "<missing description>"))
+                    .description(relationship.getInstance().getDescription().orElse("<missing description>"))
                     .defaultPermission(true)
                     .addAllOptions( // Handle SubCommand Groups
                                     relationship.getInstance()
@@ -191,7 +191,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
         return ApplicationCommandOptionData.builder()
             .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
             .name(relationship.getCommandInfo().name())
-            .description(StringUtil.defaultIfEmpty(relationship.getCommandInfo().description(), "<missing description>"))
+            .description(relationship.getInstance().getDescription().orElse("<missing description>"))
             .addAllOptions(
                 relationship.getInstance()
                     .getParameters()
