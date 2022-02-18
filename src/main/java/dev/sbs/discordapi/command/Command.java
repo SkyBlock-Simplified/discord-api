@@ -81,11 +81,19 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final @NotNull Optional<String> getDescription() {
-        return Optional.ofNullable(this.getCommandConfig().map(CommandConfigModel::getDescription).orElse(this.getCommandInfo().description()));
+        return Optional.ofNullable(
+            this.getCommandConfig()
+                .map(CommandConfigModel::getDescription)
+                .orElse(StringUtil.defaultIfEmpty(this.getCommandInfo().description(), null))
+        );
     }
 
     public final @NotNull Optional<String> getLongDescription() {
-        return Optional.ofNullable(this.getCommandConfig().map(CommandConfigModel::getLongDescription).orElse(this.getCommandInfo().longDescription()));
+        return Optional.ofNullable(
+            this.getCommandConfig()
+                .map(CommandConfigModel::getLongDescription)
+                .orElse(StringUtil.defaultIfEmpty(this.getCommandInfo().longDescription(), null))
+        );
     }
 
     public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig() {

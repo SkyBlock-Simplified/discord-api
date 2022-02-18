@@ -134,57 +134,53 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
     }
 
     private ConcurrentList<ApplicationCommandRequest> getSlashCommands(Command.RootRelationship rootRelationship) {
-        ConcurrentList<ApplicationCommandRequest> slashCommands = Concurrent.newList();
-
-        // Add Slash Commands
-        slashCommands.addAll(
-            rootRelationship.getSubCommands()
-                .stream()
-                .map(relationship -> ApplicationCommandRequest.builder() // Create Command
-                    .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
-                    .name(relationship.getCommandInfo().name())
-                    .description(relationship.getInstance().getDescription().orElse("<missing description>"))
-                    .defaultPermission(true)
-                    .addAllOptions( // Handle SubCommand Groups
-                                    relationship.getInstance()
-                                        .getGroups()
-                                        .stream()
-                                        .map(group -> ApplicationCommandOptionData.builder()
-                                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                                            .name(group.getName())
-                                            .description(StringUtil.defaultIfEmpty(group.getDescription(), "<missing description>"))
-                                            .required(group.isRequired())
-                                            .addAllOptions(
-                                                relationship.getSubCommands()
-                                                    .stream()
-                                                    .filter(subRelationship -> StringUtil.defaultIfEmpty(subRelationship.getCommandInfo().group(), "").equalsIgnoreCase(group.getName()))
-                                                    .map(this::buildCommand)
-                                                    .collect(Concurrent.toList())
-                                            )
-                                            .build()
-                                        )
-                                        .collect(Concurrent.toList())
-                    )
-                    .addAllOptions( // Handle SubCommands
-                                    relationship.getSubCommands()
-                                        .stream()
-                                        .filter(subRelationship -> StringUtil.isEmpty(subRelationship.getCommandInfo().group()))
-                                        .map(this::buildCommand)
-                                        .collect(Concurrent.toList())
-                    )
-                    .addAllOptions(
-                        relationship.getInstance()
-                            .getParameters()
-                            .stream()
-                            .map(this::buildParameter)
-                            .collect(Concurrent.toList())
-                    ) // Handle Parameters
-                    .build()
+        return rootRelationship.getSubCommands()
+            .stream()
+            .map(relationship -> ApplicationCommandRequest.builder() // Create Command
+                .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
+                .name(relationship.getCommandInfo().name())
+                .description(relationship.getInstance().getDescription().orElse("<missing description>"))
+                .defaultPermission(true)
+                // Handle SubCommand Groups
+                .addAllOptions(
+                    relationship.getInstance()
+                        .getGroups()
+                        .stream()
+                        .map(group -> ApplicationCommandOptionData.builder()
+                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+                            .name(group.getName())
+                            .description(StringUtil.defaultIfEmpty(group.getDescription(), "<missing description>"))
+                            .required(group.isRequired())
+                            .addAllOptions(
+                                relationship.getSubCommands()
+                                    .stream()
+                                    .filter(subRelationship -> StringUtil.defaultIfEmpty(subRelationship.getCommandInfo().group(), "").equalsIgnoreCase(group.getName()))
+                                    .map(this::buildCommand)
+                                    .collect(Concurrent.toList())
+                            )
+                            .build()
+                        )
+                        .collect(Concurrent.toList())
                 )
-                .collect(Concurrent.toList())
-        );
-
-        return slashCommands;
+                // Handle SubCommands
+                .addAllOptions(
+                    relationship.getSubCommands()
+                        .stream()
+                        .filter(subRelationship -> StringUtil.isEmpty(subRelationship.getCommandInfo().group()))
+                        .map(this::buildCommand)
+                        .collect(Concurrent.toList())
+                )
+                // Handle Parameters
+                .addAllOptions(
+                    relationship.getInstance()
+                        .getParameters()
+                        .stream()
+                        .map(this::buildParameter)
+                        .collect(Concurrent.toList())
+                )
+                .build()
+            )
+            .collect(Concurrent.toList());
     }
 
     private ApplicationCommandOptionData buildCommand(Command.Relationship relationship) {
