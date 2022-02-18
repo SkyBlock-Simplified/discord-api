@@ -238,14 +238,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
-                        .withAuthor("Disabled Command", Emoji.of(929250287431057468L, "status_disabled").getUrl())
+                        .withAuthor("Disabled Command", getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
                         .withDescription("This command is currently disabled.")
                 );
             } catch (PermissionException permissionException) {
                 boolean botPermissions = (permissionException instanceof BotPermissionException);
 
                 Embed.EmbedBuilder embedBuilder = Embed.builder()
-                    .withAuthor(FormatUtil.format("Missing {0} Permissions", (botPermissions ? "Bot" : "User")), Emoji.of(929250287443656734L, "status_high_importance").getUrl())
+                    .withAuthor(FormatUtil.format("Missing {0} Permissions", (botPermissions ? "Bot" : "User")), getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
                     .withDescription(permissionException.getMessage());
 
                 if (botPermissions) {
@@ -293,7 +293,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 Embed.EmbedBuilder embedBuilder = Embed.builder()
                     .withAuthor(
                         FormatUtil.format("{0} Parameter", (missing ? "Missing" : "Invalid")),
-                        Emoji.of(929250313821638666L, "status_info").getUrl()
+                        getEmoji("STATUS_INFO").map(Emoji::getUrl)
                     )
                     .withDescription(missing ? missingDescription : invalidDescription)
                     .withFields(
@@ -430,7 +430,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         ConcurrentList<Parameter> parameters = relationship.getInstance().getParameters();
 
         Embed.EmbedBuilder embedBuilder = Embed.builder()
-            .withAuthor("Help", Emoji.of(929250313821638666L, "status_info").getUrl())
+            .withAuthor("Help", getEmoji("STATUS_INFO").map(Emoji::getUrl))
             .withTitle("Command :: {0}", commandInfo.name())
             .withDescription(relationship.getInstance().getLongDescription())
             .withTimestamp(Instant.now())

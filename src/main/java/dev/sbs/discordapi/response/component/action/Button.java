@@ -7,6 +7,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.message.interaction.component.button.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.util.DiscordObject;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -314,12 +315,12 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
     public enum PageType {
 
         NONE("", false),
-        FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), Emoji.of(942139118052331560L, "arrow_square_first")),
-        PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), Emoji.of(942139118111060018L, "arrow_square_previous")),
+        FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_FIRST")),
+        PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_PREVIOUS")),
         INDEX("Index", true, buttonBuilder -> buttonBuilder.setDisabled(true)),
-        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(false), Emoji.of(942139117976817725L, "arrow_square_next")),
-        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(false), Emoji.of(942139117804879923L, "arrow_square_last")),
-        BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), Emoji.of(929254186829369365L, "arrow_left"));
+        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(false), DiscordObject.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(false), DiscordObject.getEmoji("ARROW_SQUARE_LAST")),
+        BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_LEFT"));
 
         @Getter private final @NotNull String label;
         @Getter private final @NotNull Optional<Emoji> emoji;
