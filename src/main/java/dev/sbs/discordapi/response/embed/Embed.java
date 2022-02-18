@@ -7,6 +7,7 @@ import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.component.action.SelectMenu;
@@ -87,7 +88,7 @@ public class Embed {
         return new EmbedBuilder(UUID.randomUUID())
             .withColor(Color.RED)
             .withTitle("An exception has occurred!")
-            .withDescription(throwable.getMessage())
+            .withDescription(ExceptionUtil.getRootCauseMessage(throwable))
             .withTimestamp(Instant.now());
     }
 
