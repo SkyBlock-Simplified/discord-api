@@ -17,25 +17,11 @@ import java.lang.annotation.Target;
 public @interface CommandInfo {
 
     /**
-     * Gets the description.
+     * The id of the discord command. Used for database storage.
      *
-     * @return Description of the command.
+     * @return The discord command id.
      */
-    String description() default "";
-
-    /**
-     * Gets the long description.
-     *
-     * @return Description of the command.
-     */
-    String longDescription() default "";
-
-    /**
-     * Whether to inherit parent command permissions.
-     *
-     * @return True to inherit parent permissions.
-     */
-    boolean inherit() default true;
+    String id();
 
     /**
      * The name of the discord command.
@@ -52,14 +38,14 @@ public @interface CommandInfo {
     Class<? extends Command> parent() default Command.class;
 
     /**
-     * What discord permissions are required for the bot to use this command.
+     * Immutably required discord permissions required for the bot to process this command.
      *
      * @return An array of discord permissions.
      */
     Permission[] permissions() default { };
 
     /**
-     * What user permissions are required to use this command.
+     * Immutably required user permissions required for users to use this command.
      *
      * @return The required user permissions.
      */
