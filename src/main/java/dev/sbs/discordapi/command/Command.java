@@ -36,6 +36,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.DiscordObject;
 import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.util.exception.UserInputException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.rest.util.Permission;
@@ -384,6 +385,13 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                             hypixelApiException.getErrorResponse().getReason()
                         )
                 );
+            } catch (UserInputException userInputException) {
+                userErrorBuilder = Optional.of(
+                    Embed.builder()
+                        .withAuthor("User Input Error", getEmoji("STATUS_ERROR").map(Emoji::getUrl))
+                        .withDescription(userInputException.getMessage())
+                        .withFields(userInputException)
+                );
             } catch (Exception uncaughtException) {
                 this.getDiscordBot().handleUncaughtException(
                     ExceptionContext.of(
@@ -418,6 +426,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             return userErrorBuilder.map(embedBuilder -> commandContext.softReply(
                     Response.builder()
                         .isInteractable(false)
+                        .isEphemeral()
                         .withReference(commandContext)
                         .withEmbeds(
                             embedBuilder.withColor(Color.DARK_GRAY)
