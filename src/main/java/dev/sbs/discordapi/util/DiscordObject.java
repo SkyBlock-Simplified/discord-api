@@ -2,6 +2,8 @@ package dev.sbs.discordapi.util;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
+import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlModel;
+import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlRepository;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.data.model.discord.guilds.GuildModel;
@@ -65,59 +67,70 @@ public abstract class DiscordObject {
         return commandInfo.name().equalsIgnoreCase(argument);
     }
 
-    public final <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandData> command) {
+    public final @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandData> command) {
         return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : Optional.empty();
     }
 
-    public final Optional<CommandInfo> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
+    public final @NotNull Optional<CommandInfo> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
         return this.getAnnotation(CommandInfo.class, command);
     }
 
-    public final Optional<CommandConfigModel> getCommandConfig(@NotNull CommandInfo commandInfo) {
-        return SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findFirst(CommandConfigModel::getName, commandInfo.name());
+    public final @NotNull CommandConfigModel getCommandConfig(@NotNull CommandInfo commandInfo) {
+        Optional<CommandConfigModel> commandConfigModel = SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findFirst(CommandConfigModel::getUniqueId, StringUtil.toUUID(commandInfo.id()));
+
+        // Ensure Existing Command Config
+        if (commandConfigModel.isEmpty()) {
+            CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
+            newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
+            newCommandConfigModel.setName(commandInfo.name());
+            newCommandConfigModel.setDescription("*<missing description>*");
+            return ((CommandConfigSqlRepository) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
+        }
+
+        return commandConfigModel.get();
     }
 
-    public final Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
+    public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
         return SimplifiedApi.getRepositoryOf(GuildCommandConfigModel.class).findFirst(GuildCommandConfigModel::getName, commandInfo.name());
     }
 
-    public final Optional<GuildModel> getGuild(@NotNull Snowflake guildId) {
+    public final @NotNull Optional<GuildModel> getGuild(@NotNull Snowflake guildId) {
         return SimplifiedApi.getRepositoryOf(GuildModel.class).findFirst(GuildModel::getGuildId, guildId.asLong());
     }
 
-    public final ConcurrentList<Command.RelationshipData> getCompactedRelationships() {
+    public final @NotNull ConcurrentList<Command.RelationshipData> getCompactedRelationships() {
         Command.RootRelationship rootRelationship = this.getDiscordBot().getRootCommandRelationship();
         ConcurrentList<Command.RelationshipData> relationships = Concurrent.newList(rootRelationship);
         rootRelationship.getSubCommands().forEach(subCommandRelationship -> relationships.addAll(this.getCompactedRelationships(subCommandRelationship)));
         return relationships;
     }
 
-    private ConcurrentList<Command.RelationshipData> getCompactedRelationships(Command.Relationship rootRelationship) {
+    private @NotNull ConcurrentList<Command.RelationshipData> getCompactedRelationships(@NotNull Command.Relationship rootRelationship) {
         ConcurrentList<Command.RelationshipData> relationships = Concurrent.newList(rootRelationship);
         rootRelationship.getSubCommands().forEach(subCommandRelationship -> relationships.addAll(this.getCompactedRelationships(subCommandRelationship)));
         return relationships;
     }
 
-    private String getCommandName(ApplicationCommandInteractionOptionData commandOptionData) {
+    private @NotNull String getCommandName(@NotNull ApplicationCommandInteractionOptionData commandOptionData) {
         if (commandOptionData.type() == ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
             return this.getCommandName(commandOptionData.options().toOptional().orElse(Concurrent.newList()).get(0));
 
         return commandOptionData.name();
     }
 
-    public static Optional<Emoji> getEmoji(String key) {
-        return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).map(Emoji::of);
+    public static @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
+        return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).flatMap(Emoji::of);
     }
 
-    public static String getEmojiAsFormat(String key) {
+    public static @NotNull String getEmojiAsFormat(@NotNull String key) {
         return getEmojiAsFormat(key, "");
     }
 
-    public static String getEmojiAsFormat(String key, String defaultValue) {
+    public static @NotNull String getEmojiAsFormat(@NotNull String key, @NotNull String defaultValue) {
         return getEmoji(key).map(Emoji::asFormat).orElse(defaultValue);
     }
 
-    public final Optional<Command.Relationship> getDeepestCommand(ApplicationCommandInteractionData commandInteractionData) {
+    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull ApplicationCommandInteractionData commandInteractionData) {
         ConcurrentList<String> commandTree = Concurrent.newList(commandInteractionData.name().toOptional().orElseThrow()); // Should never be NULL
 
         if (!commandInteractionData.type().isAbsent()) {
@@ -134,15 +147,15 @@ public abstract class DiscordObject {
         return this.getDeepestRelationship(commandTree, 0, this.getDiscordBot().getRootCommandRelationship(), true);
     }
 
-    public final Optional<Command.Relationship> getDeepestCommand(String[] arguments) {
+    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull String[] arguments) {
         return this.getDeepestCommand(arguments, 0);
     }
 
-    public final Optional<Command.Relationship> getDeepestCommand(String[] arguments, int index) {
+    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull String[] arguments, int index) {
         return this.getDeepestRelationship(Concurrent.newList(arguments), index, this.getDiscordBot().getRootCommandRelationship(), false);
     }
 
-    private Optional<Command.Relationship> getDeepestRelationship(ConcurrentList<String> arguments, int index, Command.RootRelationship rootRelationship, boolean slashCommands) {
+    private @NotNull Optional<Command.Relationship> getDeepestRelationship(@NotNull ConcurrentList<String> arguments, int index, @NotNull Command.RootRelationship rootRelationship, boolean slashCommands) {
         Command.Relationship deepestRelationship = null;
         Optional<CommandInfo> optionalPrefixCommandInfo = this.getCommandAnnotation(rootRelationship.getCommandClass());
 
@@ -175,7 +188,7 @@ public abstract class DiscordObject {
         return Optional.ofNullable(deepestRelationship);
     }
 
-    public final ConcurrentList<Command.RelationshipData> getParentCommandList(Class<? extends Command> commandClass) {
+    public final @NotNull ConcurrentList<Command.RelationshipData> getParentCommandList(@NotNull Class<? extends Command> commandClass) {
         ConcurrentList<Command.RelationshipData> parentCommands = Concurrent.newList();
         ConcurrentList<Command.RelationshipData> compactedRelationships = this.getCompactedRelationships();
 
@@ -220,23 +233,23 @@ public abstract class DiscordObject {
     }
 
     // --- Permissions ---
-    public final ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(Snowflake userId, Mono<Guild> guild, Permission... permissions) {
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Permission... permissions) {
         return this.getGuildPermissionMap(userId, guild, Arrays.asList(permissions));
     }
 
-    public final ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(Snowflake userId, Mono<Guild> guild, Iterable<Permission> permissions) {
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Iterable<Permission> permissions) {
         return guild.flatMap(gld -> gld.getMemberById(userId)).flatMap(Member::getBasePermissions).map(permissionSet -> this.getPermissionMap(permissionSet, permissions)).blockOptional().orElse(Concurrent.newLinkedMap());
     }
 
-    public final ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(Snowflake userId, Mono<GuildChannel> channel, Permission... permissions) {
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Permission... permissions) {
         return this.getChannelPermissionMap(userId, channel, Arrays.asList(permissions));
     }
 
-    public final ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(Snowflake userId, Mono<GuildChannel> channel, Iterable<Permission> permissions) {
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Iterable<Permission> permissions) {
         return channel.flatMap(chl -> chl.getEffectivePermissions(userId)).map(permissionSet -> this.getPermissionMap(permissionSet, permissions)).blockOptional().orElse(Concurrent.newLinkedMap());
     }
 
-    private ConcurrentLinkedMap<Permission, Boolean> getPermissionMap(PermissionSet permissionSet, Iterable<Permission> permissions) {
+    private @NotNull ConcurrentLinkedMap<Permission, Boolean> getPermissionMap(@NotNull PermissionSet permissionSet, @NotNull Iterable<Permission> permissions) {
         // Set Default Permissions
         ConcurrentLinkedMap<Permission, Boolean> permissionMap = Concurrent.newLinkedMap();
         permissions.forEach(permission -> permissionMap.put(permission, false));
