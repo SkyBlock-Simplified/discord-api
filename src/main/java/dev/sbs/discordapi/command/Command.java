@@ -39,6 +39,7 @@ import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.rest.util.Permission;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +58,9 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     private static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final static ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
-    @Getter private final CommandInfo commandInfo;
+
+    @Getter(AccessLevel.PROTECTED)
+    private final CommandInfo commandInfo;
 
     protected Command(DiscordBot discordBot) {
         super(discordBot);
@@ -76,7 +79,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 .build();
     }
 
-    public @NotNull Optional<CommandCategoryModel> getCategory() {
+    public final @NotNull Optional<CommandCategoryModel> getCategory() {
         return Optional.ofNullable(this.getCommandConfig().getCategory());
     }
 
@@ -88,7 +91,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return this.getCommandConfig().getDescription();
     }
 
-    public @NotNull Optional<CommandGroupModel> getGroup() {
+    public final @NotNull Optional<CommandGroupModel> getGroup() {
         return Optional.ofNullable(this.getCommandConfig().getGroup());
     }
 
@@ -123,6 +126,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
     public final Optional<Parameter> getParameter(int index) {
         ConcurrentList<Parameter> parameters = this.getParameters();
+        index = Math.max(0, index);
         return Optional.ofNullable(index < parameters.size() ? parameters.get(index) : null);
     }
 
