@@ -1,8 +1,9 @@
-package dev.sbs.discordapi.util.exception;
+package dev.sbs.discordapi.command.exception.user;
 
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
 import dev.sbs.api.util.tuple.Triple;
+import dev.sbs.discordapi.util.exception.DiscordException;
 
 /**
  * {@link UserInputException UserInputExceptions} are thrown when a user provides missing or invalid data.

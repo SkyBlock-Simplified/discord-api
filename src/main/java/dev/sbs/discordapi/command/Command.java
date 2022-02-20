@@ -28,6 +28,8 @@ import dev.sbs.discordapi.command.exception.parameter.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
+import dev.sbs.discordapi.command.exception.user.UserInputException;
+import dev.sbs.discordapi.command.exception.user.UserVerificationException;
 import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
@@ -36,7 +38,6 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.DiscordObject;
 import dev.sbs.discordapi.util.exception.DiscordException;
-import dev.sbs.discordapi.util.exception.UserInputException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.rest.util.Permission;
@@ -391,6 +392,19 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         .withAuthor("User Input Error", getEmoji("STATUS_ERROR").map(Emoji::getUrl))
                         .withDescription(userInputException.getMessage())
                         .withFields(userInputException)
+                );
+            } catch (UserVerificationException userVerificationException) {
+                String defaultMessage = "You must be verified to run this command!";
+                String commandMessage = "You must be verified to run this command without providing a Minecraft Username or UUID!";
+                String exceptionMessage = userVerificationException.getMessage();
+                boolean useExceptionMessage = (boolean) userVerificationException.getData().getOrDefault("MESSAGE", false);
+                boolean useCommandMessage = (boolean) userVerificationException.getData().getOrDefault("COMMAND", false);
+
+                userErrorBuilder = Optional.of(
+                    Embed.builder()
+                        .withAuthor("User Verification Error", getEmoji("STATUS_ERROR").map(Emoji::getUrl))
+                        .withDescription(useExceptionMessage ? exceptionMessage : (useCommandMessage ? commandMessage : defaultMessage))
+                        .withFields(userVerificationException)
                 );
             } catch (Exception uncaughtException) {
                 this.getDiscordBot().handleUncaughtException(
