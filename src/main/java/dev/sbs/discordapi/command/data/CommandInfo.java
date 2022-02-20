@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.command.data;
 
-import dev.sbs.discordapi.command.Category;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.UserPermission;
 import discord4j.rest.util.Permission;
@@ -51,13 +50,6 @@ public @interface CommandInfo {
      * @return The discord command name.
      */
     String name();
-
-    /**
-     * The category this command belongs to.
-     *
-     * @return The command category.
-     */
-    Category category() default Category.UNCATEGORIZED;
 
     /**
      * The class of the parent command.
