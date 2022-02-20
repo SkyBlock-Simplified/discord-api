@@ -64,7 +64,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     @Getter(AccessLevel.PROTECTED)
     private final CommandInfo commandInfo;
 
-    protected Command(DiscordBot discordBot) {
+    protected Command(@NotNull DiscordBot discordBot) {
         super(discordBot);
 
         // Validate Command Annotation
