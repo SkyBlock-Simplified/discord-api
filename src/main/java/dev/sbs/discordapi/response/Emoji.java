@@ -14,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -28,6 +29,10 @@ public abstract class Emoji {
     @Getter private final Optional<Consumer<ReactionContext>> interaction;
 
     public abstract String asFormat();
+
+    public final String asSpacedFormat() {
+        return this.asFormat() + " ";
+    }
 
     public final ReactionEmoji getD4jReaction() {
         return this.getRaw().isPresent() ? ReactionEmoji.unicode(this.getRaw().get()) : ReactionEmoji.of(this.getId().asLong(), this.getName(), this.isAnimated());
@@ -64,16 +69,24 @@ public abstract class Emoji {
         return this.raw.isPresent();
     }
 
-    public static Emoji of(@NotNull ProfileModel profileModel) {
+    public static Optional<Emoji> of(@NotNull ProfileModel profileModel) {
         return of(profileModel.getEmoji());
     }
 
-    public static Emoji of(@NotNull EmojiModel emojiModel) {
+    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel) {
+        return of(Optional.ofNullable(emojiModel), null);
+    }
+
+    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel) {
         return of(emojiModel, null);
     }
 
-    public static Emoji of(@NotNull EmojiModel emojiModel, Consumer<ReactionContext> interaction) {
-        return new Custom(Snowflake.of(emojiModel.getEmojiId()), emojiModel.getKey(), emojiModel.isAnimated(), interaction);
+    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel, Consumer<ReactionContext> interaction) {
+        return of(Optional.ofNullable(emojiModel), interaction);
+    }
+
+    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Consumer<ReactionContext> interaction) {
+        return emojiModel.map(emoji -> new Custom(Snowflake.of(emoji.getEmojiId()), emoji.getKey(), emoji.isAnimated(), interaction));
     }
 
     public static Emoji of(@NotNull ReactionEmoji emoji) {

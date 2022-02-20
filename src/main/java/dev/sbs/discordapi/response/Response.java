@@ -217,7 +217,7 @@ public class Response extends Page {
                             .getItems()
                             .stream()
                             .map(pageItem -> Field.of(
-                                FormatUtil.format("{0}{1}", pageItem.getOption().getEmoji().map(emoji -> emoji.asFormat() + " ").orElse(""), pageItem.getOption().getLabel()),
+                                FormatUtil.format("{0}{1}", pageItem.getOption().getEmoji().map(Emoji::asSpacedFormat).orElse(""), pageItem.getOption().getLabel()),
                                 pageItem.getOption().getDescription().orElse(""),
                                 this.isItemsInline()
                             ))
