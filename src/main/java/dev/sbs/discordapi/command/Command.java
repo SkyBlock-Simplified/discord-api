@@ -3,6 +3,7 @@ package dev.sbs.discordapi.command;
 import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
+import dev.sbs.api.data.model.discord.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.util.concurrent.Concurrent;
@@ -114,11 +115,15 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final Optional<Emoji> getEmoji() {
-        return this.getCommandConfig().map(CommandConfigModel::getEmoji).map(Emoji::of);
+        return this.getCommandConfig().map(CommandConfigModel::getEmoji).flatMap(Emoji::of);
     }
 
     public @NotNull ConcurrentUnmodifiableList<String> getExamples() {
         return NO_EXAMPLES;
+    }
+
+    public @NotNull Optional<CommandCategoryModel> getCategory() {
+        return this.getCommandConfig().map(CommandConfigModel::getCategory);
     }
 
     public @NotNull ConcurrentUnmodifiableList<CommandGroup> getGroups() {
@@ -413,19 +418,21 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         )
                     )
                 );
+
+                return Mono.empty();
             }
 
             // Handle User Error Response
             return userErrorBuilder.map(embedBuilder -> commandContext.softReply(
                     Response.builder()
                         .isInteractable(false)
+                        .withReference(commandContext)
                         .withEmbeds(
                             embedBuilder.withColor(Color.DARK_GRAY)
                                 .withTitle("Command :: {0} {1}", parentCommands, this.getCommandInfo().name())
                                 .withTimestamp(Instant.now())
                                 .build()
                         )
-                        .withReference(commandContext)
                         .build()
                 ))
                 .orElse(Mono.empty());
