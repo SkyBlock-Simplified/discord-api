@@ -7,6 +7,7 @@ import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlRepository
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.data.model.discord.guilds.GuildModel;
+import dev.sbs.api.data.model.discord.users.UserModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentMap;
@@ -39,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public abstract class DiscordObject {
 
@@ -332,6 +334,14 @@ public abstract class DiscordObject {
 
     public final boolean isGuildOwner(Snowflake userId, @NotNull Mono<Guild> guild) {
         return guild.map(gld -> gld.getOwnerId().equals(userId)).blockOptional().orElse(false);
+    }
+
+    public final boolean isUserVerified(Snowflake userId) {
+        return SimplifiedApi.getRepositoryOf(UserModel.class).matchFirst(userModel -> userModel.getDiscordIds().contains(userId.asLong())).isPresent();
+    }
+
+    public final boolean isUserVerified(UUID uniqueId) {
+        return SimplifiedApi.getRepositoryOf(UserModel.class).matchFirst(userModel -> userModel.getMojangUniqueIds().contains(uniqueId)).isPresent();
     }
 
 }
