@@ -24,13 +24,6 @@ public @interface CommandInfo {
     String description() default "";
 
     /**
-     * The command group of the discord command.
-     *
-     * @return The slash command group of the parent command.
-     */
-    String group() default "";
-
-    /**
      * Gets the long description.
      *
      * @return Description of the command.

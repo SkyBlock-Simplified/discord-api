@@ -5,6 +5,7 @@ import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
 import dev.sbs.api.data.model.discord.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
+import dev.sbs.api.data.model.discord.command_groups.CommandGroupModel;
 import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
@@ -16,7 +17,6 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.command.data.CommandData;
-import dev.sbs.discordapi.command.data.CommandGroup;
 import dev.sbs.discordapi.command.data.CommandInfo;
 import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
@@ -55,7 +55,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
     private static final ConcurrentUnmodifiableList<Parameter> NO_PARAMETERS = Concurrent.newUnmodifiableList();
     private static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
-    private static final ConcurrentUnmodifiableList<CommandGroup> NO_COMMAND_GROUPS = Concurrent.newUnmodifiableList();
     private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final static ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
     @Getter private final CommandInfo commandInfo;
@@ -118,7 +117,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return this.getCommandConfig().map(CommandConfigModel::getEmoji).flatMap(Emoji::of);
     }
 
-    public @NotNull ConcurrentUnmodifiableList<String> getExamples() {
+    public @NotNull ConcurrentUnmodifiableList<String> getExampleArguments() {
         return NO_EXAMPLES;
     }
 
@@ -126,8 +125,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return this.getCommandConfig().map(CommandConfigModel::getCategory);
     }
 
-    public @NotNull ConcurrentUnmodifiableList<CommandGroup> getGroups() {
-        return NO_COMMAND_GROUPS;
+    public @NotNull Optional<CommandGroupModel> getGroup() {
+        return this.getCommandConfig().map(CommandConfigModel::getGroup);
     }
 
     public final Optional<Parameter> getParameter(int index) {
@@ -472,12 +471,12 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             );
         }
 
-        if (ListUtil.notEmpty(relationship.getInstance().getExamples())) {
+        if (ListUtil.notEmpty(relationship.getInstance().getExampleArguments())) {
             embedBuilder.withField(
                 "Examples",
                 StringUtil.join(
                     relationship.getInstance()
-                        .getExamples()
+                        .getExampleArguments()
                         .stream()
                         .map(example -> FormatUtil.format("{0} {1} {2}", parentCommands, commandInfo.name(), example))
                         .collect(Concurrent.toList()),
