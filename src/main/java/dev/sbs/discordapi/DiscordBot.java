@@ -24,6 +24,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.util.DiscordCommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordLogger;
 import dev.sbs.discordapi.util.DiscordResponseCache;
@@ -66,13 +67,13 @@ public abstract class DiscordBot {
 
     private static final Pattern tokenValidator = Pattern.compile("[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}");
 
-    @Getter private final DiscordLogger log;
-    @Getter private final DiscordClient client;
-    @Getter private final GatewayDiscordClient gateway;
-    @Getter private final DiscordShardHandler shardHandler;
-    @Getter private final Command.RootRelationship rootCommandRelationship;
-    @Getter private final Scheduler scheduler = new Scheduler();
-    @Getter private final DiscordResponseCache responseCache = new DiscordResponseCache();
+    @Getter private final @NotNull DiscordLogger log;
+    @Getter private final @NotNull DiscordClient client;
+    @Getter private final @NotNull GatewayDiscordClient gateway;
+    @Getter private final @NotNull DiscordShardHandler shardHandler;
+    @Getter private final @NotNull DiscordCommandRegistrar commandRegistrar;
+    @Getter private final @NotNull Scheduler scheduler = new Scheduler();
+    @Getter private final @NotNull DiscordResponseCache responseCache = new DiscordResponseCache();
     @Getter private Snowflake clientId;
     @Getter private Guild mainGuild;
     @Getter private User self;
@@ -101,11 +102,11 @@ public abstract class DiscordBot {
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
             .build();
 
-        MessageCommandListener commandListener = MessageCommandListener.create(this)
+        this.getLog().info("Registering Commands");
+        this.commandRegistrar = DiscordCommandRegistrar.builder(this)
             .withPrefix(this.getPrefixCommand())
             .withCommands(this.getCommands())
             .build();
-        this.rootCommandRelationship = commandListener.getRootCommandRelationship();
 
         this.getLog().info("Scheduling Cache Cleaner");
         this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
@@ -177,7 +178,7 @@ public abstract class DiscordBot {
 
                     this.getLog().info("Registering Built-in Event Listeners");
                     ConcurrentList<Flux<Void>> eventListeners = Concurrent.newList(
-                        eventDispatcher.on(MessageCreateEvent.class, commandListener),
+                        eventDispatcher.on(MessageCreateEvent.class, new MessageCommandListener(this)),
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this, gatewayDiscordClient)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
@@ -230,6 +231,10 @@ public abstract class DiscordBot {
 
     protected @NotNull Class<? extends PrefixCommand> getPrefixCommand() {
         return PrefixCommand.class;
+    }
+
+    public final @NotNull Command.RootRelationship getRootCommandRelationship() {
+        return this.getCommandRegistrar().getRootCommandRelationship();
     }
 
     public final void handleUncaughtException(ExceptionContext<?> exceptionContext) {

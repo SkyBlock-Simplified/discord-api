@@ -47,7 +47,7 @@ public abstract class DiscordObject {
     @Getter private final DiscordBot discordBot;
     @Getter private final DiscordLogger log;
     
-    protected DiscordObject(DiscordBot discordBot) {
+    protected DiscordObject(@NotNull DiscordBot discordBot) {
         this.discordBot = discordBot;
         this.log = new DiscordLogger(this.getDiscordBot(), this.getClass());
     }

@@ -9,6 +9,7 @@ import discord4j.gateway.GatewayClient;
 import discord4j.rest.util.Multimap;
 import discord4j.rest.util.RouteUtils;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -17,12 +18,12 @@ public class DiscordShard extends DiscordObject {
 
     @Getter private final GatewayClient gatewayClient;
 
-    public DiscordShard(DiscordBot discordBot, GatewayClient gatewayClient) {
+    public DiscordShard(@NotNull DiscordBot discordBot, @NotNull GatewayClient gatewayClient) {
         super(discordBot);
         this.gatewayClient = gatewayClient;
     }
 
-    private DiscordClient getClient() {
+    private @NotNull DiscordClient getClient() {
         return this.getDiscordBot().getClient();
     }
 
@@ -30,11 +31,11 @@ public class DiscordShard extends DiscordObject {
         return this.getGatewayClient().isConnected().blockOptional().orElse(false);
     }
 
-    public Duration getResponseTime() {
+    public @NotNull Duration getResponseTime() {
         return this.getGatewayClient().getResponseTime();
     }
 
-    public Mono<Void> restart() {
+    public @NotNull Mono<Void> restart() {
         return this.stop().then(this.start());
     }
 
