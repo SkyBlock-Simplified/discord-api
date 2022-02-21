@@ -41,7 +41,6 @@ import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.rest.util.Permission;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -60,9 +59,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     private static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final static ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
-
-    @Getter(AccessLevel.PROTECTED)
-    private final CommandInfo commandInfo;
+    @Getter private final CommandInfo commandInfo;
 
     protected Command(@NotNull DiscordBot discordBot) {
         super(discordBot);
@@ -86,7 +83,33 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final @NotNull CommandConfigModel getCommandConfig() {
-        return this.getCommandConfig(this.getCommandInfo());
+        return this.getCommandConfig(this);
+    }
+
+    public final @NotNull String getCommandPath(boolean slashCommand) {
+        ConcurrentList<String> path = this.getParentCommandNames();
+
+        String rootCommand = this.getDiscordBot()
+            .getRootCommandRelationship()
+            .getOptionalCommandInfo()
+            .map(CommandInfo::name)
+            .orElse("");
+
+        // Remove Root For Slash
+        if (ListUtil.notEmpty(path)) {
+            if (StringUtil.isNotEmpty(rootCommand)) {
+                if (path.get(0).equals(rootCommand))
+                    path.remove(0);
+            }
+        }
+
+        // Add Group
+        this.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
+
+        // Add Command Name
+        path.add(this.getCommandInfo().name());
+
+        return FormatUtil.format("{0}{1}", (slashCommand ? "/" : rootCommand + " "), StringUtil.join(path, " "));
     }
 
     public final @NotNull String getDescription() {
@@ -150,7 +173,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     public Mono<Void> apply(CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
             Optional<Embed.EmbedBuilder> userErrorBuilder = Optional.empty();
-            String parentCommands = StringUtil.join(this.getParentCommandNames(), " ");
 
             try {
                 // Handle Disabled Command
@@ -389,7 +411,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
             } catch (UserInputException userInputException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
-                        .withAuthor("User Input Error", getEmoji("STATUS_ERROR").map(Emoji::getUrl))
+                        .withAuthor("User Input Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
                         .withDescription(userInputException.getMessage())
                         .withFields(userInputException)
                 );
@@ -402,7 +424,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
                 userErrorBuilder = Optional.of(
                     Embed.builder()
-                        .withAuthor("User Verification Error", getEmoji("STATUS_ERROR").map(Emoji::getUrl))
+                        .withAuthor("User Verification Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
                         .withDescription(useExceptionMessage ? exceptionMessage : (useCommandMessage ? commandMessage : defaultMessage))
                         .withFields(userVerificationException)
                 );
@@ -444,7 +466,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         .withReference(commandContext)
                         .withEmbeds(
                             embedBuilder.withColor(Color.DARK_GRAY)
-                                .withTitle("Command :: {0} {1}", parentCommands, this.getCommandInfo().name())
+                                .withTitle("Command :: {0}", this.getCommandPath(commandContext.isSlashCommand()))
                                 .withTimestamp(Instant.now())
                                 .build()
                         )

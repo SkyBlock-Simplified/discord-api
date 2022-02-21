@@ -77,15 +77,24 @@ public abstract class DiscordObject {
         return this.getAnnotation(CommandInfo.class, command);
     }
 
-    public final @NotNull CommandConfigModel getCommandConfig(@NotNull CommandInfo commandInfo) {
+    public final @NotNull CommandConfigModel getCommandConfig(@NotNull Command command) {
+        CommandInfo commandInfo = command.getCommandInfo();
         Optional<CommandConfigModel> commandConfigModel = SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findFirst(CommandConfigModel::getUniqueId, StringUtil.toUUID(commandInfo.id()));
 
         // Ensure Existing Command Config
         if (commandConfigModel.isEmpty()) {
             CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
+
+            // Get Name
+            ConcurrentList<String> parents = command.getParentCommandNames(); // Batman has none
+            parents.add(commandInfo.name());
+
             newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
-            newCommandConfigModel.setName(commandInfo.name());
+            newCommandConfigModel.setCommandPath(StringUtil.join(parents, " "));
             newCommandConfigModel.setDescription("*<missing description>*");
+            newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.BOT_OWNER));
+            newCommandConfigModel.setEnabled(true);
+            newCommandConfigModel.setInheritingPermissions(true);
             return ((CommandConfigSqlRepository) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
         }
 

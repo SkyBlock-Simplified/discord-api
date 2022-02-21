@@ -149,7 +149,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                         .distinct()
                         .map(commandGroup -> ApplicationCommandOptionData.builder()
                             .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                            .name(commandGroup.getKey().toLowerCase())
+                            .name(commandGroup.getGroup().toLowerCase())
                             .description(commandGroup.getDescription())
                             .required(commandGroup.isRequired())
                             .addAllOptions(
@@ -163,10 +163,10 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                                         subRelationship.getInstance()
                                             .getGroup()
                                             .get()
-                                            .getKey()
+                                            .getGroup()
                                             .toLowerCase(),
                                         "")
-                                        .equals(commandGroup.getKey().toLowerCase())
+                                        .equals(commandGroup.getGroup().toLowerCase())
                                     )
                                     .map(this::buildCommand)
                                     .collect(Concurrent.toList())
