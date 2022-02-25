@@ -2,7 +2,7 @@ package dev.sbs.discordapi.util;
 
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;

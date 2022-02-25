@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.data;
 
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

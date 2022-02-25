@@ -1,16 +1,16 @@
 package dev.sbs.discordapi.command;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.client.exception.HypixelApiException;
 import dev.sbs.api.client.exception.MojangApiException;
 import dev.sbs.api.data.model.discord.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.command_groups.CommandGroupModel;
 import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
-import dev.sbs.api.util.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
+import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;

@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;

@@ -1,10 +1,10 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.SimplifiedException;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;

@@ -2,8 +2,8 @@ package dev.sbs.discordapi.response.embed;
 
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.data.tuple.Triple;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.tuple.Triple;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;
 import lombok.Getter;

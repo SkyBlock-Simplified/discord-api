@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.helper.FormatUtil;

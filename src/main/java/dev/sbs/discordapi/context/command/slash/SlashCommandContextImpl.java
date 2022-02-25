@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.context.command.slash;
 
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;

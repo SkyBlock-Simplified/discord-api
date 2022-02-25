@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.Builder;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
-import dev.sbs.api.util.concurrent.ConcurrentSet;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;

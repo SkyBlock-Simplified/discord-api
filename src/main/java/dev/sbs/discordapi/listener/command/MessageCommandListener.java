@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.listener.command;
 
-import dev.sbs.api.SimplifiedException;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;

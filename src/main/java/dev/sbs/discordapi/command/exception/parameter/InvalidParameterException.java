@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.command.exception.parameter;
 
-import dev.sbs.api.util.concurrent.ConcurrentList;
-import dev.sbs.api.util.concurrent.ConcurrentMap;
-import dev.sbs.api.util.tuple.Triple;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.data.tuple.Triple;
 
 /**
  * {@link InvalidParameterException InvalidParameterExceptions} are thrown when the user passes invalid arguments to a command.

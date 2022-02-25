@@ -2,8 +2,8 @@ package dev.sbs.discordapi.util;
 
 import ch.qos.logback.classic.Level;
 import dev.sbs.api.util.ConsoleLogger;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentMap;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.discordapi.DiscordBot;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;

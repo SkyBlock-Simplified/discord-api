@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.context.message.interaction;
 
-import dev.sbs.api.SimplifiedException;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;

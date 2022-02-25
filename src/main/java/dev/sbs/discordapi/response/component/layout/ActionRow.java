@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.util.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
