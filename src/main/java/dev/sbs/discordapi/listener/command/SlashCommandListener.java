@@ -4,23 +4,17 @@ import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
-import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.command.slash.SlashCommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommand;
-import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.command.Interaction;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
-import discord4j.discordjson.json.ApplicationCommandRequest;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,14 +31,9 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
         this.prefixFunction = event -> Mono.justOrEmpty(event.getInteraction());
 
         this.getLog().info("Registering Slash Commands");
-        gateway.getRestClient()
-            .getApplicationService()
-            .bulkOverwriteGuildApplicationCommand(
-                this.getDiscordBot().getClientId().asLong(),
-                this.getDiscordBot().getMainGuild().getId().asLong(),
-                this.getSlashCommands(this.getDiscordBot().getRootCommandRelationship())
-            )
-            .subscribe();
+        this.getDiscordBot()
+            .getCommandRegistrar()
+            .updateSlashCommands();
     }
 
     @Override
@@ -131,95 +120,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             .map(relationship -> (Function<CommandContext<?>, Mono<Void>>) relationship.getInstance())
             .single(__ -> Mono.empty())
             .flatMap(handler -> handler.apply(commandContext));
-    }
-
-    private ConcurrentList<ApplicationCommandRequest> getSlashCommands(Command.RootRelationship rootRelationship) {
-        return rootRelationship.getSubCommands()
-            .stream()
-            .map(relationship -> ApplicationCommandRequest.builder() // Create Command
-                .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
-                .name(relationship.getCommandInfo().name())
-                .description(relationship.getInstance().getDescription())
-                .defaultPermission(true)
-                // Handle SubCommand Groups
-                .addAllOptions(
-                    relationship.getSubCommands()
-                        .stream()
-                        .flatMap(subRelationship -> subRelationship.getInstance().getGroup().stream())
-                        .distinct()
-                        .map(commandGroup -> ApplicationCommandOptionData.builder()
-                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                            .name(commandGroup.getGroup().toLowerCase())
-                            .description(commandGroup.getDescription())
-                            .required(commandGroup.isRequired())
-                            .addAllOptions(
-                                relationship.getSubCommands()
-                                    .stream()
-                                    .filter(subRelationship -> subRelationship.getInstance()
-                                        .getGroup()
-                                        .isPresent()
-                                    )
-                                    .filter(subRelationship -> StringUtil.defaultIfEmpty(
-                                        subRelationship.getInstance()
-                                            .getGroup()
-                                            .get()
-                                            .getGroup()
-                                            .toLowerCase(),
-                                        "")
-                                        .equals(commandGroup.getGroup().toLowerCase())
-                                    )
-                                    .map(this::buildCommand)
-                                    .collect(Concurrent.toList())
-                            )
-                            .build()
-                        )
-                        .collect(Concurrent.toList())
-                )
-                // Handle SubCommands
-                .addAllOptions(
-                    relationship.getSubCommands()
-                        .stream()
-                        .filter(subRelationship -> subRelationship.getInstance()
-                            .getGroup()
-                            .isEmpty()
-                        )
-                        .map(this::buildCommand)
-                        .collect(Concurrent.toList())
-                )
-                // Handle Parameters
-                .addAllOptions(
-                    relationship.getInstance()
-                        .getParameters()
-                        .stream()
-                        .map(this::buildParameter)
-                        .collect(Concurrent.toList())
-                )
-                .build()
-            )
-            .collect(Concurrent.toList());
-    }
-
-    private ApplicationCommandOptionData buildCommand(Command.Relationship relationship) {
-        return ApplicationCommandOptionData.builder()
-            .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
-            .name(relationship.getCommandInfo().name())
-            .description(relationship.getInstance().getDescription())
-            .addAllOptions(
-                relationship.getInstance()
-                    .getParameters()
-                    .stream()
-                    .map(this::buildParameter).collect(Concurrent.toList())
-            )
-            .build();
-    }
-
-    private ApplicationCommandOptionData buildParameter(Parameter parameter) {
-        return ApplicationCommandOptionData.builder()
-            .type(parameter.getType().getOptionType().getValue())
-            .name(parameter.getName())
-            .description(parameter.getDescription())
-            .required(parameter.isRequired())
-            .build();
     }
 
 }

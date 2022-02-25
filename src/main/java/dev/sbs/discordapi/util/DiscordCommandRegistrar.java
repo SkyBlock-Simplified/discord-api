@@ -6,11 +6,17 @@ import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.concurrent.Concurrent;
 import dev.sbs.api.util.concurrent.ConcurrentList;
 import dev.sbs.api.util.concurrent.ConcurrentSet;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.PrefixCommand;
 import dev.sbs.discordapi.command.data.CommandInfo;
+import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
+import discord4j.core.object.command.ApplicationCommand;
+import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +40,7 @@ public class DiscordCommandRegistrar extends DiscordObject {
 
                 if (this.getCommandAnnotation(prefixCommand).isEmpty())
                     throw SimplifiedException.of(CommandException.class)
-                        .withMessage("The designated prefix command ''{0}'' has no command annotation!", prefixCommand.getName())
+                        .withMessage("Designating a prefix command ''{0}'' requires a CommandInfo annotation!", prefixCommand.getName())
                         .build();
             });
 
@@ -74,7 +80,7 @@ public class DiscordCommandRegistrar extends DiscordObject {
         return new Command.Relationship(currentCommandInfo, currentCommandClass, Reflection.of(currentCommandClass).newInstance(this.getDiscordBot()), subCommandRelationships);
     }
 
-    public void validateCommands(ConcurrentSet<Class<? extends Command>> subCommands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
+    private void validateCommands(ConcurrentSet<Class<? extends Command>> subCommands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
         Optional<CommandInfo> optionalPrefixCommandInfo = this.getCommandAnnotation(optionalPrefixCommand.orElse(PrefixCommand.class));
 
         // Compare Names and Aliases
@@ -104,6 +110,109 @@ public class DiscordCommandRegistrar extends DiscordObject {
                             .build();
                     });
             });
+    }
+
+    public final ConcurrentList<ApplicationCommandRequest> getSlashCommands() {
+        return this.getRootCommandRelationship()
+            .getSubCommands()
+            .stream()
+            .map(relationship -> ApplicationCommandRequest.builder() // Create Command
+                .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
+                .name(relationship.getCommandInfo().name())
+                .description(relationship.getInstance().getDescription())
+                .defaultPermission(true)
+                // Handle SubCommand Groups
+                .addAllOptions(
+                    relationship.getSubCommands()
+                        .stream()
+                        .flatMap(subRelationship -> subRelationship.getInstance().getGroup().stream())
+                        .distinct()
+                        .map(commandGroup -> ApplicationCommandOptionData.builder()
+                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+                            .name(commandGroup.getGroup().toLowerCase())
+                            .description(commandGroup.getDescription())
+                            .required(commandGroup.isRequired())
+                            .addAllOptions(
+                                relationship.getSubCommands()
+                                    .stream()
+                                    .filter(subRelationship -> subRelationship.getInstance()
+                                        .getGroup()
+                                        .isPresent()
+                                    )
+                                    .filter(subRelationship -> StringUtil.defaultIfEmpty(
+                                            subRelationship.getInstance()
+                                                .getGroup()
+                                                .get()
+                                                .getGroup()
+                                                .toLowerCase(),
+                                            "")
+                                        .equals(commandGroup.getGroup().toLowerCase())
+                                    )
+                                    .map(this::buildCommand)
+                                    .collect(Concurrent.toList())
+                            )
+                            .build()
+                        )
+                        .collect(Concurrent.toList())
+                )
+                // Handle SubCommands
+                .addAllOptions(
+                    relationship.getSubCommands()
+                        .stream()
+                        .filter(subRelationship -> subRelationship.getInstance()
+                            .getGroup()
+                            .isEmpty()
+                        )
+                        .map(this::buildCommand)
+                        .collect(Concurrent.toList())
+                )
+                // Handle Parameters
+                .addAllOptions(
+                    relationship.getInstance()
+                        .getParameters()
+                        .stream()
+                        .map(this::buildParameter)
+                        .collect(Concurrent.toList())
+                )
+                .build()
+            )
+            .collect(Concurrent.toList());
+    }
+
+    public final ApplicationCommandOptionData buildCommand(Command.Relationship relationship) {
+        return ApplicationCommandOptionData.builder()
+            .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
+            .name(relationship.getCommandInfo().name())
+            .description(relationship.getInstance().getDescription())
+            .addAllOptions(
+                relationship.getInstance()
+                    .getParameters()
+                    .stream()
+                    .map(this::buildParameter).collect(Concurrent.toList())
+            )
+            .build();
+    }
+
+    public final ApplicationCommandOptionData buildParameter(Parameter parameter) {
+        return ApplicationCommandOptionData.builder()
+            .type(parameter.getType().getOptionType().getValue())
+            .name(parameter.getName())
+            .description(parameter.getDescription())
+            .required(parameter.isRequired())
+            .build();
+    }
+
+    public void updateSlashCommands() {
+        this.getDiscordBot()
+            .getGateway()
+            .getRestClient()
+            .getApplicationService()
+            .bulkOverwriteGuildApplicationCommand(
+                this.getDiscordBot().getClientId().asLong(),
+                this.getDiscordBot().getMainGuild().getId().asLong(),
+                this.getSlashCommands()
+            )
+            .subscribe();
     }
 
     public static CommandRegistrarBuilder builder(@NotNull DiscordBot discordBot) {
