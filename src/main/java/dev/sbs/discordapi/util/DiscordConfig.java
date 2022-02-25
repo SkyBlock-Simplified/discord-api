@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.data.yaml.YamlConfig;
+import dev.sbs.api.data.sql.SqlConfig;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.ResourceUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -10,7 +10,7 @@ import lombok.Setter;
 
 import java.io.File;
 
-public class DiscordConfig extends YamlConfig {
+public class DiscordConfig extends SqlConfig {
 
     @Getter @Setter
     private String discordToken = ResourceUtil.getEnv("DISCORD_TOKEN").orElse("");
