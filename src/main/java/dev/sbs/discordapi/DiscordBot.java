@@ -1,12 +1,12 @@
 package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.SimplifiedException;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
-import dev.sbs.api.util.concurrent.Concurrent;
-import dev.sbs.api.util.concurrent.ConcurrentList;
-import dev.sbs.api.util.concurrent.ConcurrentSet;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.Command;
@@ -168,7 +168,7 @@ public abstract class DiscordBot {
                     this.onGatewayConnected(gatewayDiscordClient);
 
                     this.getLog().info("Connecting to Database");
-                    SimplifiedApi.connectDatabase();
+                    SimplifiedApi.connectDatabase(this.getConfig());
                     this.getLog().debug(
                         "Database Initialized in {0}ms and Cached in {1}ms",
                         SimplifiedApi.getSqlSession().getInitializationTime(),
