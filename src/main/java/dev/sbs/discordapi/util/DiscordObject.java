@@ -345,10 +345,6 @@ public abstract class DiscordObject {
         return guild.map(gld -> gld.getOwnerId().equals(userId)).blockOptional().orElse(false);
     }
 
-    public final boolean isUserVerified(Snowflake userId) {
-        return SimplifiedApi.getRepositoryOf(UserModel.class).matchFirst(userModel -> userModel.getDiscordIds().contains(userId.asLong())).isPresent();
-    }
-
     public final boolean isUserVerified(UUID uniqueId) {
         return SimplifiedApi.getRepositoryOf(UserModel.class).matchFirst(userModel -> userModel.getMojangUniqueIds().contains(uniqueId)).isPresent();
     }
