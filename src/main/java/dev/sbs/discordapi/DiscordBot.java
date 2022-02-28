@@ -45,6 +45,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientPresence;
@@ -239,7 +240,7 @@ public abstract class DiscordBot {
         return this.getCommandRegistrar().getRootCommandRelationship();
     }
 
-    public final void handleUncaughtException(ExceptionContext<?> exceptionContext) {
+    public final Mono<Message> handleUncaughtException(ExceptionContext<?> exceptionContext) {
         String errorId = UUID.randomUUID().toString();
         String locationValue = "DM";
         String channelValue = "N/A";
@@ -340,25 +341,25 @@ public abstract class DiscordBot {
 
         // Log Error Message & Send User Error Response
         // TODO: Log to mysql configured log channel
-        Flux.just(this.getMainGuild())
-            .flatMap(guild -> guild.getChannelById(Snowflake.of(929259633640628224L)))
-            .ofType(MessageChannel.class)
-            .flatMap(messageChannel -> {
-                Response logResponse = Response.builder()
-                    .isInteractable(false)
-                    .withException(exceptionContext.getException())
-                    .withEmbeds(logErrorBuilder.build())
-                    .build();
+        return exceptionContext.getChannel()
+            .flatMap(userErrorResponse::getD4jCreateMono)
+            .then(
+                Mono.just(this.getMainGuild())
+                    .flatMap(guild -> guild.getChannelById(Snowflake.of(929259633640628224L)))
+                    .ofType(MessageChannel.class)
+                    .flatMap(messageChannel -> {
+                        Response logResponse = Response.builder()
+                            .isInteractable(false)
+                            .withException(exceptionContext.getException())
+                            .withEmbeds(logErrorBuilder.build())
+                            .build();
 
-                return Mono.just(messageChannel)
-                    .publishOn(logResponse.getReactorScheduler())
-                    .flatMap(logResponse::getD4jCreateMono);
-            })
-            .then(exceptionContext.getChannel().flatMap(userErrorResponse::getD4jCreateMono))
-            .subscribe();
-
-        // Print Error Message
-        //exceptionContext.getException().printStackTrace();
+                        return Mono.just(messageChannel)
+                            .publishOn(logResponse.getReactorScheduler())
+                            .flatMap(logResponse::getD4jCreateMono);
+                    })
+            )
+            .then(Mono.error(exceptionContext.getException()));
     }
 
     protected abstract void loadConfig();

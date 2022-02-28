@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -202,8 +203,8 @@ public class DiscordCommandRegistrar extends DiscordObject {
             .build();
     }
 
-    public void updateSlashCommands() {
-        this.getDiscordBot()
+    public Mono<Void> updateSlashCommands() {
+        return this.getDiscordBot()
             .getGateway()
             .getRestClient()
             .getApplicationService()
@@ -212,7 +213,7 @@ public class DiscordCommandRegistrar extends DiscordObject {
                 this.getDiscordBot().getMainGuild().getId().asLong(),
                 this.getSlashCommands()
             )
-            .subscribe();
+            .then();
     }
 
     public static CommandRegistrarBuilder builder(@NotNull DiscordBot discordBot) {

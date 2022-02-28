@@ -59,8 +59,8 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     @Override
-    default void reply(Response response) {
-        this.getEventContext().reply(response);
+    default Mono<Void> reply(Response response) {
+        return this.getEventContext().reply(response);
     }
 
     @NotNull String getTitle();

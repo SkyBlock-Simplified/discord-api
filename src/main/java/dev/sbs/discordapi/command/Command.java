@@ -167,11 +167,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return this.getCommandConfig().isEnabled();
     }
 
-    protected abstract void process(CommandContext<?> commandContext) throws DiscordException;
-
-    protected Mono<Void> process2(CommandContext<?> commandContext) throws DiscordException {
-        return Mono.empty();
-    }
+    protected abstract Mono<Void> process(CommandContext<?> commandContext) throws DiscordException;
 
     @Override
     public Mono<Void> apply(CommandContext<?> commandContext) {
@@ -267,11 +263,9 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                //this.process(commandContext);
                 return Mono.just(commandContext)
-                    .checkpoint(FormatUtil.format("Command1: {0}", this.getCommandInfo().name()), true)
-                    .flatMap(this::process2)
-                    .checkpoint(FormatUtil.format("Command2: {0}", this.getCommandInfo().name()), true);
+                    .flatMap(this::process)
+                    .checkpoint(FormatUtil.format("Command Processing: {0}", this.getClass().getName()));
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
@@ -437,37 +431,36 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         .withFields(userVerificationException)
                 );
             } catch (Exception uncaughtException) {
-                this.getDiscordBot().handleUncaughtException(
-                    ExceptionContext.of(
-                        this.getDiscordBot(),
-                        commandContext,
-                        uncaughtException,
-                        "Command Exception",
-                        embedBuilder -> embedBuilder.withFields(
-                            Field.of(
-                                "Parent Commands",
-                                StringUtil.join(this.getParentCommandNames(), " "),
-                                true
-                            ),
-                            Field.of(
-                                "Command",
-                                this.getCommandInfo().name(),
-                                true
-                            ),
-                            Field.of(
-                                "Arguments",
-                                StringUtil.join(commandContext.getArguments(), " "),
-                                true
+                return this.getDiscordBot().handleUncaughtException(
+                        ExceptionContext.of(
+                            this.getDiscordBot(),
+                            commandContext,
+                            uncaughtException,
+                            "Command Exception",
+                            embedBuilder -> embedBuilder.withFields(
+                                Field.of(
+                                    "Parent Commands",
+                                    StringUtil.join(this.getParentCommandNames(), " "),
+                                    true
+                                ),
+                                Field.of(
+                                    "Command",
+                                    this.getCommandInfo().name(),
+                                    true
+                                ),
+                                Field.of(
+                                    "Arguments",
+                                    StringUtil.join(commandContext.getArguments(), " "),
+                                    true
+                                )
                             )
                         )
                     )
-                );
-
-                return Mono.empty();
+                    .then();
             }
 
             // Handle User Error Response
-            return userErrorBuilder.map(embedBuilder -> commandContext.softReply(
+            return userErrorBuilder.map(embedBuilder -> commandContext.reply(
                     Response.builder()
                         .isInteractable(false)
                         .isEphemeral()

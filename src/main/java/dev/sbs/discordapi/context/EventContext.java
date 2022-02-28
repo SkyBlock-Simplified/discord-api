@@ -47,15 +47,11 @@ public interface EventContext<T extends Event> {
         return this.getGuildId().isEmpty();
     }
 
-    default void reply(Response response) {
-        this.softReply(response).block();
-    }
-
-    default Mono<Void> softReply(Response response) {
+    default Mono<Void> reply(Response response) {
         return this.getChannel()
+            .publishOn(response.getReactorScheduler())
             .flatMap(response::getD4jCreateMono)
-            .checkpoint("Response", true)
-            .doOnError(throwable -> this.getDiscordBot().handleUncaughtException(
+            .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,
