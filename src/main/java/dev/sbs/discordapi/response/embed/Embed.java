@@ -550,7 +550,19 @@ public class Embed {
          */
         @Override
         public Embed build() {
-            return new Embed(this.uniqueId, this.title, this.description, this.url, this.timestamp, this.color, this.imageUrl, this.thumbnailUrl, this.footer, this.author, Concurrent.newUnmodifiableList(this.fields));
+            return new Embed(
+                this.uniqueId,
+                this.title,
+                this.description,
+                this.url,
+                this.timestamp,
+                this.color,
+                this.imageUrl,
+                this.thumbnailUrl,
+                this.footer,
+                this.author,
+                Concurrent.newUnmodifiableList(this.fields)
+            );
         }
 
         static void validateLength(Class<?> tClass, String fieldName, String value) {
