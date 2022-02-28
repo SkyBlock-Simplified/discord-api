@@ -1,15 +1,12 @@
 package dev.sbs.discordapi.listener.command;
 
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
-import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.command.slash.SlashCommandContext;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -49,7 +46,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             .flatMap(commandData -> Flux.just(this.getDeepestCommand(commandData))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .map(relationship -> {
+                .flatMap(relationship -> {
                     ConcurrentList<ApplicationCommandInteractionOptionData> remainingArguments = Concurrent.newList(commandData.options().toOptional().orElse(Concurrent.newList()));
 
                     // Trim Parent Commands
@@ -84,10 +81,12 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                         .collect(Concurrent.toList());
 
                     // Build Context
-                    return SlashCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
+                    SlashCommandContext slashCommandContext = SlashCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
+
+                    // Apply Command
+                    return relationship.getInstance().apply(slashCommandContext);
                 })
-            )
-            .flatMap(this::applyCommand);
+            );
     }
 
     private Argument.Data getArgumentData(ApplicationCommandInteractionOptionData interactionOptionData) {
@@ -101,25 +100,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                 .map(optionData -> optionData.value().get())
                 .collect(Concurrent.toList())
         );
-    }
-
-    private Mono<Void> applyCommand(SlashCommandContext commandContext) {
-        return Flux.fromIterable(this.getCompactedRelationships())
-            .onErrorMap(throwable -> SimplifiedException.wrapNative(throwable).build())
-            .doOnError(throwable -> this.getDiscordBot().handleUncaughtException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    commandContext,
-                    throwable,
-                    "Slash Command Exception"
-                )
-            ))
-            .filter(Command.Relationship.class::isInstance)
-            .map(Command.Relationship.class::cast)
-            .filter(relationship -> relationship.getCommandClass().equals(commandContext.getCommandClass()))
-            .map(relationship -> (Function<CommandContext<?>, Mono<Void>>) relationship.getInstance())
-            .single(__ -> Mono.empty())
-            .flatMap(handler -> handler.apply(commandContext));
     }
 
 }

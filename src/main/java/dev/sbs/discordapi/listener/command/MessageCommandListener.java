@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.listener.command;
 
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
@@ -10,9 +9,7 @@ import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.PrefixCommand;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.command.data.Parameter;
-import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.command.message.MessageCommandContext;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.User;
@@ -45,7 +42,7 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
             .map(prefixCommand -> this.getDeepestCommand(messageArguments))
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .map(relationship -> {
+            .flatMap(relationship -> {
                 ConcurrentList<String> remainingArguments = Concurrent.newList(messageArguments);
 
                 // Trim Parent Commands
@@ -88,34 +85,17 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
                     arguments.add(new Argument(Parameter.DEFAULT, this.getRemainder(remainingArguments)));
 
                 // Build Context
-                return MessageCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
-            })
-            .flatMap(this::applyCommand);
+                MessageCommandContext messageCommandContext = MessageCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
+
+                // Apply Command
+                return relationship.getInstance().apply(messageCommandContext);
+            });
     }
 
     private ConcurrentList<Argument.Data> getRemainder(ConcurrentList<String> remainingArguments) {
         return remainingArguments.stream()
             .map(Argument.Data::new)
             .collect(Concurrent.toList());
-    }
-
-    private Mono<Void> applyCommand(MessageCommandContext commandContext) {
-        return Flux.fromIterable(this.getCompactedRelationships())
-            .onErrorMap(throwable -> SimplifiedException.wrapNative(throwable).build())
-            .doOnError(throwable -> this.getDiscordBot().handleUncaughtException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    commandContext,
-                    throwable,
-                    "Message Command Exception"
-                )
-            ))
-            .filter(Command.Relationship.class::isInstance)
-            .map(Command.Relationship.class::cast)
-            .filter(relationship -> relationship.getCommandClass().equals(commandContext.getCommandClass()))
-            .map(relationship -> (Function<CommandContext<?>, Mono<Void>>) relationship.getInstance())
-            .single(__ -> Mono.empty())
-            .flatMap(handler -> handler.apply(commandContext));
     }
 
 }
