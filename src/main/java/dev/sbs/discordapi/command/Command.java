@@ -169,10 +169,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
     protected abstract void process(CommandContext<?> commandContext) throws DiscordException;
 
+    protected Mono<Void> process2(CommandContext<?> commandContext) throws DiscordException {
+        return Mono.empty();
+    }
+
     @Override
     public Mono<Void> apply(CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
-            Optional<Embed.EmbedBuilder> userErrorBuilder = Optional.empty();
+            Optional<Embed.EmbedBuilder> userErrorBuilder;
 
             try {
                 // Handle Disabled Command
@@ -263,7 +267,11 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                this.process(commandContext);
+                //this.process(commandContext);
+                return Mono.just(commandContext)
+                    .checkpoint(FormatUtil.format("Command1: {0}", this.getCommandInfo().name()), true)
+                    .flatMap(this::process2)
+                    .checkpoint(FormatUtil.format("Command2: {0}", this.getCommandInfo().name()), true);
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
