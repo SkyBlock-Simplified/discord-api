@@ -2,6 +2,7 @@ package dev.sbs.discordapi.command.data;
 
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -10,6 +11,8 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -25,51 +28,51 @@ public final class Parameter {
     private static final Pattern MENTIONABLE_ROLE_PATTERN = Pattern.compile("<@!?&[\\d]+>");
     private static final Pattern MENTIONABLE_CHANNEL_PATTERN = Pattern.compile("<#[\\d]+>");
     private static final Pattern EMOJI_PATTERN = Pattern.compile("<:[\\w]+:[\\d]+>");
-    @Getter private final String name;
-    @Getter private final Type type;
-    @Getter private final String description;
+    @Getter private final @NotNull String name;
+    @Getter private final @NotNull Type type;
+    @Getter private final @NotNull String description;
     @Getter private final boolean required;
     @Getter private final boolean remainder;
-    @Getter private final Optional<Emoji> emoji;
-    @Getter private final BiFunction<String, CommandContext<?>, Boolean> validator;
+    @Getter private final @NotNull Optional<Emoji> emoji;
+    @Getter private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
 
-    public Parameter(String name, String description, Type type) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type) {
         this(name, description, type, true);
     }
 
-    public Parameter(String name, String description, Type type, boolean required) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required) {
         this(name, description, type, required, (Emoji) null);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, boolean remainder) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder) {
         this(name, description, type, required, remainder, (Emoji) null);
     }
 
-    public Parameter(String name, String description, Type type, Emoji emoji) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, @Nullable Emoji emoji) {
         this(name, description, type, true, emoji);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, Emoji emoji) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, @Nullable Emoji emoji) {
         this(name, description, type, required, false, emoji, null);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, boolean remainder, Emoji emoji) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable Emoji emoji) {
         this(name, description, type, required, remainder, emoji, null);
     }
 
-    public Parameter(String name, String description, Type type, BiFunction<String, CommandContext<?>, Boolean> validator) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
         this(name, description, type, true, validator);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, BiFunction<String, CommandContext<?>, Boolean> validator) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
         this(name, description, type, required, false, null, validator);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, boolean remainder, BiFunction<String, CommandContext<?>, Boolean> validator) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
         this(name, description, type, required, remainder, null, validator);
     }
 
-    public Parameter(String name, String description, Type type, boolean required, boolean remainder, Emoji emoji, BiFunction<String, CommandContext<?>, Boolean> validator) {
+    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable Emoji emoji, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
         this.name = name;
         this.description = description;
         this.type = type;
@@ -79,8 +82,12 @@ public final class Parameter {
         this.validator = validator == null ? NOOP_HANDLER : validator;
     }
 
-    public boolean isValid(String argument, CommandContext<?> commandContext) {
-        return this.getValidator().apply(argument, commandContext);
+    public boolean isValid(@NotNull Optional<String> argument, @NotNull CommandContext<?> commandContext) {
+        return argument.map(value -> this.isValid(value, commandContext)).orElse(!this.isRequired());
+    }
+
+    public boolean isValid(@Nullable String argument, @NotNull CommandContext<?> commandContext) {
+        return this.getValidator().apply(StringUtil.defaultIfEmpty(argument, ""), commandContext);
     }
 
     public enum Type {
@@ -111,28 +118,32 @@ public final class Parameter {
         ROLE(ApplicationCommandOption.Type.ROLE, Role.class, "Only Role Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_ROLE_PATTERN.matcher(argument).matches()),
         EMOJI(ApplicationCommandOption.Type.MENTIONABLE, ReactionEmoji.class, "Only Emojis are allowed!", argument -> EMOJI_PATTERN.matcher(argument).matches());
 
-        @Getter private final ApplicationCommandOption.Type optionType;
-        @Getter private final Class<?> javaType;
-        @Getter private final Optional<String> errorMessage;
-        @Getter private final Function<String, Boolean> validator;
+        @Getter private final @NotNull ApplicationCommandOption.Type optionType;
+        @Getter private final @NotNull Class<?> javaType;
+        @Getter private final @NotNull Optional<String> errorMessage;
+        @Getter private final @NotNull Function<String, Boolean> validator;
 
-        Type(ApplicationCommandOption.Type optionType, Class<?> javaType, Function<String, Boolean> validator) {
+        Type(@NotNull ApplicationCommandOption.Type optionType, @NotNull Class<?> javaType, @NotNull Function<String, Boolean> validator) {
             this(optionType, javaType, (String) null, validator);
         }
 
-        Type(ApplicationCommandOption.Type optionType, Class<?> javaType, String errorMessage, Function<String, Boolean> validator) {
+        Type(@NotNull ApplicationCommandOption.Type optionType, @NotNull Class<?> javaType, @Nullable String errorMessage, @NotNull Function<String, Boolean> validator) {
             this(optionType, javaType, Optional.ofNullable(errorMessage), validator);
         }
 
-        Type(ApplicationCommandOption.Type optionType, Class<?> javaType, Optional<String> errorMessage, Function<String, Boolean> validator) {
+        Type(@NotNull ApplicationCommandOption.Type optionType, @NotNull Class<?> javaType, @NotNull Optional<String> errorMessage, @NotNull Function<String, Boolean> validator) {
             this.optionType = optionType;
             this.javaType = javaType;
             this.errorMessage = errorMessage;
             this.validator = validator;
         }
 
-        public boolean isValid(String argument) {
-            return this.getValidator().apply(argument);
+        public boolean isValid(@NotNull Optional<String> argument) {
+            return argument.map(this::isValid).orElse(false);
+        }
+
+        public boolean isValid(@Nullable String argument) {
+            return this.getValidator().apply(StringUtil.defaultIfEmpty(argument, ""));
         }
 
     }
