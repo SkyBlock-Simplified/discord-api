@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.context;
 
+import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;
@@ -51,6 +52,7 @@ public interface EventContext<T extends Event> {
         return this.getChannel()
             .publishOn(response.getReactorScheduler())
             .flatMap(response::getD4jCreateMono)
+            .checkpoint(FormatUtil.format("Response Processing"))
             .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
                 ExceptionContext.of(
                     this.getDiscordBot(),

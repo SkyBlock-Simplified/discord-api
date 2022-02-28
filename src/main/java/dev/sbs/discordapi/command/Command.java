@@ -248,13 +248,13 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                                 .addData("MISSING", true)
                                 .build();
                     } else {
-                        if (!argument.getParameter().getType().isValid(argument.getValue().orElse("")))
+                        if (!argument.getParameter().getType().isValid(argument.getValue()))
                             throw SimplifiedException.of(InvalidParameterException.class)
                                 .addData("ARGUMENT", argument)
                                 .addData("MISSING", false)
                                 .build();
 
-                        if (!argument.getParameter().isValid(argument.getValue().orElse(""), commandContext))
+                        if (!argument.getParameter().isValid(argument.getValue(), commandContext))
                             throw SimplifiedException.of(InvalidParameterException.class)
                                 .addData("ARGUMENT", argument)
                                 .addData("MISSING", false)
@@ -264,8 +264,9 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
                 // Process Command
                 return Mono.just(commandContext)
+                    .checkpoint(FormatUtil.format("Command Processing (before the error): {0}", this.getClass().getName()))
                     .flatMap(this::process)
-                    .checkpoint(FormatUtil.format("Command Processing: {0}", this.getClass().getName()));
+                    .checkpoint(FormatUtil.format("Command Processing (after the error): {0}", this.getClass().getName()));
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
