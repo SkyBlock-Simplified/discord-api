@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;
@@ -55,7 +54,7 @@ public interface EventContext<T extends Event> {
     default Mono<Void> softReply(Response response) {
         return this.getChannel()
             .flatMap(response::getD4jCreateMono)
-            .onErrorMap(throwable -> SimplifiedException.wrapNative(throwable).build())
+            .checkpoint("Response", true)
             .doOnError(throwable -> this.getDiscordBot().handleUncaughtException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
@@ -71,10 +70,10 @@ public interface EventContext<T extends Event> {
                     DiscordResponseCache.Entry responseCacheEntry = this.getDiscordBot()
                         .getResponseCache()
                         .add(
-                              message.getChannelId(),
-                              this.getInteractUserId(),
-                              message.getId(),
-                              response
+                            message.getChannelId(),
+                            this.getInteractUserId(),
+                            message.getId(),
+                            response
                         );
 
                     responseCacheEntry.updateLastInteract(); // Update TTL

@@ -1,6 +1,7 @@
 package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
@@ -20,6 +21,7 @@ import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
+import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -264,34 +266,38 @@ public abstract class DiscordBot {
             );
         }
 
-        // Send User Error Response
-        exceptionContext.reply(
-            Response.builder()
-                .isInteractable(false)
-                .withEmbeds(
-                    Embed.from(exceptionContext.getException())
-                        .withTitle(exceptionContext.getTitle())
-                        .withField(
-                            "Error ID",
-                            errorId
-                        )
-                        .withField(
-                            "Notice",
-                            "This error has been automatically reported to the developer."
-                        )
-                        .build()
-                )
-                .withReference(messageId)
-                .build()
-            );
-
-        // Build Log Channel Embed
-        Embed.EmbedBuilder logErrorBuilder = Embed.from(exceptionContext.getException())
+        // Build Default Error Embed
+        Embed defaultEmbedBuilder = Embed.from(exceptionContext.getException())
+            .withAuthor(
+                "Exception",
+                SimplifiedApi.getRepositoryOf(EmojiModel.class)
+                    .findFirst(EmojiModel::getKey, "STATUS_HIGH_IMPORTANCE")
+                    .flatMap(Emoji::of)
+                    .map(Emoji::getUrl)
+            )
             .withTitle(exceptionContext.getTitle())
             .withField(
                 "Error ID",
                 errorId
             )
+            .build();
+
+        // Build User Error
+        Response userErrorResponse = Response.builder()
+            .isInteractable(false)
+            .withReference(messageId)
+            .withEmbeds(
+                defaultEmbedBuilder.mutate()
+                    .withField(
+                        "Notice",
+                        "This error has been automatically reported to the developer."
+                    )
+                    .build()
+            )
+            .build();
+
+        // Build Log Channel Embed
+        Embed.EmbedBuilder logErrorBuilder = defaultEmbedBuilder.mutate()
             .withFields(
                 Field.of(
                     "User",
@@ -332,7 +338,7 @@ public abstract class DiscordBot {
         if (exceptionContext.getException() instanceof SimplifiedException)
             logErrorBuilder.withFields((SimplifiedException) exceptionContext.getException());
 
-        // Log Error Message
+        // Log Error Message & Send User Error Response
         // TODO: Log to mysql configured log channel
         Flux.just(this.getMainGuild())
             .flatMap(guild -> guild.getChannelById(Snowflake.of(929259633640628224L)))
@@ -348,10 +354,11 @@ public abstract class DiscordBot {
                     .publishOn(logResponse.getReactorScheduler())
                     .flatMap(logResponse::getD4jCreateMono);
             })
+            .then(exceptionContext.getChannel().flatMap(userErrorResponse::getD4jCreateMono))
             .subscribe();
 
         // Print Error Message
-        exceptionContext.getException().printStackTrace();
+        //exceptionContext.getException().printStackTrace();
     }
 
     protected abstract void loadConfig();
