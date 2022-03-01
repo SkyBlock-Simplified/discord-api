@@ -182,7 +182,7 @@ public abstract class DiscordBot {
                     this.getLog().info("Registering Built-in Event Listeners");
                     ConcurrentList<Flux<Void>> eventListeners = Concurrent.newList(
                         eventDispatcher.on(MessageCreateEvent.class, new MessageCommandListener(this)),
-                        eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this, gatewayDiscordClient)),
+                        eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
