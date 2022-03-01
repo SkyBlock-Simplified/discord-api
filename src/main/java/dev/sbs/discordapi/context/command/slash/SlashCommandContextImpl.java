@@ -9,11 +9,14 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.UUID;
+
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 class SlashCommandContextImpl implements SlashCommandContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ChatInputInteractionEvent event;
+    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final Command.Relationship relationship;
     @Getter private final String commandAlias;
     @Getter private final ConcurrentList<Argument> arguments;

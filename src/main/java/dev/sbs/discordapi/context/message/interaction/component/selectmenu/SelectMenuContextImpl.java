@@ -14,6 +14,7 @@ class SelectMenuContextImpl implements SelectMenuContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final SelectMenuInteractionEvent event;
+    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final UUID responseId;
     @Getter private final SelectMenu component;
 

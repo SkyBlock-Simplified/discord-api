@@ -30,16 +30,12 @@ public interface ComponentContext extends UserInteractionContext<ComponentIntera
             .block();
     }
 
-    default void deferEdit() {
-        this.deferEdit(false);
+    default Mono<Void> deferEdit() {
+        return this.deferEdit(false);
     }
 
-    default void deferEdit(boolean ephemeral) {
-        this.getEvent().deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build()).subscribe();
-    }
-
-    default void deferReply(boolean ephemeral) {
-        this.getEvent().deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build()).subscribe();
+    default Mono<Void> deferEdit(boolean ephemeral) {
+        return this.getEvent().deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build());
     }
 
     @Override

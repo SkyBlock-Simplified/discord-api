@@ -250,7 +250,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                return this.process(commandContext);
+                return commandContext.deferReply().then(this.process(commandContext));
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()

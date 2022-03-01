@@ -12,12 +12,6 @@ import reactor.core.publisher.Mono;
 
 public interface ApplicationInteractionContext<T extends InteractionCreateEvent> extends EventContext<T> {
 
-    default void deferReply() {
-        this.deferReply(false);
-    }
-
-    void deferReply(boolean ephemeral);
-
     Mono<Message> getReply();
 
     Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec);

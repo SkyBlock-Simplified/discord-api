@@ -20,6 +20,7 @@ class ReactionAddContextImpl implements ReactionContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ReactionAddEvent event;
+    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final UUID responseId;
     @Getter private final Emoji emoji;
     @Getter private final Type type = Type.ADD;

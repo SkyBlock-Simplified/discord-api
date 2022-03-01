@@ -13,16 +13,11 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.core.spec.InteractionCallbackSpec;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
 public interface SlashCommandContext extends CommandContext<ChatInputInteractionEvent>, ApplicationInteractionContext<ChatInputInteractionEvent> {
-
-    default void deferReply(boolean ephemeral) {
-        this.getEvent().deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build()).subscribe();
-    }
 
     @Override
     default Mono<MessageChannel> getChannel() {

@@ -10,7 +10,6 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.command.message.MessageCommandContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.context.message.interaction.ApplicationInteractionContext;
@@ -62,6 +61,7 @@ public class Response extends Page {
     @Getter protected final boolean replyMention;
     @Getter protected final int timeToLive;
     @Getter protected final boolean interactable;
+    @Getter protected final boolean loader;
     @Getter protected final boolean ephemeral;
     @Getter protected Button backButton = Button.PageType.BACK.build();
 
@@ -82,6 +82,7 @@ public class Response extends Page {
         boolean replyMention,
         int timeToLive,
         boolean interactable,
+        boolean loader,
         boolean ephemeral) {
         super(uniqueId, components, reactions, embeds, pages, items, option, itemsInline, itemsPerPage);
         this.content = content;
@@ -91,11 +92,16 @@ public class Response extends Page {
         this.replyMention = replyMention;
         this.timeToLive = timeToLive;
         this.interactable = interactable;
+        this.loader = loader;
         this.ephemeral = ephemeral;
     }
 
     public static ResponseBuilder builder() {
         return new ResponseBuilder(UUID.randomUUID());
+    }
+
+    public static ResponseBuilder builder(@NotNull EventContext<?> eventContext) {
+        return new ResponseBuilder(eventContext.getUniqueId());
     }
 
     @Override
@@ -287,6 +293,7 @@ public class Response extends Page {
         private boolean replyMention;
         private int timeToLive = 10;
         private boolean interactable = true;
+        private boolean loader = false;
         private boolean ephemeral = false;
 
         protected ResponseBuilder(UUID uniqueId) {
@@ -399,6 +406,23 @@ public class Response extends Page {
          */
         public ResponseBuilder isInteractable(boolean value) {
             this.interactable = value;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Response} as a loader to be edited in the future.
+         */
+        public ResponseBuilder isLoader() {
+            return this.isLoader(true);
+        }
+
+        /**
+         * Sets if the {@link Response} as a loader to be edited in the future.
+         *
+         * @param value True if loader.
+         */
+        public ResponseBuilder isLoader(boolean value) {
+            this.loader = value;
             return this;
         }
 
@@ -637,10 +661,10 @@ public class Response extends Page {
         /**
          * Sets the message the {@link Response} should reply to.
          *
-         * @param commandContext The message to reference.
+         * @param eventContext The message to reference.
          */
-        public ResponseBuilder withReference(@NotNull CommandContext<?> commandContext) {
-            return this.withReference(commandContext instanceof MessageCommandContext ? ((MessageCommandContext) commandContext).getMessageId() : null);
+        public ResponseBuilder withReference(@NotNull EventContext<?> eventContext) {
+            return this.withReference(eventContext instanceof MessageCommandContext ? ((MessageCommandContext) eventContext).getMessageId() : null);
         }
 
         /**
@@ -718,6 +742,7 @@ public class Response extends Page {
                 this.replyMention,
                 this.timeToLive,
                 this.interactable,
+                this.loader,
                 this.ephemeral
             );
         }
