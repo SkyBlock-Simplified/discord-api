@@ -84,13 +84,8 @@ public abstract class DiscordObject {
         // Ensure Existing Command Config
         if (commandConfigModel.isEmpty()) {
             CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
-
-            // Get Name
-            ConcurrentList<String> parents = command.getParentCommandNames(); // Batman has none
-            parents.add(commandInfo.name());
-
             newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
-            newCommandConfigModel.setCommandPath(StringUtil.join(parents, " "));
+            newCommandConfigModel.setCommandPath(this.getCommandPath(command));
             newCommandConfigModel.setDescription("*<missing description>*");
             newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.BOT_OWNER));
             newCommandConfigModel.setEnabled(true);
@@ -99,6 +94,33 @@ public abstract class DiscordObject {
         }
 
         return commandConfigModel.get();
+    }
+
+    public final @NotNull String getCommandPath(@NotNull Command command) {
+        ConcurrentList<String> path = command.getParentCommandNames();
+
+        // Get Root Command Prefix
+        String rootCommand = this.getDiscordBot()
+            .getRootCommandRelationship()
+            .getOptionalCommandInfo()
+            .map(CommandInfo::name)
+            .orElse("");
+
+        // Remove Root For Slash
+        if (ListUtil.notEmpty(path)) {
+            if (StringUtil.isNotEmpty(rootCommand)) {
+                if (path.get(0).equals(rootCommand))
+                    path.remove(0);
+            }
+        }
+
+        // Add Group
+        command.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
+
+        // Add Command Name
+        path.add(command.getCommandInfo().name());
+
+        return StringUtil.join(path, " ");
     }
 
     public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {

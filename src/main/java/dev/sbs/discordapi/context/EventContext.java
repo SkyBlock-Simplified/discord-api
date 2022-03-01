@@ -36,6 +36,10 @@ public interface EventContext<T extends Event> {
 
     Optional<Snowflake> getGuildId();
 
+    default Optional<String> getIdentifier() {
+        return Optional.empty();
+    }
+
     Mono<User> getInteractUser();
 
     Snowflake getInteractUserId();
@@ -52,7 +56,7 @@ public interface EventContext<T extends Event> {
         return this.getChannel()
             .publishOn(response.getReactorScheduler())
             .flatMap(response::getD4jCreateMono)
-            .checkpoint(FormatUtil.format("Response Processing"))
+            .checkpoint(FormatUtil.format("Response Processing{0}", this.getIdentifier().map(identifier -> ": " + identifier).orElse("")))
             .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
                 ExceptionContext.of(
                     this.getDiscordBot(),

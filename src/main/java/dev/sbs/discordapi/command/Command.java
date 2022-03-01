@@ -59,10 +59,12 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     private static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final static ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
+    @Getter private final @NotNull DiscordBot discordBot;
     @Getter private final CommandInfo commandInfo;
 
     protected Command(@NotNull DiscordBot discordBot) {
         super(discordBot);
+        this.discordBot = discordBot;
 
         // Validate Command Annotation
         this.commandInfo = this.getCommandAnnotation(this.getClass())
@@ -87,29 +89,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     }
 
     public final @NotNull String getCommandPath(boolean slashCommand) {
-        ConcurrentList<String> path = this.getParentCommandNames();
-
+        // Get Root Command Prefix
         String rootCommand = this.getDiscordBot()
             .getRootCommandRelationship()
             .getOptionalCommandInfo()
             .map(CommandInfo::name)
             .orElse("");
 
-        // Remove Root For Slash
-        if (ListUtil.notEmpty(path)) {
-            if (StringUtil.isNotEmpty(rootCommand)) {
-                if (path.get(0).equals(rootCommand))
-                    path.remove(0);
-            }
-        }
-
-        // Add Group
-        this.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
-
-        // Add Command Name
-        path.add(this.getCommandInfo().name());
-
-        return FormatUtil.format("{0}{1}", (slashCommand ? "/" : rootCommand + " "), StringUtil.join(path, " "));
+        return FormatUtil.format("{0}{1}", (slashCommand ? "/" : rootCommand + " "), super.getCommandPath(this));
     }
 
     public final @NotNull String getDescription() {
@@ -170,7 +157,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     protected abstract Mono<Void> process(CommandContext<?> commandContext) throws DiscordException;
 
     @Override
-    public Mono<Void> apply(CommandContext<?> commandContext) {
+    public final Mono<Void> apply(CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
             Optional<Embed.EmbedBuilder> userErrorBuilder;
 
@@ -263,10 +250,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                return Mono.just(commandContext)
-                    .checkpoint(FormatUtil.format("Command Processing (before the error): {0}", this.getClass().getName()))
-                    .flatMap(this::process)
-                    .checkpoint(FormatUtil.format("Command Processing (after the error): {0}", this.getClass().getName()));
+                return this.process(commandContext);
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()

@@ -25,6 +25,10 @@ public interface CommandContext<T extends Event> extends EventContext<T> {
         return this.getRelationship().getCommandClass();
     }
 
+    default Optional<String> getIdentifier() {
+        return Optional.of(this.getRelationship().getInstance().getCommandPath(this.isSlashCommand()));
+    }
+
     Command.Relationship getRelationship();
 
     boolean isSlashCommand();
