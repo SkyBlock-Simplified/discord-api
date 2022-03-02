@@ -12,6 +12,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
@@ -23,6 +24,10 @@ import java.util.UUID;
 import java.util.function.Function;
 
 public interface EventContext<T extends Event> {
+
+    default Mono<Message> buildMessage(Response response) {
+        return this.getChannel().flatMap(response::getD4jCreateMono);
+    }
 
     default Mono<Void> deferReply() {
         return this.deferReply(false);
@@ -102,8 +107,7 @@ public interface EventContext<T extends Event> {
                     );
             })
             .switchIfEmpty(
-                this.getChannel()
-                    .flatMap(response::getD4jCreateMono)
+                this.buildMessage(response)
                     .checkpoint(FormatUtil.format("Response Processing{0}", this.getIdentifier().map(identifier -> ": " + identifier).orElse("")))
                     .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
                         ExceptionContext.of(
