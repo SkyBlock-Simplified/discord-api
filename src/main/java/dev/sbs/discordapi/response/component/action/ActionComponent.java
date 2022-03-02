@@ -5,11 +5,12 @@ import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.discordapi.context.message.interaction.component.ComponentContext;
 import dev.sbs.discordapi.response.component.Component;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
-public abstract class ActionComponent<T extends ComponentContext, I extends Consumer<T>> extends Component {
+public abstract class ActionComponent<T extends ComponentContext, I extends Function<T, Mono<Void>>> extends Component {
 
     @Override
     public boolean equals(Object o) {
@@ -30,6 +31,8 @@ public abstract class ActionComponent<T extends ComponentContext, I extends Cons
     public int hashCode() {
         return new HashCodeBuilder().append(this.getUniqueId()).build();
     }
+
+    public abstract boolean isDeferEdit();
 
     public abstract boolean isPaging();
 

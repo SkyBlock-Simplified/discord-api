@@ -20,16 +20,18 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu extends ActionComponent<SelectMenuContext, Consumer<SelectMenuContext>> {
+public final class SelectMenu extends ActionComponent<SelectMenuContext, Function<SelectMenuContext, Mono<Void>>> {
 
-    private static final Consumer<SelectMenuContext> NOOP_HANDLER = __ -> { };
+    private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final boolean disabled;
     @Getter private final @NotNull Optional<String> placeholder;
@@ -38,8 +40,9 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
     @Getter private final boolean placeholderUsingSelectedOption;
     @Getter private final @NotNull ConcurrentList<Option> options;
     @Getter private final boolean preserved;
+    @Getter private final boolean deferEdit;
     @Getter private final boolean pageSelector;
-    private final @NotNull Optional<Consumer<SelectMenuContext>> selectMenuInteraction;
+    private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
 
     public static SelectMenuBuilder builder() {
         return new SelectMenuBuilder(UUID.randomUUID());
@@ -76,35 +79,44 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
     }
 
     @Override
-    public Consumer<SelectMenuContext> getInteraction() {
-        return selectMenuContext -> {
-            // Handle Select Menu
-            this.handleInteraction(selectMenuContext);
-
-            // Handle Single Option
-            if (ListUtil.sizeOf(selectMenuContext.getEvent().getValues()) == 1) {
-                this.getOptions()
-                    .parallelStream()
-                    .filter(option -> option.getValue().equals(selectMenuContext.getEvent().getValues().get(0)))
-                    .findFirst()
-                    .ifPresent(option -> this.handleOptionInteraction(selectMenuContext, option));
-            }
-        };
+    public Function<SelectMenuContext, Mono<Void>> getInteraction() {
+        return selectMenuContext -> Mono.just(selectMenuContext)
+            .flatMap(context -> Mono.justOrEmpty(this.selectMenuInteraction)
+                .flatMap(interaction -> interaction.apply(context))
+                .thenReturn(context)
+            )
+            .filter(context -> ListUtil.sizeOf(context.getEvent().getValues()) == 1)
+            .flatMap(context -> Flux.fromIterable(this.getOptions())
+                .filter(option -> option.getValue().equals(context.getEvent().getValues().get(0)))
+                .singleOrEmpty()
+                .filter(option -> option.optionInteraction.isPresent())
+                .flatMap(option -> this.handleOptionInteraction(context, option).thenReturn(context))
+                .switchIfEmpty(selectMenuContext.deferEdit().thenReturn(selectMenuContext))
+            )
+            .then();
     }
 
-    private void handleInteraction(SelectMenuContext selectMenuContext) {
-        this.selectMenuInteraction.orElse(NOOP_HANDLER).accept(selectMenuContext);
-    }
+    private Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
+        return Mono.just(selectMenuContext)
+            .flatMap(context -> {
+                Mono<Void> mono = Mono.empty();
+                option.isDefault = true;
 
-    private void handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
-        // Handle Placeholder Overrides
-        if (this.isPlaceholderUsingSelectedOption()) {
-            this.options.forEach(Option::setNotDefault);
-            option.isDefault = true;
-        }
+                // Handle Placeholder Overrides
+                if (this.isPlaceholderUsingSelectedOption())
+                    mono = Flux.fromIterable(this.getOptions())
+                        .filter(_option -> !_option.equals(option))
+                        .doOnNext(Option::setNotDefault)
+                        .then();
 
-        // Handle Interaction
-        selectMenuContext.getResponse().ifPresent(response -> option.getInteraction().accept(OptionContext.of(selectMenuContext, response, option)));
+                // Handle Interaction
+                return mono.then(
+                    Mono.justOrEmpty(context.getResponse())
+                        .flatMap(response -> option.getInteraction()
+                            .apply(OptionContext.of(selectMenuContext, response, option))
+                        )
+                );
+            });
     }
 
     @Override
@@ -147,8 +159,9 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
         private Optional<Integer> maxValue = Optional.empty();
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean preserved;
+        private boolean deferEdit;
         private boolean pageSelector;
-        private Optional<Consumer<SelectMenuContext>> interaction = Optional.empty();
+        private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
          * Updates an existing {@link Option}.
@@ -206,7 +219,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
          *
          * @param interaction The interaction consumer.
          */
-        public SelectMenuBuilder onInteract(@Nullable Consumer<SelectMenuContext> interaction) {
+        public SelectMenuBuilder onInteract(@Nullable Function<SelectMenuContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
@@ -215,7 +228,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
          *
          * @param interaction The interaction consumer.
          */
-        public SelectMenuBuilder onInteract(@NotNull Optional<Consumer<SelectMenuContext>> interaction) {
+        public SelectMenuBuilder onInteract(@NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
             return this;
         }
@@ -251,6 +264,23 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
          */
         public SelectMenuBuilder setPageSelector(boolean pageSelector) {
             this.pageSelector = pageSelector;
+            return this;
+        }
+
+        /**
+         * Sets this {@link SelectMenu} as deferred when interacting.
+         */
+        public SelectMenuBuilder withDeferEdit() {
+            return this.withDeferEdit(true);
+        }
+
+        /**
+         * Sets whether this {@link SelectMenu} is deferred when interacting.
+         *
+         * @param deferEdit True to defer interaction.
+         */
+        public SelectMenuBuilder withDeferEdit(boolean deferEdit) {
+            this.deferEdit = deferEdit;
             return this;
         }
 
@@ -363,6 +393,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
                 this.placeholderUsesSelectedOption,
                 this.options,
                 this.preserved,
+                this.deferEdit,
                 this.pageSelector,
                 this.interaction
             );
@@ -373,14 +404,14 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Option {
 
-        private static final Consumer<OptionContext> NOOP_HANDLER = __ -> { };
+        private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
         @Getter private final @NotNull UUID uniqueId;
         @Getter private final @NotNull String label;
         @Getter private final @NotNull String value;
         @Getter private final @NotNull Optional<String> description;
         @Getter private final @NotNull Optional<Emoji> emoji;
         @Getter private boolean isDefault;
-        private final @NotNull Optional<Consumer<OptionContext>> optionInteraction;
+        private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
 
         public static OptionBuilder builder() {
             return new OptionBuilder(UUID.randomUUID());
@@ -419,7 +450,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
             return d4jOption;
         }
 
-        public Consumer<OptionContext> getInteraction() {
+        public Function<OptionContext, Mono<Void>> getInteraction() {
             return this.optionInteraction.orElse(NOOP_HANDLER);
         }
 
@@ -446,7 +477,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
             private Optional<String> description = Optional.empty();
             private Optional<Emoji> emoji = Optional.empty();
             private boolean isDefault;
-            private Optional<Consumer<OptionContext>> interaction = Optional.empty();
+            private Optional<Function<OptionContext, Mono<Void>>> interaction = Optional.empty();
 
             /**
              * Sets the {@link Option} as selected in the {@link SelectMenu}.
@@ -478,7 +509,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
              *
              * @param interaction The interaction consumer.
              */
-            public OptionBuilder onInteract(@Nullable Consumer<OptionContext> interaction) {
+            public OptionBuilder onInteract(@Nullable Function<OptionContext, Mono<Void>> interaction) {
                 return this.onInteract(Optional.ofNullable(interaction));
             }
 
@@ -491,7 +522,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Consume
              *
              * @param interaction The interaction consumer.
              */
-            public OptionBuilder onInteract(@NotNull Optional<Consumer<OptionContext>> interaction) {
+            public OptionBuilder onInteract(@NotNull Optional<Function<OptionContext, Mono<Void>>> interaction) {
                 this.interaction = interaction;
                 return this;
             }

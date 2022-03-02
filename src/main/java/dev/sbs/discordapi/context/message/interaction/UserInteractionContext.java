@@ -14,22 +14,20 @@ import java.util.function.Function;
 
 public interface UserInteractionContext<T extends Event> extends MessageContext<T> {
 
-    default void edit() {
-        this.getResponse().ifPresent(this::edit);
+    default Mono<Void> edit() {
+        return Mono.justOrEmpty(this.getResponse()).flatMap(this::edit);
     }
 
-    default void edit(Response response) {
-        this.getMessage()
-            .flatMap(message -> message.edit(response.getD4jEditSpec())
-                //.then(message.removeAllReactions())
-                //.thenMany(Flux.fromIterable(response.getCurrentPage().getReactions()).flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))) // Add Reactions
-                .then(Mono.fromRunnable(() -> {
-                    DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
-                    responseCacheEntry.updateResponse(response, true);
-                    responseCacheEntry.setUpdated();
-                }))
-            )
-            .block();
+    default Mono<Void> edit(Response response) {
+        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec())
+            //.then(message.removeAllReactions())
+            //.thenMany(Flux.fromIterable(response.getCurrentPage().getReactions()).flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))) // Add Reactions
+            .then(Mono.fromRunnable(() -> {
+                DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
+                responseCacheEntry.updateResponse(response, true);
+                responseCacheEntry.setUpdated();
+            }))
+        );
     }
 
     default @NotNull Optional<Response> getResponse() {
@@ -42,8 +40,8 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
 
     UUID getResponseId();
 
-    default void edit(Function<Response.ResponseBuilder, Response.ResponseBuilder> responseBuilder) {
-        this.getResponse().ifPresent(response -> this.edit(responseBuilder.apply(response.mutate()).build()));
+    default Mono<Void> edit(Function<Response.ResponseBuilder, Response.ResponseBuilder> responseBuilder) {
+        return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(responseBuilder.apply(response.mutate()).build()));
     }
 
     default void modify(ActionComponent<?, ?> actionComponent) {

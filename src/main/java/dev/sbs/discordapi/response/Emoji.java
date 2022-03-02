@@ -15,18 +15,20 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class Emoji {
 
+    private static final Function<ReactionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final Snowflake id;
     @Getter private final String name;
     @Getter private final boolean animated;
     @Getter private final Optional<String> raw;
-    @Getter private final Optional<Consumer<ReactionContext>> interaction;
+    private final Optional<Function<ReactionContext, Mono<Void>>> interaction;
 
     public abstract String asFormat();
 
@@ -36,6 +38,10 @@ public abstract class Emoji {
 
     public final ReactionEmoji getD4jReaction() {
         return this.getRaw().isPresent() ? ReactionEmoji.unicode(this.getRaw().get()) : ReactionEmoji.of(this.getId().asLong(), this.getName(), this.isAnimated());
+    }
+
+    public final Function<ReactionContext, Mono<Void>> getInteraction() {
+        return this.interaction.orElse(NOOP_HANDLER);
     }
 
     public abstract String getUrl();
@@ -81,11 +87,11 @@ public abstract class Emoji {
         return of(emojiModel, null);
     }
 
-    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel, Consumer<ReactionContext> interaction) {
+    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
         return of(Optional.ofNullable(emojiModel), interaction);
     }
 
-    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Consumer<ReactionContext> interaction) {
+    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
         return emojiModel.map(emoji -> new Custom(Snowflake.of(emoji.getEmojiId()), emoji.getKey(), emoji.isAnimated(), interaction));
     }
 
@@ -109,7 +115,7 @@ public abstract class Emoji {
         return of(id, name, animated, null);
     }
 
-    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated, Consumer<ReactionContext> interaction) {
+    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated, Function<ReactionContext, Mono<Void>> interaction) {
         return new Custom(id, name, animated, interaction);
     }
 
@@ -117,11 +123,11 @@ public abstract class Emoji {
         return of(raw, null);
     }
 
-    public static Emoji of(@NotNull String raw, Consumer<ReactionContext> interaction) {
+    public static Emoji of(@NotNull String raw, Function<ReactionContext, Mono<Void>> interaction) {
         return new Unicode(raw, interaction);
     }
 
-    public static Emoji of(@NotNull Emoji reaction, Consumer<ReactionContext> interaction) {
+    public static Emoji of(@NotNull Emoji reaction, Function<ReactionContext, Mono<Void>> interaction) {
         return reaction.isUnicode() ? new Unicode(reaction.getRaw(), interaction) : of(reaction.getId(), reaction.getName(), reaction.isAnimated(), interaction);
     }
 
@@ -131,7 +137,7 @@ public abstract class Emoji {
             this(emoji.getId(), emoji.getName(), emoji.isAnimated(), null);
         }
 
-        Custom(Snowflake id, @NotNull String name, boolean animated, Consumer<ReactionContext> interaction) {
+        Custom(Snowflake id, @NotNull String name, boolean animated, Function<ReactionContext, Mono<Void>> interaction) {
             super(id, name, animated, Optional.empty(), Optional.ofNullable(interaction));
         }
 
@@ -153,11 +159,11 @@ public abstract class Emoji {
             this(emoji.getRaw(), null);
         }
 
-        Unicode(@NotNull String raw, Consumer<ReactionContext> interaction) {
+        Unicode(@NotNull String raw, Function<ReactionContext, Mono<Void>> interaction) {
             this(Optional.of(raw), interaction);
         }
 
-        Unicode(Optional<String> raw, Consumer<ReactionContext> interaction) {
+        Unicode(Optional<String> raw, Function<ReactionContext, Mono<Void>> interaction) {
             super(Snowflake.of(-1), null, false, raw, Optional.ofNullable(interaction));
         }
 

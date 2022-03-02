@@ -7,6 +7,7 @@ import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.message.MessageEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
+import reactor.core.publisher.Mono;
 
 public interface ReactionContext extends UserInteractionContext<MessageEvent> {
 
@@ -14,16 +15,12 @@ public interface ReactionContext extends UserInteractionContext<MessageEvent> {
 
     Type getType();
 
-    default void removeReactions() {
-        this.getMessage()
-            .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
-            .block();
+    default Mono<Void> removeReactions() {
+        return this.getMessage().flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()));
     }
 
-    default void removeUserReaction() {
-        this.getMessage()
-            .flatMap(message -> message.removeReaction(this.getEmoji().getD4jReaction(), this.getInteractUserId()))
-            .block();
+    default Mono<Void> removeUserReaction() {
+        return this.getMessage().flatMap(message -> message.removeReaction(this.getEmoji().getD4jReaction(), this.getInteractUserId()));
     }
 
     static ReactionContext ofAdd(DiscordBot discordBot, ReactionAddEvent event, Response cachedMessage, Emoji emoji) {

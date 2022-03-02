@@ -179,14 +179,8 @@ public class Response extends Page {
     }
 
     private InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec(Optional<ApplicationInteractionContext<?>> interactionContext) {
-        String mention = this.isReplyMention() ? Mono.justOrEmpty(interactionContext)
-            .flatMap(EventContext::getInteractUser)
-            .map(user -> FormatUtil.format("{0} ", user.getMention()))
-            .blockOptional()
-            .orElse("") : "";
-
         return InteractionApplicationCommandCallbackSpec.builder()
-            .content(mention + this.getContent().orElse(""))
+            .content(this.getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))

@@ -6,6 +6,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.Button;
 import dev.sbs.discordapi.response.page.Page;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import reactor.core.publisher.Mono;
 
 public final class ButtonListener extends ComponentListener<ButtonInteractionEvent, ButtonContext, Button> {
 
@@ -19,23 +20,25 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     }
 
     @Override
-    protected void handlePaging(ButtonContext context) {
-        context.getResponse().ifPresent(response -> {
-            Page currentPage = response.getCurrentPage();
+    protected Mono<Void> handlePaging(ButtonContext context) {
+        return Mono.justOrEmpty(context.getResponse())
+            .doOnNext(response -> {
+                Page currentPage = response.getCurrentPage();
 
-            switch (context.getComponent().getPageType()) {
-                case FIRST -> currentPage.gotoFirstItemPage();
-                case LAST -> currentPage.gotoLastItemPage();
-                case NEXT -> currentPage.gotoNextItemPage();
-                case PREVIOUS -> currentPage.gotoPreviousItemPage();
-                case BACK -> {
-                    response.gotoPreviousPage();
-                    response.gotoItemPage(0);
+                switch (context.getComponent().getPageType()) {
+                    case FIRST -> currentPage.gotoFirstItemPage();
+                    case LAST -> currentPage.gotoLastItemPage();
+                    case NEXT -> currentPage.gotoNextItemPage();
+                    case PREVIOUS -> currentPage.gotoPreviousItemPage();
+                    case BACK -> {
+                        response.gotoPreviousPage();
+                        response.gotoItemPage(0);
+                    }
                 }
-            }
 
-            context.getResponseCacheEntry().updateResponse(response, false); // Update Response
-        });
+                context.getResponseCacheEntry().updateResponse(response, false); // Update Response
+            })
+            .then();
     }
 
 }

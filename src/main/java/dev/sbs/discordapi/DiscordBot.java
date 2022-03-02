@@ -45,7 +45,6 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientPresence;
@@ -103,6 +102,7 @@ public abstract class DiscordBot {
             .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Globally Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
+            //.onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))) // Retry SocketExceptions
             .build();
 
         this.getLog().info("Registering Commands");
@@ -240,7 +240,7 @@ public abstract class DiscordBot {
         return this.getCommandRegistrar().getRootCommandRelationship();
     }
 
-    public final Mono<Message> handleUncaughtException(ExceptionContext<?> exceptionContext) {
+    public final <T> Mono<T> handleUncaughtException(ExceptionContext<?> exceptionContext) {
         String errorId = UUID.randomUUID().toString();
         String locationValue = "DM";
         String channelValue = "N/A";

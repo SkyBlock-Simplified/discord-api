@@ -4,6 +4,7 @@ import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.context.message.interaction.component.ComponentContext;
 import dev.sbs.discordapi.context.message.interaction.component.button.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -15,17 +16,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button extends ActionComponent<ButtonContext, Consumer<ButtonContext>> {
+public final class Button extends ActionComponent<ButtonContext, Function<ButtonContext, Mono<Void>>> {
 
-    private static final Consumer<ButtonContext> NOOP_HANDLER = __ -> { };
+    private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final @NotNull Style style;
     @Getter private final boolean disabled;
@@ -33,11 +34,12 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
     @Getter private final @NotNull Optional<String> label;
     @Getter private final @NotNull Optional<String> url;
     @Getter private final boolean preserved;
+    @Getter private final boolean deferEdit;
     @Getter private final @NotNull PageType pageType;
-    private final @NotNull Optional<Consumer<ButtonContext>> buttonInteraction;
+    private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> buttonInteraction;
 
     @Override
-    public Consumer<ButtonContext> getInteraction() {
+    public Function<ButtonContext, Mono<Void>> getInteraction() {
         return this.buttonInteraction.orElse(NOOP_HANDLER);
     }
 
@@ -116,8 +118,9 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
         private Style style = Style.UNKNOWN;
         private boolean disabled;
         private boolean preserved;
+        private boolean deferEdit;
         private PageType pageType = PageType.NONE;
-        private Optional<Consumer<ButtonContext>> interaction = Optional.empty();
+        private Optional<Function<ButtonContext, Mono<Void>>> interaction = Optional.empty();
         private Optional<Emoji> emoji = Optional.empty();
         private Optional<String> label = Optional.empty();
         private Optional<String> url = Optional.empty();
@@ -144,7 +147,7 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
          *
          * @param interaction The interaction consumer.
          */
-        public ButtonBuilder onInteract(@Nullable Consumer<ButtonContext> interaction) {
+        public ButtonBuilder onInteract(@Nullable Function<ButtonContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
@@ -153,7 +156,7 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
          *
          * @param interaction The interaction consumer.
          */
-        public ButtonBuilder onInteract(@NotNull Optional<Consumer<ButtonContext>> interaction) {
+        public ButtonBuilder onInteract(@NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
             return this;
         }
@@ -188,6 +191,23 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
          */
         public ButtonBuilder setDisabled(boolean disabled) {
             this.disabled = disabled;
+            return this;
+        }
+
+        /**
+         * Sets this {@link Button} as deferred when interacting.
+         */
+        public ButtonBuilder withDeferEdit() {
+            return this.withDeferEdit(true);
+        }
+
+        /**
+         * Sets whether this {@link Button} is deferred when interacting.
+         *
+         * @param deferEdit True to defer interaction.
+         */
+        public ButtonBuilder withDeferEdit(boolean deferEdit) {
+            this.deferEdit = deferEdit;
             return this;
         }
 
@@ -283,6 +303,7 @@ public final class Button extends ActionComponent<ButtonContext, Consumer<Button
                 this.label,
                 this.url,
                 this.preserved,
+                this.deferEdit,
                 this.pageType,
                 this.interaction
             );

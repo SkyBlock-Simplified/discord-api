@@ -88,13 +88,18 @@ public interface EventContext<T extends Event> {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> entry.getResponse().getUniqueId().equals(this.getUniqueId()))
             .filter(entry -> entry.getResponse().isLoader())
+            .singleOrEmpty()
             .flatMap(deferredReply -> {
                 deferredReply.updateResponse(response);
                 deferredReply.setUpdated();
 
                 return this.getChannel()
                     .flatMap(channel -> channel.getMessageById(deferredReply.getMessageId()))
-                    .flatMap(message -> message.edit(response.getD4jEditSpec()));
+                    .flatMap(message -> message.edit(response.getD4jEditSpec()))
+                    .flatMap(message -> Flux.fromIterable(response.getCurrentPage().getReactions())
+                        .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
+                        .then(Mono.just(deferredReply))
+                    );
             })
             .switchIfEmpty(
                 this.getChannel()

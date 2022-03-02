@@ -19,15 +19,14 @@ import java.util.Optional;
 public interface ComponentContext extends UserInteractionContext<ComponentInteractionEvent>, ApplicationInteractionContext<ComponentInteractionEvent> {
 
     @Override
-    default void edit(Response response) {
-        this.getEvent()
+    default Mono<Void> edit(Response response) {
+        return this.getEvent()
             .edit(response.getD4jComponentCallbackSpec(this))
             .then(Mono.fromRunnable(() -> {
                 DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
                 responseCacheEntry.updateResponse(response, true);
                 responseCacheEntry.setUpdated();
-            }))
-            .block();
+            }));
     }
 
     default Mono<Void> deferEdit() {

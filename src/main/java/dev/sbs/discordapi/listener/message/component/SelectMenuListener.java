@@ -5,6 +5,7 @@ import dev.sbs.discordapi.context.message.interaction.component.selectmenu.Selec
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import reactor.core.publisher.Mono;
 
 public final class SelectMenuListener extends ComponentListener<SelectMenuInteractionEvent, SelectMenuContext, SelectMenu> {
 
@@ -18,11 +19,13 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     }
 
     @Override
-    protected void handlePaging(SelectMenuContext context) {
-        context.getResponse().ifPresent(response -> {
-            response.gotoPage(context.getValues().get(0));
-            context.getResponseCacheEntry().updateResponse(response, false); // Update Response
-        });
+    protected Mono<Void> handlePaging(SelectMenuContext context) {
+        return Mono.justOrEmpty(context.getResponse())
+            .doOnNext(response -> {
+                response.gotoPage(context.getValues().get(0));
+                context.getResponseCacheEntry().updateResponse(response, false); // Update Response
+            })
+            .then();
     }
 
 }
