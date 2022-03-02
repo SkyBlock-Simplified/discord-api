@@ -36,7 +36,7 @@ public interface EventContext<T extends Event> {
     default Mono<Void> deferReply(boolean ephemeral) {
         return Mono.defer(() -> this.reply(
             Response.builder(this)
-                .isInteractable(false)
+                .isInteractable()
                 .isLoader()
                 .isEphemeral(ephemeral)
                 .withReference(this)
@@ -120,19 +120,21 @@ public interface EventContext<T extends Event> {
                     .flatMap(message -> Flux.fromIterable(response.getCurrentPage().getReactions())
                         .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
                         .then(Mono.fromRunnable(() -> {
-                            // Cache Message
-                            DiscordResponseCache.Entry responseCacheEntry = this.getDiscordBot()
-                                .getResponseCache()
-                                .add(
-                                    message.getChannelId(),
-                                    this.getInteractUserId(),
-                                    message.getId(),
-                                    response
-                                );
+                            if (response.isInteractable()) {
+                                // Cache Message
+                                DiscordResponseCache.Entry responseCacheEntry = this.getDiscordBot()
+                                    .getResponseCache()
+                                    .add(
+                                        message.getChannelId(),
+                                        this.getInteractUserId(),
+                                        message.getId(),
+                                        response
+                                    );
 
-                            if (!response.isLoader()) {
-                                responseCacheEntry.updateLastInteract(); // Update TTL
-                                responseCacheEntry.setUpdated();
+                                if (!response.isLoader()) {
+                                    responseCacheEntry.updateLastInteract(); // Update TTL
+                                    responseCacheEntry.setUpdated();
+                                }
                             }
                         }))
                     )
