@@ -251,7 +251,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                return commandContext.deferReply().then(Mono.fromCallable(() -> this.process(commandContext)).then());
+                return commandContext.deferReply().then(Mono.fromCallable(() -> this.process(commandContext)).flatMap(Function.identity()));
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
@@ -346,7 +346,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 userErrorBuilder = Optional.of(
                     Embed.builder()
                         .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                        .withDescription(mojangApiException.getMessage())
+                        .withDescription(mojangApiException.getErrorResponse().getReason())
                         .withFields(
                             Field.of(
                                 "State",
@@ -364,16 +364,12 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                                 true
                             )
                         )
-                        .withField(
-                            "Reason",
-                            mojangApiException.getErrorResponse().getReason()
-                        )
                 );
             } catch (HypixelApiException hypixelApiException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
                         .withAuthor("Hypixel Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                        .withDescription(hypixelApiException.getMessage())
+                        .withDescription(hypixelApiException.getErrorResponse().getReason())
                         .withFields(
                             Field.of(
                                 "State",
@@ -390,10 +386,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                                 hypixelApiException.getHttpStatus().getMessage(),
                                 true
                             )
-                        )
-                        .withField(
-                            "Reason",
-                            hypixelApiException.getErrorResponse().getReason()
                         )
                 );
             } catch (UserInputException userInputException) {
