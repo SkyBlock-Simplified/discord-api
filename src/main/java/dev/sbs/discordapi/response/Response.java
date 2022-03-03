@@ -51,10 +51,10 @@ import java.util.concurrent.ExecutorService;
 
 public class Response {
 
-    @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<Page> pageHistory = Concurrent.newList(this); // TODO
     @Getter protected final long buildTime = System.currentTimeMillis();
+    @Getter protected final UUID uniqueId;
     @Getter protected final ConcurrentList<Page> pages;
+    @Getter protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
     @Getter protected final ConcurrentList<Attachment> attachments;
     @Getter protected final Optional<Snowflake> referenceId;
     @Getter protected final Scheduler reactorScheduler;
@@ -78,6 +78,7 @@ public class Response {
         boolean ephemeral) {
         this.uniqueId = uniqueId;
         this.pages = pages;
+        this.pageHistory.add(pages.get(0));
         this.attachments = attachments;
         this.referenceId = referenceId;
         this.reactorScheduler = reactorScheduler;
@@ -180,7 +181,7 @@ public class Response {
         components.addAll(this.getCurrentPage().getPageComponents());
 
         // Back Button
-        if (ListUtil.notEmpty(this.getSubPages()))
+        if (this.hasPageHistory())
             components.add(ActionRow.of(this.getBackButton()));
 
         // Current Page Components
@@ -202,7 +203,14 @@ public class Response {
                             .getItems()
                             .stream()
                             .map(pageItem -> Field.of(
-                                FormatUtil.format("{0}{1}", pageItem.getOption().getEmoji().map(Emoji::asSpacedFormat).orElse(""), pageItem.getOption().getLabel()),
+                                FormatUtil.format(
+                                    "{0}{1}",
+                                    pageItem.getOption()
+                                        .getEmoji()
+                                        .map(Emoji::asSpacedFormat)
+                                        .orElse(""),
+                                    pageItem.getOption().getLabel()
+                                ),
                                 pageItem.getOption().getDescription().orElse(""),
                                 this.getCurrentPage().isItemsInline()
                             ))
@@ -220,7 +228,13 @@ public class Response {
     }
 
     public final ConcurrentList<String> getPageHistoryIdentifiers() {
-        return Concurrent.newUnmodifiableList(this.pageHistory.stream().map(Page::getOption).flatMap(Optional::stream).map(SelectMenu.Option::getValue).collect(Concurrent.toList()));
+        return Concurrent.newUnmodifiableList(
+            this.pageHistory.stream()
+                .map(Page::getOption)
+                .flatMap(Optional::stream)
+                .map(SelectMenu.Option::getValue)
+                .collect(Concurrent.toList())
+        );
     }
 
     public final Optional<Page> getPage(String identifier) {
@@ -254,6 +268,8 @@ public class Response {
                     .build()
             )
         );
+
+        this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
     }
 
     public final void gotoSubPage(String identifier) {
@@ -263,7 +279,7 @@ public class Response {
                 .build()
         ));
 
-        this.backButton = this.backButton.mutate().setDisabled(false).build();
+        this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
     }
 
     public final void gotoPreviousPage() {
