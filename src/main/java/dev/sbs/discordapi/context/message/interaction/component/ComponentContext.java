@@ -4,7 +4,6 @@ import dev.sbs.discordapi.context.message.interaction.ApplicationInteractionCont
 import dev.sbs.discordapi.context.message.interaction.UserInteractionContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
-import dev.sbs.discordapi.util.DiscordResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Guild;
@@ -19,14 +18,10 @@ import java.util.Optional;
 public interface ComponentContext extends UserInteractionContext<ComponentInteractionEvent>, ApplicationInteractionContext<ComponentInteractionEvent> {
 
     @Override
-    default Mono<Void> edit(Response response) {
+    default Mono<Message> editMessage(Response response) {
         return this.getEvent()
             .edit(response.getD4jComponentCallbackSpec(this))
-            .then(Mono.fromRunnable(() -> {
-                DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
-                responseCacheEntry.updateResponse(response, true);
-                responseCacheEntry.setUpdated();
-            }));
+            .then(Mono.justOrEmpty(this.getEvent().getMessage()));
     }
 
     default Mono<Void> deferEdit() {

@@ -9,7 +9,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.DiscordResponseCache;
 import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
@@ -58,10 +57,6 @@ public interface EventContext<T extends Event> {
     Mono<MessageChannel> getChannel();
 
     Snowflake getChannelId();
-
-    default GatewayDiscordClient getClient() {
-        return this.getEvent().getClient();
-    }
 
     DiscordBot getDiscordBot();
 

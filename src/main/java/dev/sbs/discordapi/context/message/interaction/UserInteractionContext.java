@@ -1,10 +1,15 @@
 package dev.sbs.discordapi.context.message.interaction;
 
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
 import dev.sbs.discordapi.util.DiscordResponseCache;
 import discord4j.core.event.domain.Event;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.reaction.Reaction;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
@@ -19,15 +24,40 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
     }
 
     default Mono<Void> edit(Response response) {
-        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec())
-            //.then(message.removeAllReactions())
-            //.thenMany(Flux.fromIterable(response.getCurrentPage().getReactions()).flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))) // Add Reactions
+        return this.editMessage(response)
+            .flatMap(message -> {
+                // Update Reactions
+                ConcurrentList<Emoji> newReactions = response.getCurrentPage().getReactions();
+
+                // Current Reactions
+                ConcurrentList<Emoji> currentReactions = message.getReactions()
+                    .stream()
+                    .filter(Reaction::selfReacted)
+                    .map(Reaction::getEmoji)
+                    .map(Emoji::of)
+                    .collect(Concurrent.toList());
+
+                Mono<Void> mono = Mono.empty();
+
+                // Remove Existing Reactions
+                if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
+                    mono = message.removeAllReactions();
+
+                return mono.then(Mono.when(
+                    newReactions.stream()
+                        .map(emoji -> message.addReaction(emoji.getD4jReaction()))
+                        .collect(Concurrent.toList())
+                ));
+            })
             .then(Mono.fromRunnable(() -> {
                 DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
                 responseCacheEntry.updateResponse(response, true);
                 responseCacheEntry.setUpdated();
-            }))
-        );
+            }));
+    }
+
+    default Mono<Message> editMessage(Response response) {
+        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
     default @NotNull Optional<Response> getResponse() {
