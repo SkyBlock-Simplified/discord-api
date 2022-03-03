@@ -7,6 +7,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.DiscordResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -39,16 +40,20 @@ public interface EventContext<T extends Event> {
                 .isLoader()
                 .isEphemeral(ephemeral)
                 .withReference(this)
-                .withContent(
-                    FormatUtil.format(
-                        "{0}{1} is working...",
-                        SimplifiedApi.getRepositoryOf(EmojiModel.class)
-                            .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
-                            .flatMap(Emoji::of)
-                            .map(Emoji::asSpacedFormat)
-                            .orElse(""),
-                        this.getDiscordBot().getSelf().getUsername()
-                    )
+                .withPages(
+                    Page.builder()
+                        .withContent(
+                            FormatUtil.format(
+                                "{0}{1} is working...",
+                                SimplifiedApi.getRepositoryOf(EmojiModel.class)
+                                    .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
+                                    .flatMap(Emoji::of)
+                                    .map(Emoji::asSpacedFormat)
+                                    .orElse(""),
+                                this.getDiscordBot().getSelf().getUsername()
+                            )
+                        )
+                        .build()
                 )
                 .build()
         ));

@@ -32,7 +32,7 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
                     case PREVIOUS -> currentPage.gotoPreviousItemPage();
                     case BACK -> {
                         response.gotoPreviousPage();
-                        response.gotoItemPage(0);
+                        response.getCurrentPage().gotoItemPage(0);
                     }
                 }
 

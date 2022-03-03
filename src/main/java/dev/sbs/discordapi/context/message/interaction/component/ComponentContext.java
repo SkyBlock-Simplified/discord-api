@@ -20,7 +20,7 @@ public interface ComponentContext extends UserInteractionContext<ComponentIntera
     @Override
     default Mono<Message> editMessage(Response response) {
         return this.getEvent()
-            .edit(response.getD4jComponentCallbackSpec(this))
+            .edit(response.getD4jComponentCallbackSpec())
             .then(Mono.justOrEmpty(this.getEvent().getMessage()));
     }
 

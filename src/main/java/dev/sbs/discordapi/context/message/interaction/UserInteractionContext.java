@@ -6,6 +6,7 @@ import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
+import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.DiscordResponseCache;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Message;
@@ -70,8 +71,12 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
 
     UUID getResponseId();
 
-    default Mono<Void> edit(Function<Response.ResponseBuilder, Response.ResponseBuilder> responseBuilder) {
-        return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(responseBuilder.apply(response.mutate()).build()));
+    default Mono<Void> edit(Function<Page.PageBuilder, Page.PageBuilder> currentPage) {
+        return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(
+            response.mutate()
+                .editPage(currentPage.apply(response.getCurrentPage().mutate()).build())
+                .build()
+        ));
     }
 
     default void modify(ActionComponent<?, ?> actionComponent) {
@@ -79,7 +84,12 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
             .getResponseCache()
             .updateResponse(
                 response.mutate()
-                    .editComponent(actionComponent)
+                    .editPage(
+                        response.getCurrentPage()
+                            .mutate()
+                            .editComponent(actionComponent)
+                            .build()
+                    )
                     .build(),
                 false
             )

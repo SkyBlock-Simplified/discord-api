@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.response;
 
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -12,8 +13,6 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.command.message.MessageCommandContext;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.context.message.interaction.ApplicationInteractionContext;
-import dev.sbs.discordapi.response.component.action.ActionComponent;
 import dev.sbs.discordapi.response.component.action.Button;
 import dev.sbs.discordapi.response.component.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
@@ -21,7 +20,6 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.PageItem;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -31,7 +29,9 @@ import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -48,13 +48,13 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
-public class Response extends Page {
+public class Response {
 
-    @Getter protected final ConcurrentList<Page> pageHistory = Concurrent.newList(this);
+    @Getter protected final UUID uniqueId;
+    @Getter protected final ConcurrentList<Page> pageHistory = Concurrent.newList(this); // TODO
     @Getter protected final long buildTime = System.currentTimeMillis();
-    @Getter protected final Optional<String> content;
+    @Getter protected final ConcurrentList<Page> pages;
     @Getter protected final ConcurrentList<Attachment> attachments;
     @Getter protected final Optional<Snowflake> referenceId;
     @Getter protected final Scheduler reactorScheduler;
@@ -67,15 +67,7 @@ public class Response extends Page {
 
     private Response(
         UUID uniqueId,
-        ConcurrentList<LayoutComponent<?>> components,
-        ConcurrentList<Emoji> reactions,
-        ConcurrentList<Embed> embeds,
         ConcurrentList<Page> pages,
-        ConcurrentList<PageItem> items,
-        Optional<SelectMenu.Option> option,
-        boolean itemsInline,
-        int itemsPerPage,
-        Optional<String> content,
         ConcurrentList<Attachment> attachments,
         Optional<Snowflake> referenceId,
         Scheduler reactorScheduler,
@@ -84,8 +76,8 @@ public class Response extends Page {
         boolean interactable,
         boolean loader,
         boolean ephemeral) {
-        super(uniqueId, components, reactions, embeds, pages, items, option, itemsInline, itemsPerPage);
-        this.content = content;
+        this.uniqueId = uniqueId;
+        this.pages = pages;
         this.attachments = attachments;
         this.referenceId = referenceId;
         this.reactorScheduler = reactorScheduler;
@@ -108,7 +100,6 @@ public class Response extends Page {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         Response response = (Response) o;
 
@@ -117,32 +108,34 @@ public class Response extends Page {
             .append(this.isReplyMention(), response.isReplyMention())
             .append(this.getTimeToLive(), response.getTimeToLive())
             .append(this.isInteractable(), response.isInteractable())
-            .append(this.getContent(), response.getContent())
+            .append(this.isLoader(), response.isLoader())
+            .append(this.isEphemeral(), response.isEphemeral())
+            .append(this.getUniqueId(), response.getUniqueId())
+            .append(this.getPageHistory(), response.getPageHistory())
+            .append(this.getPages(), response.getPages())
             .append(this.getAttachments(), response.getAttachments())
             .append(this.getReferenceId(), response.getReferenceId())
             .append(this.getReactorScheduler(), response.getReactorScheduler())
+            .append(this.getBackButton(), response.getBackButton())
             .build();
     }
 
     public static ResponseBuilder from(Response response) {
         return new ResponseBuilder(response.getUniqueId())
-            .withComponents(response.getComponents())
-            .withReactions(response.getReactions())
-            .withEmbeds(response.getEmbeds())
             .withPages(response.getPages())
-            .withItems(response.getItems())
-            .withOption(response.getOption())
-            .withContent(response.getContent())
             .withAttachments(response.getAttachments())
             .withReference(response.getReferenceId())
             .withReactorScheduler(response.getReactorScheduler())
             .replyMention(response.isReplyMention())
-            .withTimeToLive(response.getTimeToLive());
+            .withTimeToLive(response.getTimeToLive())
+            .isInteractable(response.isInteractable())
+            .isLoader(response.isLoader())
+            .isEphemeral(response.isEphemeral());
     }
 
     public MessageCreateSpec getD4jCreateSpec() {
         return MessageCreateSpec.builder()
-            .content(this.getContent().orElse(""))
+            .content(this.getCurrentPage().getContent().orElse(""))
             .allowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -153,7 +146,7 @@ public class Response extends Page {
 
     public MessageCreateMono getD4jCreateMono(MessageChannel channel) {
         return MessageCreateMono.of(channel)
-            .withContent(this.getContent().orElse(""))
+            .withContent(this.getCurrentPage().getContent().orElse(""))
             .withAllowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .withFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -163,7 +156,7 @@ public class Response extends Page {
 
     public MessageEditSpec getD4jEditSpec() {
         return MessageEditSpec.builder()
-            .contentOrNull(this.getContent().orElse(""))
+            .contentOrNull(this.getCurrentPage().getContent().orElse(""))
             .addAllFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .addAllComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
@@ -171,16 +164,8 @@ public class Response extends Page {
     }
 
     public InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
-        return this.getD4jComponentCallbackSpec(Optional.empty());
-    }
-
-    public InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec(ApplicationInteractionContext<?> interactionContext) {
-        return this.getD4jComponentCallbackSpec(Optional.ofNullable(interactionContext));
-    }
-
-    private InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec(Optional<ApplicationInteractionContext<?>> interactionContext) {
         return InteractionApplicationCommandCallbackSpec.builder()
-            .content(this.getContent().orElse(""))
+            .content(this.getCurrentPage().getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
@@ -195,7 +180,7 @@ public class Response extends Page {
         components.addAll(this.getCurrentPage().getPageComponents());
 
         // Back Button
-        if (ListUtil.notEmpty(this.getPages()))
+        if (ListUtil.notEmpty(this.getSubPages()))
             components.add(ActionRow.of(this.getBackButton()));
 
         // Current Page Components
@@ -219,7 +204,7 @@ public class Response extends Page {
                             .map(pageItem -> Field.of(
                                 FormatUtil.format("{0}{1}", pageItem.getOption().getEmoji().map(Emoji::asSpacedFormat).orElse(""), pageItem.getOption().getLabel()),
                                 pageItem.getOption().getDescription().orElse(""),
-                                this.isItemsInline()
+                                this.getCurrentPage().isItemsInline()
                             ))
                             .collect(Concurrent.toList())
                     )
@@ -239,11 +224,45 @@ public class Response extends Page {
     }
 
     public final Optional<Page> getPage(String identifier) {
-        return this.getCurrentPage().getPages().stream().filter(page -> page.getOption().map(pageOption -> pageOption.getValue().equals(identifier)).orElse(false)).findFirst();
+        return this.getCurrentPage()
+            .getPages()
+            .stream()
+            .filter(page -> page.getOption()
+                .map(pageOption -> pageOption.getValue().equals(identifier))
+                .orElse(false)
+            )
+            .findFirst();
+    }
+
+    public final Optional<Page> getSubPage(String identifier) {
+        return this.getCurrentPage()
+            .getSubPages()
+            .stream()
+            .filter(page -> page.getOption()
+                .map(pageOption -> pageOption.getValue().equals(identifier))
+                .orElse(false)
+            )
+            .findFirst();
     }
 
     public final void gotoPage(String identifier) {
-        this.pageHistory.add(this.getPage(identifier).orElseThrow(() -> SimplifiedException.of(DiscordException.class).withMessage("Unable to locate page identified by ''{0}''!", identifier).build()));
+        this.pageHistory.set(
+            this.pageHistory.size() - 1,
+            this.getPage(identifier).orElseThrow(
+                () -> SimplifiedException.of(DiscordException.class)
+                    .withMessage("Unable to locate page identified by ''{0}''!", identifier)
+                    .build()
+            )
+        );
+    }
+
+    public final void gotoSubPage(String identifier) {
+        this.pageHistory.add(this.getSubPage(identifier).orElseThrow(
+            () -> SimplifiedException.of(DiscordException.class)
+                .withMessage("Unable to locate subpage identified by ''{0}''!", identifier)
+                .build()
+        ));
+
         this.backButton = this.backButton.mutate().setDisabled(false).build();
     }
 
@@ -257,15 +276,19 @@ public class Response extends Page {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
+            .append(this.getUniqueId())
+            .append(this.getPageHistory())
             .append(this.getBuildTime())
-            .append(this.getContent())
+            .append(this.getPages())
             .append(this.getAttachments())
             .append(this.getReferenceId())
             .append(this.getReactorScheduler())
             .append(this.isReplyMention())
             .append(this.getTimeToLive())
             .append(this.isInteractable())
+            .append(this.isLoader())
+            .append(this.isEphemeral())
+            .append(this.getBackButton())
             .build();
     }
 
@@ -277,12 +300,14 @@ public class Response extends Page {
         return from(this);
     }
 
-    public static class ResponseBuilder extends ContentBuilder<Response> {
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class ResponseBuilder implements Builder<Response> {
 
-        private boolean inlineItems;
-        private Optional<String> content = Optional.empty();
-        private Optional<Snowflake> referenceId = Optional.empty();
+        private final UUID uniqueId;
+        private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Attachment> attachments = Concurrent.newList();
+        private boolean inlineItems;
+        private Optional<Snowflake> referenceId = Optional.empty();
         private Scheduler reactorScheduler = Schedulers.boundedElastic();
         private boolean replyMention;
         private int timeToLive = 10;
@@ -290,78 +315,17 @@ public class Response extends Page {
         private boolean loader = false;
         private boolean ephemeral = false;
 
-        protected ResponseBuilder(UUID uniqueId) {
-            super(uniqueId);
-        }
-
         /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder clearComponents() {
-            return this.clearComponents(true);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder clearComponents(boolean enforcePreserve) {
-            super.clearComponents(enforcePreserve);
-            return this;
-        }
-
-        /**
-         * Clear all pages from {@link Response}.
-         */
-        @Override
-        public ResponseBuilder clearPages() {
-            super.clearPages();
-            return this;
-        }
-
-        /**
-         * Edits an existing {@link Page} at the given index.
+         * Updates an existing {@link Page}.
          *
-         * @param pageBuilder The page builder to edit with.
+         * @param page The page to edit.
          */
-        @Override
-        public ResponseBuilder editPage(Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
-            return this.editPage(0, pageBuilder);
-        }
+        public ResponseBuilder editPage(@NotNull Page page) {
+            this.pages.stream()
+                .filter(existingPage -> existingPage.getUniqueId().equals(page.getUniqueId()))
+                .findFirst()
+                .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
-        /**
-         * Edits an existing {@link Page} at the given index.
-         *
-         * @param index The page index to edit.
-         * @param pageBuilder The page builder to edit with.
-         */
-        @Override
-        public ResponseBuilder editPage(int index, Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
-            super.editPage(index, pageBuilder);
-            return this;
-        }
-
-        /**
-         * Updates an existing {@link ActionComponent}.
-         *
-         * @param actionComponent The component to edit.
-         */
-        @Override
-        public ResponseBuilder editComponent(@NotNull ActionComponent<?, ?> actionComponent) {
-            super.editComponent(actionComponent);
-            return this;
-        }
-
-        /**
-         * Edits an existing {@link Embed}.
-         *
-         * @param uniqueId The unique id of the embed to search for.
-         * @param embedBuilder The embed builder to edit with.
-         */
-        @Override
-        public ResponseBuilder editEmbed(UUID uniqueId, Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
-            super.editEmbed(uniqueId, embedBuilder);
             return this;
         }
 
@@ -478,63 +442,6 @@ public class Response extends Page {
         }
 
         /**
-         * Add {@link LayoutComponent LayoutComponents} to the main {@link Page}.
-         *
-         * @param components Variable number of layout components to add.
-         */
-        @Override
-        public ResponseBuilder withComponents(@NotNull LayoutComponent<?>... components) {
-            return this.withComponents(Arrays.asList(components));
-        }
-
-        /**
-         * Add {@link LayoutComponent LayoutComponents} to the main {@link Page}.
-         *
-         * @param components Collection of layout components to add.
-         */
-        @Override
-        public ResponseBuilder withComponents(@NotNull Iterable<LayoutComponent<?>> components) {
-            super.withComponents(components);
-            return this;
-        }
-
-        /**
-         * Sets the content text to add to the {@link Response}.
-         *
-         * @param content The text to add to the response.
-         */
-        public ResponseBuilder withContent(@Nullable String content) {
-            return this.withContent(Optional.ofNullable(content));
-        }
-
-        /**
-         * Sets the content text to add to the {@link Response}.
-         *
-         * @param content The text to add to the response.
-         */
-        public ResponseBuilder withContent(@NotNull Optional<String> content) {
-            this.content = content;
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withEmbeds(@NotNull Embed... embeds) {
-            return this.withEmbeds(Arrays.asList(embeds));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withEmbeds(@NotNull Iterable<Embed> embeds) {
-            super.withEmbeds(embeds);
-            return this;
-        }
-
-        /**
          * Adds the stack trace of an {@link Throwable Exception} as an {@link Attachment} to the {@link Response}.
          *
          * @param throwable The throwable exception stack trace to add.
@@ -549,96 +456,21 @@ public class Response extends Page {
         }
 
         /**
-         * {@inheritDoc}
+         * Add {@link Page Pages} to the {@link Response}.
+         *
+         * @param pages Variable number of pages to add.
          */
-        @Override
-        public ResponseBuilder withInlineItems() {
-            return this.withInlineItems(true);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withInlineItems(boolean inlineItems) {
-            super.withInlineItems(inlineItems);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withItems(@NotNull PageItem... pageItems) {
-            return this.withItems(Arrays.asList(pageItems));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withItems(@NotNull Iterable<PageItem> pageItems) {
-            super.withItems(pageItems);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withItemsPerPage(int itemsPerPage) {
-            super.withItemsPerPage(itemsPerPage);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withOption(@Nullable SelectMenu.Option option) {
-            return this.withOption(Optional.ofNullable(option));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withOption(@NotNull Optional<SelectMenu.Option> option) {
-            super.withOption(option);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
         public ResponseBuilder withPages(@NotNull Page... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
         /**
-         * {@inheritDoc}
+         * Add {@link Page Pages} to the {@link Response}.
+         *
+         * @param pages Collection of pages to add.
          */
-        @Override
         public ResponseBuilder withPages(@NotNull Iterable<Page> pages) {
-            super.withPages(pages);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withReactions(@NotNull Emoji... reactions) {
-            return this.withReactions(Arrays.asList(reactions));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public ResponseBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
-            super.withReactions(reactions);
+            pages.forEach(this.pages::add);
             return this;
         }
 
@@ -719,17 +551,14 @@ public class Response extends Page {
          */
         @Override
         public Response build() {
+            if (ListUtil.isEmpty(this.pages))
+                throw SimplifiedException.of(DiscordException.class)
+                    .withMessage("A response must have at least one page!")
+                    .build();
+
             return new Response(
                 this.uniqueId,
-                this.components,
-                Concurrent.newUnmodifiableList(this.reactions),
-                Concurrent.newUnmodifiableList(this.embeds),
                 Concurrent.newUnmodifiableList(this.pages),
-                Concurrent.newUnmodifiableList(this.items),
-                this.option,
-                this.inlineItems,
-                this.itemsPerPage,
-                this.content,
                 Concurrent.newUnmodifiableList(this.attachments),
                 this.referenceId,
                 this.reactorScheduler,

@@ -30,12 +30,14 @@ import java.util.function.Function;
 public class Page {
 
     @Getter protected final UUID uniqueId;
+    @Getter protected final ConcurrentList<Page> pages;
+    @Getter protected final ConcurrentList<Page> subPages;
     @Getter protected final ConcurrentList<LayoutComponent<?>> pageComponents;
     @Getter protected final ConcurrentList<LayoutComponent<?>> components;
     @Getter protected final ConcurrentList<Emoji> reactions;
     @Getter protected final ConcurrentList<Embed> embeds;
-    @Getter protected final ConcurrentList<Page> pages;
     @Getter protected final ConcurrentList<PageItem> items;
+    @Getter protected final Optional<String> content;
     @Getter protected final Optional<SelectMenu.Option> option;
     @Getter protected final boolean itemsInline;
     @Getter protected final int itemsPerPage;
@@ -47,7 +49,9 @@ public class Page {
         ConcurrentList<Emoji> reactions,
         ConcurrentList<Embed> embeds,
         ConcurrentList<Page> pages,
+        ConcurrentList<Page> subPages,
         ConcurrentList<PageItem> items,
+        Optional<String> content,
         Optional<SelectMenu.Option> option,
         boolean inlineItems,
         int itemsPerPage) {
@@ -57,7 +61,7 @@ public class Page {
             // Page List
             pageComponents.add(ActionRow.of(
                 SelectMenu.builder()
-                    .isPageSelector(true)
+                    .withPageType(SelectMenu.PageType.PAGE)
                     .withPlaceholder("Select a page.")
                     .withOptions(
                         pages.stream()
@@ -67,7 +71,25 @@ public class Page {
                     )
                     .build()
             ));
-        } else if (ListUtil.notEmpty(items)) {
+        }
+
+        if (ListUtil.notEmpty(subPages)) {
+            // SubPage List
+            pageComponents.add(ActionRow.of(
+                SelectMenu.builder()
+                    .withPageType(SelectMenu.PageType.SUBPAGE)
+                    .withPlaceholder("Select a subpage.")
+                    .withOptions(
+                        subPages.stream()
+                            .map(Page::getOption)
+                            .flatMap(Optional::stream)
+                            .collect(Concurrent.toList())
+                    )
+                    .build()
+            ));
+        }
+
+        if (ListUtil.notEmpty(items)) {
             // Item List
             pageComponents.add(ActionRow.of(
                 Arrays.stream(Button.PageType.values())
@@ -77,7 +99,7 @@ public class Page {
             ));
 
             // Item Selector
-            pageComponents.add(ActionRow.of(
+            /*pageComponents.add(ActionRow.of(
                 SelectMenu.builder()
                     .isPageSelector(true)
                     .withPlaceholder("Select an item.")
@@ -87,22 +109,24 @@ public class Page {
                             .collect(Concurrent.toList())
                     )
                     .build()
-            ));
+            ));*/
         }
 
+        this.pages = pages;
+        this.subPages = pages;
         this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
         this.uniqueId = uniqueId;
         this.components = components;
         this.reactions = reactions;
         this.embeds = embeds;
-        this.pages = pages;
         this.items = items;
         this.option = option;
+        this.content = content;
         this.itemsInline = inlineItems;
         this.itemsPerPage = itemsPerPage;
     }
 
-    public static PageBuilder create() {
+    public static PageBuilder builder() {
         return new PageBuilder(UUID.randomUUID());
     }
 
@@ -139,13 +163,17 @@ public class Page {
 
         return new EqualsBuilder()
             .append(this.isItemsInline(), page.isItemsInline())
+            .append(this.getItemsPerPage(), page.getItemsPerPage())
             .append(this.getItemPage(), page.getItemPage())
             .append(this.getUniqueId(), page.getUniqueId())
+            .append(this.getPages(), page.getPages())
+            .append(this.getSubPages(), page.getSubPages())
+            .append(this.getPageComponents(), page.getPageComponents())
             .append(this.getComponents(), page.getComponents())
             .append(this.getReactions(), page.getReactions())
             .append(this.getEmbeds(), page.getEmbeds())
-            .append(this.getPages(), page.getPages())
             .append(this.getItems(), page.getItems())
+            .append(this.getContent(), page.getContent())
             .append(this.getOption(), page.getOption())
             .build();
     }
@@ -190,13 +218,14 @@ public class Page {
             .withComponents(page.getComponents())
             .withReactions(page.getReactions())
             .withEmbeds(page.getEmbeds())
-            .withPages(page.getPages())
+            .withSubPages(page.getSubPages())
             .withItems(page.getItems())
             .withOption(page.getOption());
     }
 
+    // Item Paging
     public final Optional<PageItem> getItem(int index) {
-        return this.getItemPage() < this.getPages().size() ? Optional.of(this.getItems().get(index)) : Optional.empty();
+        return this.getItemPage() < this.getSubPages().size() ? Optional.of(this.getItems().get(index)) : Optional.empty();
     }
 
     public final int getTotalItemPages() {
@@ -242,13 +271,17 @@ public class Page {
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getUniqueId())
+            .append(this.getPages())
+            .append(this.getSubPages())
+            .append(this.getPageComponents())
             .append(this.getComponents())
             .append(this.getReactions())
             .append(this.getEmbeds())
-            .append(this.getPages())
             .append(this.getItems())
+            .append(this.getContent())
             .append(this.getOption())
             .append(this.isItemsInline())
+            .append(this.getItemsPerPage())
             .append(this.getItemPage())
             .build();
     }
@@ -257,236 +290,21 @@ public class Page {
         return ListUtil.notEmpty(this.items);
     }
 
-    public PageBuilder modify() {
+    public PageBuilder mutate() {
         return from(this);
     }
 
-    public static class PageBuilder extends ContentBuilder<Page> {
-
-        protected PageBuilder(UUID uniqueId) {
-            super(uniqueId);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder clearComponents() {
-            return this.clearComponents(true);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder clearComponents(boolean enforcePreserve) {
-            super.clearComponents(enforcePreserve);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder clearPages() {
-            super.clearPages();
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder editComponent(@NotNull ActionComponent<?, ?> actionComponent) {
-            super.editComponent(actionComponent);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder editEmbed(UUID uniqueId, Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
-            super.editEmbed(uniqueId, embedBuilder);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder editPage(Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
-            return this.editPage(0, pageBuilder);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder editPage(int index, Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
-            super.editPage(index, pageBuilder);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withComponents(@NotNull LayoutComponent<?>... components) {
-            return this.withComponents(Arrays.asList(components));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<?>> components) {
-            super.withComponents(components);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withEmbeds(Embed... embeds) {
-            return this.withEmbeds(Arrays.asList(embeds));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withEmbeds(Iterable<Embed> embeds) {
-            super.withEmbeds(embeds);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withInlineItems() {
-            return this.withInlineItems(true);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withInlineItems(boolean inlineItems) {
-            super.withInlineItems(inlineItems);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withItems(@NotNull PageItem... pageItems) {
-            return this.withItems(Arrays.asList(pageItems));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withItems(@NotNull Iterable<PageItem> pageItems) {
-            super.withItems(pageItems);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withItemsPerPage(int itemsPerPage) {
-            super.withItemsPerPage(itemsPerPage);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withOption(@Nullable SelectMenu.Option option) {
-            return this.withOption(Optional.ofNullable(option));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withOption(@NotNull Optional<SelectMenu.Option> option) {
-            super.withOption(option);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withPages(@NotNull Page... pages) {
-            return this.withPages(Arrays.asList(pages));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withPages(@NotNull Iterable<Page> pages) {
-            super.withPages(pages);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withReactions(@NotNull Emoji... reactions) {
-            return this.withReactions(Arrays.asList(reactions));
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public PageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
-            super.withReactions(reactions);
-            return this;
-        }
-
-        /**
-         * Build using the configured fields.
-         *
-         * @return A built {@link Page}.
-         */
-        @Override
-        public Page build() {
-            return new Page(
-                this.uniqueId,
-                Concurrent.newUnmodifiableList(this.components),
-                Concurrent.newUnmodifiableList(this.reactions),
-                Concurrent.newUnmodifiableList(this.embeds),
-                Concurrent.newUnmodifiableList(this.pages),
-                Concurrent.newUnmodifiableList(this.items),
-                this.option,
-                this.inlineItems,
-                this.itemsPerPage
-            );
-        }
-
-    }
-
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    protected static abstract class ContentBuilder<T> implements Builder<T> {
+    public static class PageBuilder implements Builder<Page> {
 
         protected final UUID uniqueId;
         protected final ConcurrentList<Embed> embeds = Concurrent.newList();
         protected final ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
         protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
         protected final ConcurrentList<Page> pages = Concurrent.newList();
+        protected final ConcurrentList<Page> subPages = Concurrent.newList();
         protected final ConcurrentList<PageItem> items = Concurrent.newList();
+        protected Optional<String> content = Optional.empty();
         protected Optional<SelectMenu.Option> option = Optional.empty();
         protected boolean inlineItems;
         protected int itemsPerPage = 3;
@@ -494,7 +312,7 @@ public class Page {
         /**
          * Clear all but preservable components from {@link Page}.
          */
-        public ContentBuilder<?> clearComponents() {
+        public PageBuilder clearComponents() {
             return this.clearComponents(true);
         }
 
@@ -505,7 +323,7 @@ public class Page {
          *
          * @param enforcePreserve True to leave preservable components.
          */
-        public ContentBuilder<?> clearComponents(boolean enforcePreserve) {
+        public PageBuilder clearComponents(boolean enforcePreserve) {
             // Remove Possibly Preserved Components
             this.components.stream()
                 .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
@@ -523,8 +341,16 @@ public class Page {
         /**
          * Clear all pages from {@link Page}.
          */
-        public ContentBuilder<?> clearPages() {
+        public PageBuilder clearPages() {
             this.pages.clear();
+            return this;
+        }
+
+        /**
+         * Clear all sub pages from {@link Page}.
+         */
+        public PageBuilder clearSubPages() {
+            this.subPages.clear();
             return this;
         }
 
@@ -533,7 +359,7 @@ public class Page {
          *
          * @param actionComponent The component to edit.
          */
-        public ContentBuilder<?> editComponent(@NotNull ActionComponent<?, ?> actionComponent) {
+        public PageBuilder editComponent(@NotNull ActionComponent<?, ?> actionComponent) {
             this.components.stream()
                 .filter(ActionRow.class::isInstance)
                 .map(ActionRow.class::cast)
@@ -557,7 +383,7 @@ public class Page {
          * @param uniqueId The unique id of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
-        public ContentBuilder<?> editEmbed(UUID uniqueId, Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
+        public PageBuilder editEmbed(UUID uniqueId, Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
             this.findEmbed(uniqueId).ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
                 int index = -1;
@@ -585,7 +411,7 @@ public class Page {
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public ContentBuilder<?> editPage(Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public PageBuilder editPage(Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
@@ -595,9 +421,9 @@ public class Page {
          * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public ContentBuilder<?> editPage(int index, Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
-            if (index < this.pages.size())
-                this.pages.set(index, pageBuilder.apply(this.pages.get(index).modify()).build());
+        public PageBuilder editPage(int index, Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+            if (index < this.subPages.size())
+                this.subPages.set(index, pageBuilder.apply(this.subPages.get(index).mutate()).build());
 
             return this;
         }
@@ -641,7 +467,7 @@ public class Page {
          *
          * @param components Variable number of layout components to add.
          */
-        public ContentBuilder<?> withComponents(@NotNull LayoutComponent<?>... components) {
+        public PageBuilder withComponents(@NotNull LayoutComponent<?>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -650,8 +476,27 @@ public class Page {
          *
          * @param components Collection of layout components to add.
          */
-        public ContentBuilder<?> withComponents(@NotNull Iterable<LayoutComponent<?>> components) {
+        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<?>> components) {
             components.forEach(this.components::add);
+            return this;
+        }
+
+        /**
+         * Sets the content text to add to the {@link Page}.
+         *
+         * @param content The text to add to the page.
+         */
+        public PageBuilder withContent(@Nullable String content) {
+            return this.withContent(Optional.ofNullable(content));
+        }
+
+        /**
+         * Sets the content text to add to the {@link Page}.
+         *
+         * @param content The text to add to the page.
+         */
+        public PageBuilder withContent(@NotNull Optional<String> content) {
+            this.content = content;
             return this;
         }
 
@@ -660,7 +505,7 @@ public class Page {
          *
          * @param embeds Variable number of embeds to add.
          */
-        public ContentBuilder<?> withEmbeds(Embed... embeds) {
+        public PageBuilder withEmbeds(Embed... embeds) {
             return this.withEmbeds(Arrays.asList(embeds));
         }
 
@@ -669,7 +514,7 @@ public class Page {
          *
          * @param embeds Collection of embeds to add.
          */
-        public ContentBuilder<?> withEmbeds(Iterable<Embed> embeds) {
+        public PageBuilder withEmbeds(Iterable<Embed> embeds) {
             embeds.forEach(this.embeds::add);
             return this;
         }
@@ -677,7 +522,7 @@ public class Page {
         /**
          * Sets items to be rendered inline on the {@link Page}.
          */
-        public ContentBuilder<?> withInlineItems() {
+        public PageBuilder withInlineItems() {
             return this.withInlineItems(true);
         }
 
@@ -686,7 +531,7 @@ public class Page {
          *
          * @param inlineItems True to render items inline.
          */
-        public ContentBuilder<?> withInlineItems(boolean inlineItems) {
+        public PageBuilder withInlineItems(boolean inlineItems) {
             this.inlineItems = inlineItems;
             return this;
         }
@@ -696,7 +541,7 @@ public class Page {
          *
          * @param pageItems Variable number of page items to add.
          */
-        public ContentBuilder<?> withItems(@NotNull PageItem... pageItems) {
+        public PageBuilder withItems(@NotNull PageItem... pageItems) {
             return this.withItems(Arrays.asList(pageItems));
         }
 
@@ -705,7 +550,7 @@ public class Page {
          *
          * @param pageItems Collection of page items to add.
          */
-        public ContentBuilder<?> withItems(@NotNull Iterable<PageItem> pageItems) {
+        public PageBuilder withItems(@NotNull Iterable<PageItem> pageItems) {
             pageItems.forEach(this.items::add);
             return this;
         }
@@ -717,7 +562,7 @@ public class Page {
          *
          * @param itemsPerPage Number of items to render.
          */
-        public ContentBuilder<?> withItemsPerPage(int itemsPerPage) {
+        public PageBuilder withItemsPerPage(int itemsPerPage) {
             this.itemsPerPage = Math.max(1, itemsPerPage);
             return this;
         }
@@ -727,7 +572,7 @@ public class Page {
          *
          * @param option The option to add.
          */
-        public ContentBuilder<?> withOption(@Nullable SelectMenu.Option option) {
+        public PageBuilder withOption(@Nullable SelectMenu.Option option) {
             return this.withOption(Optional.ofNullable(option));
         }
 
@@ -736,26 +581,26 @@ public class Page {
          *
          * @param option The option to add.
          */
-        public ContentBuilder<?> withOption(@NotNull Optional<SelectMenu.Option> option) {
+        public PageBuilder withOption(@NotNull Optional<SelectMenu.Option> option) {
             this.option = option;
             return this;
         }
 
         /**
-         * Add a sub {@link Page} to the {@link Page}.
+         * Add {@link Page Pages} to the {@link Page}.
          *
          * @param pages Variable number of pages to add.
          */
-        public ContentBuilder<?> withPages(@NotNull Page... pages) {
+        public PageBuilder withPages(@NotNull Page... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
         /**
-         * Add a sub {@link Page} to the {@link Page}.
+         * Add {@link Page Pages} to the {@link Page}.
          *
          * @param pages Collection of pages to add.
          */
-        public ContentBuilder<?> withPages(@NotNull Iterable<Page> pages) {
+        public PageBuilder withPages(@NotNull Iterable<Page> pages) {
             pages.forEach(this.pages::add);
             return this;
         }
@@ -765,7 +610,7 @@ public class Page {
          *
          * @param reactions The reactions to add to the response.
          */
-        public ContentBuilder<?> withReactions(@NotNull Emoji... reactions) {
+        public PageBuilder withReactions(@NotNull Emoji... reactions) {
             return this.withReactions(Arrays.asList(reactions));
         }
 
@@ -774,9 +619,50 @@ public class Page {
          *
          * @param reactions The reactions to add to the response.
          */
-        public ContentBuilder<?> withReactions(@NotNull Iterable<Emoji> reactions) {
+        public PageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
             reactions.forEach(this.reactions::add);
             return this;
+        }
+
+        /**
+         * Add sub {@link Page Pages} to the {@link Page}.
+         *
+         * @param subPages Variable number of pages to add.
+         */
+        public PageBuilder withSubPages(@NotNull Page... subPages) {
+            return this.withSubPages(Arrays.asList(subPages));
+        }
+
+        /**
+         * Add sub {@link Page Pages} to the {@link Page}.
+         *
+         * @param subPages Collection of pages to add.
+         */
+        public PageBuilder withSubPages(@NotNull Iterable<Page> subPages) {
+            subPages.forEach(this.subPages::add);
+            return this;
+        }
+
+        /**
+         * Build using the configured fields.
+         *
+         * @return A built {@link Page}.
+         */
+        @Override
+        public Page build() {
+            return new Page(
+                this.uniqueId,
+                Concurrent.newUnmodifiableList(this.components),
+                Concurrent.newUnmodifiableList(this.reactions),
+                Concurrent.newUnmodifiableList(this.embeds),
+                Concurrent.newUnmodifiableList(this.pages),
+                Concurrent.newUnmodifiableList(this.subPages),
+                Concurrent.newUnmodifiableList(this.items),
+                this.content,
+                this.option,
+                this.inlineItems,
+                this.itemsPerPage
+            );
         }
 
     }

@@ -11,7 +11,7 @@ public interface ApplicationInteractionContext<T extends InteractionCreateEvent>
 
     @Override
     default Mono<Message> buildMessage(Response response) {
-        return this.interactionReply(response.getD4jComponentCallbackSpec(this))
+        return this.interactionReply(response.getD4jComponentCallbackSpec())
             .publishOn(response.getReactorScheduler())
             .then(this.getReply());
     }

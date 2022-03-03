@@ -41,7 +41,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
     @Getter private final @NotNull ConcurrentList<Option> options;
     @Getter private final boolean preserved;
     @Getter private final boolean deferEdit;
-    @Getter private final boolean pageSelector;
+    @Getter private final PageType pageType;
     private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
 
     public static SelectMenuBuilder builder() {
@@ -62,6 +62,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
             .append(this.getPlaceholder(), that.getPlaceholder())
             .append(this.getMinValue(), that.getMinValue())
             .append(this.getMaxValue(), that.getMaxValue())
+            .append(this.getPageType(), that.getPageType())
             .append(this.getOptions(), that.getOptions())
             .build();
     }
@@ -127,6 +128,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
             .append(this.getPlaceholder())
             .append(this.getMinValue())
             .append(this.getMaxValue())
+            .append(this.getPageType())
             .append(this.isPlaceholderUsingSelectedOption())
             .append(this.getOptions())
             .build();
@@ -134,7 +136,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
 
     @Override
     public boolean isPaging() {
-        return this.isPageSelector();
+        return this.getPageType() != PageType.NONE;
     }
 
     public SelectMenuBuilder mutate() {
@@ -160,7 +162,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean preserved;
         private boolean deferEdit;
-        private boolean pageSelector;
+        private PageType pageType = PageType.NONE;
         private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -177,23 +179,6 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
                     this.options.remove(index);
                     this.options.add(index, option);
                 });
-            return this;
-        }
-
-        /**
-         * Sets whether this {@link SelectMenu} is handled as a page selector.
-         */
-        public SelectMenuBuilder isPageSelector() {
-            return this.isPageSelector(true);
-        }
-
-        /**
-         * Sets whether this {@link SelectMenu} is handled as a page selector.
-         *
-         * @param pageSelector True to be used as a page selector.
-         */
-        public SelectMenuBuilder isPageSelector(boolean pageSelector) {
-            this.pageSelector = pageSelector;
             return this;
         }
 
@@ -251,23 +236,6 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
         }
 
         /**
-         * Sets if the {@link SelectMenu} is a page selector.
-         */
-        public SelectMenuBuilder setPageSelector() {
-            return this.setPageSelector(true);
-        }
-
-        /**
-         * Sets if the {@link SelectMenu} is a page selector.
-         *
-         * @param pageSelector True if page selector.
-         */
-        public SelectMenuBuilder setPageSelector(boolean pageSelector) {
-            this.pageSelector = pageSelector;
-            return this;
-        }
-
-        /**
          * Sets this {@link SelectMenu} as deferred when interacting.
          */
         public SelectMenuBuilder withDeferEdit() {
@@ -300,6 +268,16 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
          */
         public SelectMenuBuilder withOptions(Iterable<Option> options) {
             options.forEach(this.options::add);
+            return this;
+        }
+
+        /**
+         * Sets the page type of the {@link SelectMenu}.
+         *
+         * @param pageType The page type of the select menu.
+         */
+        public SelectMenuBuilder withPageType(@NotNull PageType pageType) {
+            this.pageType = pageType;
             return this;
         }
 
@@ -394,7 +372,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
                 this.options,
                 this.preserved,
                 this.deferEdit,
-                this.pageSelector,
+                this.pageType,
                 this.interaction
             );
         }
@@ -611,6 +589,15 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
 
         }
         
+    }
+
+    @RequiredArgsConstructor
+    public enum PageType {
+
+        NONE,
+        PAGE,
+        SUBPAGE
+
     }
 
 }

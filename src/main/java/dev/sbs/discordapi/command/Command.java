@@ -36,6 +36,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.DiscordObject;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -250,7 +251,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                return commandContext.deferReply().then(this.process(commandContext));
+                return commandContext.deferReply().then(Mono.fromCallable(() -> this.process(commandContext)).then());
             } catch (DisabledCommandException disabledCommandException) {
                 userErrorBuilder = Optional.of(
                     Embed.builder()
@@ -450,10 +451,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         .isInteractable(false)
                         .isEphemeral()
                         .withReference(commandContext)
-                        .withEmbeds(
-                            embedBuilder.withColor(Color.DARK_GRAY)
-                                .withTitle("Command :: {0}", this.getCommandPath(commandContext.isSlashCommand()))
-                                .withTimestamp(Instant.now())
+                        .withPages(
+                            Page.builder()
+                                .withEmbeds(
+                                    embedBuilder.withColor(Color.DARK_GRAY)
+                                        .withTitle("Command :: {0}", this.getCommandPath(commandContext.isSlashCommand()))
+                                        .withTimestamp(Instant.now())
+                                        .build()
+                                )
                                 .build()
                         )
                         .build()

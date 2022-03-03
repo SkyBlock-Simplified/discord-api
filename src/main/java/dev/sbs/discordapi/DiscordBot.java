@@ -26,6 +26,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.DiscordCommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordLogger;
@@ -135,9 +136,9 @@ public abstract class DiscordBot {
                                 .anyMatch(Component::isPreserved)
                             );
 
-                        // Handle Preserved Components
-                        if (preservedComponent)
-                            response = response.mutate().clearComponents().build();
+                        // Handle Preserved Components TODO
+                        //if (preservedComponent)
+                        //    response = response.mutate().clearComponents().build();
 
                         // Remove Discord Message Components
                         if (response.isInteractable())
@@ -287,11 +288,15 @@ public abstract class DiscordBot {
         Response userErrorResponse = Response.builder()
             .isInteractable(false)
             .withReference(messageId)
-            .withEmbeds(
-                defaultEmbedBuilder.mutate()
-                    .withField(
-                        "Notice",
-                        "This error has been automatically reported to the developer."
+            .withPages(
+                Page.builder()
+                    .withEmbeds(
+                        defaultEmbedBuilder.mutate()
+                            .withField(
+                                "Notice",
+                                "This error has been automatically reported to the developer."
+                            )
+                            .build()
                     )
                     .build()
             )
@@ -351,7 +356,11 @@ public abstract class DiscordBot {
                         Response logResponse = Response.builder()
                             .isInteractable(false)
                             .withException(exceptionContext.getException())
-                            .withEmbeds(logErrorBuilder.build())
+                            .withPages(
+                                Page.builder()
+                                    .withEmbeds(logErrorBuilder.build())
+                                    .build()
+                            )
                             .build();
 
                         return Mono.just(messageChannel)
