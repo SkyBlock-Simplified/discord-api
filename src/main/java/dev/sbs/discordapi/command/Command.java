@@ -417,14 +417,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                             "Command Exception",
                             embedBuilder -> embedBuilder.withFields(
                                 Field.of(
-                                    "Parent Commands",
-                                    StringUtil.join(this.getParentCommandNames(), " "),
-                                    true
-                                ),
-                                Field.of(
                                     "Command",
-                                    this.getCommandInfo().name(),
-                                    true
+                                    this.getCommandPath(commandContext.isSlashCommand())
                                 ),
                                 Field.of(
                                     "Arguments",

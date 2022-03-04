@@ -29,9 +29,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
 
     @Override
     public Publisher<Void> apply(ChatInputInteractionEvent event) {
-        if (event.getInteraction().getUser().getId().asLong() != 154743493464555521L) // TODO: Limit to myself
-            return Mono.empty();
-
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .map(interaction -> interaction.getData().data().toOptional())
