@@ -428,7 +428,14 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                                 ),
                                 Field.of(
                                     "Arguments",
-                                    StringUtil.join(commandContext.getArguments(), " "),
+                                    StringUtil.join(
+                                        commandContext.getArguments()
+                                            .stream()
+                                            .filter(argument -> argument.getValue().isPresent())
+                                            .map(argument -> argument.getValue().get())
+                                            .collect(Concurrent.toList()),
+                                        " "
+                                    ),
                                     true
                                 )
                             )

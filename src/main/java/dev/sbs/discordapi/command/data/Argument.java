@@ -30,6 +30,10 @@ public class Argument {
         return this.data.get(index);
     }
 
+    public boolean hasValue() {
+        return this.getValue().isPresent();
+    }
+
     public static class Data {
 
         @Getter private final @NotNull Optional<String> value;
