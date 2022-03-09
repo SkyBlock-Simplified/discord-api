@@ -339,8 +339,8 @@ public final class Button extends ActionComponent<ButtonContext, Function<Button
         FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_FIRST")),
         PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_PREVIOUS")),
         INDEX("Index", true, buttonBuilder -> buttonBuilder.setDisabled(true)),
-        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(false), DiscordObject.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(false), DiscordObject.getEmoji("ARROW_SQUARE_LAST")),
+        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_LAST")),
         BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_LEFT"));
 
         @Getter private final @NotNull String label;
@@ -368,11 +368,15 @@ public final class Button extends ActionComponent<ButtonContext, Function<Button
         }
 
         public Button build() {
+            return this.build(Optional.empty());
+        }
+
+        public Button build(Optional<String> label) {
             return this.getDefaultBuilder().apply(
                 Button.builder()
                     .withStyle(Button.Style.SECONDARY)
                     .withEmoji(this.getEmoji())
-                    .withLabel(this.getLabel())
+                    .withLabel(label.orElse(this.getLabel()))
                     .withPageType(this)
             ).build();
         }
