@@ -248,11 +248,15 @@ public class Response implements Paging {
 
         // Handle Item List
         if (this.getCurrentPage().isItemSelector()) {
+            int startIndex = (this.getCurrentPage().getItemPage() - 1) * this.getCurrentPage().getItemsPerPage();
+            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemsPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItems()));
+
             embeds.add(
                 Embed.builder()
                     .withFields(
                         this.getCurrentPage()
                             .getItems()
+                            .subList(startIndex, endIndex)
                             .stream()
                             .map(pageItem -> Field.of(
                                 FormatUtil.format(

@@ -216,7 +216,7 @@ public class Page implements Paging {
     }
 
     public final int getTotalItemPages() {
-        return (int) NumberUtil.round((double) this.items.size() / this.getItemsPerPage());
+        return NumberUtil.roundUp((double) this.items.size() / this.getItemsPerPage(), 1);
     }
 
     public final void gotoItemPage(int index) {
@@ -229,7 +229,7 @@ public class Page implements Paging {
     }
 
     public final void gotoLastItemPage() {
-        this.gotoItemPage(this.items.size());
+        this.gotoItemPage(this.getTotalItemPages());
     }
 
     public final void gotoNextItemPage() {
