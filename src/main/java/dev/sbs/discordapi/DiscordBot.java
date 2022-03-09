@@ -23,7 +23,6 @@ import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
@@ -56,16 +55,19 @@ import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
 import discord4j.rest.util.AllowedMentions;
+import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import reactor.core.publisher.Flux;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
+import reactor.retry.Retry;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("all")
 public abstract class DiscordBot {
 
     private static final Pattern tokenValidator = Pattern.compile("[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}");
@@ -81,7 +83,6 @@ public abstract class DiscordBot {
     @Getter private Guild mainGuild;
     @Getter private User self;
 
-    @SuppressWarnings("all")
     protected DiscordBot() { // Discord4J - https://github.com/Discord4J/Discord4J
         this.log = new DiscordLogger(this, this.getClass()); // Initialize Logger
 
@@ -103,7 +104,7 @@ public abstract class DiscordBot {
             .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Globally Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
-            //.onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))) // Retry SocketExceptions
+            .onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))) // Retry SocketExceptions
             .build();
 
         this.getLog().info("Registering Commands");
@@ -123,29 +124,21 @@ public abstract class DiscordBot {
                     .getChannelById(entry.getChannelId())
                     .ofType(MessageChannel.class)
                     .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
-                    .flatMap(message -> {
-                        Mono<?> handle = message.removeAllReactions();
-                        Response response = entry.getResponse();
+                    .flatMap(message -> Mono.just(entry.getResponse())
+                        .flatMap(response -> {
+                            // Remove All Reactions
+                            Mono<?> handle = message.removeAllReactions();
 
-                        // Check For Preserved Components
-                        boolean preservedComponent = response.getCurrentPage()
-                            .getComponents()
-                            .stream()
-                            .anyMatch(layoutComponent -> layoutComponent.getComponents()
-                                .stream()
-                                .anyMatch(Component::isPreserved)
-                            );
+                            // Remove Non-Preserved Components
+                            Response editedResponse = response.mutate()
+                                .clearAllComponents()
+                                .isRenderingPagingComponents(false)
+                                .build();
 
-                        // Handle Preserved Components TODO
-                        //if (preservedComponent)
-                        //    response = response.mutate().clearComponents().build();
-
-                        // Remove Discord Message Components
-                        if (response.isInteractable())
-                            handle = handle.then(message.edit(response.getD4jEditSpec()));
-
-                        return handle;
-                    })
+                            // Update Message Components
+                            return handle.then(message.edit(editedResponse.getD4jEditSpec()));
+                        })
+                    )
                     .subscribe();
             }
         }), 0, 1, TimeUnit.SECONDS);
@@ -181,7 +174,7 @@ public abstract class DiscordBot {
                     this.onDatabaseConnected();
 
                     this.getLog().info("Registering Built-in Event Listeners");
-                    ConcurrentList<Flux<Void>> eventListeners = Concurrent.newList(
+                    ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
                         eventDispatcher.on(MessageCreateEvent.class, new MessageCommandListener(this)),
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),

@@ -300,17 +300,25 @@ public class Page implements Paging {
          * Clear all but preservable components from {@link Page}.
          */
         public PageBuilder clearComponents() {
-            return this.clearComponents(true);
+            return this.clearComponents(false);
+        }
+
+        /**
+         * Clear all but preservable components from {@link Page}.
+         *
+         * @param recursive True to recursively clear components.
+         */
+        public PageBuilder clearComponents(boolean recursive) {
+            return this.clearComponents(recursive, true);
         }
 
         /**
          * Clear all components from {@link Page}.
-         * <br><br>
-         * True to leave preserved components.
          *
+         * @param recursive True to recursively clear components.
          * @param enforcePreserve True to leave preservable components.
          */
-        public PageBuilder clearComponents(boolean enforcePreserve) {
+        public PageBuilder clearComponents(boolean recursive, boolean enforcePreserve) {
             // Remove Possibly Preserved Components
             this.components.stream()
                 .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
@@ -319,6 +327,9 @@ public class Page implements Paging {
                     .filter(component -> !enforcePreserve || component.notPreserved())
                     .forEach(component -> layoutComponent.getComponents().remove(component))
                 );
+
+            if (recursive)
+                this.pages.forEach(page -> this.editPage(page.mutate().clearComponents(true, enforcePreserve).build()));
 
             // Remove Empty Layout Components
             this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
@@ -382,7 +393,7 @@ public class Page implements Paging {
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public PageBuilder editPage(@NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
@@ -392,9 +403,23 @@ public class Page implements Paging {
          * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(int index, Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public PageBuilder editPage(int index, @NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
             if (index < this.pages.size())
                 this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
+
+            return this;
+        }
+
+        /**
+         * Updates an existing {@link Page}.
+         *
+         * @param page The page to edit.
+         */
+        public PageBuilder editPage(@NotNull Page page) {
+            this.pages.stream()
+                .filter(existingPage -> existingPage.getUniqueId().equals(page.getUniqueId()))
+                .findFirst()
+                .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
             return this;
         }
