@@ -172,7 +172,7 @@ public abstract class DiscordObject {
             if (ListUtil.notEmpty(optionDataList)) {
                 ApplicationCommandInteractionOptionData firstOptionData = optionDataList.get(0);
 
-                if (firstOptionData.type() <= 2)
+                if (firstOptionData.type() <= 2) // Sub Command / Group
                     commandTree.add(this.getCommandName(firstOptionData));
             }
         }
