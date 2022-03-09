@@ -299,7 +299,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
 
                 userErrorBuilder = Optional.of(embedBuilder);
             } catch (HelpCommandException helpCommandException) {
-                userErrorBuilder = Optional.of(createHelpEmbedBuilder(commandContext.getRelationship()));
+                userErrorBuilder = Optional.of(createHelpEmbedBuilder(commandContext.getRelationship(), commandContext));
             } catch (ParameterException parameterException) {
                 Argument argument = (Argument) parameterException.getData().get("ARGUMENT");
                 Parameter parameter = argument.getParameter();
@@ -460,8 +460,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         }));
     }
 
-    private static Embed.EmbedBuilder createHelpEmbedBuilder(Relationship relationship) {
-        String parentCommands = StringUtil.join(relationship.getInstance().getParentCommandNames(), " ");
+    private static Embed.EmbedBuilder createHelpEmbedBuilder(Relationship relationship, CommandContext<?> commandContext) {
+        String commandPath = relationship.getInstance().getCommandPath(commandContext.isSlashCommand());
         CommandInfo commandInfo = relationship.getCommandInfo();
         ConcurrentList<Parameter> parameters = relationship.getInstance().getParameters();
 
@@ -480,9 +480,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                         <> - Required Parameters
                         [] - Optional Parameters
 
-                        {0} {1} {2}""",
-                    parentCommands,
-                    commandInfo.name(),
+                        {0} {1}""",
+                    commandPath,
                     StringUtil.join(
                         parameters.stream()
                             .map(parameter -> parameter.isRequired() ? FormatUtil.format("<{0}>", parameter.getName()) : FormatUtil.format("[{0}]", parameter.getName()))
@@ -500,7 +499,7 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                     relationship.getInstance()
                         .getExampleArguments()
                         .stream()
-                        .map(example -> FormatUtil.format("{0} {1} {2}", parentCommands, commandInfo.name(), example))
+                        .map(example -> FormatUtil.format("{0} {1}", commandPath, example))
                         .collect(Concurrent.toList()),
                     "\n"
                 )
@@ -510,8 +509,8 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return embedBuilder;
     }
 
-    public static Embed createHelpEmbed(Relationship relationship) {
-        return createHelpEmbedBuilder(relationship).build();
+    public static Embed createHelpEmbed(Relationship relationship, CommandContext<?> commandContext) {
+        return createHelpEmbedBuilder(relationship, commandContext).build();
     }
 
     public interface RelationshipData {
@@ -540,7 +539,12 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     @RequiredArgsConstructor
     public static class RootRelationship implements RelationshipData {
 
-        public static final RootRelationship DEFAULT = new RootRelationship(Optional.empty(), PrefixCommand.class, Concurrent.newUnmodifiableList());
+        public static final RootRelationship DEFAULT = new RootRelationship(
+            Optional.empty(),
+            PrefixCommand.class,
+            Concurrent.newUnmodifiableList()
+        );
+
         @Getter private final Optional<CommandInfo> optionalCommandInfo;
         @Getter private final Class<? extends PrefixCommand> commandClass;
         @Getter private final ConcurrentList<Relationship> subCommands;
