@@ -155,10 +155,10 @@ public abstract class Command extends DiscordObject implements CommandData, Func
         return this.getCommandConfig().isEnabled();
     }
 
-    protected abstract Mono<Void> process(CommandContext<?> commandContext) throws DiscordException;
+    protected abstract Mono<Void> process(@NotNull CommandContext<?> commandContext) throws DiscordException;
 
     @Override
-    public final Mono<Void> apply(CommandContext<?> commandContext) {
+    public final Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
             Optional<Embed.EmbedBuilder> userErrorBuilder;
 
