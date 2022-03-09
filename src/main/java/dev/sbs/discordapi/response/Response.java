@@ -20,6 +20,7 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -49,12 +50,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
-public class Response {
+public class Response implements Paging {
 
+    protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
     @Getter protected final long buildTime = System.currentTimeMillis();
     @Getter protected final UUID uniqueId;
+    @Getter protected final ConcurrentList<LayoutComponent<?>> pageComponents;
     @Getter protected final ConcurrentList<Page> pages;
-    @Getter protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
     @Getter protected final ConcurrentList<Attachment> attachments;
     @Getter protected final Optional<Snowflake> referenceId;
     @Getter protected final Scheduler reactorScheduler;
@@ -76,9 +78,29 @@ public class Response {
         boolean interactable,
         boolean loader,
         boolean ephemeral) {
+        ConcurrentList<LayoutComponent<?>> pageComponents = Concurrent.newList();
+
+        // Page List
+        if (ListUtil.sizeOf(pages) > 1) {
+            pageComponents.add(ActionRow.of(
+                SelectMenu.builder()
+                    .withPageType(SelectMenu.PageType.PAGE)
+                    .withPlaceholder("Select a page.")
+                    .withOptions(
+                        pages.stream()
+                            .filter(page -> !page.isItemSelector() || ListUtil.notEmpty(page.getItems()))
+                            .map(Page::getOption)
+                            .flatMap(Optional::stream)
+                            .collect(Concurrent.toList())
+                    )
+                    .build()
+            ));
+        }
+
         this.uniqueId = uniqueId;
         this.pages = pages;
         this.pageHistory.add(pages.get(0));
+        this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
         this.attachments = attachments;
         this.referenceId = referenceId;
         this.reactorScheduler = reactorScheduler;
@@ -88,6 +110,26 @@ public class Response {
         this.loader = loader;
         this.ephemeral = ephemeral;
     }
+
+    /*private static ConcurrentList<SelectMenu.Option> buildPagingSelectMenu(Paging paging, String parentNode, int depth) {
+        ConcurrentList<SelectMenu.Option> options = Concurrent.newList();
+        String concat = (StringUtil.repeat("", depth) + " ");
+
+        paging.getPages().forEach(subPage -> subPage.getOption().ifPresent(option -> {
+            String newParentNode = StringUtil.strip(FormatUtil.format("{0}.{1}", parentNode, option.getValue()), ".");
+
+            options.add(
+                option.mutate()
+                    .withLabel(FormatUtil.format("{0} {1}", concat, option.getLabel()).trim())
+                    .withValue(newParentNode)
+                    .build()
+            );
+
+            options.addAll(buildPagingSelectMenu(subPage, newParentNode, depth + 1));
+        }));
+
+        return options;
+    }*/
 
     public static ResponseBuilder builder() {
         return new ResponseBuilder(UUID.randomUUID());
@@ -121,7 +163,7 @@ public class Response {
             .build();
     }
 
-    public static ResponseBuilder from(Response response) {
+    public static ResponseBuilder from(@NotNull Response response) {
         return new ResponseBuilder(response.getUniqueId())
             .withPages(response.getPages())
             .withAttachments(response.getAttachments())
@@ -145,7 +187,7 @@ public class Response {
             .build();
     }
 
-    public MessageCreateMono getD4jCreateMono(MessageChannel channel) {
+    public MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
         return MessageCreateMono.of(channel)
             .withContent(this.getCurrentPage().getContent().orElse(""))
             .withAllowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
@@ -177,10 +219,14 @@ public class Response {
     private ConcurrentList<LayoutComponent<?>> getCurrentComponents() {
         ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
 
-        // Page Components
+        // Paging Components
+        if (!this.hasPageHistory())
+            components.addAll(this.getPageComponents());
+
+        // Current Page Paging Components
         components.addAll(this.getCurrentPage().getPageComponents());
 
-        // Back Button
+        // Paging Back Button
         if (this.hasPageHistory())
             components.add(ActionRow.of(this.getBackButton()));
 
@@ -224,7 +270,7 @@ public class Response {
     }
 
     public final Page getCurrentPage() {
-        return this.pageHistory.get(this.pageHistory.size() - 1);
+        return this.pageHistory.getLast();
     }
 
     public final ConcurrentList<String> getPageHistoryIdentifiers() {
@@ -237,7 +283,31 @@ public class Response {
         );
     }
 
+    /**
+     * Gets a {@link Page} from the {@link Response}.
+     *
+     * @param identifier the page option value.
+     */
     public final Optional<Page> getPage(String identifier) {
+        return this.getPages()
+            .stream()
+            .filter(page -> page.getOption()
+                .map(pageOption -> pageOption.getValue().equals(identifier))
+                .orElse(false)
+            )
+            .findFirst();
+    }
+
+    public final ConcurrentList<Page> getPageHistory() {
+        return Concurrent.newUnmodifiableList(this.pageHistory);
+    }
+
+    /**
+     * Gets a {@link Page SubPage} from the {@link Page CurrentPage}.
+     *
+     * @param identifier the subpage option value.
+     */
+    public final Optional<Page> getSubPage(String identifier) {
         return this.getCurrentPage()
             .getPages()
             .stream()
@@ -248,20 +318,14 @@ public class Response {
             .findFirst();
     }
 
-    public final Optional<Page> getSubPage(String identifier) {
-        return this.getCurrentPage()
-            .getSubPages()
-            .stream()
-            .filter(page -> page.getOption()
-                .map(pageOption -> pageOption.getValue().equals(identifier))
-                .orElse(false)
-            )
-            .findFirst();
-    }
-
+    /**
+     * Changes the current {@link Page} to a top-level page in {@link Response} using the given identifier.
+     *
+     * @param identifier the page option value.
+     */
     public final void gotoPage(String identifier) {
-        this.pageHistory.set(
-            this.pageHistory.size() - 1,
+        this.pageHistory.clear();
+        this.pageHistory.add(
             this.getPage(identifier).orElseThrow(
                 () -> SimplifiedException.of(DiscordException.class)
                     .withMessage("Unable to locate page identified by ''{0}''!", identifier)
@@ -272,6 +336,11 @@ public class Response {
         this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
     }
 
+    /**
+     * Changes the current {@link Page} to a subpage of the current {@link Page} using the given identifier.
+     *
+     * @param identifier the subpage option value.
+     */
     public final void gotoSubPage(String identifier) {
         this.pageHistory.add(this.getSubPage(identifier).orElseThrow(
             () -> SimplifiedException.of(DiscordException.class)
@@ -284,7 +353,7 @@ public class Response {
 
     public final void gotoPreviousPage() {
         if (this.hasPageHistory()) {
-            this.pageHistory.remove(this.pageHistory.size() - 1);
+            this.pageHistory.removeLast();
             this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
         }
     }
@@ -309,7 +378,7 @@ public class Response {
     }
 
     public final boolean hasPageHistory() {
-        return this.pageHistory.size() > 1;
+        return ListUtil.sizeOf(this.pageHistory) > 1;
     }
 
     public Response.ResponseBuilder mutate() {

@@ -30,27 +30,36 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .filter(responseCacheEntry -> responseCacheEntry.getMessageId().equals(event.getMessageId())) // Validate Message ID
             .filter(responseCacheEntry -> responseCacheEntry.getUserId().equals(event.getInteraction().getUser().getId())) // Validate User ID
             .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
-            .flatMap(responseCacheEntry -> Flux.fromIterable(responseCacheEntry.getResponse().getCurrentPage().getPageComponents())
+            .flatMap(responseCacheEntry -> Flux.fromIterable(responseCacheEntry.getResponse().getPageComponents())
                 .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                 .filter(this.componentClass::isInstance) // Validate Component Type
                 .map(this.componentClass::cast)
                 .filter(component -> event.getCustomId().equals(component.getUniqueId().toString())) // Validate Component ID
                 .singleOrEmpty()
-                .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Paging
+                .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Response Paging
                 .switchIfEmpty(
-                    Flux.fromIterable(responseCacheEntry.getResponse().getCurrentPage().getComponents())
+                    Flux.fromIterable(responseCacheEntry.getResponse().getCurrentPage().getPageComponents())
                         .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                         .filter(this.componentClass::isInstance) // Validate Component Type
                         .map(this.componentClass::cast)
                         .filter(component -> event.getCustomId().equals(component.getUniqueId().toString())) // Validate Component ID
                         .singleOrEmpty()
-                        .flatMap(component -> this.handleInteraction(event, responseCacheEntry, component)) // Handle Interaction
+                        .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle SubPage Paging
                         .switchIfEmpty(
-                            Mono.just(responseCacheEntry.getResponse().getBackButton())
+                            Flux.fromIterable(responseCacheEntry.getResponse().getCurrentPage().getComponents())
+                                .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                                 .filter(this.componentClass::isInstance) // Validate Component Type
                                 .map(this.componentClass::cast)
                                 .filter(component -> event.getCustomId().equals(component.getUniqueId().toString())) // Validate Component ID
-                                .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Back Button
+                                .singleOrEmpty()
+                                .flatMap(component -> this.handleInteraction(event, responseCacheEntry, component)) // Handle Interaction
+                                .switchIfEmpty(
+                                    Mono.just(responseCacheEntry.getResponse().getBackButton())
+                                        .filter(this.componentClass::isInstance) // Validate Component Type
+                                        .map(this.componentClass::cast)
+                                        .filter(component -> event.getCustomId().equals(component.getUniqueId().toString())) // Validate Component ID
+                                        .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Back Button
+                                )
                         )
                 )
             )

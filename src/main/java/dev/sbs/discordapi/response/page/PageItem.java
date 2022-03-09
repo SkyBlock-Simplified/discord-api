@@ -60,12 +60,11 @@ public final class PageItem {
             return this;
         }
 
-        public PageItemBuilder withOption(SelectMenu.Option option) {
-            this.optionBuilder.withEmoji(option.getEmoji())
+        public PageItemBuilder withOption(@NotNull SelectMenu.Option option) {
+            return this.withEmoji(option.getEmoji())
                 .withDescription(option.getDescription())
                 .withLabel(option.getLabel())
                 .withValue(option.getValue());
-            return this;
         }
 
         public PageItemBuilder withValue(@NotNull String value) {
