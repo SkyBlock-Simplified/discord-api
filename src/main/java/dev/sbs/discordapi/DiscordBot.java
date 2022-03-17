@@ -1,7 +1,6 @@
 package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
@@ -12,8 +11,6 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.PrefixCommand;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
@@ -21,17 +18,14 @@ import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
-import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
-import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.DiscordCommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordLogger;
-import dev.sbs.discordapi.util.DiscordResponseCache;
-import dev.sbs.discordapi.util.DiscordShardHandler;
+import dev.sbs.discordapi.util.base.DiscordErrorObject;
+import dev.sbs.discordapi.util.cache.DiscordCommandRegistrar;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.util.shard.DiscordShardHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -62,13 +56,16 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.retry.Retry;
 
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+/**
+ * Discord Bot Framework. Powered by Discord4J.
+ *
+ * @see https://github.com/Discord4J/Discord4J
+ */
 @SuppressWarnings("all")
-public abstract class DiscordBot {
+public abstract class DiscordBot extends DiscordErrorObject {
 
     private static final Pattern tokenValidator = Pattern.compile("[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}");
 
@@ -83,7 +80,7 @@ public abstract class DiscordBot {
     @Getter private Guild mainGuild;
     @Getter private User self;
 
-    protected DiscordBot() { // Discord4J - https://github.com/Discord4J/Discord4J
+    protected DiscordBot() {
         this.log = new DiscordLogger(this, this.getClass()); // Initialize Logger
 
         this.getLog().info("Loading Configuration");
@@ -184,7 +181,7 @@ public abstract class DiscordBot {
                     );
 
                     this.getLog().info("Registering Custom Event Listeners");
-                    this.getAllListeners().forEach(listenerClass -> {
+                    this.getListeners().forEach(listenerClass -> {
                         DiscordListener<? super Event> discordListener = (DiscordListener<? super Event>) Reflection.of(listenerClass).newInstance(this);
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
@@ -204,27 +201,26 @@ public abstract class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
-    @NotNull
-    protected ConcurrentList<Class<? extends DiscordListener<? extends Event>>> getAllListeners() {
+    protected @NotNull ConcurrentList<Class<? extends DiscordListener<? extends Event>>> getListeners() {
         return Concurrent.newUnmodifiableList();
     }
 
-    @NotNull
-    protected abstract ConcurrentSet<Class<? extends Command>> getCommands();
+    protected abstract @NotNull ConcurrentSet<Class<? extends Command>> getCommands();
 
-    @NotNull
-    public abstract DiscordConfig getConfig();
+    public abstract @NotNull DiscordConfig getConfig();
 
-    @NotNull
-    protected abstract AllowedMentions getDefaultAllowedMentions();
+    protected abstract @NotNull AllowedMentions getDefaultAllowedMentions();
 
-    @NotNull
-    public IntentSet getDisabledIntents() {
+    public @NotNull IntentSet getDisabledIntents() {
         return IntentSet.of(Intent.GUILD_PRESENCES, Intent.GUILD_MEMBERS);
     }
 
-    @NotNull
-    protected abstract ClientPresence getInitialPresence(ShardInfo shardInfo);
+    @Override
+    protected final @NotNull DiscordBot getDiscordBot() {
+        return this;
+    }
+
+    protected abstract @NotNull ClientPresence getInitialPresence(ShardInfo shardInfo);
 
     protected @NotNull Class<? extends PrefixCommand> getPrefixCommand() {
         return PrefixCommand.class;
@@ -232,136 +228,6 @@ public abstract class DiscordBot {
 
     public final @NotNull Command.RootRelationship getRootCommandRelationship() {
         return this.getCommandRegistrar().getRootCommandRelationship();
-    }
-
-    public final <T> Mono<T> handleUncaughtException(ExceptionContext<?> exceptionContext) {
-        String errorId = UUID.randomUUID().toString();
-        String locationValue = "DM";
-        String channelValue = "N/A";
-        Optional<Snowflake> messageId = Optional.empty();
-
-        // Get Message ID
-        if (exceptionContext.getEventContext() instanceof MessageContext)
-            messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
-
-        // Handle Private Channels
-        if (!exceptionContext.isPrivateChannel()) {
-            Optional<MessageChannel> messageChannel = exceptionContext.getChannel().blockOptional();
-
-            locationValue = FormatUtil.format(
-                "{0}\n{1}",
-                exceptionContext.getGuild().map(Guild::getName).blockOptional().orElse("Unknown").replace("`", ""),
-                exceptionContext.getGuildId().map(Snowflake::asString).orElse("---")
-            );
-
-            channelValue = FormatUtil.format(
-                "{0}\n{1}",
-                messageChannel.map(MessageChannel::getMention).orElse("Unknown"),
-                exceptionContext.getChannelId().asString()
-            );
-        }
-
-        // Build Default Error Embed
-        Embed defaultEmbedBuilder = Embed.from(exceptionContext.getException())
-            .withAuthor(
-                "Exception",
-                SimplifiedApi.getRepositoryOf(EmojiModel.class)
-                    .findFirst(EmojiModel::getKey, "STATUS_HIGH_IMPORTANCE")
-                    .flatMap(Emoji::of)
-                    .map(Emoji::getUrl)
-            )
-            .withTitle(exceptionContext.getTitle())
-            .withField(
-                "Error ID",
-                errorId
-            )
-            .build();
-
-        // Build User Error
-        Response userErrorResponse = Response.builder()
-            .isInteractable(false)
-            .withReference(messageId)
-            .withPages(
-                Page.builder()
-                    .withEmbeds(
-                        defaultEmbedBuilder.mutate()
-                            .withField(
-                                "Notice",
-                                "This error has been automatically reported to the developer."
-                            )
-                            .build()
-                    )
-                    .build()
-            )
-            .build();
-
-        // Build Log Channel Embed
-        Embed.EmbedBuilder logErrorBuilder = defaultEmbedBuilder.mutate()
-            .withFields(
-                Field.of(
-                    "User",
-                    FormatUtil.format(
-                        "{0}\n{1}",
-                        exceptionContext.getInteractUser().map(User::getMention).blockOptional().orElse("Unknown"),
-                        exceptionContext.getInteractUserId().asString()
-                    ),
-                    true
-                ),
-                Field.of(
-                    "Location",
-                    locationValue,
-                    true
-                ),
-                Field.of(
-                    "Channel",
-                    channelValue,
-                    true
-                )
-            );
-
-        if (!exceptionContext.isPrivateChannel() && messageId.isPresent())
-            logErrorBuilder.withField(
-                "Message Link",
-                FormatUtil.format(
-                    "https://discord.com/channels/{0}/{1}/{2}",
-                    exceptionContext.getGuildId().map(Snowflake::asString).orElse("@me"),
-                    exceptionContext.getChannelId().asString(),
-                    messageId.get().asString()
-                )
-            );
-
-        // Handle Calling Fields
-        exceptionContext.getEmbedBuilderConsumer().ifPresent(consumer -> consumer.accept(logErrorBuilder));
-
-        // Add SimplifiedException Fields
-        if (exceptionContext.getException() instanceof SimplifiedException)
-            logErrorBuilder.withFields((SimplifiedException) exceptionContext.getException());
-
-        // Log Error Message & Send User Error Response
-        // TODO: Log to mysql configured log channel
-        return exceptionContext.getChannel()
-            .flatMap(userErrorResponse::getD4jCreateMono)
-            .then(
-                Mono.just(this.getMainGuild())
-                    .flatMap(guild -> guild.getChannelById(Snowflake.of(929259633640628224L)))
-                    .ofType(MessageChannel.class)
-                    .flatMap(messageChannel -> {
-                        Response logResponse = Response.builder()
-                            .isInteractable(false)
-                            .withException(exceptionContext.getException())
-                            .withPages(
-                                Page.builder()
-                                    .withEmbeds(logErrorBuilder.build())
-                                    .build()
-                            )
-                            .build();
-
-                        return Mono.just(messageChannel)
-                            .publishOn(logResponse.getReactorScheduler())
-                            .flatMap(logResponse::getD4jCreateMono);
-                    })
-            )
-            .then(Mono.error(exceptionContext.getException()));
     }
 
     protected abstract void loadConfig();

@@ -7,7 +7,7 @@ import dev.sbs.discordapi.context.message.interaction.reaction.ReactionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageEvent;
 import org.reactivestreams.Publisher;

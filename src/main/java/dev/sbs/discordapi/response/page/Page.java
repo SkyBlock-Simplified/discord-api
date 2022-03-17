@@ -67,8 +67,8 @@ public class Page implements Paging {
         // Page Components
         ConcurrentList<LayoutComponent<?>> pageComponents = Concurrent.newList();
 
+        // SubPage List
         if (ListUtil.notEmpty(pages)) {
-            // SubPage List
             pageComponents.add(ActionRow.of(
                 SelectMenu.builder()
                     .withPageType(SelectMenu.PageType.SUBPAGE)

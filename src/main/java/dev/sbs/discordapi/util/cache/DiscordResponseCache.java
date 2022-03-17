@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.util.cache;
 
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;

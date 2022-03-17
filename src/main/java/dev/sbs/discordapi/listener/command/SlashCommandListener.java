@@ -31,9 +31,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
     public Publisher<Void> apply(ChatInputInteractionEvent event) {
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
-            .map(interaction -> interaction.getData().data().toOptional())
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+            .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getDeepestCommand(commandData)).flatMap(relationship -> {
                 ConcurrentList<ApplicationCommandInteractionOptionData> remainingArguments = Concurrent.newList(commandData.options().toOptional().orElse(Concurrent.newList()));
 

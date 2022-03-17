@@ -35,9 +35,7 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
 
                 return Mono.justOrEmpty(this.getDiscordBot().getCommandRegistrar().getPrefixCommand())
                     .filter(prefixCommand -> prefixCommand == null || this.getCommandAnnotation(prefixCommand).filter(command -> this.doesCommandMatch(command, messageArguments[0])).isPresent())
-                    .map(prefixCommand -> this.getDeepestCommand(messageArguments))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
+                    .flatMap(prefixCommand -> Mono.justOrEmpty(this.getDeepestCommand(messageArguments)))
                     .flatMap(relationship -> {
                         ConcurrentList<String> remainingArguments = Concurrent.newList(messageArguments);
 

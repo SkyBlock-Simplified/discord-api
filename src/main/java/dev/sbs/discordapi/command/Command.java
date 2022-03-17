@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.command;
 
-import dev.sbs.api.client.exception.HypixelApiException;
-import dev.sbs.api.client.exception.MojangApiException;
 import dev.sbs.api.data.model.discord.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.command_groups.CommandGroupModel;
@@ -9,7 +7,6 @@ import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigMo
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
@@ -24,24 +21,16 @@ import dev.sbs.discordapi.command.exception.DisabledCommandException;
 import dev.sbs.discordapi.command.exception.HelpCommandException;
 import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
 import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
-import dev.sbs.discordapi.command.exception.parameter.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
-import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
-import dev.sbs.discordapi.command.exception.user.UserInputException;
-import dev.sbs.discordapi.command.exception.user.UserVerificationException;
 import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
-import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.DiscordObject;
+import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
-import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.rest.util.Permission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -49,12 +38,11 @@ import reactor.core.publisher.Mono;
 
 import java.awt.*;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public abstract class Command extends DiscordObject implements CommandData, Function<CommandContext<?>, Mono<Void>> {
+public abstract class Command extends DiscordHelper implements CommandData, Function<CommandContext<?>, Mono<Void>> {
 
     private static final ConcurrentUnmodifiableList<Parameter> NO_PARAMETERS = Concurrent.newUnmodifiableList();
     private static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
@@ -160,8 +148,6 @@ public abstract class Command extends DiscordObject implements CommandData, Func
     @Override
     public final Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
-            Optional<Embed.EmbedBuilder> userErrorBuilder;
-
             try {
                 // Handle Disabled Command
                 if (!this.isEnabled())
@@ -251,216 +237,48 @@ public abstract class Command extends DiscordObject implements CommandData, Func
                 }
 
                 // Process Command
-                return commandContext.deferReply().then(Mono.fromCallable(() -> this.process(commandContext)).flatMap(Function.identity()));
-            } catch (DisabledCommandException disabledCommandException) {
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("Disabled Command", getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
-                        .withDescription("This command is currently disabled.")
-                );
-            } catch (PermissionException permissionException) {
-                boolean botPermissions = (permissionException instanceof BotPermissionException);
-
-                Embed.EmbedBuilder embedBuilder = Embed.builder()
-                    .withAuthor(FormatUtil.format("Missing {0} Permissions", (botPermissions ? "Bot" : "User")), getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
-                    .withDescription(permissionException.getMessage());
-
-                if (botPermissions) {
-                    Snowflake snowflake = (Snowflake) permissionException.getData().get("ID");
-                    Permission[] permissions = (Permission[]) permissionException.getData().get("PERMISSIONS");
-                    ConcurrentLinkedMap<Permission, Boolean> permissionMap = this.getChannelPermissionMap(snowflake, commandContext.getChannel().ofType(GuildChannel.class), permissions);
-
-                    embedBuilder.withField(
-                            "Required Permissions",
-                            StringUtil.join(
-                                permissionMap.stream()
-                                    .filter(entry -> !entry.getValue())
-                                    .map(Map.Entry::getKey)
-                                    .map(Permission::name)
-                                    .collect(Concurrent.toList()),
-                                "\n"
-                            ),
-                            true
-                        )
-                        .withField(
-                            "Status",
-                            StringUtil.join(
-                                permissionMap.stream()
-                                    .map(Map.Entry::getValue)
-                                    .filter(value -> !value)
-                                    .map(value -> getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
-                                    .collect(Concurrent.toList()),
-                                "\n"
-                            ),
-                            true
-                        )
-                        .withEmptyField(true);
-                }
-
-                userErrorBuilder = Optional.of(embedBuilder);
-            } catch (HelpCommandException helpCommandException) {
-                userErrorBuilder = Optional.of(createHelpEmbedBuilder(commandContext.getRelationship(), commandContext));
-            } catch (ParameterException parameterException) {
-                Argument argument = (Argument) parameterException.getData().get("ARGUMENT");
-                Parameter parameter = argument.getParameter();
-                boolean missing = (boolean) parameterException.getData().get("MISSING");
-                String missingDescription = "You did not provide a required parameter.";
-                String invalidDescription = "The provided argument does not validate against the expected parameter.";
-
-                Embed.EmbedBuilder embedBuilder = Embed.builder()
-                    .withAuthor(
-                        FormatUtil.format("{0} Parameter", (missing ? "Missing" : "Invalid")),
-                        getEmoji("STATUS_INFO").map(Emoji::getUrl)
-                    )
-                    .withDescription(missing ? missingDescription : invalidDescription)
-                    .withFields(
-                        Field.of(
-                            "Parameter",
-                            parameter.getName(),
-                            true
-                        ),
-                        Field.of(
-                            "Required",
-                            parameter.isRequired() ? "Yes" : "No",
-                            true
-                        ),
-                        Field.of(
-                            "Type",
-                            parameter.getType().name(),
-                            true
-                        )
-                    )
-                    .withField(
-                        "Description",
-                        parameter.getDescription()
-                    );
-
-                if (!missing)
-                    embedBuilder.withField(
-                        "Argument",
-                        argument.getValue().orElse(getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("*<null>*"))
-                    );
-
-                userErrorBuilder = Optional.of(embedBuilder);
-            } catch (MojangApiException mojangApiException) {
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                        .withDescription(mojangApiException.getErrorResponse().getReason())
-                        .withFields(
-                            Field.of(
-                                "State",
-                                mojangApiException.getHttpStatus().getState().getTitle(),
-                                true
-                            ),
-                            Field.of(
-                                "Code",
-                                String.valueOf(mojangApiException.getHttpStatus().getCode()),
-                                true
-                            ),
-                            Field.of(
-                                "Message",
-                                mojangApiException.getHttpStatus().getMessage(),
-                                true
-                            )
-                        )
-                );
-            } catch (HypixelApiException hypixelApiException) {
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("Hypixel Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                        .withDescription(hypixelApiException.getErrorResponse().getReason())
-                        .withFields(
-                            Field.of(
-                                "State",
-                                hypixelApiException.getHttpStatus().getState().getTitle(),
-                                true
-                            ),
-                            Field.of(
-                                "Code",
-                                String.valueOf(hypixelApiException.getHttpStatus().getCode()),
-                                true
-                            ),
-                            Field.of(
-                                "Message",
-                                hypixelApiException.getHttpStatus().getMessage(),
-                                true
-                            )
-                        )
-                );
-            } catch (UserInputException userInputException) {
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("User Input Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
-                        .withDescription(userInputException.getMessage())
-                        .withFields(userInputException)
-                );
-            } catch (UserVerificationException userVerificationException) {
-                String defaultMessage = "You must be verified to run this command!";
-                String commandMessage = "You must be verified to run this command without providing a Minecraft Username or UUID!";
-                String exceptionMessage = userVerificationException.getMessage();
-                boolean useExceptionMessage = (boolean) userVerificationException.getData().getOrDefault("MESSAGE", false);
-                boolean useCommandMessage = (boolean) userVerificationException.getData().getOrDefault("COMMAND", false);
-
-                userErrorBuilder = Optional.of(
-                    Embed.builder()
-                        .withAuthor("User Verification Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
-                        .withDescription(useExceptionMessage ? exceptionMessage : (useCommandMessage ? commandMessage : defaultMessage))
-                        .withFields(userVerificationException)
-                );
+                return commandContext.deferReply()
+                    .then(Mono.fromCallable(() -> this.process(commandContext)))
+                    .flatMap(Function.identity())
+                    .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(buildExceptionContext(this, commandContext, throwable)));
             } catch (Exception uncaughtException) {
-                return this.getDiscordBot().handleUncaughtException(
-                        ExceptionContext.of(
-                            this.getDiscordBot(),
-                            commandContext,
-                            uncaughtException,
-                            "Command Exception",
-                            embedBuilder -> embedBuilder.withFields(
-                                Field.of(
-                                    "Command",
-                                    this.getCommandPath(commandContext.isSlashCommand())
-                                ),
-                                Field.of(
-                                    "Arguments",
-                                    StringUtil.join(
-                                        commandContext.getArguments()
-                                            .stream()
-                                            .filter(argument -> argument.getValue().isPresent())
-                                            .map(argument -> argument.getValue().get())
-                                            .collect(Concurrent.toList()),
-                                        " "
-                                    ),
-                                    true
-                                )
-                            )
-                        )
-                    )
-                    .then();
+                return this.getDiscordBot().handleException(buildExceptionContext(this, commandContext, uncaughtException));
             }
-
-            // Handle User Error Response
-            return userErrorBuilder.map(embedBuilder -> commandContext.reply(
-                    Response.builder()
-                        .isInteractable(false)
-                        .isEphemeral()
-                        .withReference(commandContext)
-                        .withPages(
-                            Page.builder()
-                                .withEmbeds(
-                                    embedBuilder.withColor(Color.DARK_GRAY)
-                                        .withTitle("Command :: {0}", this.getCommandPath(commandContext.isSlashCommand()))
-                                        .withTimestamp(Instant.now())
-                                        .build()
-                                )
-                                .build()
-                        )
-                        .build()
-                ))
-                .orElse(Mono.empty());
         }));
     }
 
-    private static Embed.EmbedBuilder createHelpEmbedBuilder(Relationship relationship, CommandContext<?> commandContext) {
+    private static ExceptionContext<?> buildExceptionContext(Command command, CommandContext<?> commandContext, Throwable throwable) {
+        String commandPath = command.getCommandPath(commandContext.isSlashCommand());
+
+        return ExceptionContext.of(
+            command.getDiscordBot(),
+            commandContext,
+            throwable,
+            "Command Exception",
+            embedBuilder -> embedBuilder.withTitle("Command :: {0}", commandPath)
+                .withFields(
+                    Field.of(
+                        "Command",
+                        commandPath,
+                        true
+                    ),
+                    Field.of(
+                        "Arguments",
+                        StringUtil.join(
+                            commandContext.getArguments()
+                                .stream()
+                                .filter(argument -> argument.getValue().isPresent())
+                                .map(argument -> argument.getValue().get())
+                                .collect(Concurrent.toList()),
+                            " "
+                        ),
+                        true
+                    )
+                )
+        );
+    }
+
+    public static Embed.EmbedBuilder createHelpEmbedBuilder(Relationship relationship, CommandContext<?> commandContext) {
         String commandPath = relationship.getInstance().getCommandPath(commandContext.isSlashCommand());
         CommandInfo commandInfo = relationship.getCommandInfo();
         ConcurrentList<Parameter> parameters = relationship.getInstance().getParameters();

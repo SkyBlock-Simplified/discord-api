@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.util.cache;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.SimplifiedException;
@@ -13,6 +13,7 @@ import dev.sbs.discordapi.command.PrefixCommand;
 import dev.sbs.discordapi.command.data.CommandInfo;
 import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
+import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
@@ -26,13 +27,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-public class DiscordCommandRegistrar extends DiscordObject {
+public class DiscordCommandRegistrar extends DiscordHelper {
 
     @Getter private final @NotNull Command.RootRelationship rootCommandRelationship;
     @Getter private final @NotNull Optional<Class<? extends PrefixCommand>> prefixCommand;
-    @Getter private final @NotNull ConcurrentSet<Class<? extends Command>> subCommands;
+    @Getter private final @NotNull ConcurrentSet<Class<? extends Command>> commands;
 
-    DiscordCommandRegistrar(@NotNull DiscordBot discordBot, @NotNull Optional<Class<? extends PrefixCommand>> optionalPrefixCommand, @NotNull ConcurrentSet<Class<? extends Command>> subCommands) {
+    DiscordCommandRegistrar(@NotNull DiscordBot discordBot, @NotNull Optional<Class<? extends PrefixCommand>> optionalPrefixCommand, @NotNull ConcurrentSet<Class<? extends Command>> commands) {
         super(discordBot);
 
         optionalPrefixCommand.filter(prefixCommand -> !PrefixCommand.class.equals(prefixCommand))
@@ -46,46 +47,46 @@ public class DiscordCommandRegistrar extends DiscordObject {
             });
 
         this.getLog().info("Validating Commands");
-        this.validateCommands(subCommands, optionalPrefixCommand);
+        this.validateCommands(commands, optionalPrefixCommand);
 
         this.getLog().info("Registering Commands");
         this.prefixCommand = optionalPrefixCommand;
-        this.subCommands = Concurrent.newUnmodifiableSet(subCommands);
-        this.rootCommandRelationship = this.getRootRelationshipTree(subCommands, optionalPrefixCommand);
+        this.commands = Concurrent.newUnmodifiableSet(commands);
+        this.rootCommandRelationship = this.getRootRelationshipTree(commands, optionalPrefixCommand);
     }
 
-    private Command.RootRelationship getRootRelationshipTree(ConcurrentSet<Class<? extends Command>> subCommands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
+    private Command.RootRelationship getRootRelationshipTree(ConcurrentSet<Class<? extends Command>> commands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
         ConcurrentList<Command.Relationship> subCommandRelationships = Concurrent.newList();
 
-        subCommands.forEach(commandClass -> this.getCommandAnnotation(commandClass)
+        commands.forEach(commandClass -> this.getCommandAnnotation(commandClass)
             .ifPresentOrElse(commandInfo -> {
                 if (commandInfo.parent().equals(Command.class))
-                    subCommandRelationships.add(this.getRelationshipTree(subCommands, commandInfo, commandClass));
+                    subCommandRelationships.add(this.getRelationshipTree(commands, commandInfo, commandClass));
             }, () -> this.getLog().warn("The command class ''{0}'' does not have a CommandInfo annotation and will be ignored.", commandClass.getName()))
         );
 
         return optionalPrefixCommand.map(prefixCommand -> new Command.RootRelationship(this.getCommandAnnotation(prefixCommand), prefixCommand, subCommandRelationships)).orElse(Command.RootRelationship.DEFAULT);
     }
 
-    private Command.Relationship getRelationshipTree(ConcurrentSet<Class<? extends Command>> subCommands, CommandInfo currentCommandInfo, Class<? extends Command> currentCommandClass) {
+    private Command.Relationship getRelationshipTree(ConcurrentSet<Class<? extends Command>> commands, CommandInfo currentCommandInfo, Class<? extends Command> currentCommandClass) {
         ConcurrentList<Command.Relationship> subCommandRelationships = Concurrent.newList();
 
         // Find SubCommands
-        subCommands.forEach(subCommandClass -> this.getCommandAnnotation(subCommandClass)
+        commands.forEach(subCommandClass -> this.getCommandAnnotation(subCommandClass)
             .filter(subCommandInfo -> subCommandInfo.parent().equals(currentCommandClass))
             .stream()
             .filter(subCommandInfo -> subCommandInfo.parent().equals(currentCommandClass))
-            .forEach(subCommandInfo -> subCommandRelationships.add(this.getRelationshipTree(subCommands, subCommandInfo, subCommandClass)))
+            .forEach(subCommandInfo -> subCommandRelationships.add(this.getRelationshipTree(commands, subCommandInfo, subCommandClass)))
         );
 
         return new Command.Relationship(currentCommandInfo, currentCommandClass, Reflection.of(currentCommandClass).newInstance(this.getDiscordBot()), subCommandRelationships);
     }
 
-    private void validateCommands(ConcurrentSet<Class<? extends Command>> subCommands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
+    private void validateCommands(ConcurrentSet<Class<? extends Command>> commands, Optional<Class<? extends PrefixCommand>> optionalPrefixCommand) {
         Optional<CommandInfo> optionalPrefixCommandInfo = this.getCommandAnnotation(optionalPrefixCommand.orElse(PrefixCommand.class));
 
         // Compare Names and Aliases
-        subCommands.parallelStream()
+        commands.stream()
             .map(this::getCommandAnnotation)
             .flatMap(Optional::stream)
             .forEach(commandInfo -> {
@@ -97,8 +98,8 @@ public class DiscordCommandRegistrar extends DiscordObject {
                             .build();
                 });
 
-                // Compare SubCommands
-                subCommands.parallelStream()
+                // Compare Commands
+                commands.stream()
                     .map(this::getCommandAnnotation)
                     .flatMap(Optional::stream)
                     .filter(compareCommand -> !commandInfo.equals(compareCommand))

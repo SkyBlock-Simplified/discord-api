@@ -8,7 +8,7 @@ import dev.sbs.discordapi.context.message.interaction.component.ComponentContext
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
-import dev.sbs.discordapi.util.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;

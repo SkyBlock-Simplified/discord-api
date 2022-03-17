@@ -1,7 +1,8 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.util.shard;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.common.close.CloseStatus;
 import discord4j.core.DiscordClient;
 import discord4j.core.shard.GatewayBootstrap;
@@ -14,7 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-public class DiscordShard extends DiscordObject {
+public class DiscordShard extends DiscordHelper {
 
     @Getter private final GatewayClient gatewayClient;
 

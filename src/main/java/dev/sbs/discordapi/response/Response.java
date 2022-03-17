@@ -115,26 +115,6 @@ public class Response implements Paging {
         this.renderingPagingComponents = renderingPagingComponents;
     }
 
-    /*private static ConcurrentList<SelectMenu.Option> buildPagingSelectMenu(Paging paging, String parentNode, int depth) {
-        ConcurrentList<SelectMenu.Option> options = Concurrent.newList();
-        String concat = (StringUtil.repeat("", depth) + " ");
-
-        paging.getPages().forEach(subPage -> subPage.getOption().ifPresent(option -> {
-            String newParentNode = StringUtil.strip(FormatUtil.format("{0}.{1}", parentNode, option.getValue()), ".");
-
-            options.add(
-                option.mutate()
-                    .withLabel(FormatUtil.format("{0} {1}", concat, option.getLabel()).trim())
-                    .withValue(newParentNode)
-                    .build()
-            );
-
-            options.addAll(buildPagingSelectMenu(subPage, newParentNode, depth + 1));
-        }));
-
-        return options;
-    }*/
-
     public static ResponseBuilder builder() {
         return new ResponseBuilder(UUID.randomUUID());
     }
@@ -223,16 +203,14 @@ public class Response implements Paging {
     private ConcurrentList<LayoutComponent<?>> getCurrentComponents() {
         ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
 
+        // Paging Components
         if (this.isRenderingPagingComponents()) {
-            // Paging Components
-            if (!this.hasPageHistory())
-                components.addAll(this.getPageComponents());
-
-            // Current Page Paging Components
+            // SubPages / ItemList
             components.addAll(this.getCurrentPage().getPageComponents());
 
-            // Paging Back Button
-            if (this.hasPageHistory())
+            if (!this.hasPageHistory()) // Pages
+                components.addAll(this.getPageComponents());
+            else // Back Button
                 components.add(ActionRow.of(this.getBackButton()));
         }
 

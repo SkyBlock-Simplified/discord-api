@@ -8,7 +8,7 @@ import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
@@ -142,12 +142,12 @@ public interface EventContext<T extends Event> {
             .then();
     }
 
-    default Mono<Void> withChannel(Function<MessageChannel, Mono<Void>> messageChannel) {
-        return this.getChannel().flatMap(messageChannel).then();
+    default Mono<Void> withChannel(Function<MessageChannel, Mono<Void>> messageChannelFunction) {
+        return this.getChannel().flatMap(messageChannelFunction).then();
     }
 
-    default Mono<Void> withEvent(Function<T, Mono<Void>> event) {
-        return Mono.just(this.getEvent()).flatMap(event).then();
+    default Mono<Void> withEvent(Function<T, Mono<Void>> eventFunction) {
+        return Mono.just(this.getEvent()).flatMap(eventFunction).then();
     }
 
 }

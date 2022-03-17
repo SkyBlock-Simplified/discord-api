@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.util.base;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
@@ -31,7 +31,6 @@ import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
@@ -42,21 +41,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public abstract class DiscordObject {
+public abstract class DiscordReference {
 
-    @Getter private final DiscordBot discordBot;
-    @Getter private final DiscordLogger log;
-    
-    protected DiscordObject(@NotNull DiscordBot discordBot) {
-        this.discordBot = discordBot;
-        this.log = new DiscordLogger(this.getDiscordBot(), this.getClass());
-    }
+    protected abstract @NotNull DiscordBot getDiscordBot();
 
-    public static String capitalizeEnum(Enum<?> value) {
+    public static @NotNull String capitalizeEnum(Enum<?> value) {
         return capitalizeFully(value.name());
     }
 
-    public static String capitalizeFully(String value) {
+    public static @NotNull String capitalizeFully(String value) {
         return WordUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
     }
 
@@ -266,7 +259,8 @@ public abstract class DiscordObject {
     }
 
     // --- Permissions ---
-    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Permission... permissions) {
+    public final @NotNull
+    ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Permission... permissions) {
         return this.getGuildPermissionMap(userId, guild, Arrays.asList(permissions));
     }
 
@@ -329,8 +323,8 @@ public abstract class DiscordObject {
                     switch (userPermission) {
                         case BOT_OWNER -> permissionMap.put(userPermission, this.isBotOwner(snowflake));
                         case GUILD_OWNER -> permissionMap.put(userPermission, this.isGuildOwner(snowflake, guild));
-                        case MAIN_SERVER_ADMIN -> permissionMap.put(userPermission, this.hasGuildPermissions(snowflake, Mono.just(getDiscordBot().getMainGuild()), Permission.ADMINISTRATOR));
-                        case MAIN_SERVER -> permissionMap.put(userPermission, guild.map(gld -> gld.equals(getDiscordBot().getMainGuild())).blockOptional().orElse(false));
+                        case MAIN_SERVER_ADMIN -> permissionMap.put(userPermission, this.hasGuildPermissions(snowflake, Mono.just(this.getDiscordBot().getMainGuild()), Permission.ADMINISTRATOR));
+                        case MAIN_SERVER -> permissionMap.put(userPermission, guild.map(gld -> gld.equals(this.getDiscordBot().getMainGuild())).blockOptional().orElse(false));
                         case NONE -> permissionMap.put(userPermission, true); // Default
                         default -> permissionMap.put(userPermission, true); // Default
                     }

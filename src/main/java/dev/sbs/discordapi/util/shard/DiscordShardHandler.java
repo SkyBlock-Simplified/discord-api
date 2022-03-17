@@ -1,8 +1,9 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.util.shard;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.Guild;
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-public final class DiscordShardHandler extends DiscordObject {
+public final class DiscordShardHandler extends DiscordHelper {
 
     public DiscordShardHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);

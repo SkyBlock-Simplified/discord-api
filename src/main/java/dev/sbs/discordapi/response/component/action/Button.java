@@ -8,7 +8,7 @@ import dev.sbs.discordapi.context.message.interaction.component.ComponentContext
 import dev.sbs.discordapi.context.message.interaction.component.button.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.DiscordObject;
+import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -336,12 +336,12 @@ public final class Button extends ActionComponent<ButtonContext, Function<Button
     public enum PageType {
 
         NONE("", false),
-        FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_FIRST")),
-        PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_PREVIOUS")),
+        FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
+        PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
         INDEX("Index", true, buttonBuilder -> buttonBuilder.setDisabled(true)),
-        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordObject.getEmoji("ARROW_LEFT"));
+        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
+        BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_LEFT"));
 
         @Getter private final @NotNull String label;
         @Getter private final @NotNull Optional<Emoji> emoji;

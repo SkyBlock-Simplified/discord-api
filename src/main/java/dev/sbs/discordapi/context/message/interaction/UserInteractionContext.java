@@ -7,7 +7,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.action.ActionComponent;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.Reaction;
