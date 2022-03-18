@@ -18,7 +18,6 @@ import dev.sbs.discordapi.response.component.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.util.exception.DiscordException;
@@ -226,29 +225,20 @@ public class Response implements Paging {
 
         // Handle Item List
         if (this.getCurrentPage().isItemSelector()) {
-            int startIndex = (this.getCurrentPage().getItemPage() - 1) * this.getCurrentPage().getItemsPerPage();
+            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemsPerPage();
             int endIndex = Math.min(startIndex + this.getCurrentPage().getItemsPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItems()));
 
             embeds.add(
                 Embed.builder()
                     .withFields(
                         this.getCurrentPage()
-                            .getItems()
-                            .subList(startIndex, endIndex)
-                            .stream()
-                            .map(pageItem -> Field.of(
-                                FormatUtil.format(
-                                    "{0}{1}",
-                                    pageItem.getOption()
-                                        .getEmoji()
-                                        .map(Emoji::asSpacedFormat)
-                                        .orElse(""),
-                                    pageItem.getOption().getLabel()
-                                ),
-                                pageItem.getOption().getDescription().orElse(""),
-                                this.getCurrentPage().isItemsInline()
-                            ))
-                            .collect(Concurrent.toList())
+                            .getPageItemStyle()
+                            .getConverter()
+                            .apply(
+                                this.getCurrentPage()
+                                    .getItems()
+                                    .subList(startIndex, endIndex)
+                            )
                     )
                     .build()
             );

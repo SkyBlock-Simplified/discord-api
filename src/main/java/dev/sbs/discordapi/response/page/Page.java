@@ -38,9 +38,9 @@ public class Page implements Paging {
     @Getter protected final ConcurrentList<PageItem> items;
     @Getter protected final Optional<String> content;
     @Getter protected final Optional<SelectMenu.Option> option;
-    @Getter protected final boolean itemsInline;
+    @Getter protected final PageItem.Style pageItemStyle;
     @Getter protected final int itemsPerPage;
-    @Getter protected int itemPage = 1;
+    @Getter protected int currentItemPage = 1;
 
     protected Page(
         UUID uniqueId,
@@ -51,7 +51,7 @@ public class Page implements Paging {
         ConcurrentList<PageItem> items,
         Optional<String> content,
         Optional<SelectMenu.Option> option,
-        boolean inlineItems,
+        PageItem.Style pageItemStyle,
         int itemsPerPage) {
         this.pages = pages;
         this.uniqueId = uniqueId;
@@ -61,7 +61,7 @@ public class Page implements Paging {
         this.items = items;
         this.option = option;
         this.content = content;
-        this.itemsInline = inlineItems;
+        this.pageItemStyle = pageItemStyle;
         this.itemsPerPage = itemsPerPage;
 
         // Page Components
@@ -147,9 +147,9 @@ public class Page implements Paging {
         Page page = (Page) o;
 
         return new EqualsBuilder()
-            .append(this.isItemsInline(), page.isItemsInline())
+            .append(this.getPageItemStyle(), page.getPageItemStyle())
             .append(this.getItemsPerPage(), page.getItemsPerPage())
-            .append(this.getItemPage(), page.getItemPage())
+            .append(this.getCurrentItemPage(), page.getCurrentItemPage())
             .append(this.getUniqueId(), page.getUniqueId())
             .append(this.getPages(), page.getPages())
             .append(this.getPageComponents(), page.getPageComponents())
@@ -206,13 +206,13 @@ public class Page implements Paging {
             .withItems(page.getItems())
             .withContent(page.getContent())
             .withOption(page.getOption())
-            .withInlineItems(page.isItemsInline())
+            .withPageItemStyle(page.getPageItemStyle())
             .withItemsPerPage(page.getItemsPerPage());
     }
 
     // Item Paging
     public final Optional<PageItem> getItem(int index) {
-        return this.getItemPage() < this.getPages().size() ? Optional.of(this.getItems().get(index)) : Optional.empty();
+        return this.getCurrentItemPage() < this.getPages().size() ? Optional.of(this.getItems().get(index)) : Optional.empty();
     }
 
     public final int getTotalItemPages() {
@@ -220,7 +220,7 @@ public class Page implements Paging {
     }
 
     public final void gotoItemPage(int index) {
-        this.itemPage = Math.min(this.items.size(), Math.max(1, index));
+        this.currentItemPage = Math.min(this.items.size(), Math.max(1, index));
         this.updatePagingComponents();
     }
 
@@ -233,19 +233,19 @@ public class Page implements Paging {
     }
 
     public final void gotoNextItemPage() {
-        this.gotoItemPage(this.itemPage + 1);
+        this.gotoItemPage(this.currentItemPage + 1);
     }
 
     public final void gotoPreviousItemPage() {
-        this.gotoItemPage(this.itemPage - 1);
+        this.gotoItemPage(this.currentItemPage - 1);
     }
 
     public final boolean hasNextItemPage() {
-        return this.itemPage < this.getTotalItemPages();
+        return this.currentItemPage < this.getTotalItemPages();
     }
 
     public final boolean hasPreviousItemPage() {
-        return this.itemPage > 1;
+        return this.currentItemPage > 1;
     }
 
     @Override
@@ -260,9 +260,9 @@ public class Page implements Paging {
             .append(this.getItems())
             .append(this.getContent())
             .append(this.getOption())
-            .append(this.isItemsInline())
+            .append(this.getPageItemStyle())
             .append(this.getItemsPerPage())
-            .append(this.getItemPage())
+            .append(this.getCurrentItemPage())
             .build();
     }
 
@@ -279,7 +279,7 @@ public class Page implements Paging {
         this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.hasPreviousItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.INDEX, buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format("{0} / {1}", this.getItemPage(), this.getTotalItemPages())));
+        this.editPageButton(Button::getPageType, Button.PageType.INDEX, buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format("{0} / {1}", this.getCurrentItemPage(), this.getTotalItemPages())));
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
@@ -293,7 +293,7 @@ public class Page implements Paging {
         protected final ConcurrentList<PageItem> items = Concurrent.newList();
         protected Optional<String> content = Optional.empty();
         protected Optional<SelectMenu.Option> option = Optional.empty();
-        protected boolean inlineItems;
+        protected PageItem.Style pageItemStyle = PageItem.Style.FIELD;
         protected int itemsPerPage = 3;
 
         /**
@@ -516,23 +516,6 @@ public class Page implements Paging {
         }
 
         /**
-         * Sets items to be rendered inline on the {@link Page}.
-         */
-        public PageBuilder withInlineItems() {
-            return this.withInlineItems(true);
-        }
-
-        /**
-         * Sets items to be rendered inline.
-         *
-         * @param inlineItems True to render items inline.
-         */
-        public PageBuilder withInlineItems(boolean inlineItems) {
-            this.inlineItems = inlineItems;
-            return this;
-        }
-
-        /**
          * Add a {@link PageItem} to the {@link Page}.
          *
          * @param pageItems Variable number of page items to add.
@@ -579,6 +562,16 @@ public class Page implements Paging {
          */
         public PageBuilder withOption(@NotNull Optional<SelectMenu.Option> option) {
             this.option = option;
+            return this;
+        }
+
+        /**
+         * Sets the render style for {@link PageItem PageItems}.
+         *
+         * @param pageItemStyle The page item style.
+         */
+        public PageBuilder withPageItemStyle(@NotNull PageItem.Style pageItemStyle) {
+            this.pageItemStyle = pageItemStyle;
             return this;
         }
 
@@ -636,7 +629,7 @@ public class Page implements Paging {
                 Concurrent.newUnmodifiableList(this.items),
                 this.content,
                 this.option,
-                this.inlineItems,
+                this.pageItemStyle,
                 this.itemsPerPage
             );
         }
