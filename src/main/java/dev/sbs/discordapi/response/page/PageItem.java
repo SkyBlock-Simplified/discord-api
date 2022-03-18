@@ -181,6 +181,13 @@ public final class PageItem {
                 true
             )
         )),
+        SINGLE_COLUMN(fieldNames -> pageItems -> Concurrent.newList(Field.of(
+            fieldNames.getLeft(),
+            pageItems.stream()
+                .map(PageItem::getFieldName)
+                .collect(StreamUtil.toStringBuilder(true))
+                .build()
+        ))),
         TABLE(getTableConverter(pageItem -> StringUtil.join(pageItem.getColumn(1), "\n"))),
         TABLE_DESCRIPTION(getTableConverter(pageItem -> pageItem.getOption().getDescription().orElse("")));
 
