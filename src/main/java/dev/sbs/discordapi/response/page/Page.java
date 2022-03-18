@@ -5,6 +5,7 @@ import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.data.tuple.Triple;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
@@ -39,6 +40,7 @@ public class Page implements Paging {
     @Getter protected final Optional<String> content;
     @Getter protected final Optional<SelectMenu.Option> option;
     @Getter protected final PageItem.Style pageItemStyle;
+    @Getter protected final Optional<Triple<String, String, String>> fieldNames;
     @Getter protected final int itemsPerPage;
     @Getter protected int currentItemPage = 1;
 
@@ -52,6 +54,7 @@ public class Page implements Paging {
         Optional<String> content,
         Optional<SelectMenu.Option> option,
         PageItem.Style pageItemStyle,
+        Optional<Triple<String, String, String>> fieldNames,
         int itemsPerPage) {
         this.pages = pages;
         this.uniqueId = uniqueId;
@@ -62,6 +65,7 @@ public class Page implements Paging {
         this.option = option;
         this.content = content;
         this.pageItemStyle = pageItemStyle;
+        this.fieldNames = fieldNames;
         this.itemsPerPage = itemsPerPage;
 
         // Page Components
@@ -148,6 +152,7 @@ public class Page implements Paging {
 
         return new EqualsBuilder()
             .append(this.getPageItemStyle(), page.getPageItemStyle())
+            .append(this.getFieldNames(), page.getFieldNames())
             .append(this.getItemsPerPage(), page.getItemsPerPage())
             .append(this.getCurrentItemPage(), page.getCurrentItemPage())
             .append(this.getUniqueId(), page.getUniqueId())
@@ -207,6 +212,7 @@ public class Page implements Paging {
             .withContent(page.getContent())
             .withOption(page.getOption())
             .withPageItemStyle(page.getPageItemStyle())
+            .withFieldNames(page.getFieldNames())
             .withItemsPerPage(page.getItemsPerPage());
     }
 
@@ -262,6 +268,7 @@ public class Page implements Paging {
             .append(this.getOption())
             .append(this.getPageItemStyle())
             .append(this.getItemsPerPage())
+            .append(this.getFieldNames())
             .append(this.getCurrentItemPage())
             .build();
     }
@@ -294,6 +301,7 @@ public class Page implements Paging {
         protected Optional<String> content = Optional.empty();
         protected Optional<SelectMenu.Option> option = Optional.empty();
         protected PageItem.Style pageItemStyle = PageItem.Style.FIELD;
+        protected Optional<Triple<String, String, String>> fieldNames = Optional.empty();
         protected int itemsPerPage = 3;
 
         /**
@@ -516,6 +524,36 @@ public class Page implements Paging {
         }
 
         /**
+         * Sets the field names to use when rendering {@link PageItem PageItems}.
+         *
+         * @param columnOne The field name for page items in column 1.
+         * @param columnTwo The field name for page items in column 2.
+         * @param columnThree The field name for page items in column 3.
+         */
+        public PageBuilder withFieldNames(@Nullable String columnOne, @Nullable String columnTwo, @Nullable String columnThree) {
+            return this.withFieldNames(Triple.of(columnOne, columnTwo, columnThree));
+        }
+
+        /**
+         * Sets the field names to use when rendering {@link PageItem PageItems}.
+         *
+         * @param fieldNames The field names for page items.
+         */
+        public PageBuilder withFieldNames(@Nullable Triple<String, String, String> fieldNames) {
+            return this.withFieldNames(Optional.ofNullable(fieldNames));
+        }
+
+        /**
+         * Sets the field names to use when rendering {@link PageItem PageItems}.
+         *
+         * @param fieldNames The field names for page items.
+         */
+        public PageBuilder withFieldNames(@NotNull Optional<Triple<String, String, String>> fieldNames) {
+            this.fieldNames = fieldNames;
+            return this;
+        }
+
+        /**
          * Add a {@link PageItem} to the {@link Page}.
          *
          * @param pageItems Variable number of page items to add.
@@ -630,6 +668,7 @@ public class Page implements Paging {
                 this.content,
                 this.option,
                 this.pageItemStyle,
+                this.fieldNames,
                 this.itemsPerPage
             );
         }

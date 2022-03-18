@@ -233,7 +233,7 @@ public class Response implements Paging {
                     .withFields(
                         this.getCurrentPage()
                             .getPageItemStyle()
-                            .getConverter()
+                            .getConverter(this.getCurrentPage().getFieldNames())
                             .apply(
                                 this.getCurrentPage()
                                     .getItems()
