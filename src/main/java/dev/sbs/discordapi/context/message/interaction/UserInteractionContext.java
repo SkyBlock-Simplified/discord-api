@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.message.interaction;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -26,6 +27,14 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
 
     default Mono<Void> edit(Response response) {
         return this.editMessage(response)
+            .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "User Interaction Exception"
+                )
+            ))
             .flatMap(message -> {
                 // Update Reactions
                 ConcurrentList<Emoji> newReactions = response.getCurrentPage().getReactions();
