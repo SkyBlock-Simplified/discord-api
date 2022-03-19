@@ -72,7 +72,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     private Mono<Void> handleInteraction(E event, DiscordResponseCache.Entry responseCacheEntry, T component) {
         return Mono.just(this.getContext(event, responseCacheEntry.getResponse(), component))
             .flatMap(context -> Mono.just(responseCacheEntry)
-                .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
+                .onErrorResume(throwable -> this.getDiscordBot().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),
                         context,
@@ -93,7 +93,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     private Mono<Void> handlePagingInteraction(E event, DiscordResponseCache.Entry responseCacheEntry, T component) {
         return Mono.just(this.getContext(event, responseCacheEntry.getResponse(), component))
             .flatMap(context -> Mono.just(responseCacheEntry)
-                .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
+                .onErrorResume(throwable -> this.getDiscordBot().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),
                         context,

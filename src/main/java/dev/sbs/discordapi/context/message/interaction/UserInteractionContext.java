@@ -27,7 +27,7 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
 
     default Mono<Void> edit(Response response) {
         return this.editMessage(response)
-            .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,

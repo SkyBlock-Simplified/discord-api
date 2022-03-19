@@ -109,7 +109,7 @@ public interface EventContext<T extends Event> {
             .switchIfEmpty(
                 this.buildMessage(response)
                     .checkpoint(FormatUtil.format("Response Processing{0}", this.getIdentifier().map(identifier -> ": " + identifier).orElse("")))
-                    .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(
+                    .onErrorResume(throwable -> this.getDiscordBot().handleException(
                         ExceptionContext.of(
                             this.getDiscordBot(),
                             this,

@@ -29,6 +29,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
@@ -360,7 +361,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
             .build();
 
         // Send User Error Response & Log Exception Error
-        return exceptionContext.getEventContext()
+        Mono<T> mono = exceptionContext.getEventContext()
             .reply(userErrorResponse)
             .then(
                 Mono.justOrEmpty(reactiveError).switchIfEmpty(
@@ -387,10 +388,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 )
             )
             .then(Mono.empty());
-    }
 
-    public final <T> Mono<T> handleUncaughtException(ExceptionContext<?> exceptionContext) {
-        return this.handleException(exceptionContext).then(Mono.error(exceptionContext.getException()));
+        // Handle Uncaught Exception
+        if (!(exceptionContext.getException() instanceof DiscordException))
+            mono = mono.then(Mono.error(exceptionContext.getException()));
+
+        return mono;
     }
 
 }

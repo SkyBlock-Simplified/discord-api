@@ -147,8 +147,8 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
 
     @Override
     public final Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
-        return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> {
-            try {
+        return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> commandContext.deferReply()
+            .then(Mono.fromCallable(() -> {
                 // Handle Disabled Command
                 if (!this.isEnabled())
                     throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is currently disabled!").build();
@@ -236,15 +236,10 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                     }
                 }
 
-                // Process Command
-                return commandContext.deferReply()
-                    .then(Mono.fromCallable(() -> this.process(commandContext)))
-                    .flatMap(Function.identity())
-                    .onErrorResume(throwable -> this.getDiscordBot().handleUncaughtException(buildExceptionContext(this, commandContext, throwable)));
-            } catch (Exception uncaughtException) {
-                return this.getDiscordBot().handleException(buildExceptionContext(this, commandContext, uncaughtException));
-            }
-        }));
+                return this.process(commandContext);
+            }))
+            .flatMap(Function.identity())
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(buildExceptionContext(this, commandContext, throwable)))));
     }
 
     private static ExceptionContext<?> buildExceptionContext(Command command, CommandContext<?> commandContext, Throwable throwable) {
