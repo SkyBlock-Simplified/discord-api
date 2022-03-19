@@ -40,8 +40,8 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     }
 
     @Override
-    default Mono<User> getInteractUser() {
-        return Mono.just(this.getEvent().getInteraction().getUser());
+    default User getInteractUser() {
+        return this.getEvent().getInteraction().getUser();
     }
 
     @Override

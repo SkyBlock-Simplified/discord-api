@@ -49,7 +49,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     @Override
-    default Mono<User> getInteractUser() {
+    default User getInteractUser() {
         return this.getEventContext().getInteractUser();
     }
 

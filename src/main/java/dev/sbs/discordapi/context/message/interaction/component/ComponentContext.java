@@ -50,8 +50,8 @@ public interface ComponentContext extends UserInteractionContext<ComponentIntera
     }
 
     @Override
-    default Mono<User> getInteractUser() {
-        return Mono.just(this.getEvent().getInteraction().getUser());
+    default User getInteractUser() {
+        return this.getEvent().getInteraction().getUser();
     }
 
     @Override

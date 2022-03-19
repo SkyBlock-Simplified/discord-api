@@ -33,8 +33,8 @@ public interface MessageCommandContext extends CommandContext<MessageCreateEvent
     }
 
     @Override
-    default Mono<User> getInteractUser() {
-        return this.getMessage().flatMap(message -> Mono.justOrEmpty(message.getAuthor()));
+    default User getInteractUser() {
+        return new User(this.getEvent().getClient(), this.getEvent().getMessage().getUserData());
     }
 
     @Override

@@ -41,8 +41,8 @@ class ReactionAddContextImpl implements ReactionContext {
     }
 
     @Override
-    public Mono<User> getInteractUser() {
-        return this.getEvent().getUser();
+    public User getInteractUser() {
+        return this.getEvent().getUser().block();
     }
 
     @Override

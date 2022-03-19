@@ -32,7 +32,6 @@ import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.rest.util.Permission;
@@ -251,7 +250,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     "User",
                     FormatUtil.format(
                         "{0}\n{1}",
-                        exceptionContext.getInteractUser().map(User::getMention).blockOptional().orElse("Unknown"),
+                        exceptionContext.getInteractUser().getMention(),
                         exceptionContext.getInteractUserId().asString()
                     ),
                     true

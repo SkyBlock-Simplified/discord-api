@@ -75,12 +75,12 @@ public interface EventContext<T extends Event> {
         return Optional.empty();
     }
 
-    Mono<User> getInteractUser();
+    User getInteractUser();
 
     Snowflake getInteractUserId();
 
     default Mono<PrivateChannel> getInteractUserPrivateChannel() {
-        return this.getInteractUser().flatMap(User::getPrivateChannel);
+        return this.getInteractUser().getPrivateChannel();
     }
 
     UUID getUniqueId();
