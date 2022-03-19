@@ -27,7 +27,6 @@ import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.entity.channel.GuildChannel;
@@ -239,91 +238,8 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                 return this.process(commandContext);
             }))
             .flatMap(Function.identity())
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(buildExceptionContext(this, commandContext, throwable)))));
-    }
-
-    private static ExceptionContext<?> buildExceptionContext(Command command, CommandContext<?> commandContext, Throwable throwable) {
-        String commandPath = command.getCommandPath(commandContext.isSlashCommand());
-
-        return ExceptionContext.of(
-            command.getDiscordBot(),
-            commandContext,
-            throwable,
-            "Command Exception",
-            embedBuilder -> embedBuilder.withTitle("Command :: {0}", commandPath)
-                .withFields(
-                    Field.of(
-                        "Command",
-                        commandPath,
-                        true
-                    ),
-                    Field.of(
-                        "Arguments",
-                        StringUtil.join(
-                            commandContext.getArguments()
-                                .stream()
-                                .filter(argument -> argument.getValue().isPresent())
-                                .map(argument -> argument.getValue().get())
-                                .collect(Concurrent.toList()),
-                            " "
-                        ),
-                        true
-                    )
-                )
-        );
-    }
-
-    public static Embed.EmbedBuilder createHelpEmbedBuilder(Relationship relationship, CommandContext<?> commandContext) {
-        String commandPath = relationship.getInstance().getCommandPath(commandContext.isSlashCommand());
-        CommandInfo commandInfo = relationship.getCommandInfo();
-        ConcurrentList<Parameter> parameters = relationship.getInstance().getParameters();
-
-        Embed.EmbedBuilder embedBuilder = Embed.builder()
-            .withAuthor("Help", getEmoji("STATUS_INFO").map(Emoji::getUrl))
-            .withTitle("Command :: {0}", commandInfo.name())
-            .withDescription(relationship.getInstance().getCommandConfig().getLongDescription())
-            .withTimestamp(Instant.now())
-            .withColor(Color.DARK_GRAY);
-
-        if (ListUtil.notEmpty(parameters)) {
-            embedBuilder.withField(
-                "Usage",
-                FormatUtil.format(
-                    """
-                        <> - Required Parameters
-                        [] - Optional Parameters
-
-                        {0} {1}""",
-                    commandPath,
-                    StringUtil.join(
-                        parameters.stream()
-                            .map(parameter -> parameter.isRequired() ? FormatUtil.format("<{0}>", parameter.getName()) : FormatUtil.format("[{0}]", parameter.getName()))
-                            .collect(Concurrent.toList()),
-                        " "
-                    )
-                )
-            );
-        }
-
-        if (ListUtil.notEmpty(relationship.getInstance().getExampleArguments())) {
-            embedBuilder.withField(
-                "Examples",
-                StringUtil.join(
-                    relationship.getInstance()
-                        .getExampleArguments()
-                        .stream()
-                        .map(example -> FormatUtil.format("{0} {1}", commandPath, example))
-                        .collect(Concurrent.toList()),
-                    "\n"
-                )
-            );
-        }
-
-        return embedBuilder;
-    }
-
-    public static Embed createHelpEmbed(Relationship relationship, CommandContext<?> commandContext) {
-        return createHelpEmbedBuilder(relationship, commandContext).build();
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(ExceptionContext.of(commandContext, throwable)))
+        ));
     }
 
     public interface RelationshipData {
@@ -341,6 +257,59 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
         @Getter private final Class<? extends Command> commandClass;
         @Getter private final Command instance;
         @Getter private final ConcurrentList<Relationship> subCommands;
+
+        public Embed createHelpEmbed() {
+            return this.createHelpEmbed(true);
+        }
+
+        public Embed createHelpEmbed(boolean isSlashCommand) {
+            String commandPath = this.getInstance().getCommandPath(isSlashCommand);
+            CommandInfo commandInfo = this.getCommandInfo();
+            ConcurrentList<Parameter> parameters = this.getInstance().getParameters();
+
+            Embed.EmbedBuilder embedBuilder = Embed.builder()
+                .withAuthor("Help", getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                .withTitle("Command :: {0}", commandInfo.name())
+                .withDescription(this.getInstance().getCommandConfig().getLongDescription())
+                .withTimestamp(Instant.now())
+                .withColor(Color.DARK_GRAY);
+
+            if (ListUtil.notEmpty(parameters)) {
+                embedBuilder.withField(
+                    "Usage",
+                    FormatUtil.format(
+                        """
+                            <> - Required Parameters
+                            [] - Optional Parameters
+    
+                            {0} {1}""",
+                        commandPath,
+                        StringUtil.join(
+                            parameters.stream()
+                                .map(parameter -> parameter.isRequired() ? FormatUtil.format("<{0}>", parameter.getName()) : FormatUtil.format("[{0}]", parameter.getName()))
+                                .collect(Concurrent.toList()),
+                            " "
+                        )
+                    )
+                );
+            }
+
+            if (ListUtil.notEmpty(this.getInstance().getExampleArguments())) {
+                embedBuilder.withField(
+                    "Examples",
+                    StringUtil.join(
+                        this.getInstance()
+                            .getExampleArguments()
+                            .stream()
+                            .map(example -> FormatUtil.format("{0} {1}", commandPath, example))
+                            .collect(Concurrent.toList()),
+                        "\n"
+                    )
+                );
+            }
+
+            return embedBuilder.build();
+        }
 
         @Override
         public Optional<CommandInfo> getOptionalCommandInfo() {

@@ -1,9 +1,14 @@
 package dev.sbs.discordapi.context.exception;
 
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.embed.Field;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
@@ -64,6 +69,38 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     @NotNull String getTitle();
+
+    static <T extends Event> ExceptionContext<T> of(@NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
+        Command command = commandContext.getRelationship().getInstance();
+        String commandPath = command.getCommandPath(commandContext.isSlashCommand());
+
+        return of(
+            command.getDiscordBot(),
+            commandContext,
+            throwable,
+            "Command Exception",
+            embedBuilder -> embedBuilder.withTitle("Command :: {0}", commandPath)
+                .withFields(
+                    Field.of(
+                        "Command",
+                        commandPath,
+                        true
+                    ),
+                    Field.of(
+                        "Arguments",
+                        StringUtil.join(
+                            commandContext.getArguments()
+                                .stream()
+                                .filter(argument -> argument.getValue().isPresent())
+                                .map(argument -> argument.getValue().get())
+                                .collect(Concurrent.toList()),
+                            " "
+                        ),
+                        true
+                    )
+                )
+        );
+    }
 
     static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title) {
         return of(discordBot, eventContext, throwable, title, Optional.empty());

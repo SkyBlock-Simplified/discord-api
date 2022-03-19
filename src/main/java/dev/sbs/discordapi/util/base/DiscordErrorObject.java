@@ -10,7 +10,6 @@ import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.data.tuple.Pair;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
@@ -163,7 +162,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
             responseBuilder = Optional.of(embedBuilder.build());
         } else if (exceptionContext.getException() instanceof HelpCommandException) {
             CommandContext<?> commandContext = (CommandContext<?>) exceptionContext.getEventContext();
-            responseBuilder = Optional.of(Command.createHelpEmbed(commandContext.getRelationship(), commandContext));
+            responseBuilder = Optional.of(commandContext.getRelationship().createHelpEmbed(commandContext.isSlashCommand()));
         } else if (exceptionContext.getException() instanceof PermissionException permissionException) {
             boolean botPermissions = (permissionException instanceof BotPermissionException);
 
