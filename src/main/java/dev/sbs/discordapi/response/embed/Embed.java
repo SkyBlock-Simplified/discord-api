@@ -288,7 +288,7 @@ public class Embed {
          *
          * @param description The description of the embed.
          */
-        public EmbedBuilder withDescription(Optional<String> description) {
+        public EmbedBuilder withDescription(@NotNull Optional<String> description) {
             description.ifPresent(value -> validateLength(Embed.class, "description", value));
             this.description = description;
             return this;
@@ -328,7 +328,13 @@ public class Embed {
          * @param inline True if field should render inline.
          */
         public EmbedBuilder withField(@Nullable String name, @Nullable String value, boolean inline) {
-            return this.withFields(Field.of(name, value, inline));
+            return this.withFields(
+                Field.builder()
+                    .withName(name)
+                    .withValue(value)
+                    .isInline(inline)
+                    .build()
+            );
         }
 
         /**
@@ -346,7 +352,12 @@ public class Embed {
          * @param simplifiedException The exception with fields to add.
          */
         public EmbedBuilder withFields(@NotNull SimplifiedException simplifiedException) {
-            return this.withFields(simplifiedException.getFields().stream().map(Field::of).collect(Concurrent.toList()));
+            return this.withFields(
+                simplifiedException.getFields()
+                    .stream()
+                    .map(Field::of)
+                    .collect(Concurrent.toList())
+            );
         }
 
         /**

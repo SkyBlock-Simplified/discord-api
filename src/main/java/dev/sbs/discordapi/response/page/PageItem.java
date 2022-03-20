@@ -156,38 +156,48 @@ public final class PageItem {
         FIELD(getFieldConverter(false)),
         FIELD_INLINE(getFieldConverter(true)),
         LIST(fieldNames -> pageItems -> Concurrent.newList(
-            Field.of(
-                fieldNames.getLeft(),
-                pageItems.stream()
-                    .map(pageItem -> pageItem.getColumn(1).getOrDefault(0, ""))
-                    .collect(StreamUtil.toStringBuilder(true))
-                    .build(),
-                true
-            ),
-            Field.of(
-                fieldNames.getMiddle(),
-                pageItems.stream()
-                    .map(pageItem -> pageItem.getColumn(2).getOrDefault(0, ""))
-                    .collect(StreamUtil.toStringBuilder(true))
-                    .build(),
-                true
-            ),
-            Field.of(
-                fieldNames.getRight(),
-                pageItems.stream()
-                    .map(pageItem -> pageItem.getColumn(3).getOrDefault(0, ""))
-                    .collect(StreamUtil.toStringBuilder(true))
-                    .build(),
-                true
-            )
-        )),
-        SINGLE_COLUMN(fieldNames -> pageItems -> Concurrent.newList(Field.of(
-            fieldNames.getLeft(),
-            pageItems.stream()
-                .map(PageItem::getFieldName)
-                .collect(StreamUtil.toStringBuilder(true))
+            Field.builder()
+                .withName(fieldNames.getLeft())
+                .withValue(
+                    pageItems.stream()
+                        .map(pageItem -> pageItem.getColumn(1).getOrDefault(0, ""))
+                        .collect(StreamUtil.toStringBuilder(true))
+                        .build()
+                )
+                .isInline()
+                .build(),
+            Field.builder()
+                .withName(fieldNames.getMiddle())
+                .withValue(
+                    pageItems.stream()
+                        .map(pageItem -> pageItem.getColumn(2).getOrDefault(0, ""))
+                        .collect(StreamUtil.toStringBuilder(true))
+                        .build()
+                )
+                .isInline()
+                .build(),
+            Field.builder()
+                .withName(fieldNames.getRight())
+                .withValue(
+                    pageItems.stream()
+                        .map(pageItem -> pageItem.getColumn(3).getOrDefault(0, ""))
+                        .collect(StreamUtil.toStringBuilder(true))
+                        .build()
+                )
+                .isInline()
                 .build()
-        ))),
+        )),
+        SINGLE_COLUMN(fieldNames -> pageItems -> Concurrent.newList(
+            Field.builder()
+                .withName(fieldNames.getLeft())
+                .withValue(
+                    pageItems.stream()
+                        .map(PageItem::getFieldName)
+                        .collect(StreamUtil.toStringBuilder(true))
+                        .build()
+                )
+                .build()
+        )),
         TABLE(getTableConverter(pageItem -> StringUtil.join(pageItem.getColumn(1), "\n"))),
         TABLE_DESCRIPTION(getTableConverter(pageItem -> pageItem.getOption().getDescription().orElse("")));
 
@@ -209,40 +219,42 @@ public final class PageItem {
         private static Function<Triple<String, String, String>, Function<ConcurrentList<PageItem>, ConcurrentList<Field>>> getTableConverter(Function<PageItem, String> firstColumnConverter) {
             return fieldNames -> pageItems -> pageItems.stream()
                 .flatMap(pageItem -> Concurrent.newList(
-                    Field.of(
-                        Optional.ofNullable(StringUtil.defaultIfEmpty(fieldNames.getLeft(), null))
-                            .orElse(pageItem.getFieldName()),
-                        firstColumnConverter.apply(pageItem),
-                        true
-                    ),
-                    Field.of(
-                        fieldNames.getMiddle(),
-                        StringUtil.join(pageItem.getColumn(2), "\n"),
-                        true
-                    ),
-                    Field.of(
-                        fieldNames.getRight(),
-                        StringUtil.join(pageItem.getColumn(3), "\n"),
-                        true
-                    )
+                    Field.builder()
+                        .withName(Optional.ofNullable(StringUtil.defaultIfEmpty(fieldNames.getLeft(), null)).orElse(pageItem.getFieldName()))
+                        .withValue(firstColumnConverter.apply(pageItem))
+                        .isInline()
+                        .build(),
+                    Field.builder()
+                        .withName(fieldNames.getMiddle())
+                        .withValue(StringUtil.join(pageItem.getColumn(2), "\n"))
+                        .isInline()
+                        .build(),
+                    Field.builder()
+                        .withName(fieldNames.getRight())
+                        .withValue(StringUtil.join(pageItem.getColumn(3), "\n"))
+                        .isInline()
+                        .build()
                 ).stream())
                 .collect(Concurrent.toList());
         }
 
         private static Function<Triple<String, String, String>, Function<ConcurrentList<PageItem>, ConcurrentList<Field>>> getFieldConverter(boolean inline) {
             return fieldNames -> pageItems -> pageItems.stream()
-                .map(pageItem -> Field.of(
-                    pageItem.getFieldName(),
-                    FormatUtil.format(
-                        "{0}{1}",
-                        pageItem.getOption()
-                            .getDescription()
-                            .map(value -> FormatUtil.format("{0}\n\n", value))
-                            .orElse(""),
-                        StringUtil.join(pageItem.getAllData(), "\n")
-                    ),
-                    inline
-                ))
+                .map(pageItem -> Field.builder()
+                    .withName(pageItem.getFieldName())
+                    .withValue(
+                        FormatUtil.format(
+                            "{0}{1}",
+                            pageItem.getOption()
+                                .getDescription()
+                                .map(value -> FormatUtil.format("{0}\n\n", value))
+                                .orElse(""),
+                            StringUtil.join(pageItem.getAllData(), "\n")
+                        )
+                    )
+                    .isInline(inline)
+                    .build()
+                )
                 .collect(Concurrent.toList());
         }
 

@@ -54,21 +54,21 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                     .withDescription(sbsApiException.getErrorResponse().getReason())
                     .withFields(
-                        Field.of(
-                            "State",
-                            sbsApiException.getHttpStatus().getState().getTitle(),
-                            true
-                        ),
-                        Field.of(
-                            "Code",
-                            String.valueOf(sbsApiException.getHttpStatus().getCode()),
-                            true
-                        ),
-                        Field.of(
-                            "Message",
-                            sbsApiException.getHttpStatus().getMessage(),
-                            true
-                        )
+                        Field.builder()
+                            .withName("State")
+                            .withValue(sbsApiException.getHttpStatus().getState().getTitle())
+                            .isInline()
+                            .build(),
+                        Field.builder()
+                            .withName("Code")
+                            .withValue(String.valueOf(sbsApiException.getHttpStatus().getCode()))
+                            .isInline()
+                            .build(),
+                        Field.builder()
+                            .withName("Message")
+                            .withValue(sbsApiException.getHttpStatus().getMessage())
+                            .isInline()
+                            .build()
                     )
                     .build()
             );
@@ -78,21 +78,21 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     .withAuthor("Hypixel Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                     .withDescription(hypixelApiException.getErrorResponse().getReason())
                     .withFields(
-                        Field.of(
-                            "State",
-                            hypixelApiException.getHttpStatus().getState().getTitle(),
-                            true
-                        ),
-                        Field.of(
-                            "Code",
-                            String.valueOf(hypixelApiException.getHttpStatus().getCode()),
-                            true
-                        ),
-                        Field.of(
-                            "Message",
-                            hypixelApiException.getHttpStatus().getMessage(),
-                            true
-                        )
+                        Field.builder()
+                            .withName("State")
+                            .withValue(hypixelApiException.getHttpStatus().getState().getTitle())
+                            .isInline()
+                            .build(),
+                        Field.builder()
+                            .withName("Code")
+                            .withValue(String.valueOf(hypixelApiException.getHttpStatus().getCode()))
+                            .isInline()
+                            .build(),
+                        Field.builder()
+                            .withName("Message")
+                            .withValue(hypixelApiException.getHttpStatus().getMessage())
+                            .isInline()
+                            .build()
                     )
                     .build()
             );
@@ -132,21 +132,21 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 )
                 .withDescription(missing ? missingDescription : invalidDescription)
                 .withFields(
-                    Field.of(
-                        "Parameter",
-                        parameter.getName(),
-                        true
-                    ),
-                    Field.of(
-                        "Required",
-                        parameter.isRequired() ? "Yes" : "No",
-                        true
-                    ),
-                    Field.of(
-                        "Type",
-                        parameter.getType().name(),
-                        true
-                    )
+                    Field.builder()
+                        .withName("Parameter")
+                        .withValue(parameter.getName())
+                        .isInline()
+                        .build(),
+                    Field.builder()
+                        .withName("Required")
+                        .withValue(parameter.isRequired() ? "Yes" : "No")
+                        .isInline()
+                        .build(),
+                    Field.builder()
+                        .withName("Type")
+                        .withValue(parameter.getType().name())
+                        .isInline()
+                        .build()
                 )
                 .withField(
                     "Description",
@@ -245,25 +245,25 @@ public abstract class DiscordErrorObject extends DiscordReference {
         Embed.EmbedBuilder logErrorBuilder = defaultError.getRight()
             .mutate()
             .withFields(
-                Field.of(
-                    "User",
-                    FormatUtil.format(
+                Field.builder()
+                    .withName("User")
+                    .withValue(
                         "{0}\n{1}",
                         exceptionContext.getInteractUser().getMention(),
                         exceptionContext.getInteractUserId().asString()
-                    ),
-                    true
-                ),
-                Field.of(
-                    "Location",
-                    locationValue,
-                    true
-                ),
-                Field.of(
-                    "Channel",
-                    channelValue,
-                    true
-                )
+                    )
+                    .isInline()
+                    .build(),
+                Field.builder()
+                    .withName("Location")
+                    .withValue(locationValue)
+                    .isInline()
+                    .build(),
+                Field.builder()
+                    .withName("Channel")
+                    .withValue(channelValue)
+                    .isInline()
+                    .build()
             );
 
         // Handle Message Link

@@ -81,23 +81,23 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
             "Command Exception",
             embedBuilder -> embedBuilder.withTitle("Command :: {0}", commandPath)
                 .withFields(
-                    Field.of(
-                        "Command",
-                        commandPath,
-                        true
-                    ),
-                    Field.of(
-                        "Arguments",
-                        StringUtil.join(
+                    Field.builder()
+                        .withName("Command")
+                        .withValue(commandPath)
+                        .isInline()
+                        .build(),
+                    Field.builder()
+                        .withName("Arguments")
+                        .withValue(StringUtil.join(
                             commandContext.getArguments()
                                 .stream()
                                 .filter(argument -> argument.getValue().isPresent())
                                 .map(argument -> argument.getValue().get())
                                 .collect(Concurrent.toList()),
                             " "
-                        ),
-                        true
-                    )
+                        ))
+                        .isInline()
+                        .build()
                 )
         );
     }
