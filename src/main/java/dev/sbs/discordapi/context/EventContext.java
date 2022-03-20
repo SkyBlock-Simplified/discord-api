@@ -143,11 +143,15 @@ public interface EventContext<T extends Event> {
     }
 
     default Mono<Void> withChannel(Function<MessageChannel, Mono<Void>> messageChannelFunction) {
-        return this.getChannel().flatMap(messageChannelFunction).then();
+        return this.getChannel().flatMap(messageChannelFunction);
     }
 
     default Mono<Void> withEvent(Function<T, Mono<Void>> eventFunction) {
-        return Mono.just(this.getEvent()).flatMap(eventFunction).then();
+        return Mono.just(this.getEvent()).flatMap(eventFunction);
+    }
+
+    default Mono<Void> withGuild(Function<Optional<Guild>, Mono<Void>> guildFunction) {
+        return this.getGuildId().isPresent() ? this.getGuild().flatMap(guild -> guildFunction.apply(Optional.of(guild))) : guildFunction.apply(Optional.empty());
     }
 
 }

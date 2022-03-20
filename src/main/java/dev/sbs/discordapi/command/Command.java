@@ -18,7 +18,6 @@ import dev.sbs.discordapi.command.data.CommandInfo;
 import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
-import dev.sbs.discordapi.command.exception.HelpCommandException;
 import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
 import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
@@ -146,11 +145,26 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
 
     @Override
     public final Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
-        return commandContext.withEvent(event -> commandContext.withChannel(messageChannel -> commandContext.deferReply()
+        return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
+            .deferReply()
             .then(Mono.fromCallable(() -> {
                 // Handle Disabled Command
                 if (!this.isEnabled())
                     throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is currently disabled!").build();
+
+                // Handle Disabled Guild
+                commandContext.getGuildId()
+                    .flatMap(this::getGuild)
+                    .ifPresent(guild -> {
+                        if (!guild.isDeveloperBotEnabled())
+                            throw SimplifiedException.of(DisabledCommandException.class).withMessage("The bot was disabled in this guild by the developer!").build();
+                    });
+
+                // Handle Developer Command
+                if (this.getCommandConfig().isDeveloperOnly() && !this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, UserPermission.DEVELOPER))
+                    throw SimplifiedException.of(UserPermissionException.class)
+                        .withMessage("Only the bot developer can run this command!")
+                        .build();
 
                 // Handle Guild Permissions
                 if (!commandContext.isPrivateChannel()) {
@@ -180,35 +194,10 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                 }
 
                 // Handle User Permission
-                if (!this.doesUserHavePermissions(commandContext.getInteractUserId(), commandContext.getGuild(), this.getUserPermissions()))
+                if (!this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, this.getUserPermissions()))
                     throw SimplifiedException.of(UserPermissionException.class)
                         .withMessage("You are missing permissions required to run this command!")
                         .build();
-
-                // Handle Developer Overrides
-                if (this.getCommandConfig().isDeveloperOnly() && !this.doesUserHavePermissions(commandContext.getInteractUserId(), commandContext.getGuild(), UserPermission.BOT_OWNER))
-                    throw SimplifiedException.of(UserPermissionException.class)
-                        .withMessage("You are missing permissions required to run this command!")
-                        .build();
-
-                // Handle Guild Overrides
-                commandContext.getGuildId()
-                    .flatMap(this::getGuild)
-                    .ifPresent(guild -> {
-                        if (!guild.isDeveloperBotEnabled())
-                            throw SimplifiedException.of(DisabledCommandException.class).withMessage("The bot was disabled in this guild by the developer!").build();
-                    });
-
-                if (this.getCommandConfig().isGuildToggleable()) {
-                    this.getGuildCommandConfig().ifPresent(guildCommandConfig -> {
-                        if (!guildCommandConfig.isEnabled())
-                            throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is disabled in this guild!").build();
-                    });
-                }
-
-                // Handle Help Arguments
-                if (commandContext.getArguments().size() > 0 && helpArguments.contains(commandContext.getArguments().get(commandContext.getArguments().size() - 1).getValue().orElse("")))
-                    throw SimplifiedException.of(HelpCommandException.class).build();
 
                 // Validate Arguments
                 for (Argument argument : commandContext.getArguments()) {
@@ -235,11 +224,12 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                     }
                 }
 
+                // Process Command
                 return this.process(commandContext);
             }))
             .flatMap(Function.identity())
             .onErrorResume(throwable -> this.getDiscordBot().handleException(ExceptionContext.of(commandContext, throwable)))
-        ));
+        )));
     }
 
     public interface RelationshipData {
