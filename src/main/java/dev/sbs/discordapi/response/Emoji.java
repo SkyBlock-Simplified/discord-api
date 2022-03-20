@@ -32,6 +32,10 @@ public abstract class Emoji {
 
     public abstract String asFormat();
 
+    public final String asPreSpacedFormat() {
+        return " " + this.asFormat();
+    }
+
     public final String asSpacedFormat() {
         return this.asFormat() + " ";
     }
