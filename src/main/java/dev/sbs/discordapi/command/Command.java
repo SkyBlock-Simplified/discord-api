@@ -8,6 +8,7 @@ import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.util.data.mutable.MutableBoolean;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -28,6 +29,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
+import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -115,7 +117,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
             .collect(Concurrent.toList());
     }
 
-    public final Optional<Emoji> getEmoji() {
+    public final @NotNull Optional<Emoji> getEmoji() {
         return Emoji.of(this.getCommandConfig().getEmoji());
     }
 
@@ -141,10 +143,10 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
         return this.getCommandConfig().isEnabled();
     }
 
-    protected abstract Mono<Void> process(@NotNull CommandContext<?> commandContext) throws DiscordException;
+    protected abstract @NotNull Mono<Void> process(@NotNull CommandContext<?> commandContext) throws DiscordException;
 
     @Override
-    public final Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
+    public final @NotNull Mono<Void> apply(@NotNull CommandContext<?> commandContext) {
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
             .deferReply()
             .then(Mono.fromCallable(() -> {
@@ -166,7 +168,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                         .withMessage("Only the bot developer can run this command!")
                         .build();
 
-                // Handle Guild Permissions
+                // Handle Bot Permissions
                 if (!commandContext.isPrivateChannel()) {
                     // Handle Inherited Permissions
                     if (this.getCommandConfig().isInheritingPermissions()) {
@@ -194,10 +196,46 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                 }
 
                 // Handle User Permission
-                if (!this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, this.getUserPermissions()))
-                    throw SimplifiedException.of(UserPermissionException.class)
-                        .withMessage("You are missing permissions required to run this command!")
-                        .build();
+                if (!this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, this.getUserPermissions())) {
+                    MutableBoolean hasPermissions = new MutableBoolean(false);
+                    CommandConfigModel commandConfigModel = this.getCommandConfig();
+
+                    // Handle Guild Override Permissions
+                    if (commandConfigModel.isGuildPermissible()) {
+                        optionalGuild.ifPresent(guild -> this.getGuildCommandConfig().ifPresent(guildCommandConfigModel -> {
+                            // User Override
+                            if (guildCommandConfigModel.getUsers().contains(commandContext.getInteractUserId().asLong()))
+                                hasPermissions.setTrue();
+                            else {
+                                // Role Override
+                                boolean hasRole = guild.getMemberById(commandContext.getInteractUserId())
+                                    .map(member -> member.getRoleIds()
+                                        .stream()
+                                        .map(Snowflake::asLong)
+                                        .anyMatch(roleId -> guildCommandConfigModel.getRoles().contains(roleId))
+                                    )
+                                    .blockOptional()
+                                    .orElse(false);
+
+                                if (hasRole)
+                                    hasPermissions.setTrue();
+                                else if (StringUtil.isNotEmpty(guildCommandConfigModel.getPermissionOverride())) {
+                                    // Permission Override
+                                    hasPermissions.set(this.doesUserHavePermissions(
+                                        commandContext.getInteractUserId(),
+                                        optionalGuild,
+                                        UserPermission.valueOf(guildCommandConfigModel.getPermissionOverride())
+                                    ));
+                                }
+                            }
+                        }));
+                    }
+
+                    if (!hasPermissions.get())
+                        throw SimplifiedException.of(UserPermissionException.class)
+                            .withMessage("You are missing permissions required to run this command!")
+                            .build();
+                }
 
                 // Validate Arguments
                 for (Argument argument : commandContext.getArguments()) {
