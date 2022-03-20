@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.util.base;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.client.exception.HypixelApiException;
-import dev.sbs.api.client.exception.MojangApiException;
+import dev.sbs.api.client.hypixel.exception.HypixelApiException;
+import dev.sbs.api.client.sbs.exception.SbsApiException;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -48,25 +48,25 @@ public abstract class DiscordErrorObject extends DiscordReference {
     private @NotNull Optional<Embed> buildReactiveUserError(ExceptionContext<?> exceptionContext) {
         Optional<Embed> responseBuilder = Optional.empty();
 
-        if (exceptionContext.getException() instanceof MojangApiException mojangApiException) {
+        if (exceptionContext.getException() instanceof SbsApiException sbsApiException) {
             responseBuilder = Optional.of(
                 Embed.builder()
                     .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                    .withDescription(mojangApiException.getErrorResponse().getReason())
+                    .withDescription(sbsApiException.getErrorResponse().getReason())
                     .withFields(
                         Field.of(
                             "State",
-                            mojangApiException.getHttpStatus().getState().getTitle(),
+                            sbsApiException.getHttpStatus().getState().getTitle(),
                             true
                         ),
                         Field.of(
                             "Code",
-                            String.valueOf(mojangApiException.getHttpStatus().getCode()),
+                            String.valueOf(sbsApiException.getHttpStatus().getCode()),
                             true
                         ),
                         Field.of(
                             "Message",
-                            mojangApiException.getHttpStatus().getMessage(),
+                            sbsApiException.getHttpStatus().getMessage(),
                             true
                         )
                     )
