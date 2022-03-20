@@ -2,6 +2,7 @@ package dev.sbs.discordapi.util;
 
 import dev.sbs.api.util.date.RealDate;
 import dev.sbs.api.util.helper.FormatUtil;
+import discord4j.common.util.Snowflake;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,12 +13,18 @@ import java.util.Optional;
 
 public class DiscordDate extends RealDate {
 
+    public static long DISCORD_EPOCH = 1420070400000L;
+
     public DiscordDate(@NotNull String duration) {
         super(duration);
     }
 
     public DiscordDate(long realTime) {
         super(realTime);
+    }
+
+    public DiscordDate(@NotNull Snowflake snowflake) {
+        super((snowflake.asLong() >> 22) + DISCORD_EPOCH);
     }
 
     public String asFormat(@NotNull Type type) {
