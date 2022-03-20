@@ -302,7 +302,7 @@ public class Page implements Paging {
         protected Optional<SelectMenu.Option> option = Optional.empty();
         protected PageItem.Style pageItemStyle = PageItem.Style.FIELD;
         protected Optional<Triple<String, String, String>> fieldNames = Optional.empty();
-        protected int itemsPerPage = 3;
+        protected int itemsPerPage = 12;
 
         /**
          * Clear all but preservable components from {@link Page}.
