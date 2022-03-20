@@ -31,6 +31,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
 
     @Override
     default Mono<Guild> getGuild() {
+        // Guild in ChatInputInteractionEvent#getInteraction Empty
         return Mono.justOrEmpty(this.getGuildId()).flatMap(guildId -> this.getDiscordBot().getGateway().getGuildById(guildId));
     }
 
