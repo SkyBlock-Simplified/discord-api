@@ -6,6 +6,7 @@ import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
@@ -548,8 +549,8 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext, Functio
              *
              * @param label The label of the option.
              */
-            public OptionBuilder withLabel(@NotNull String label) {
-                this.label = label;
+            public OptionBuilder withLabel(@NotNull String label, @NotNull Object... objects) {
+                this.label = FormatUtil.format(label, objects);
                 return this;
             }
 
