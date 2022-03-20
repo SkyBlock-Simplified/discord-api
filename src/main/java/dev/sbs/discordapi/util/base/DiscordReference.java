@@ -12,7 +12,6 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.data.mutable.MutableBoolean;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.helper.WordUtil;
@@ -29,9 +28,11 @@ import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
+import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.lang.annotation.Annotation;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public abstract class DiscordReference {
 
@@ -80,7 +82,7 @@ public abstract class DiscordReference {
             newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
             newCommandConfigModel.setCommandPath(this.getCommandPath(command));
             newCommandConfigModel.setDescription("*<missing description>*");
-            newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.BOT_OWNER));
+            newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.DEVELOPER));
             newCommandConfigModel.setEnabled(true);
             newCommandConfigModel.setInheritingPermissions(true);
             return ((CommandConfigSqlRepository) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
@@ -259,13 +261,17 @@ public abstract class DiscordReference {
     }
 
     // --- Permissions ---
-    public final @NotNull
-    ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Permission... permissions) {
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Optional<Guild> guild, @NotNull Permission... permissions) {
         return this.getGuildPermissionMap(userId, guild, Arrays.asList(permissions));
     }
 
-    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Mono<Guild> guild, @NotNull Iterable<Permission> permissions) {
-        return guild.flatMap(gld -> gld.getMemberById(userId)).flatMap(Member::getBasePermissions).map(permissionSet -> this.getPermissionMap(permissionSet, permissions)).blockOptional().orElse(Concurrent.newLinkedMap());
+    public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull Iterable<Permission> permissions) {
+        return optionalGuild.map(guild -> guild.getMemberById(userId))
+            .orElse(Mono.empty())
+            .flatMap(Member::getBasePermissions)
+            .map(permissionSet -> this.getPermissionMap(permissionSet, permissions))
+            .blockOptional()
+            .orElse(Concurrent.newLinkedMap());
     }
 
     public final @NotNull ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Permission... permissions) {
@@ -289,79 +295,104 @@ public abstract class DiscordReference {
     }
 
     // Channel Permissions
-    public final boolean hasChannelPermissions(@NotNull Snowflake userId, Mono<GuildChannel> channel, @NotNull Permission... permissions) {
+    public final boolean hasChannelPermissions(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Permission... permissions) {
         return this.hasChannelPermissions(userId, channel, Concurrent.newList(permissions));
     }
 
-    public final boolean hasChannelPermissions(@NotNull Snowflake userId, Mono<GuildChannel> channel, @NotNull Iterable<Permission> permissions) {
+    public final boolean hasChannelPermissions(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Iterable<Permission> permissions) {
         return this.getChannelPermissionMap(userId, channel, permissions).stream().allMatch(Map.Entry::getValue);
     }
 
     // Guild Permissions
-    public final boolean hasGuildPermissions(@NotNull Snowflake userId, Mono<Guild> guild, @NotNull Permission... permissions) {
-        return this.hasGuildPermissions(userId, guild, Arrays.asList(permissions));
+    public final boolean hasGuildPermissions(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull Permission... permissions) {
+        return this.hasGuildPermissions(userId, optionalGuild, Arrays.asList(permissions));
     }
 
-    public final boolean hasGuildPermissions(@NotNull Snowflake userId, Mono<Guild> guild, @NotNull Iterable<Permission> permissions) {
-        return this.getGuildPermissionMap(userId, guild, permissions).stream().allMatch(Map.Entry::getValue);
+    public final boolean hasGuildPermissions(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull Iterable<Permission> permissions) {
+        return this.getGuildPermissionMap(userId, optionalGuild, permissions).stream().allMatch(Map.Entry::getValue);
     }
 
     // User Permissions
-    public final boolean doesUserHavePermissions(@NotNull Snowflake snowflake, Mono<Guild> guild, @NotNull UserPermission... userPermissions) {
-        return this.doesUserHavePermissions(snowflake, guild, Arrays.asList(userPermissions));
+    public final boolean doesUserHavePermissions(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull UserPermission... userPermissions) {
+        return this.doesUserHavePermissions(userId, optionalGuild, Arrays.asList(userPermissions));
     }
 
-    public final boolean doesUserHavePermissions(@NotNull Snowflake snowflake, Mono<Guild> guild, @NotNull Iterable<UserPermission> userPermissions) {
-        // Set Default Permissions
+    public final boolean doesUserHavePermissions(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull Iterable<UserPermission> userPermissions) {
         ConcurrentMap<UserPermission, Boolean> permissionMap = Concurrent.newMap();
-        userPermissions.forEach(userPermission -> permissionMap.put(userPermission, false));
+        userPermissions.forEach(userPermission -> permissionMap.put(userPermission, this.doesUserHaveExactPermission(userId, optionalGuild, userPermission)));
 
-        guild.flatMap(gld -> gld.getMemberById(snowflake))
-            .blockOptional()
-            .ifPresent(member -> {
-                for (UserPermission userPermission : userPermissions) {
-                    switch (userPermission) {
-                        case BOT_OWNER -> permissionMap.put(userPermission, this.isBotOwner(snowflake));
-                        case GUILD_OWNER -> permissionMap.put(userPermission, this.isGuildOwner(snowflake, guild));
-                        case MAIN_SERVER_ADMIN -> permissionMap.put(userPermission, this.hasGuildPermissions(snowflake, Mono.just(this.getDiscordBot().getMainGuild()), Permission.ADMINISTRATOR));
-                        case MAIN_SERVER -> permissionMap.put(userPermission, guild.map(gld -> gld.equals(this.getDiscordBot().getMainGuild())).blockOptional().orElse(false));
-                        case NONE -> permissionMap.put(userPermission, true); // Default
-                        default -> permissionMap.put(userPermission, true); // Default
-                    }
-                }
-            });
+        // Handle Included Permissions
+        for (UserPermission aPermission : UserPermission.values()) {
+            for (UserPermission userPermission : userPermissions) {
+                if (aPermission.getIncludes().contains(userPermission))
+                    permissionMap.put(userPermission, this.doesUserHaveExactPermission(userId, optionalGuild, aPermission));
+            }
+        }
 
         return permissionMap.stream().allMatch(Map.Entry::getValue); // All True
     }
 
-    // --- Owner Permissions ---
-    public final boolean isBotOwner(@NotNull Snowflake userId) {
-        MutableBoolean isOwner = new MutableBoolean(false);
+    public final boolean doesUserHaveExactPermission(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull UserPermission userPermission) {
+        return switch (userPermission) {
+            case DEVELOPER -> this.isDeveloper(userId);
+            case GUILD_OWNER -> this.isGuildOwner(userId, optionalGuild);
+            case GUILD_ADMIN -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getAdminRoles) ||
+                this.hasGuildPermissions(userId, optionalGuild, Permission.ADMINISTRATOR);
+            case GUILD_MANAGER -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getManagerRoles);
+            case GUILD_MOD -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getModRoles);
+            case GUILD_HELPER -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getHelperRoles);
+            case MAIN_SERVER -> optionalGuild.map(guild -> guild.getId().equals(this.getDiscordBot().getMainGuild().getId())).orElse(false);
+            case NONE -> true; // Default
+        };
+    }
 
-        this.getDiscordBot()
+    private boolean doesUserHaveGuildModelPermission(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild, @NotNull Function<GuildModel, List<Long>> guildRoleFunction) {
+        return optionalGuild.flatMap(guild -> guild.getMemberById(userId)
+                .map(member -> member.getRoleIds()
+                    .stream()
+                    .map(Snowflake::asLong)
+                    .anyMatch(roleId -> SimplifiedApi.getRepositoryOf(GuildModel.class)
+                        .findFirst(GuildModel::getGuildId, guild.getId().asLong())
+                        .map(guildRoleFunction)
+                        .orElse(Concurrent.newList())
+                        .contains(roleId)
+                    )
+                )
+                .blockOptional()
+            )
+            .orElse(false);
+    }
+
+    // --- Owner Permissions ---
+    public final boolean isDeveloper(@NotNull Snowflake userId) {
+        return this.getDiscordBot()
             .getClient()
             .getApplicationInfo()
             .cache()
             .blockOptional()
-            .ifPresent(applicationInfoData -> applicationInfoData
-                .team()
-                .ifPresentOrElse(applicationTeamData -> applicationTeamData.members().forEach(applicationTeamMemberData -> {
-                    if (applicationTeamMemberData.user().id().asLong() == userId.asLong())
-                        isOwner.set(true);
-                }), () -> {
-                    if (applicationInfoData.owner().id().asLong() == userId.asLong())
-                        isOwner.set(true);
+            .map(applicationInfoData -> applicationInfoData.team()
+                .map(applicationTeamData -> {
+                    for (ApplicationTeamMemberData teamMemberData : applicationTeamData.members()) {
+                        if (teamMemberData.user().id().asLong() == userId.asLong())
+                            return true;
+                    }
+
+                    return false;
                 })
-            );
-
-        return isOwner.get();
+                .orElse(applicationInfoData.owner().id().asLong() == userId.asLong())
+            )
+            .orElse(false);
     }
 
-    public final boolean isGuildOwner(@NotNull Snowflake userId, @NotNull Mono<Guild> guild) {
-        return guild.map(gld -> gld.getOwnerId().equals(userId)).blockOptional().orElse(false);
+    public final boolean isGuildOwner(@NotNull Snowflake userId, @Nullable Guild guild) {
+        return this.isGuildOwner(userId, Optional.ofNullable(guild));
     }
 
-    public final boolean isUserVerified(UUID uniqueId) {
+    public final boolean isGuildOwner(@NotNull Snowflake userId, @NotNull Optional<Guild> optionalGuild) {
+        return optionalGuild.map(guild -> guild.getOwnerId().equals(userId)).orElse(false);
+    }
+
+    public final boolean isUserVerified(@NotNull UUID uniqueId) {
         return SimplifiedApi.getRepositoryOf(UserModel.class).matchFirst(userModel -> userModel.getMojangUniqueIds().contains(uniqueId)).isPresent();
     }
 
