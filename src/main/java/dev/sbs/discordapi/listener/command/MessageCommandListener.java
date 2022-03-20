@@ -6,6 +6,7 @@ import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
+import dev.sbs.discordapi.command.ParentCommand;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.context.command.message.MessageCommandContext;
@@ -36,6 +37,7 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
                 return Mono.justOrEmpty(this.getDiscordBot().getCommandRegistrar().getPrefixCommand())
                     .filter(prefixCommand -> prefixCommand == null || this.getCommandAnnotation(prefixCommand).filter(command -> this.doesCommandMatch(command, messageArguments[0])).isPresent())
                     .flatMap(prefixCommand -> Mono.justOrEmpty(this.getDeepestCommand(messageArguments)))
+                    .filter(relationship -> !relationship.getCommandClass().isAssignableFrom(ParentCommand.class))
                     .flatMap(relationship -> {
                         ConcurrentList<String> remainingArguments = Concurrent.newList(messageArguments);
 
