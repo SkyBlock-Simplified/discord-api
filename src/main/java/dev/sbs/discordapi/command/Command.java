@@ -150,6 +150,8 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
             .deferReply()
             .then(Mono.fromCallable(() -> {
+                CommandConfigModel commandConfigModel = this.getCommandConfig();
+
                 // Handle Disabled Command
                 if (!this.isEnabled())
                     throw SimplifiedException.of(DisabledCommandException.class).withMessage("This command is currently disabled!").build();
@@ -163,7 +165,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                     });
 
                 // Handle Developer Command
-                if (this.getCommandConfig().isDeveloperOnly() && !this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, UserPermission.DEVELOPER))
+                if (commandConfigModel.isDeveloperOnly() && !this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, UserPermission.DEVELOPER))
                     throw SimplifiedException.of(UserPermissionException.class)
                         .withMessage("Only the bot developer can run this command!")
                         .build();
@@ -171,7 +173,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                 // Handle Bot Permissions
                 if (!commandContext.isPrivateChannel()) {
                     // Handle Inherited Permissions
-                    if (this.getCommandConfig().isInheritingPermissions()) {
+                    if (commandConfigModel.isInheritingPermissions()) {
                         this.getParentCommandList()
                             .stream()
                             .map(RelationshipData::getOptionalCommandInfo)
@@ -198,7 +200,6 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                 // Handle User Permission
                 if (!this.doesUserHavePermissions(commandContext.getInteractUserId(), optionalGuild, this.getUserPermissions())) {
                     MutableBoolean hasPermissions = new MutableBoolean(false);
-                    CommandConfigModel commandConfigModel = this.getCommandConfig();
 
                     // Handle Guild Override Permissions
                     if (commandConfigModel.isGuildPermissible()) {
