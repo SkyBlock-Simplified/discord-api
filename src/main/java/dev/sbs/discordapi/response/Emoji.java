@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.client.sbs.response.SkyBlockEmojisResponse;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.SimplifiedException;
@@ -97,6 +98,10 @@ public abstract class Emoji {
 
     public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
         return emojiModel.map(emoji -> new Custom(Snowflake.of(emoji.getEmojiId()), emoji.getKey(), emoji.isAnimated(), interaction));
+    }
+
+    public static Emoji of(@NotNull SkyBlockEmojisResponse.Emoji emoji) {
+        return of(emoji.getId(), emoji.getName(), emoji.isAnimated());
     }
 
     public static Emoji of(@NotNull ReactionEmoji emoji) {
