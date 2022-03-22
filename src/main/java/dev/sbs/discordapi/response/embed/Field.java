@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.response.embed;
 
 import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.util.builder.EqualsBuilder;
+import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.data.tuple.Triple;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -40,6 +42,21 @@ public final class Field {
         return builder().isInline(inline).build();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Field field = (Field) o;
+
+        return new EqualsBuilder()
+            .append(this.isInline(), field.isInline())
+            .append(this.getEmoji(), field.getEmoji())
+            .append(this.getName(), field.getName())
+            .append(this.getValue(), field.getValue())
+            .build();
+    }
+
     public EmbedCreateFields.Field getD4jField() {
         return EmbedCreateFields.Field.of(
             FormatUtil.format(
@@ -50,6 +67,16 @@ public final class Field {
             this.getValue().orElse(ZERO_WIDTH_SPACE),
             this.isInline()
         );
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getEmoji())
+            .append(this.getName())
+            .append(this.getValue())
+            .append(this.isInline())
+            .build();
     }
 
     public FieldBuilder mutate() {
