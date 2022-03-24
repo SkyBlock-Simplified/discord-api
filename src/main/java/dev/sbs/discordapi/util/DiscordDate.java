@@ -23,6 +23,7 @@ public class DiscordDate extends RealDate {
         super(realTime);
     }
 
+    // https://discord.com/developers/docs/reference#snowflakes
     public DiscordDate(@NotNull Snowflake snowflake) {
         super((snowflake.asLong() >> 22) + DISCORD_EPOCH);
     }
