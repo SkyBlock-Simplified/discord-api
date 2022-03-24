@@ -5,11 +5,12 @@ import dev.sbs.discordapi.response.component.action.ActionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ActionRow<T extends ActionComponent<?>> extends LayoutComponent<T> {
+public final class ActionRow extends LayoutComponent<ActionComponent<?>> {
 
     @Getter private final boolean preserved;
 
@@ -23,26 +24,24 @@ public final class ActionRow<T extends ActionComponent<?>> extends LayoutCompone
         );
     }
 
-    @SafeVarargs
-    public static <T extends ActionComponent<?>> ActionRow<T> of(T... components) {
+    public static ActionRow of(@NotNull ActionComponent<?>... components) {
         return of(Arrays.asList(components));
     }
 
-    public static <T extends ActionComponent<?>> ActionRow<T> of(Iterable<T> components) {
+    public static ActionRow of(@NotNull Iterable<ActionComponent<?>> components) {
         return of(false, components);
     }
 
-    @SafeVarargs
-    public static <T extends ActionComponent<?>> ActionRow<T> preserved(T... components) {
+    public static ActionRow preserved(@NotNull ActionComponent<?>... components) {
         return preserved(Arrays.asList(components));
     }
 
-    public static <T extends ActionComponent<?>> ActionRow<T> preserved(Iterable<T> components) {
+    public static ActionRow preserved(@NotNull Iterable<ActionComponent<?>> components) {
         return of(true, components);
     }
 
-    private static <T extends ActionComponent<?>> ActionRow<T> of(boolean preserved, Iterable<T> components) {
-        ActionRow<T> actionRow = new ActionRow<>(preserved);
+    private static ActionRow of(boolean preserved, @NotNull Iterable<ActionComponent<?>> components) {
+        ActionRow actionRow = new ActionRow(preserved);
         components.forEach(component -> actionRow.getComponents().add(component));
         return actionRow;
     }
