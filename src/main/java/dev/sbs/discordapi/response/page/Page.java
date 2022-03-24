@@ -31,9 +31,9 @@ import java.util.function.Function;
 public class Page implements Paging {
 
     @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<LayoutComponent<?>> pageComponents;
+    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents;
     @Getter protected final ConcurrentList<Page> pages;
-    @Getter protected final ConcurrentList<LayoutComponent<?>> components;
+    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> components;
     @Getter protected final ConcurrentList<Emoji> reactions;
     @Getter protected final ConcurrentList<Embed> embeds;
     @Getter protected final ConcurrentList<PageItem> items;
@@ -46,7 +46,7 @@ public class Page implements Paging {
 
     protected Page(
         UUID uniqueId,
-        ConcurrentList<LayoutComponent<?>> components,
+        ConcurrentList<LayoutComponent<ActionComponent<?>>> components,
         ConcurrentList<Emoji> reactions,
         ConcurrentList<Embed> embeds,
         ConcurrentList<Page> pages,
@@ -69,7 +69,7 @@ public class Page implements Paging {
         this.itemsPerPage = itemsPerPage;
 
         // Page Components
-        ConcurrentList<LayoutComponent<?>> pageComponents = Concurrent.newList();
+        ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents = Concurrent.newList();
 
         // SubPage List
         if (ListUtil.notEmpty(pages)) {
@@ -125,22 +125,17 @@ public class Page implements Paging {
      * @param buttonBuilder The button to edit.
      */
     private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
-        this.getPageComponents()
+        this.pageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
             .stream()
-            .filter(ActionRow.class::isInstance)
-            .map(ActionRow.class::cast)
-            .forEach(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(Button.class::isInstance)
-                .map(Button.class::cast)
-                .filter(button -> Objects.equals(function.apply(button), value))
-                .findFirst()
-                .ifPresent(button -> {
-                    int index = layoutComponent.getComponents().indexOf(button);
-                    layoutComponent.getComponents().remove(index);
-                    layoutComponent.getComponents().add(index, buttonBuilder.apply(button.mutate()).build());
-                })
-            );
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .filter(button -> Objects.equals(function.apply(button), value))
+            .findFirst()
+            .ifPresent(button -> layoutComponent.getComponents().set(
+                layoutComponent.getComponents().indexOf(button),
+                buttonBuilder.apply(button.mutate()).build()
+            ))
+        );
     }
 
     @Override
@@ -175,11 +170,9 @@ public class Page implements Paging {
      * @param value The value to match with.
      * @return The matching component, if it exists.
      */
-    public <S, T extends ActionComponent<?, ?>> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
+    public <S, T extends ActionComponent<?>> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
         return this.getComponents()
             .stream()
-            .filter(ActionRow.class::isInstance)
-            .map(ActionRow.class::cast)
             .flatMap(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(tClass::isInstance)
@@ -294,7 +287,7 @@ public class Page implements Paging {
 
         protected final UUID uniqueId;
         protected final ConcurrentList<Embed> embeds = Concurrent.newList();
-        protected final ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
+        protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> components = Concurrent.newList();
         protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
         protected final ConcurrentList<Page> pages = Concurrent.newList();
         protected final ConcurrentList<PageItem> items = Concurrent.newList();
@@ -357,19 +350,18 @@ public class Page implements Paging {
          *
          * @param actionComponent The component to edit.
          */
-        public PageBuilder editComponent(@NotNull ActionComponent<?, ?> actionComponent) {
-            this.components.stream()
-                .filter(ActionRow.class::isInstance)
-                .map(ActionRow.class::cast)
-                .forEach(layoutComponent -> layoutComponent.getComponents()
-                    .stream()
-                    .filter(innerComponent -> innerComponent.equals(actionComponent))
-                    .findFirst()
-                    .ifPresent(innerComponent -> layoutComponent.getComponents().set(
-                        layoutComponent.getComponents().indexOf(innerComponent),
-                        actionComponent
-                    ))
-                );
+        public PageBuilder editComponent(@NotNull ActionComponent<?> actionComponent) {
+            this.components.forEach(layoutComponent -> layoutComponent.getComponents()
+                .stream()
+                .filter(actionComponent.getClass()::isInstance)
+                .map(actionComponent.getClass()::cast)
+                .filter(innerComponent -> innerComponent.getUniqueId().equals(actionComponent.getUniqueId()))
+                .findFirst()
+                .ifPresent(innerComponent -> layoutComponent.getComponents().set(
+                    layoutComponent.getComponents().indexOf(innerComponent),
+                    actionComponent
+                ))
+            );
 
             return this;
         }
@@ -452,11 +444,8 @@ public class Page implements Paging {
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends ActionComponent<?, ?>> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
-            return this.components
-                .stream()
-                .filter(ActionRow.class::isInstance)
-                .map(ActionRow.class::cast)
+        public <S, A extends ActionComponent<?>> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+            return this.components.stream()
                 .flatMap(layoutComponent -> layoutComponent.getComponents()
                     .stream()
                     .filter(tClass::isInstance)
@@ -471,7 +460,8 @@ public class Page implements Paging {
          *
          * @param components Variable number of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull LayoutComponent<?>... components) {
+        @SuppressWarnings("all")
+        public PageBuilder withComponents(@NotNull LayoutComponent<ActionComponent<?>>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -480,7 +470,7 @@ public class Page implements Paging {
          *
          * @param components Collection of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<?>> components) {
+        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent<?>>> components) {
             components.forEach(this.components::add);
             return this;
         }

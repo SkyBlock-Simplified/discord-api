@@ -30,7 +30,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu extends ActionComponent<SelectMenuContext, Function<SelectMenuContext, Mono<Void>>> {
+public final class SelectMenu extends ActionComponent<SelectMenuContext> {
 
     private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final @NotNull UUID uniqueId;

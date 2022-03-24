@@ -88,7 +88,7 @@ public interface UserInteractionContext<T extends Event> extends MessageContext<
         ));
     }
 
-    default void modify(ActionComponent<?, ?> actionComponent) {
+    default void modify(ActionComponent<?> actionComponent) {
         this.getResponse().ifPresent(response -> this.getDiscordBot()
             .getResponseCache()
             .updateResponse(

@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 import java.util.function.Function;
 
-public abstract class ActionComponent<T extends ComponentContext, I extends Function<T, Mono<Void>>> extends Component {
+public abstract class ActionComponent<T extends ComponentContext> extends Component {
 
     @Override
     public boolean equals(Object o) {
@@ -23,7 +23,7 @@ public abstract class ActionComponent<T extends ComponentContext, I extends Func
     @Override
     public abstract discord4j.core.object.component.ActionComponent getD4jComponent();
 
-    public abstract I getInteraction();
+    public abstract Function<T, Mono<Void>> getInteraction();
 
     public abstract @NotNull UUID getUniqueId();
 

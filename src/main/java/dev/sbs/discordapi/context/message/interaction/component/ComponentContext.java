@@ -37,7 +37,7 @@ public interface ComponentContext extends UserInteractionContext<ComponentIntera
         return this.getEvent().getInteraction().getChannelId();
     }
 
-    ActionComponent<?, ?> getComponent();
+    ActionComponent<?> getComponent();
 
     @Override
     default Mono<Guild> getGuild() {

@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ActionRow extends LayoutComponent<ActionComponent<?, ?>> {
+public final class ActionRow<T extends ActionComponent<?>> extends LayoutComponent<T> {
 
     @Getter private final boolean preserved;
 
@@ -23,24 +23,26 @@ public final class ActionRow extends LayoutComponent<ActionComponent<?, ?>> {
         );
     }
 
-    public static ActionRow of(ActionComponent<?, ?>... components) {
+    @SafeVarargs
+    public static <T extends ActionComponent<?>> ActionRow<T> of(T... components) {
         return of(Arrays.asList(components));
     }
 
-    public static ActionRow of(Iterable<ActionComponent<?, ?>> components) {
+    public static <T extends ActionComponent<?>> ActionRow<T> of(Iterable<T> components) {
         return of(false, components);
     }
 
-    public static ActionRow preserved(ActionComponent<?, ?>... components) {
+    @SafeVarargs
+    public static <T extends ActionComponent<?>> ActionRow<T> preserved(T... components) {
         return preserved(Arrays.asList(components));
     }
 
-    public static ActionRow preserved(Iterable<ActionComponent<?, ?>> components) {
+    public static <T extends ActionComponent<?>> ActionRow<T> preserved(Iterable<T> components) {
         return of(true, components);
     }
 
-    private static ActionRow of(boolean preserved, Iterable<ActionComponent<?, ?>> components) {
-        ActionRow actionRow = new ActionRow(preserved);
+    private static <T extends ActionComponent<?>> ActionRow<T> of(boolean preserved, Iterable<T> components) {
+        ActionRow<T> actionRow = new ActionRow<>(preserved);
         components.forEach(component -> actionRow.getComponents().add(component));
         return actionRow;
     }

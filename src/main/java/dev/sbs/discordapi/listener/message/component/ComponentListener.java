@@ -14,7 +14,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends ActionComponent<C, ?>> extends DiscordListener<E> {
+public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends ActionComponent<C>> extends DiscordListener<E> {
 
     private final Class<T> componentClass;
 

@@ -24,7 +24,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button extends ActionComponent<ButtonContext, Function<ButtonContext, Mono<Void>>> {
+public final class Button extends ActionComponent<ButtonContext> {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
