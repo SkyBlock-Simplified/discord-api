@@ -98,11 +98,12 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         this.getDiscordBot(),
                         context,
                         throwable,
-                        FormatUtil.format("{0} Exception", this.getTitle())
+                        FormatUtil.format("{0} Paging Exception", this.getTitle())
                     )
                 ))
                 .doOnNext(DiscordResponseCache.Entry::setBusy)
-                .flatMap(entry -> this.handlePaging(context))
+                //.flatMap(entry -> component.isDeferEdit() ? context.deferEdit() : Mono.just(entry))
+                .flatMap(__ -> this.handlePaging(context))
                 .then(
                     Mono.just(responseCacheEntry)
                         .doOnNext(DiscordResponseCache.Entry::updateLastInteract)
