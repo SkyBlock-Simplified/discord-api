@@ -35,6 +35,7 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
+import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
@@ -62,9 +63,8 @@ import java.util.regex.Pattern;
 /**
  * Discord Bot Framework. Powered by Discord4J.
  *
- * @see https://github.com/Discord4J/Discord4J
+ * @implNote https://github.com/Discord4J/Discord4J
  */
-@SuppressWarnings("all")
 public abstract class DiscordBot extends DiscordErrorObject {
 
     private static final Pattern tokenValidator = Pattern.compile("[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}");
@@ -76,10 +76,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
     @Getter private final @NotNull DiscordCommandRegistrar commandRegistrar;
     @Getter private final @NotNull Scheduler scheduler = new Scheduler();
     @Getter private final @NotNull DiscordResponseCache responseCache = new DiscordResponseCache();
-    @Getter private Snowflake clientId;
-    @Getter private Guild mainGuild;
-    @Getter private User self;
 
+    @SuppressWarnings("unchecked")
     protected DiscordBot() {
         this.log = new DiscordLogger(this, this.getClass()); // Initialize Logger
 
@@ -148,16 +146,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .withEventDispatcher(eventDispatcher -> eventDispatcher.on(ConnectEvent.class)
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
-                    this.getLog().info("Locating Oneself");
-                    this.self = gatewayDiscordClient.getSelf().block();
-                    this.clientId = this.getSelf().getId();
-                    this.mainGuild = gatewayDiscordClient.getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
-                        .blockOptional()
-                        .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                            .withMessage("Unable to locate self in Main Guild!")
-                            .build()
-                        );
-
                     this.getLog().info("Processing Gateway Connected Listener");
                     this.onGatewayConnected(gatewayDiscordClient);
 
@@ -168,6 +156,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         SimplifiedApi.getSqlSession().getInitializationTime(),
                         SimplifiedApi.getSqlSession().getStartupTime()
                     );
+                    this.getLog().info("Processing Database Connected Listener");
                     this.onDatabaseConnected();
 
                     this.getLog().info("Registering Built-in Event Listeners");
@@ -177,7 +166,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
-                        eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this))
+                        eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
+                        eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(this::onGatewayDisconnected))
                     );
 
                     this.getLog().info("Registering Custom Event Listeners");
@@ -205,6 +195,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
         return Concurrent.newUnmodifiableList();
     }
 
+    public final @NotNull Snowflake getClientId() {
+        return this.getGateway().getSelfId();
+    }
+
     protected abstract @NotNull ConcurrentSet<Class<? extends Command>> getCommands();
 
     public abstract @NotNull DiscordConfig getConfig();
@@ -222,6 +216,16 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
     protected abstract @NotNull ClientPresence getInitialPresence(ShardInfo shardInfo);
 
+    public final @NotNull Guild getMainGuild() {
+        return this.getGateway()
+            .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
+            .blockOptional()
+            .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
+                .withMessage("Unable to locate self in Main Guild!")
+                .build()
+            );
+    }
+
     protected @NotNull Class<? extends PrefixCommand> getPrefixCommand() {
         return PrefixCommand.class;
     }
@@ -230,9 +234,22 @@ public abstract class DiscordBot extends DiscordErrorObject {
         return this.getCommandRegistrar().getRootCommandRelationship();
     }
 
+    public final @NotNull User getSelf() {
+        return this.getGateway()
+            .getSelf()
+            .blockOptional()
+            .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
+                .withMessage("Unable to locate self in Discord Gateway!")
+                .build()
+            );
+    }
+
     protected abstract void loadConfig();
 
+    @SuppressWarnings("unused")
     protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) { }
+
+    protected void onGatewayDisconnected() { }
 
     protected void onDatabaseConnected() { }
 
