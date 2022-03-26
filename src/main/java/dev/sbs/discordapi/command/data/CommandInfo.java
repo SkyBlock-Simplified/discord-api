@@ -49,6 +49,6 @@ public @interface CommandInfo {
      *
      * @return The required user permissions.
      */
-    UserPermission[] userPermissions() default { UserPermission.NONE };
+    UserPermission[] userPermissions() default { UserPermission.EVERYONE };
 
 }

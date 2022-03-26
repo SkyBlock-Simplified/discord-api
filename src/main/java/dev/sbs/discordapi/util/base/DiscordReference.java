@@ -342,7 +342,7 @@ public abstract class DiscordReference {
             case GUILD_MOD -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getModRoles);
             case GUILD_HELPER -> this.doesUserHaveGuildModelPermission(userId, optionalGuild, GuildModel::getHelperRoles);
             case MAIN_SERVER -> optionalGuild.map(guild -> guild.getId().equals(this.getDiscordBot().getMainGuild().getId())).orElse(false);
-            case NONE -> true; // Default
+            case EVERYONE -> true; // Default
         };
     }
 

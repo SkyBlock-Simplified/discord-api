@@ -6,7 +6,7 @@ import lombok.Getter;
 
 public enum UserPermission {
 
-    NONE,
+    EVERYONE,
     MAIN_SERVER,
     GUILD_HELPER(true),
     GUILD_MOD(true, GUILD_HELPER),
