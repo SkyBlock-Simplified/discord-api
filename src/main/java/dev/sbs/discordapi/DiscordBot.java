@@ -57,6 +57,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.retry.Retry;
 
+import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -99,7 +100,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Globally Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
-            .onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(Errors.NativeIoException.class))) // Retry SocketExceptions
+            .onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(SocketException.class, Errors.NativeIoException.class))) // Retry SocketExceptions
             .build();
 
         this.getLog().info("Registering Commands");
