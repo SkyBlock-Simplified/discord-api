@@ -89,6 +89,7 @@ public class Response implements Paging {
                 SelectMenu.builder()
                     .withPageType(SelectMenu.PageType.PAGE)
                     .withPlaceholder("Select a page.")
+                    .withPlaceholderUsesSelectedOption()
                     .withOptions(
                         pages.stream()
                             .filter(page -> !page.isItemSelector() || ListUtil.notEmpty(page.getItems()))
