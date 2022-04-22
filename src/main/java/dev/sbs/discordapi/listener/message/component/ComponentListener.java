@@ -102,7 +102,6 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                     )
                 ))
                 .doOnNext(DiscordResponseCache.Entry::setBusy)
-                //.flatMap(entry -> component.isDeferEdit() ? context.deferEdit() : Mono.just(entry))
                 .flatMap(__ -> this.handlePaging(context))
                 .then(
                     Mono.just(responseCacheEntry)

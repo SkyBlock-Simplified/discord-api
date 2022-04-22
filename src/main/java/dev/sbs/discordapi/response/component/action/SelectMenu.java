@@ -98,27 +98,35 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext> {
             .then();
     }
 
-    private Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
-        return Mono.just(selectMenuContext)
-            .flatMap(context -> {
+    public Function<SelectMenuContext, Mono<SelectMenuContext>> getPlaceholderUpdate() {
+        return selectMenuContext -> Flux.fromIterable(this.getOptions())
+            .filter(option -> option.getValue().equals(selectMenuContext.getEvent().getValues().get(0)))
+            .singleOrEmpty()
+            .flatMap(option -> {
                 Mono<Void> mono = Mono.empty();
-                option.isDefault = true;
 
-                // Handle Placeholder Overrides
-                if (this.isPlaceholderUsingSelectedOption())
+                if (this.isPlaceholderUsingSelectedOption()) {
+                    option.isDefault = true;
+
                     mono = Flux.fromIterable(this.getOptions())
                         .filter(_option -> !_option.equals(option))
                         .doOnNext(Option::setNotDefault)
                         .then();
+                }
 
-                // Handle Interaction
-                return mono.then(
-                    Mono.justOrEmpty(context.getResponse())
-                        .flatMap(response -> option.getInteraction()
-                            .apply(OptionContext.of(selectMenuContext, response, option))
-                        )
-                );
+                return mono.thenReturn(selectMenuContext);
             });
+    }
+
+    private Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
+        return Mono.just(selectMenuContext).flatMap(context -> this.getPlaceholderUpdate()
+            .apply(selectMenuContext)
+            .then(
+                Mono.justOrEmpty(context.getResponse())
+                    .flatMap(response -> option.getInteraction()
+                        .apply(OptionContext.of(selectMenuContext, response, option))
+                    )
+            ));
     }
 
     @Override
@@ -146,7 +154,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext> {
             .withPlaceholder(this.getPlaceholder())
             .withMinValue(this.getMinValue())
             .withMaxValue(this.getMaxValue())
-            .placeholderUsesSelectedOption(this.isPlaceholderUsingSelectedOption())
+            .withPlaceholderUsesSelectedOption(this.isPlaceholderUsingSelectedOption())
             .withOptions(this.getOptions())
             .isPreserved(this.isDisabled());
     }
@@ -342,8 +350,8 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext> {
         /**
          * Sets the {@link SelectMenu} to override it's placeholder with the selected {@link Option}.
          */
-        public SelectMenuBuilder placeholderUsesSelectedOption() {
-            return this.placeholderUsesSelectedOption(true);
+        public SelectMenuBuilder withPlaceholderUsesSelectedOption() {
+            return this.withPlaceholderUsesSelectedOption(true);
         }
 
         /**
@@ -351,7 +359,7 @@ public final class SelectMenu extends ActionComponent<SelectMenuContext> {
          *
          * @param value True to override placeholder with selected option.
          */
-        public SelectMenuBuilder placeholderUsesSelectedOption(boolean value) {
+        public SelectMenuBuilder withPlaceholderUsesSelectedOption(boolean value) {
             this.placeholderUsesSelectedOption = value;
             return this;
         }

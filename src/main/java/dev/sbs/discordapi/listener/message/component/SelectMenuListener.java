@@ -22,13 +22,16 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     protected Mono<Void> handlePaging(SelectMenuContext selectMenuContext) {
         return Mono.just(selectMenuContext)
             .flatMap(context -> Mono.justOrEmpty(context.getResponse())
-                .doOnNext(response -> {
+                .flatMap(response -> {
                     switch (context.getComponent().getPageType()) {
                         case PAGE -> response.gotoPage(context.getValues().get(0));
                         case SUBPAGE -> response.gotoSubPage(context.getValues().get(0));
                     }
 
-                    context.getResponseCacheEntry().updateResponse(response, false); // Update Response
+                    return selectMenuContext.getComponent()
+                        .getPlaceholderUpdate()
+                        .apply(selectMenuContext)
+                        .doOnNext(__ -> context.getResponseCacheEntry().updateResponse(response, false));
                 })
                 .then()
             );
