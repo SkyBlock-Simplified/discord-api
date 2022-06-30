@@ -13,6 +13,7 @@ import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -35,6 +36,7 @@ public final class Parameter {
     @Getter private final boolean remainder;
     @Getter private final @NotNull Optional<Emoji> emoji;
     @Getter private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
+    @Getter private final @NotNull Function<String, Mono<Void>> autoComplete = __ -> Mono.empty();
 
     public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type) {
         this(name, description, type, true);
