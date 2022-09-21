@@ -3,7 +3,7 @@ package dev.sbs.discordapi.command;
 import dev.sbs.api.data.model.discord.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.command_groups.CommandGroupModel;
-import dev.sbs.api.data.model.discord.guild_command_configs.GuildCommandConfigModel;
+import dev.sbs.api.data.model.discord.guild_data.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
