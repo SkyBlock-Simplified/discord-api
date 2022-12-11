@@ -104,14 +104,14 @@ public final class Field {
         private boolean inline = false;
 
         /**
-         * Sets the field to render inline.
+         * Sets the {@link Field} to render inline.
          */
         public FieldBuilder isInline() {
             return this.isInline(true);
         }
 
         /**
-         * Sets whether the field should render inline.
+         * Sets whether the {@link Field} should render inline.
          *
          * @param inline True to render field inline.
          */
@@ -170,7 +170,7 @@ public final class Field {
         }
 
         /**
-         * Formats the field of the {@link Field} with the given objects.
+         * Formats the value of the {@link Field} with the given objects.
          *
          * @param value The value of the field.
          * @param objects Objects used to format the value.
@@ -180,7 +180,7 @@ public final class Field {
         }
 
         /**
-         * Sets the name of the {@link Field}.
+         * Sets the value of the {@link Field}.
          *
          * @param value The value of the field.
          */
@@ -189,7 +189,7 @@ public final class Field {
         }
 
         /**
-         * Sets the name of the {@link Field}.
+         * Sets the value of the {@link Field}.
          *
          * @param value The value of the field.
          */
