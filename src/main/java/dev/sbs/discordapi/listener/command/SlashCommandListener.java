@@ -51,12 +51,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                     // Store Used Alias
                     String commandAlias = ListUtil.notEmpty(remainingArguments) ? remainingArguments.get(0).name() : relationship.getCommandInfo().name();
 
-                    // Trim Command
-                    if (ListUtil.notEmpty(remainingArguments)) {
-                        if (this.doesCommandMatch(relationship.getCommandInfo(), remainingArguments.get(0).name()))
-                            remainingArguments.remove(0);
-                    }
-
                     // Build Arguments
                     ConcurrentList<Argument> arguments = relationship.getInstance()
                         .getParameters()
