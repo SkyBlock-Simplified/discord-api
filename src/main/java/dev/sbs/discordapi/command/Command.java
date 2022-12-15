@@ -246,6 +246,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
                     if (argument.getValue().isEmpty()) {
                         if (argument.getParameter().isRequired())
                             throw SimplifiedException.of(MissingParameterException.class)
+                                .addData("ARGUMENT", argument)
                                 .addData("MISSING", true)
                                 .build();
                     } else {
