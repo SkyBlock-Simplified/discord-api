@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Parameter {
 
-    public static final Parameter DEFAULT = new ParameterBuilder(UUID.randomUUID(), "", "", Type.TEXT).isRemainder().build();
     private static final BiFunction<String, CommandContext<?>, Boolean> NOOP_HANDLER = (s_, c_) -> true;
     private static final Pattern MENTIONABLE_PATTERN = Pattern.compile("<(?:@!?&?|#)[\\d]+>");
     private static final Pattern MENTIONABLE_USER_PATTERN = Pattern.compile("<@!?[\\d]+>");
@@ -208,6 +207,7 @@ public final class Parameter {
         }
 
     }
+    public static final Parameter DEFAULT = new ParameterBuilder(UUID.randomUUID(), "", "", Type.TEXT).isRemainder().build();
 
     public boolean isValid(@NotNull Optional<String> argument, @NotNull CommandContext<?> commandContext) {
         return argument.map(value -> this.isValid(value, commandContext)).orElse(!this.isRequired());
