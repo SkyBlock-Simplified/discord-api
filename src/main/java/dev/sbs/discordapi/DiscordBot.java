@@ -59,7 +59,6 @@ import reactor.retry.Retry;
 
 import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 /**
  * Discord Bot Framework. Powered by Discord4J.
@@ -67,8 +66,6 @@ import java.util.regex.Pattern;
  * @implNote https://github.com/Discord4J/Discord4J
  */
 public abstract class DiscordBot extends DiscordErrorObject {
-
-    private static final Pattern tokenValidator = Pattern.compile("[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}");
 
     @Getter private final @NotNull DiscordLogger log;
     @Getter private final @NotNull DiscordClient client;
@@ -89,10 +86,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
         if (StringUtil.isEmpty(this.getConfig().getDiscordToken()))
             throw SimplifiedException.of(DiscordException.class)
                 .withMessage("No discord token detected in environment variables!")
-                .build();
-        else if (!tokenValidator.matcher(this.getConfig().getDiscordToken()).matches())
-            throw SimplifiedException.of(DiscordException.class)
-                .withMessage("Invalid discord token found!")
                 .build();
 
         this.getLog().info("Creating Discord Client");
