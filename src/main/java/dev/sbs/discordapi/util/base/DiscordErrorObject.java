@@ -4,6 +4,7 @@ import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.client.hypixel.exception.HypixelApiException;
 import dev.sbs.api.client.sbs.exception.SbsApiException;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
+import dev.sbs.api.data.model.discord.settings.SettingModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
@@ -28,6 +29,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -215,23 +217,30 @@ public abstract class DiscordErrorObject extends DiscordReference {
         return responseBuilder;
     }
 
-    private @NotNull Embed buildDeveloperError(ExceptionContext<?> exceptionContext, Pair<String, Embed> defaultError) {
+    private @NotNull Embed buildDeveloperError(ExceptionContext<?> exceptionContext, Pair<String, Embed> defaultError, Optional<Snowflake> messageId) {
         String locationValue = "DM";
         String channelValue = "N/A";
-        Optional<Snowflake> messageId = Optional.empty();
-
-        // Get Message ID
-        if (exceptionContext.getEventContext() instanceof MessageContext)
-            messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
 
         // Handle Private Channels
         if (!exceptionContext.isPrivateChannel()) {
             Optional<MessageChannel> messageChannel = exceptionContext.getChannel().blockOptional();
+            String location = exceptionContext.getGuild()
+                .map(Guild::getName)
+                .blockOptional()
+                .orElse("Unknown")
+                .replace("`", "");
 
             locationValue = FormatUtil.format(
                 "{0}\n{1}",
-                exceptionContext.getGuild().map(Guild::getName).blockOptional().orElse("Unknown").replace("`", ""),
-                exceptionContext.getGuildId().map(Snowflake::asString).orElse("---")
+                exceptionContext.getGuildId().isPresent() ?
+                    FormatUtil.format(
+                        "[{0}]({1})",
+                        location,
+                        FormatUtil.format("https://discord.com/servers/{0}", exceptionContext.getGuildId().get().asString())
+                    ) : location,
+                exceptionContext.getGuildId()
+                    .map(Snowflake::asString)
+                    .orElse("---")
             );
 
             channelValue = FormatUtil.format(
@@ -244,6 +253,22 @@ public abstract class DiscordErrorObject extends DiscordReference {
         // Build Log Channel Embed
         Embed.EmbedBuilder logErrorBuilder = defaultError.getRight()
             .mutate()
+            .clearFields()
+            .withField(
+                "Error ID",
+                (!exceptionContext.isPrivateChannel() && messageId.isPresent()) ?
+                    FormatUtil.format(
+                        "[{0}]({1})",
+                        defaultError.getLeft(),
+                        FormatUtil.format(
+                            "https://discord.com/channels/{0}/{1}/{2}",
+                            exceptionContext.getGuildId().map(Snowflake::asString).orElse("@me"),
+                            exceptionContext.getChannelId().asString(),
+                            messageId.get().asString()
+                        )
+                    ) :
+                    defaultError.getLeft()
+            )
             .withFields(
                 Field.builder()
                     .withName("User")
@@ -264,18 +289,6 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     .withValue(channelValue)
                     .isInline()
                     .build()
-            );
-
-        // Handle Message Link
-        if (!exceptionContext.isPrivateChannel() && messageId.isPresent())
-            logErrorBuilder.withField(
-                "Message Link",
-                FormatUtil.format(
-                    "https://discord.com/channels/{0}/{1}/{2}",
-                    exceptionContext.getGuildId().map(Snowflake::asString).orElse("@me"),
-                    exceptionContext.getChannelId().asString(),
-                    messageId.get().asString()
-                )
             );
 
         // Handle Calling Fields
@@ -362,18 +375,35 @@ public abstract class DiscordErrorObject extends DiscordReference {
         Mono<T> mono = exceptionContext.getEventContext()
             .reply(userErrorResponse)
             .then(
-                Mono.justOrEmpty(reactiveError).switchIfEmpty(
+                Mono.justOrEmpty(reactiveError).switchIfEmpty( // Do Not Log User Errors
                     Mono.just(this.getDiscordBot().getMainGuild())
-                        .flatMap(guild -> guild.getChannelById(Snowflake.of(929259633640628224L))) // TODO: Log to SQL configured channel
+                        .flatMap(guild -> guild.getChannelById(Snowflake.of(
+                            SimplifiedApi.getRepositoryOf(SettingModel.class)
+                                .findFirst(SettingModel::getKey, "DEVELOPER_ERROR_LOG_CHANNEL_ID")
+                                .map(SettingModel::getValue)
+                                .map(Long::valueOf)
+                                .orElse(0L)
+                        )))
                         .ofType(MessageChannel.class)
                         .flatMap(messageChannel -> {
+                            // Get Message ID
+                            Optional<Snowflake> messageId;
+
+                            if (exceptionContext.getEventContext() instanceof MessageContext)
+                                messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
+                            else
+                                messageId = this.getDiscordBot()
+                                    .getResponseCache()
+                                    .getEntry(userErrorResponse.getUniqueId())
+                                    .map(DiscordResponseCache.Entry::getMessageId);
+
                             // Build Exception Response
                             Response logResponse = Response.builder()
                                 .isInteractable(false)
                                 .withException(exceptionContext.getException())
                                 .withPages(
                                     Page.builder()
-                                        .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError))
+                                        .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
                                         .build()
                                 )
                                 .build();
