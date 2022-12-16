@@ -81,7 +81,13 @@ public class MessageCommandListener extends DiscordListener<MessageCreateEvent> 
                             arguments.add(new Argument(Parameter.DEFAULT, this.getRemainder(remainingArguments)));
 
                         // Build Context
-                        MessageCommandContext messageCommandContext = MessageCommandContext.of(this.getDiscordBot(), event, relationship, commandAlias, arguments);
+                        MessageCommandContext messageCommandContext = MessageCommandContext.of(
+                            this.getDiscordBot(),
+                            event,
+                            relationship,
+                            commandAlias,
+                            arguments
+                        );
 
                         // Apply Command
                         return relationship.getInstance().apply(messageCommandContext);

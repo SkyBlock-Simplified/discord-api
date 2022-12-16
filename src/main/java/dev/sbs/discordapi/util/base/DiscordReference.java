@@ -91,7 +91,7 @@ public abstract class DiscordReference {
         return commandConfigModel.get();
     }
 
-    public final @NotNull String getCommandPath(@NotNull Command command) {
+    public final @NotNull ConcurrentList<String> getCommandPathList(@NotNull Command command) {
         ConcurrentList<String> path = command.getParentCommandNames();
 
         // Get Root Command Prefix
@@ -115,7 +115,11 @@ public abstract class DiscordReference {
         // Add Command Name
         path.add(command.getCommandInfo().name());
 
-        return StringUtil.join(path, " ");
+        return path;
+    }
+
+    public final @NotNull String getCommandPath(@NotNull Command command) {
+        return StringUtil.join(this.getCommandPathList(command), " ");
     }
 
     public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
@@ -181,6 +185,24 @@ public abstract class DiscordReference {
 
     public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull String[] arguments, int index) {
         return this.getDeepestRelationship(Concurrent.newList(arguments), index, this.getDiscordBot().getRootCommandRelationship(), false);
+    }
+
+    public final ConcurrentList<ApplicationCommandInteractionOptionData> getDeepestOptionData(Command.Relationship relationship, ApplicationCommandInteractionData interactionOptionData) {
+        ConcurrentList<ApplicationCommandInteractionOptionData> optionData = Concurrent.newList(interactionOptionData.options().toOptional().orElseThrow());
+        ConcurrentList<String> commandPathList = this.getCommandPathList(relationship.getInstance());
+        commandPathList.remove(0); // Remove Root Command
+
+        // Traverse Sub-Commands
+        while (ListUtil.notEmpty(commandPathList)) {
+            for (ApplicationCommandInteractionOptionData option : optionData) {
+                if (option.name().equals(commandPathList.get(0))) {
+                    commandPathList.remove(0);
+                    optionData = Concurrent.newList(option.options().toOptional().orElseThrow());
+                }
+            }
+        }
+
+        return optionData;
     }
 
     private @NotNull Optional<Command.Relationship> getDeepestRelationship(@NotNull ConcurrentList<String> arguments, int index, @NotNull Command.RootRelationship rootRelationship, boolean slashCommands) {
