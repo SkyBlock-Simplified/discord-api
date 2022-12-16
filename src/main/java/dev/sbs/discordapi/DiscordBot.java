@@ -118,11 +118,19 @@ public abstract class DiscordBot extends DiscordErrorObject {
                             // Remove All Reactions
                             Mono<?> handle = message.removeAllReactions();
 
+                            // Save Page History
+                            ConcurrentList<String> pageHistory = response.getPageHistoryIdentifiers();
+                            int currentItemPage = response.getCurrentPage().getCurrentItemPage();
+
                             // Remove Non-Preserved Components
                             Response editedResponse = response.mutate()
                                 .clearAllComponents()
                                 .isRenderingPagingComponents(false)
                                 .build();
+
+                            // Traverse Page History
+                            pageHistory.forEach(editedResponse::gotoPage);
+                            editedResponse.getCurrentPage().gotoItemPage(currentItemPage);
 
                             // Update Message Components
                             return handle.then(message.edit(editedResponse.getD4jEditSpec()));
