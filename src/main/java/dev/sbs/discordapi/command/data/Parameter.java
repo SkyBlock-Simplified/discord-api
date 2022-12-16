@@ -1,87 +1,212 @@
 package dev.sbs.discordapi.command.data;
 
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.reaction.ReactionEmoji;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Parameter {
 
-    public static final Parameter DEFAULT = new Parameter("", "", Type.TEXT, false, true);
+    public static final Parameter DEFAULT = new ParameterBuilder(UUID.randomUUID(), "", "", Type.TEXT).isRemainder().build();
     private static final BiFunction<String, CommandContext<?>, Boolean> NOOP_HANDLER = (s_, c_) -> true;
     private static final Pattern MENTIONABLE_PATTERN = Pattern.compile("<(?:@!?&?|#)[\\d]+>");
     private static final Pattern MENTIONABLE_USER_PATTERN = Pattern.compile("<@!?[\\d]+>");
     private static final Pattern MENTIONABLE_ROLE_PATTERN = Pattern.compile("<@!?&[\\d]+>");
     private static final Pattern MENTIONABLE_CHANNEL_PATTERN = Pattern.compile("<#[\\d]+>");
     private static final Pattern EMOJI_PATTERN = Pattern.compile("<:[\\w]+:[\\d]+>");
+
+    @Getter private final @NotNull UUID uniqueId;
     @Getter private final @NotNull String name;
-    @Getter private final @NotNull Type type;
     @Getter private final @NotNull String description;
+    @Getter private final @NotNull Type type;
     @Getter private final boolean required;
     @Getter private final boolean remainder;
     @Getter private final @NotNull Optional<Emoji> emoji;
     @Getter private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
-    @Getter private final @NotNull Function<String, Mono<Void>> autoComplete = __ -> Mono.empty();
+    @Getter private final @NotNull Function<String, Mono<Void>> autoComplete;
+    @Getter private final @NotNull ConcurrentMap<String, Object> choices;
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type) {
-        this(name, description, type, true);
+    public static ParameterBuilder builder(@NotNull String name, @NotNull String description, @NotNull Type type) {
+        if (StringUtil.isEmpty(name))
+            throw SimplifiedException.of(DiscordException.class).withMessage("Parameter name cannot be NULL!").build();
+
+        if (StringUtil.isEmpty(description))
+            throw SimplifiedException.of(DiscordException.class).withMessage("Parameter description cannot be NULL!").build();
+
+        return new ParameterBuilder(
+            UUID.randomUUID(),
+            name,
+            description,
+            type
+        );
     }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required) {
-        this(name, description, type, required, (Emoji) null);
+    public static ParameterBuilder from(Parameter parameter) {
+        return new ParameterBuilder(parameter.getUniqueId(), parameter.getName(), parameter.getDescription(), parameter.getType())
+            .isRequired(parameter.isRequired())
+            .isRemainder(parameter.isRemainder())
+            .withAutoComplete(parameter.getAutoComplete())
+            .withChoices(parameter.getChoices())
+            .withEmoji(parameter.getEmoji())
+            .withValidator(parameter.getValidator());
     }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder) {
-        this(name, description, type, required, remainder, (Emoji) null);
+    public ParameterBuilder mutate() {
+        return from(this);
     }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, @Nullable Emoji emoji) {
-        this(name, description, type, true, emoji);
-    }
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class ParameterBuilder implements Builder<Parameter> {
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, @Nullable Emoji emoji) {
-        this(name, description, type, required, false, emoji, null);
-    }
+        private final UUID uniqueId;
+        private final String name;
+        private final String description;
+        private final Type type;
+        private boolean required = false;
+        private boolean remainder = false;
+        private Optional<Emoji> emoji = Optional.empty();
+        private BiFunction<String, CommandContext<?>, Boolean> validator = NOOP_HANDLER;
+        private Function<String, Mono<Void>> autoComplete = __ -> Mono.empty();
+        private final ConcurrentMap<String, Object> choices = Concurrent.newMap();
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable Emoji emoji) {
-        this(name, description, type, required, remainder, emoji, null);
-    }
+        /**
+         * Sets the {@link Parameter} as required by the {@link Command}.
+         */
+        public ParameterBuilder isRequired() {
+            return this.isRequired(true);
+        }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, description, type, true, validator);
-    }
+        /**
+         * Sets if the {@link Parameter} is required by the {@link Command}.
+         *
+         * @param required True if required.
+         */
+        public ParameterBuilder isRequired(boolean required) {
+            this.required = required;
+            return this;
+        }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, description, type, required, false, null, validator);
-    }
+        /**
+         * Sets this {@link Parameter} as the catch-all for remaining arguments in message commands.
+         */
+        public ParameterBuilder isRemainder() {
+            return this.isRemainder(true);
+        }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this(name, description, type, required, remainder, null, validator);
-    }
+        /**
+         * Sets if this {@link Parameter} is the catch-all for remaining arguments in message commands.
+         * <br><br>
+         * This is only used for messages commands. ({@link MessageCommandListener})
+         *
+         * @param remainder True if remainder.
+         */
+        public ParameterBuilder isRemainder(boolean remainder) {
+            this.remainder = remainder;
+            return this;
+        }
 
-    public Parameter(@NotNull String name, @NotNull String description, @NotNull Type type, boolean required, boolean remainder, @Nullable Emoji emoji, @Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
-        this.name = name;
-        this.description = description;
-        this.type = type;
-        this.required = required;
-        this.remainder = remainder;
-        this.emoji = Optional.ofNullable(emoji);
-        this.validator = validator == null ? NOOP_HANDLER : validator;
+        /**
+         * Sets a callback method for {@link Parameter} autocompletion.
+         *
+         * @param autoComplete The autocomplete callback method.
+         */
+        public ParameterBuilder withAutoComplete(@NotNull Function<String, Mono<Void>> autoComplete) {
+            this.autoComplete = autoComplete;
+            return this;
+        }
+
+        /**
+         * Define the {@link Parameter} choices a user can choose from.
+         *
+         * @param choices Variable number of choices to add.
+         */
+        public ParameterBuilder withChoices(@NotNull Map.Entry<String, Object>... choices) {
+            return this.withChoices(Arrays.asList(choices));
+        }
+
+        /**
+         * Define the {@link Parameter} choices a user can choose from.
+         *
+         * @param choices Collection of choices to add.
+         */
+        public ParameterBuilder withChoices(@NotNull Iterable<Map.Entry<String, Object>> choices) {
+            choices.forEach(this.choices::put);
+            return this;
+        }
+
+        /**
+         * Sets the {@link Emoji} that isn't even used right now.
+         *
+         * @param emoji The emoji.
+         */
+        public ParameterBuilder withEmoji(@Nullable Emoji emoji) {
+            return this.withEmoji(Optional.ofNullable(emoji));
+        }
+
+        /**
+         * Sets the {@link Emoji} that isn't even used right now.
+         *
+         * @param emoji The emoji.
+         */
+        public ParameterBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+            this.emoji = emoji;
+            return this;
+        }
+
+        /**
+         * Sets a custom validator for this {@link Parameter}.
+         *
+         * @param validator Custom validator.
+         */
+        public ParameterBuilder withValidator(@NotNull BiFunction<String, CommandContext<?>, Boolean> validator) {
+            this.validator = validator;
+            return this;
+        }
+
+        @Override
+        public Parameter build() {
+            return new Parameter(
+                this.uniqueId,
+                this.name,
+                this.description,
+                this.type,
+                this.required,
+                this.remainder,
+                this.emoji,
+                this.validator,
+                this.autoComplete,
+                this.choices
+            );
+        }
+
     }
 
     public boolean isValid(@NotNull Optional<String> argument, @NotNull CommandContext<?> commandContext) {
