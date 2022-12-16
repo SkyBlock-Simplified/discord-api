@@ -16,6 +16,7 @@ import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.AccessLevel;
@@ -201,6 +202,16 @@ public class DiscordCommandRegistrar extends DiscordHelper {
             .name(parameter.getName())
             .description(parameter.getDescription())
             .required(parameter.isRequired())
+            .choices(
+                parameter.getChoices()
+                    .stream()
+                    .map(entry -> ApplicationCommandOptionChoiceData.builder()
+                        .name(entry.getKey())
+                        .value(entry.getValue())
+                        .build()
+                    )
+                    .collect(Concurrent.toList())
+            )
             .build();
     }
 
