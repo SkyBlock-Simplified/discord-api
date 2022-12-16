@@ -26,9 +26,9 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PageItem {
 
-    @Getter private final UUID uniqueId;
-    @Getter private final SelectMenu.Option option;
-    @Getter private final ConcurrentMap<Integer, ConcurrentList<String>> data;
+    @Getter private final @NotNull UUID uniqueId;
+    @Getter private final @NotNull SelectMenu.Option option;
+    @Getter private final @NotNull ConcurrentMap<Integer, ConcurrentList<String>> data;
 
     public static PageItemBuilder builder() {
         return new PageItemBuilder(UUID.randomUUID());
