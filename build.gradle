@@ -40,7 +40,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.2.2-SNAPSHOT'
+    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-SNAPSHOT'
     implementation group: 'org.optaplanner', name: 'optaplanner-core', version: "$optaplannerVersion"
     implementation group: 'org.hibernate', name: 'hibernate-hikaricp', version: "$hivernateVersion"
     implementation group: 'io.github.openfeign', name: 'feign-okhttp', version: '11.6'
