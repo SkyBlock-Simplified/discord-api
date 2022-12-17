@@ -393,7 +393,7 @@ public class Page implements Paging {
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(@NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public PageBuilder editPage(@NotNull Function<PageBuilder, PageBuilder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
@@ -403,7 +403,7 @@ public class Page implements Paging {
          * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(int index, @NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public PageBuilder editPage(int index, @NotNull Function<PageBuilder, PageBuilder> pageBuilder) {
             if (index < this.pages.size())
                 this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
 

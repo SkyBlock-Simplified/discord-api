@@ -5,7 +5,7 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.interaction.action.ModalActionComponent;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import discord4j.core.spec.InteractionPresentModalSpec;
@@ -30,7 +30,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final Optional<String> title;
-    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> components;
+    @Getter private final ConcurrentList<LayoutComponent<ModalActionComponent>> components;
     private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
 
     public static ModalBuilder from(@NotNull Modal modal) {
@@ -68,7 +68,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
 
         private final UUID uniqueId;
         private Optional<String> title = Optional.empty();
-        private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
+        private final ConcurrentList<LayoutComponent<ModalActionComponent>> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -99,11 +99,11 @@ public final class Modal extends InteractionComponent implements InteractableCom
         }
 
         /**
-         * Updates an existing {@link ActionComponent}.
+         * Updates an existing {@link ModalActionComponent}.
          *
          * @param actionComponent The component to edit.
          */
-        public ModalBuilder editComponent(@NotNull ActionComponent actionComponent) {
+        public ModalBuilder editComponent(@NotNull ModalActionComponent actionComponent) {
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -120,14 +120,14 @@ public final class Modal extends InteractionComponent implements InteractableCom
         }
 
         /**
-         * Finds an existing {@link ActionComponent}.
+         * Finds an existing {@link ModalActionComponent}.
          *
          * @param tClass The component type to match.
          * @param function The method reference to match with.
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        public <S, A extends ModalActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
                 .flatMap(layoutComponent -> layoutComponent.getComponents()
                     .stream()
@@ -163,7 +163,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
          * @param components Variable number of layout components to add.
          */
         @SuppressWarnings("all")
-        public ModalBuilder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
+        public ModalBuilder withComponents(@NotNull LayoutComponent<ModalActionComponent>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -172,7 +172,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
          *
          * @param components Collection of layout components to add.
          */
-        public ModalBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
+        public ModalBuilder withComponents(@NotNull Iterable<LayoutComponent<ModalActionComponent>> components) {
             components.forEach(this.components::add);
             return this;
         }

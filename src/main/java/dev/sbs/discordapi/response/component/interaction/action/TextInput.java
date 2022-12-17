@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput extends ActionComponent {
+public final class TextInput extends ModalActionComponent {
 
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final @NotNull Style style;
