@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.component;
+package dev.sbs.discordapi.response.component.type;
 
 public interface PreservableComponent {
 

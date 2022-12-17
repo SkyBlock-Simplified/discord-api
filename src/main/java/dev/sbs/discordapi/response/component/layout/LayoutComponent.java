@@ -5,11 +5,12 @@ import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.PreservableComponent;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.type.D4jComponent;
+import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import lombok.Getter;
 
-public abstract class LayoutComponent<T extends ActionComponent<?>> extends Component implements PreservableComponent {
+public abstract class LayoutComponent<T extends ActionComponent> extends Component implements PreservableComponent, D4jComponent {
 
     @Getter private final ConcurrentList<T> components = Concurrent.newList();
 

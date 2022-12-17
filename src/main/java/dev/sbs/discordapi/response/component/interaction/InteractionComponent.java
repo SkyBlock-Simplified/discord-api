@@ -2,15 +2,13 @@ package dev.sbs.discordapi.response.component.interaction;
 
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
-import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.response.component.Component;
+import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import org.jetbrains.annotations.NotNull;
-import reactor.core.publisher.Mono;
 
 import java.util.UUID;
-import java.util.function.Function;
 
-public abstract class InteractionComponent<T extends ComponentContext> extends Component {
+public abstract class InteractionComponent extends Component implements IdentifiableComponent {
 
     @Override
     public boolean equals(Object o) {
@@ -22,15 +20,11 @@ public abstract class InteractionComponent<T extends ComponentContext> extends C
             .build();
     }
 
-    public abstract Function<T, Mono<Void>> getInteraction();
-
     public abstract @NotNull UUID getUniqueId();
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder().append(this.getUniqueId()).build();
     }
-
-    public abstract boolean isDeferEdit();
 
 }

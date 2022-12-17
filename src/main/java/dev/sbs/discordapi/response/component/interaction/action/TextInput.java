@@ -4,12 +4,8 @@ import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.button.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PagingComponent;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
@@ -18,7 +14,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -26,9 +21,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button extends ActionComponent implements PagingComponent, InteractableComponent<ButtonContext> {
+public final class TextInput extends ActionComponent {
 
-    private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final @NotNull Style style;
     @Getter private final boolean disabled;
@@ -38,15 +32,9 @@ public final class Button extends ActionComponent implements PagingComponent, In
     @Getter private final boolean preserved;
     @Getter private final boolean deferEdit;
     @Getter private final @NotNull PageType pageType;
-    private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> buttonInteraction;
 
-    @Override
-    public @NotNull Function<ButtonContext, Mono<Void>> getInteraction() {
-        return this.buttonInteraction.orElse(NOOP_HANDLER);
-    }
-
-    public static ButtonBuilder builder() {
-        return new ButtonBuilder(UUID.randomUUID());
+    public static TextInputBuilder builder() {
+        return new TextInputBuilder(UUID.randomUUID());
     }
 
     @Override
@@ -55,7 +43,7 @@ public final class Button extends ActionComponent implements PagingComponent, In
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        Button button = (Button) o;
+        TextInput button = (TextInput) o;
 
         return new EqualsBuilder()
             .append(this.isDisabled(), button.isDisabled())
@@ -96,25 +84,19 @@ public final class Button extends ActionComponent implements PagingComponent, In
             .build();
     }
 
-    @Override
-    public boolean isPaging() {
-        return this.getPageType() != PageType.NONE;
-    }
-
-    public ButtonBuilder mutate() {
-        return new ButtonBuilder(this.getUniqueId())
+    public TextInputBuilder mutate() {
+        return new TextInputBuilder(this.getUniqueId())
             .withStyle(this.getStyle())
             .setDisabled(this.isDisabled())
             .isPreserved(this.isPreserved())
             .withPageType(this.getPageType())
             .withEmoji(this.getEmoji())
             .withLabel(this.getLabel())
-            .withUrl(this.getUrl())
-            .onInteract(this.buttonInteraction);
+            .withUrl(this.getUrl());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class ButtonBuilder implements Builder<Button> {
+    public static final class TextInputBuilder implements Builder<TextInput> {
 
         private final UUID uniqueId;
         private Style style = Style.UNKNOWN;
@@ -122,170 +104,150 @@ public final class Button extends ActionComponent implements PagingComponent, In
         private boolean preserved;
         private boolean deferEdit;
         private PageType pageType = PageType.NONE;
-        private Optional<Function<ButtonContext, Mono<Void>>> interaction = Optional.empty();
         private Optional<Emoji> emoji = Optional.empty();
         private Optional<String> label = Optional.empty();
         private Optional<String> url = Optional.empty();
 
         /**
-         * Sets this {@link Button} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets this {@link TextInput} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
          */
-        public ButtonBuilder isPreserved() {
+        public TextInputBuilder isPreserved() {
             return this.isPreserved(true);
         }
 
         /**
-         * Sets whether to preserve this {@link Button} when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets whether to preserve this {@link TextInput} when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
          *
          * @param preserved True to preserve this button.
          */
-        public ButtonBuilder isPreserved(boolean preserved) {
+        public TextInputBuilder isPreserved(boolean preserved) {
             this.preserved = preserved;
             return this;
         }
 
         /**
-         * Sets the interaction to execute when the {@link Button} is interacted with by a user.
-         *
-         * @param interaction The interaction function.
+         * Sets the {@link TextInput} as enabled.
          */
-        public ButtonBuilder onInteract(@Nullable Function<ButtonContext, Mono<Void>> interaction) {
-            return this.onInteract(Optional.ofNullable(interaction));
-        }
-
-        /**
-         * Sets the interaction to execute when the {@link Button} is interacted with by a user.
-         *
-         * @param interaction The interaction function.
-         */
-        public ButtonBuilder onInteract(@NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction) {
-            this.interaction = interaction;
-            return this;
-        }
-
-        /**
-         * Sets the {@link Button} as enabled.
-         */
-        public ButtonBuilder setEnabled() {
+        public TextInputBuilder setEnabled() {
             return this.setEnabled(false);
         }
 
         /**
-         * Sets if the {@link Button} should be enabled.
+         * Sets if the {@link TextInput} should be enabled.
          *
          * @param enabled True to enable the button.
          */
-        public ButtonBuilder setEnabled(boolean enabled) {
+        public TextInputBuilder setEnabled(boolean enabled) {
             return this.setDisabled(!enabled);
         }
 
         /**
-         * Sets the {@link Button} as disabled.
+         * Sets the {@link TextInput} as disabled.
          */
-        public ButtonBuilder setDisabled() {
+        public TextInputBuilder setDisabled() {
             return this.setDisabled(true);
         }
 
         /**
-         * Sets if the {@link Button} should be disabled.
+         * Sets if the {@link TextInput} should be disabled.
          *
          * @param disabled True to disable the button.
          */
-        public ButtonBuilder setDisabled(boolean disabled) {
+        public TextInputBuilder setDisabled(boolean disabled) {
             this.disabled = disabled;
             return this;
         }
 
         /**
-         * Sets this {@link Button} as deferred when interacting.
+         * Sets this {@link TextInput} as deferred when interacting.
          */
-        public ButtonBuilder withDeferEdit() {
+        public TextInputBuilder withDeferEdit() {
             return this.withDeferEdit(true);
         }
 
         /**
-         * Sets whether this {@link Button} is deferred when interacting.
+         * Sets whether this {@link TextInput} is deferred when interacting.
          *
          * @param deferEdit True to defer interaction.
          */
-        public ButtonBuilder withDeferEdit(boolean deferEdit) {
+        public TextInputBuilder withDeferEdit(boolean deferEdit) {
             this.deferEdit = deferEdit;
             return this;
         }
 
         /**
-         * Sets the label text of the {@link Button}.
+         * Sets the label text of the {@link TextInput}.
          *
          * @param label The label of the button.
          */
-        public ButtonBuilder withLabel(@Nullable String label) {
+        public TextInputBuilder withLabel(@Nullable String label) {
             return this.withLabel(Optional.ofNullable(label));
         }
 
         /**
-         * Sets the label text of the {@link Button}.
+         * Sets the label text of the {@link TextInput}.
          *
          * @param label The label of the button.
          */
-        public ButtonBuilder withLabel(@NotNull Optional<String> label) {
+        public TextInputBuilder withLabel(@NotNull Optional<String> label) {
             this.label = label;
             return this;
         }
 
         /**
-         * Sets the {@link Emoji} used in the {@link Button}.
+         * Sets the {@link Emoji} used in the {@link TextInput}.
          *
          * @param emoji The emoji of the button.
          */
-        public ButtonBuilder withEmoji(@Nullable Emoji emoji) {
+        public TextInputBuilder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
         /**
-         * Sets the {@link Emoji} used in the {@link Button}.
+         * Sets the {@link Emoji} used in the {@link TextInput}.
          *
          * @param emoji The emoji of the button.
          */
-        public ButtonBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public TextInputBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.emoji = emoji;
             return this;
         }
 
         /**
-         * Sets the page type of the {@link Button}.
+         * Sets the page type of the {@link TextInput}.
          *
          * @param pageType The page type of the button.
          */
-        public ButtonBuilder withPageType(@NotNull PageType pageType) {
+        public TextInputBuilder withPageType(@NotNull PageType pageType) {
             this.pageType = pageType;
             return this;
         }
 
         /**
-         * Sets the {@link Style} of the {@link Button}.
+         * Sets the {@link Style} of the {@link TextInput}.
          *
          * @param style The style of the button.
          */
-        public ButtonBuilder withStyle(@NotNull Style style) {
+        public TextInputBuilder withStyle(@NotNull Style style) {
             this.style = style;
             return this;
         }
 
         /**
-         * Sets the {@link Button} url for a given LINK {@link Style}.
+         * Sets the {@link TextInput} url for a given LINK {@link Style}.
          *
          * @param url The url to open.
          */
-        public ButtonBuilder withUrl(@Nullable String url) {
+        public TextInputBuilder withUrl(@Nullable String url) {
             return this.withUrl(Optional.ofNullable(url));
         }
 
         /**
-         * Sets the {@link Button} url for a given LINK {@link Style}.
+         * Sets the {@link TextInput} url for a given LINK {@link Style}.
          *
          * @param url The url to open.
          */
-        public ButtonBuilder withUrl(@NotNull Optional<String> url) {
+        public TextInputBuilder withUrl(@NotNull Optional<String> url) {
             this.url = url;
             return this;
         }
@@ -296,8 +258,8 @@ public final class Button extends ActionComponent implements PagingComponent, In
          * @return A built {@link SelectMenu} component.
          */
         @Override
-        public Button build() {
-            return new Button(
+        public TextInput build() {
+            return new TextInput(
                 this.uniqueId,
                 this.style,
                 this.disabled,
@@ -306,8 +268,7 @@ public final class Button extends ActionComponent implements PagingComponent, In
                 this.url,
                 this.preserved,
                 this.deferEdit,
-                this.pageType,
-                this.interaction
+                this.pageType
             );
         }
 
@@ -348,35 +309,35 @@ public final class Button extends ActionComponent implements PagingComponent, In
         @Getter private final @NotNull String label;
         @Getter private final @NotNull Optional<Emoji> emoji;
         @Getter private final boolean forItemList;
-        @Getter private final Function<ButtonBuilder, ButtonBuilder> defaultBuilder;
+        @Getter private final Function<TextInputBuilder, TextInputBuilder> defaultBuilder;
 
         PageType(@NotNull String label, boolean forItemList) {
             this(label, forItemList, __ -> __);
         }
 
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder) {
+        PageType(@NotNull String label, boolean forItemList, Function<TextInputBuilder, TextInputBuilder> defaultBuilder) {
             this(label, forItemList, defaultBuilder, Optional.empty());
         }
 
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder, @Nullable Emoji emoji) {
+        PageType(@NotNull String label, boolean forItemList, Function<TextInputBuilder, TextInputBuilder> defaultBuilder, @Nullable Emoji emoji) {
             this(label, forItemList, defaultBuilder, Optional.ofNullable(emoji));
         }
 
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder, @NotNull Optional<Emoji> emoji) {
+        PageType(@NotNull String label, boolean forItemList, Function<TextInputBuilder, TextInputBuilder> defaultBuilder, @NotNull Optional<Emoji> emoji) {
             this.label = label;
             this.emoji = emoji;
             this.forItemList = forItemList;
             this.defaultBuilder = defaultBuilder;
         }
 
-        public Button build() {
+        public TextInput build() {
             return this.build(Optional.empty());
         }
 
-        public Button build(Optional<String> label) {
+        public TextInput build(Optional<String> label) {
             return this.getDefaultBuilder().apply(
-                Button.builder()
-                    .withStyle(Button.Style.SECONDARY)
+                TextInput.builder()
+                    .withStyle(TextInput.Style.SECONDARY)
                     .withEmoji(this.getEmoji())
                     .withLabel(label.orElse(this.getLabel()))
                     .withPageType(this)

@@ -14,6 +14,8 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.select
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.type.InteractableComponent;
+import dev.sbs.discordapi.response.component.type.PagingComponent;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -30,7 +32,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu extends UserActionComponent<SelectMenuContext> {
+public final class SelectMenu extends ActionComponent implements PagingComponent, InteractableComponent<SelectMenuContext> {
 
     private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final @NotNull UUID uniqueId;
@@ -81,7 +83,7 @@ public final class SelectMenu extends UserActionComponent<SelectMenuContext> {
     }
 
     @Override
-    public Function<SelectMenuContext, Mono<Void>> getInteraction() {
+    public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
             .flatMap(context -> Mono.justOrEmpty(this.selectMenuInteraction)
                 .flatMap(interaction -> interaction.apply(context))

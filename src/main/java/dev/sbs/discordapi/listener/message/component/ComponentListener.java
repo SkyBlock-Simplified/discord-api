@@ -7,14 +7,14 @@ import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.InteractionComponent;
+import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends InteractionComponent<C>> extends DiscordListener<E> {
+public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends InteractableComponent<C>> extends DiscordListener<E> {
 
     private final Class<T> componentClass;
 

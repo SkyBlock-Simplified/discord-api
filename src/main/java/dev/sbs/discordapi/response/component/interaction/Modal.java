@@ -7,6 +7,7 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentCont
 import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
+import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
@@ -24,12 +25,12 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Modal extends InteractionComponent<ModalContext> {
+public final class Modal extends InteractionComponent implements InteractableComponent<ModalContext> {
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
     @Getter private final Optional<String> title;
-    @Getter private final ConcurrentList<LayoutComponent<ActionComponent<?>>> components;
+    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> components;
     private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
 
     public static ModalBuilder from(@NotNull Modal modal) {
@@ -44,7 +45,8 @@ public final class Modal extends InteractionComponent<ModalContext> {
             .build();
     }
 
-    public Function<ModalContext, Mono<Void>> getInteraction() {
+    @Override
+    public @NotNull Function<ModalContext, Mono<Void>> getInteraction() {
         return this.modalInteraction.orElse(NOOP_HANDLER);
     }
 
@@ -66,7 +68,7 @@ public final class Modal extends InteractionComponent<ModalContext> {
 
         private final UUID uniqueId;
         private Optional<String> title = Optional.empty();
-        private final ConcurrentList<LayoutComponent<ActionComponent<?>>> components = Concurrent.newList();
+        private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -101,7 +103,7 @@ public final class Modal extends InteractionComponent<ModalContext> {
          *
          * @param actionComponent The component to edit.
          */
-        public ModalBuilder editComponent(@NotNull ActionComponent<?> actionComponent) {
+        public ModalBuilder editComponent(@NotNull ActionComponent actionComponent) {
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -125,7 +127,7 @@ public final class Modal extends InteractionComponent<ModalContext> {
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends ActionComponent<?>> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
                 .flatMap(layoutComponent -> layoutComponent.getComponents()
                     .stream()
@@ -161,7 +163,7 @@ public final class Modal extends InteractionComponent<ModalContext> {
          * @param components Variable number of layout components to add.
          */
         @SuppressWarnings("all")
-        public ModalBuilder withComponents(@NotNull LayoutComponent<ActionComponent<?>>... components) {
+        public ModalBuilder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -170,7 +172,7 @@ public final class Modal extends InteractionComponent<ModalContext> {
          *
          * @param components Collection of layout components to add.
          */
-        public ModalBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent<?>>> components) {
+        public ModalBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
             components.forEach(this.components::add);
             return this;
         }
