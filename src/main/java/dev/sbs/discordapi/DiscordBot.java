@@ -15,6 +15,7 @@ import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
 import dev.sbs.discordapi.listener.command.TextCommandListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
+import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
@@ -33,6 +34,7 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
@@ -167,6 +169,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
+                        eventDispatcher.on(ModalSubmitInteractionEvent.class, new ModalListener(this)),
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(this::onGatewayDisconnected))

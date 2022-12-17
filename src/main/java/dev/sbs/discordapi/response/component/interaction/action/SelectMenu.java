@@ -15,7 +15,6 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.select
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PagingComponent;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
@@ -36,7 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu extends ActionComponent implements PagingComponent, InteractableComponent<SelectMenuContext> {
+public final class SelectMenu extends ActionComponent implements InteractableComponent<SelectMenuContext> {
 
     private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final @NotNull UUID uniqueId;

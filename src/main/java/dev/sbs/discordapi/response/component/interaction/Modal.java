@@ -29,8 +29,9 @@ public final class Modal extends InteractionComponent implements InteractableCom
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;
-    @Getter private final Optional<String> title;
-    @Getter private final ConcurrentList<LayoutComponent<ModalActionComponent>> components;
+    @Getter private final @NotNull Optional<String> title;
+    @Getter private final @NotNull ConcurrentList<LayoutComponent<ModalActionComponent>> components;
+    @Getter private final boolean isPaging = false;
     private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
 
     public static ModalBuilder from(@NotNull Modal modal) {

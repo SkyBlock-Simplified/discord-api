@@ -9,7 +9,6 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.button
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PagingComponent;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
@@ -26,7 +25,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button extends ActionComponent implements PagingComponent, InteractableComponent<ButtonContext> {
+public final class Button extends ActionComponent implements InteractableComponent<ButtonContext> {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull UUID uniqueId;

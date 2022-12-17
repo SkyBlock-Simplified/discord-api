@@ -3,6 +3,7 @@ package dev.sbs.discordapi.context.interaction.deferrable.component;
 import dev.sbs.discordapi.context.ResponseContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Guild;
@@ -10,6 +11,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionCallbackSpec;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -74,6 +76,12 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     @Override
     default Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
         return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
+    }
+
+    default Mono<Void> presentModal(@NotNull Modal modal) {
+        return this.getResponse()
+            .map(response -> response.getCurrentPage().presentModal(this, modal))
+            .orElse(Mono.empty());
     }
 
 }
