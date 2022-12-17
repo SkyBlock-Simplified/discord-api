@@ -16,6 +16,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PagingComponent;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -27,9 +28,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SelectMenu extends ActionComponent implements PagingComponent, InteractableComponent<SelectMenuContext> {
@@ -100,7 +104,7 @@ public final class SelectMenu extends ActionComponent implements PagingComponent
             .then();
     }
 
-    public Function<SelectMenuContext, Mono<SelectMenuContext>> getPlaceholderUpdate() {
+    public @NotNull Function<SelectMenuContext, Mono<SelectMenuContext>> getPlaceholderUpdate() {
         return selectMenuContext -> Flux.fromIterable(this.getOptions())
             .filter(option -> option.getValue().equals(selectMenuContext.getEvent().getValues().get(0)))
             .singleOrEmpty()
@@ -120,7 +124,7 @@ public final class SelectMenu extends ActionComponent implements PagingComponent
             });
     }
 
-    private Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
+    private @NotNull Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
         return Mono.just(selectMenuContext).flatMap(context -> this.getPlaceholderUpdate()
             .apply(selectMenuContext)
             .then(
@@ -150,7 +154,7 @@ public final class SelectMenu extends ActionComponent implements PagingComponent
         return this.getPageType() != PageType.NONE;
     }
 
-    public SelectMenuBuilder mutate() {
+    public @NotNull SelectMenuBuilder mutate() {
         return new SelectMenuBuilder(this.getUniqueId())
             .setDisabled(this.isDisabled())
             .withPlaceholder(this.getPlaceholder())
@@ -278,7 +282,13 @@ public final class SelectMenu extends ActionComponent implements PagingComponent
          * @param options Collection of options to add.
          */
         public SelectMenuBuilder withOptions(@NotNull Iterable<Option> options) {
-            options.forEach(this.options::add);
+            if (this.options.size() == Option.MAX_ALLOWED)
+                throw SimplifiedException.of(DiscordException.class)
+                    .withMessage("Number of options cannot exceed {0}!", Option.MAX_ALLOWED)
+                    .build();
+
+            List<Option> optionList = List.class.isAssignableFrom(options.getClass()) ? (List<Option>) options : StreamSupport.stream(options.spliterator(), false).toList();
+            IntStream.range(0, Math.min(optionList.size(), (Field.MAX_ALLOWED - this.options.size()))).forEach(index -> this.options.add(optionList.get(index)));
             return this;
         }
 
@@ -393,6 +403,7 @@ public final class SelectMenu extends ActionComponent implements PagingComponent
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Option {
 
+        public static final int MAX_ALLOWED = 25;
         private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
         @Getter private final @NotNull UUID uniqueId;
         @Getter private final @NotNull String label;
