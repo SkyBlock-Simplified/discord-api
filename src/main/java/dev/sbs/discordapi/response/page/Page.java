@@ -372,7 +372,7 @@ public class Page implements Paging {
          * @param uniqueId The unique id of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
-        public PageBuilder editEmbed(UUID uniqueId, Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
+        public PageBuilder editEmbed(@NotNull UUID uniqueId, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
             this.findEmbed(uniqueId).ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
 
@@ -430,7 +430,7 @@ public class Page implements Paging {
          * @param uniqueId The unique id of the embed to search for.
          * @return The matching embed, if it exists.
          */
-        public Optional<Embed> findEmbed(UUID uniqueId) {
+        public Optional<Embed> findEmbed(@NotNull UUID uniqueId) {
             return this.embeds.stream()
                 .filter(embed -> embed.getUniqueId().equals(uniqueId))
                 .findFirst();
