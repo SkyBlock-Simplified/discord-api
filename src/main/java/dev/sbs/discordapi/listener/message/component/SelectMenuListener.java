@@ -1,9 +1,9 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.message.interaction.component.selectmenu.SelectMenuContext;
+import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import reactor.core.publisher.Mono;
 

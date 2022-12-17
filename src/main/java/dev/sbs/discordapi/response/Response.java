@@ -11,11 +11,11 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.command.message.MessageCommandContext;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.response.component.action.ActionComponent;
-import dev.sbs.discordapi.response.component.action.Button;
-import dev.sbs.discordapi.response.component.action.SelectMenu;
+import dev.sbs.discordapi.context.message.text.TextCommandContext;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.UserActionComponent;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -56,7 +56,7 @@ public class Response implements Paging {
     protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
     @Getter protected final long buildTime = System.currentTimeMillis();
     @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents;
+    @Getter protected final ConcurrentList<LayoutComponent<UserActionComponent<?>>> pageComponents;
     @Getter protected final ConcurrentList<Page> pages;
     @Getter protected final ConcurrentList<Attachment> attachments;
     @Getter protected final Optional<Snowflake> referenceId;
@@ -81,7 +81,7 @@ public class Response implements Paging {
         boolean loader,
         boolean ephemeral,
         boolean renderingPagingComponents) {
-        ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents = Concurrent.newList();
+        ConcurrentList<LayoutComponent<UserActionComponent<?>>> pageComponents = Concurrent.newList();
 
         // Page List
         if (ListUtil.sizeOf(pages) > 1) {
@@ -613,7 +613,7 @@ public class Response implements Paging {
          * @param eventContext The message to reference.
          */
         public ResponseBuilder withReference(@NotNull EventContext<?> eventContext) {
-            return this.withReference(eventContext instanceof MessageCommandContext ? ((MessageCommandContext) eventContext).getMessageId() : null);
+            return this.withReference(eventContext instanceof TextCommandContext ? ((TextCommandContext) eventContext).getMessageId() : null);
         }
 
         /**

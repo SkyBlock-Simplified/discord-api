@@ -7,7 +7,7 @@ import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.helper.FormatUtil;
-import dev.sbs.discordapi.context.message.interaction.reaction.ReactionContext;
+import dev.sbs.discordapi.context.message.reaction.ReactionContext;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.reaction.ReactionEmoji;

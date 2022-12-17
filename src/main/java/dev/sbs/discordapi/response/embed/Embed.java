@@ -10,7 +10,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.discordapi.response.component.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.AccessLevel;

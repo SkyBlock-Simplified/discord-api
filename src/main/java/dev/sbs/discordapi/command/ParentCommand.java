@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;

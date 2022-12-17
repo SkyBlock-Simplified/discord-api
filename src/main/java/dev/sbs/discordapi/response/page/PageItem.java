@@ -10,7 +10,7 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StreamUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.Field;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -8,8 +8,8 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.Command;
-import dev.sbs.discordapi.context.command.CommandContext;
-import dev.sbs.discordapi.listener.command.MessageCommandListener;
+import dev.sbs.discordapi.context.CommandContext;
+import dev.sbs.discordapi.listener.command.TextCommandListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -123,7 +123,7 @@ public final class Parameter {
         /**
          * Sets if this {@link Parameter} is the catch-all for remaining arguments in message commands.
          * <br><br>
-         * This is only used for messages commands. ({@link MessageCommandListener})
+         * This is only used for messages commands. ({@link TextCommandListener})
          *
          * @param remainder True if remainder.
          */

@@ -1,9 +1,9 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.message.interaction.component.button.ButtonContext;
+import dev.sbs.discordapi.context.interaction.deferrable.component.action.button.ButtonContext;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.action.Button;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import reactor.core.publisher.Mono;

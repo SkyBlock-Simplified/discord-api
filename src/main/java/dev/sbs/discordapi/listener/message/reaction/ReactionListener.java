@@ -3,7 +3,7 @@ package dev.sbs.discordapi.listener.message.reaction;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.context.message.interaction.reaction.ReactionContext;
+import dev.sbs.discordapi.context.message.reaction.ReactionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;

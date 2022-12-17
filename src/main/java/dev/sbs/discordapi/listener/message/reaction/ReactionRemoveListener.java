@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.message.reaction;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.message.interaction.reaction.ReactionContext;
+import dev.sbs.discordapi.context.message.reaction.ReactionContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;

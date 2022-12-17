@@ -12,8 +12,8 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.PrefixCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
-import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
+import dev.sbs.discordapi.listener.command.TextCommandListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
@@ -163,7 +163,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
                     this.getLog().info("Registering Built-in Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
-                        eventDispatcher.on(MessageCreateEvent.class, new MessageCommandListener(this)),
+                        eventDispatcher.on(MessageCreateEvent.class, new TextCommandListener(this)),
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),

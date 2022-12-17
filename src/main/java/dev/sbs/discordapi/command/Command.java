@@ -23,7 +23,7 @@ import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
 import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
-import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;

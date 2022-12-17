@@ -21,7 +21,7 @@ import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.user.UserInputException;
 import dev.sbs.discordapi.command.exception.user.UserVerificationException;
-import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Emoji;

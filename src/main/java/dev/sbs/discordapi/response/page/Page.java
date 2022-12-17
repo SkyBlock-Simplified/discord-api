@@ -10,9 +10,10 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.action.ActionComponent;
-import dev.sbs.discordapi.response.component.action.Button;
-import dev.sbs.discordapi.response.component.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.UserActionComponent;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -31,9 +32,9 @@ import java.util.function.Function;
 public class Page implements Paging {
 
     @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents;
+    @Getter protected final ConcurrentList<LayoutComponent<UserActionComponent<?>>> pageComponents;
     @Getter protected final ConcurrentList<Page> pages;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> components;
+    @Getter protected final ConcurrentList<LayoutComponent<UserActionComponent<?>>> components;
     @Getter protected final ConcurrentList<Emoji> reactions;
     @Getter protected final ConcurrentList<Embed> embeds;
     @Getter protected final ConcurrentList<PageItem> items;
@@ -46,7 +47,7 @@ public class Page implements Paging {
 
     protected Page(
         UUID uniqueId,
-        ConcurrentList<LayoutComponent<ActionComponent<?>>> components,
+        ConcurrentList<LayoutComponent<UserActionComponent<?>>> components,
         ConcurrentList<Emoji> reactions,
         ConcurrentList<Embed> embeds,
         ConcurrentList<Page> pages,
@@ -69,7 +70,7 @@ public class Page implements Paging {
         this.itemsPerPage = itemsPerPage;
 
         // Page Components
-        ConcurrentList<LayoutComponent<ActionComponent<?>>> pageComponents = Concurrent.newList();
+        ConcurrentList<LayoutComponent<UserActionComponent<?>>> pageComponents = Concurrent.newList();
 
         // SubPage List
         if (ListUtil.notEmpty(pages)) {
@@ -287,7 +288,7 @@ public class Page implements Paging {
 
         protected final UUID uniqueId;
         protected final ConcurrentList<Embed> embeds = Concurrent.newList();
-        protected final ConcurrentList<LayoutComponent<ActionComponent<?>>> components = Concurrent.newList();
+        protected final ConcurrentList<LayoutComponent<UserActionComponent<?>>> components = Concurrent.newList();
         protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
         protected final ConcurrentList<Page> pages = Concurrent.newList();
         protected final ConcurrentList<PageItem> items = Concurrent.newList();
@@ -346,11 +347,11 @@ public class Page implements Paging {
         }
 
         /**
-         * Updates an existing {@link ActionComponent}.
+         * Updates an existing {@link UserActionComponent}.
          *
          * @param actionComponent The component to edit.
          */
-        public PageBuilder editComponent(@NotNull ActionComponent<?> actionComponent) {
+        public PageBuilder editComponent(@NotNull UserActionComponent<?> actionComponent) {
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -461,7 +462,7 @@ public class Page implements Paging {
          * @param components Variable number of layout components to add.
          */
         @SuppressWarnings("all")
-        public PageBuilder withComponents(@NotNull LayoutComponent<ActionComponent<?>>... components) {
+        public PageBuilder withComponents(@NotNull LayoutComponent<UserActionComponent<?>>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -470,7 +471,7 @@ public class Page implements Paging {
          *
          * @param components Collection of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent<?>>> components) {
+        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<UserActionComponent<?>>> components) {
             components.forEach(this.components::add);
             return this;
         }
