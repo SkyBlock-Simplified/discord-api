@@ -266,7 +266,7 @@ public class Response implements Paging {
     /**
      * Gets a {@link Page} from the {@link Response}.
      *
-     * @param identifier the page option value.
+     * @param identifier The page option value.
      */
     public final Optional<Page> getPage(String identifier) {
         return this.getPages()
@@ -285,7 +285,7 @@ public class Response implements Paging {
     /**
      * Gets a {@link Page SubPage} from the {@link Page CurrentPage}.
      *
-     * @param identifier the subpage option value.
+     * @param identifier The subpage option value.
      */
     public final Optional<Page> getSubPage(String identifier) {
         return this.getCurrentPage()
@@ -301,9 +301,9 @@ public class Response implements Paging {
     /**
      * Changes the current {@link Page} to a top-level page in {@link Response} using the given identifier.
      *
-     * @param identifier the page option value.
+     * @param identifier The page option value.
      */
-    public final void gotoPage(String identifier) {
+    public final Response gotoPage(String identifier) {
         this.pageHistory.clear();
         this.pageHistory.add(
             this.getPage(identifier).orElseThrow(
@@ -314,12 +314,13 @@ public class Response implements Paging {
         );
 
         this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
+        return this;
     }
 
     /**
      * Changes the current {@link Page} to a subpage of the current {@link Page} using the given identifier.
      *
-     * @param identifier the subpage option value.
+     * @param identifier The subpage option value.
      */
     public final void gotoSubPage(String identifier) {
         this.pageHistory.add(this.getSubPage(identifier).orElseThrow(
