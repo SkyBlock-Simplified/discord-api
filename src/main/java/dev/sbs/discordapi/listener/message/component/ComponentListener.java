@@ -46,7 +46,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         .singleOrEmpty()
                         .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component))
                         .switchIfEmpty(
-                            Mono.justOrEmpty(responseCacheEntry.getResponse().getActiveModal()) // Handle Active Modal
+                            Mono.justOrEmpty(responseCacheEntry.getActiveModal()) // Handle Active Modal
                                 .filter(modal -> event.getCustomId().equals(modal.getUniqueId().toString()))
                                 .filter(this.componentClass::isInstance)
                                 .map(this.componentClass::cast)

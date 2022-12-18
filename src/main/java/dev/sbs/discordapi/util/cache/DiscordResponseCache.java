@@ -5,6 +5,7 @@ import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
 import lombok.Getter;
@@ -66,6 +67,7 @@ public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCa
         @Getter private final Snowflake userId;
         @Getter private final Snowflake messageId;
         @Getter private Response response;
+        @Getter private Optional<Modal> activeModal = Optional.empty();
         @Getter private long lastInteract = System.currentTimeMillis();
         @Getter private boolean modified;
         @Getter private boolean busy;
@@ -76,6 +78,10 @@ public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCa
             this.messageId = messageId;
             this.response = response;
             this.busy = true;
+        }
+
+        public void clearModal() {
+            this.activeModal = Optional.empty();
         }
 
         @Override
@@ -122,6 +128,10 @@ public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCa
 
         public void setUpdated() {
             this.modified = false;
+        }
+
+        public void setActiveModal(Modal modal) {
+            this.activeModal = Optional.of(modal);
         }
 
         /**

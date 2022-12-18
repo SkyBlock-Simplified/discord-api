@@ -6,10 +6,14 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
-import dev.sbs.discordapi.response.component.type.D4jComponent;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.component.type.SearchableComponent;
+import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
+import discord4j.core.object.component.MessageComponent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
@@ -21,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,8 +41,41 @@ public final class Modal extends InteractionComponent implements InteractableCom
     @Getter private final boolean isPaging = false;
     private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
 
+    /**
+     * Finds an existing {@link ActionComponent}.
+     *
+     * @param tClass The component type to match.
+     * @param function The method reference to match with.
+     * @param value The value to match with.
+     * @return The matching component, if it exists.
+     */
+    public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        return this.getComponents()
+            .stream()
+            .flatMap(layoutComponent -> layoutComponent.getComponents()
+                .stream()
+                .filter(tClass::isInstance)
+                .map(tClass::cast)
+                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
+            )
+            .findFirst();
+    }
+
+    /**
+     * Searches for a {@link ActionComponent} by its identifier.
+     *
+     * @param identifier The identifier to search for.
+     * @return The matching component, if it exists.
+     */
+    public <A extends ActionComponent & SearchableComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
+        return this.findComponent(tClass, component -> component.getIdentifier().orElse(null), identifier);
+    }
+
     public static ModalBuilder from(@NotNull Modal modal) {
-        return new ModalBuilder(modal.getUniqueId());
+        return new ModalBuilder(modal.getUniqueId())
+            .withTitle(modal.getTitle())
+            .withComponents(modal.getComponents())
+            .onInteract(modal.getInteraction());
     }
 
     public InteractionPresentModalSpec getD4jPresentSpec() {
@@ -132,7 +170,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends InteractionComponent & PreservableComponent & D4jComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
                 .flatMap(layoutComponent -> layoutComponent.getComponents()
                     .stream()
@@ -159,6 +197,42 @@ public final class Modal extends InteractionComponent implements InteractableCom
          */
         public ModalBuilder onInteract(@NotNull Optional<Function<ModalContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
+            return this;
+        }
+
+        public ModalBuilder updateComponents(@NotNull ModalSubmitInteractionEvent event) {
+            event.getComponents()
+                .stream()
+                .filter(discord4j.core.object.component.LayoutComponent.class::isInstance)
+                .map(discord4j.core.object.component.LayoutComponent.class::cast)
+                .map(discord4j.core.object.component.LayoutComponent::getChildren)
+                .flatMap(List::stream)
+                .forEach(d4jComponent -> {
+                    MessageComponent.Type type = d4jComponent.getType();
+
+                    switch (d4jComponent.getType()) {
+                        case TEXT_INPUT -> this.findComponent(
+                            TextInput.class,
+                            textInput -> textInput.getUniqueId().toString(),
+                            d4jComponent.getData().customId().get()
+                        ).ifPresent(textInput -> this.editComponent(
+                            textInput.mutate()
+                                .withValue(d4jComponent.getData().value().toOptional())
+                                .build()
+                        ));
+                        case SELECT_MENU -> this.findComponent(
+                            SelectMenu.class,
+                            selectMenu -> selectMenu.getUniqueId().toString(),
+                            d4jComponent.getData().customId().get()
+                        ).ifPresent(selectMenu -> selectMenu.updateSelected(
+                            d4jComponent.getData()
+                                .values()
+                                .toOptional()
+                                .orElse(Concurrent.newList())
+                        ));
+                    }
+                });
+
             return this;
         }
 

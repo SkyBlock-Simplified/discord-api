@@ -82,10 +82,16 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
+        // Cache Modal
+        this.getResponseCacheEntry().setActiveModal(modal);
+
         return this.getEvent().presentModal(
-            this.getResponseCacheEntry()
-                .getResponse()
-                .presentModal(modal)
+            modal.mutate()
+                .onInteract(modalContext -> {
+                    this.getResponseCacheEntry().clearModal();
+                    return modal.getInteraction().apply(modalContext);
+                })
+                .build()
                 .getD4jPresentSpec()
         );
     }

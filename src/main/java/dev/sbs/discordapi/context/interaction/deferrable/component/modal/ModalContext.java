@@ -15,7 +15,14 @@ public interface ModalContext extends ComponentContext {
     Modal getComponent();
 
     static ModalContext of(DiscordBot discordBot, ModalSubmitInteractionEvent event, Response response, Modal modal) {
-        return new ModalContextImpl(discordBot, event, response.getUniqueId(), modal);
+        return new ModalContextImpl(
+            discordBot,
+            event,
+            response.getUniqueId(),
+            modal.mutate()
+                .updateComponents(event)
+                .build()
+        );
     }
 
 }
