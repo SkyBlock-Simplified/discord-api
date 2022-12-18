@@ -5,6 +5,10 @@ import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.component.type.SearchableComponent;
+import discord4j.core.object.component.MessageComponent;
+import discord4j.discordjson.json.ComponentData;
+import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,9 +21,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput extends ActionComponent {
+public final class TextInput extends ActionComponent implements SearchableComponent {
 
     @Getter private final @NotNull UUID uniqueId;
+    @Getter private final @NotNull Optional<String> identifier;
     @Getter private final @NotNull Style style;
     @Getter private final @NotNull Optional<String> label;
     @Getter private final @NotNull Optional<String> value;
@@ -54,6 +59,7 @@ public final class TextInput extends ActionComponent {
 
     public static TextInputBuilder from(@NotNull TextInput textInput) {
         return new TextInputBuilder(textInput.getUniqueId())
+            .withIdentifier(textInput.getIdentifier())
             .withStyle(textInput.getStyle())
             .withLabel(textInput.getLabel())
             .withValue(textInput.getValue())
@@ -65,16 +71,19 @@ public final class TextInput extends ActionComponent {
 
     @Override
     public discord4j.core.object.component.TextInput getD4jComponent() {
-        String label = this.getLabel().orElse(null);
-
-        return (
-            switch (this.getStyle()) {
-                case PARAGRAPH -> discord4j.core.object.component.TextInput.paragraph(this.getUniqueId().toString(), label, minLength, maxLength);
-                case SHORT, UNKNOWN -> discord4j.core.object.component.TextInput.small(this.getUniqueId().toString(), label, minLength, maxLength);
-            })
-            .prefilled(this.getValue().orElse(""))
-            .placeholder(this.getPlaceholder().orElse(""))
-            .required(this.isRequired());
+        return (discord4j.core.object.component.TextInput) discord4j.core.object.component.TextInput.fromData(
+            ComponentData.builder()
+                .type(MessageComponent.Type.TEXT_INPUT.getValue())
+                .style(this.getStyle().getValue())
+                .customId(this.getUniqueId().toString())
+                .label(this.getLabel().map(Possible::of).orElse(Possible.absent()))
+                .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
+                .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
+                .minLength(this.getMinLength())
+                .maxLength(this.getMaxLength())
+                .required(false)
+                .build()
+        );
     }
 
     @Override
@@ -100,12 +109,13 @@ public final class TextInput extends ActionComponent {
     public static final class TextInputBuilder implements Builder<TextInput> {
 
         private final UUID uniqueId;
+        private Optional<String> identifier = Optional.empty();
         private Style style = Style.UNKNOWN;
         private Optional<String> label = Optional.empty();
         private Optional<String> value = Optional.empty();
         private Optional<String> placeholder = Optional.empty();
-        private int minLength;
-        private int maxLength;
+        private int minLength = 0;
+        private int maxLength = 4000;
         private boolean required;
 
         /**
@@ -122,6 +132,25 @@ public final class TextInput extends ActionComponent {
          */
         public TextInputBuilder isRequired(boolean required) {
             this.required = required;
+            return this;
+        }
+
+        /**
+         * Sets the identifier of the {@link TextInput}.
+         *
+         * @param identifier The identifier to use.
+         */
+        public TextInputBuilder withIdentifier(@Nullable String identifier) {
+            return this.withIdentifier(Optional.ofNullable(identifier));
+        }
+
+        /**
+         * Sets the identifier of the {@link TextInput}.
+         *
+         * @param identifier The identifier to use.
+         */
+        public TextInputBuilder withIdentifier(@NotNull Optional<String> identifier) {
+            this.identifier = identifier;
             return this;
         }
 
@@ -221,6 +250,7 @@ public final class TextInput extends ActionComponent {
         public TextInput build() {
             return new TextInput(
                 this.uniqueId,
+                this.identifier,
                 this.style,
                 this.label,
                 this.value,
