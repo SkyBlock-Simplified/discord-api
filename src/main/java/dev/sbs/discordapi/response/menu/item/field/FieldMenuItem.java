@@ -15,7 +15,7 @@ public abstract class FieldMenuItem extends MenuItem {
     @Getter protected final @NotNull Field field;
 
     protected FieldMenuItem(@NotNull UUID uniqueId, @NotNull Field field) {
-        super(uniqueId);
+        super(uniqueId, Type.FIELD);
         this.field = field;
     }
 

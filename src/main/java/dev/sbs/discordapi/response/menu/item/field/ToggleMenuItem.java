@@ -17,11 +17,7 @@ public final class ToggleMenuItem extends FieldMenuItem {
 
     @Getter private final Boolean value;
 
-    private ToggleMenuItem(
-        @NotNull UUID uniqueId,
-        @NotNull Field field,
-        boolean value
-    ) {
+    private ToggleMenuItem(@NotNull UUID uniqueId, @NotNull Field field, boolean value) {
         super(uniqueId, field);
         this.value = value;
     }

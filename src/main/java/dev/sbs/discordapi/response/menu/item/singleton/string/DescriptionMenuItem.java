@@ -1,8 +1,7 @@
-package dev.sbs.discordapi.response.menu.item;
+package dev.sbs.discordapi.response.menu.item.singleton.string;
 
 import dev.sbs.api.util.builder.Builder;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -10,16 +9,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class DescriptionMenuItem extends MenuItem {
+public final class DescriptionMenuItem extends StringMenuItem {
 
-    @Getter private final @NotNull Optional<String> value;
-
-    private DescriptionMenuItem(
-        @NotNull UUID uniqueId,
-        @NotNull Optional<String> value
-    ) {
-        super(uniqueId);
-        this.value = value;
+    private DescriptionMenuItem(@NotNull UUID uniqueId, @NotNull Optional<String> value) {
+        super(uniqueId, Type.DESCRIPTION, value);
     }
 
     public static DescriptionMenuItemBuilder builder() {

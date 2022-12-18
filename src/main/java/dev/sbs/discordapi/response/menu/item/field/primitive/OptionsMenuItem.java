@@ -19,25 +19,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class StringMenuItem extends FieldMenuItem {
+public final class OptionsMenuItem extends FieldMenuItem {
 
     @Getter private final @NotNull ConcurrentMap<String, String> options;
 
-    private StringMenuItem(
-        @NotNull UUID uniqueId,
-        @NotNull Field field,
-        @NotNull ConcurrentMap<String, String> options
-    ) {
+    private OptionsMenuItem(@NotNull UUID uniqueId, @NotNull Field field, @NotNull ConcurrentMap<String, String> options) {
         super(uniqueId, field);
         this.options = options;
     }
 
-    public static <T extends Model> StringMenuItemBuilder builder() {
-        return new StringMenuItemBuilder(UUID.randomUUID());
+    public static <T extends Model> OptionsMenuItemBuilder builder() {
+        return new OptionsMenuItemBuilder(UUID.randomUUID());
     }
 
-    public StringMenuItemBuilder mutate() {
-        return new StringMenuItemBuilder(this.getUniqueId())
+    public OptionsMenuItemBuilder mutate() {
+        return new OptionsMenuItemBuilder(this.getUniqueId())
             .withOptions(this.getOptions())
             .isInline(this.getField().isInline())
             .withName(this.getField().getName())
@@ -46,119 +42,119 @@ public final class StringMenuItem extends FieldMenuItem {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class StringMenuItemBuilder implements Builder<StringMenuItem> {
+    public static class OptionsMenuItemBuilder implements Builder<OptionsMenuItem> {
 
         private final UUID uniqueId;
         private final ConcurrentMap<String, String> options = Concurrent.newMap();
         private final Field.FieldBuilder fieldBuilder = Field.builder();
 
         /**
-         * Sets the {@link StringMenuItem} to render inline.
+         * Sets the {@link OptionsMenuItem} to render inline.
          */
-        public StringMenuItemBuilder isInline() {
+        public OptionsMenuItemBuilder isInline() {
             return this.isInline(true);
         }
 
         /**
-         * Sets whether the {@link StringMenuItem} should render inline.
+         * Sets whether the {@link OptionsMenuItem} should render inline.
          *
          * @param inline True to render menu item inline.
          */
-        public StringMenuItemBuilder isInline(boolean inline) {
+        public OptionsMenuItemBuilder isInline(boolean inline) {
             this.fieldBuilder.isInline(inline);
             return this;
         }
 
         /**
-         * Sets the emoji of the {@link StringMenuItem}.
+         * Sets the emoji of the {@link OptionsMenuItem}.
          *
          * @param emoji The emoji of the menu item.
          */
-        public StringMenuItemBuilder withEmoji(@Nullable Emoji emoji) {
+        public OptionsMenuItemBuilder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
         /**
-         * Sets the emoji of the {@link StringMenuItem}.
+         * Sets the emoji of the {@link OptionsMenuItem}.
          *
          * @param emoji The emoji of the menu item.
          */
-        public StringMenuItemBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public OptionsMenuItemBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.fieldBuilder.withEmoji(emoji);
             return this;
         }
 
         /**
-         * Formats the name of the {@link StringMenuItem} with the given objects.
+         * Formats the name of the {@link OptionsMenuItem} with the given objects.
          *
          * @param name The name of the menu item.
          * @param objects Objects used to format the name.
          */
-        public StringMenuItemBuilder withName(@NotNull String name, @NotNull Object... objects) {
+        public OptionsMenuItemBuilder withName(@NotNull String name, @NotNull Object... objects) {
             return this.withName(FormatUtil.format(name, objects));
         }
 
         /**
-         * Sets the name of the {@link StringMenuItem}.
+         * Sets the name of the {@link OptionsMenuItem}.
          *
          * @param name The name of the menu item.
          */
-        public StringMenuItemBuilder withName(@Nullable String name) {
+        public OptionsMenuItemBuilder withName(@Nullable String name) {
             return this.withName(Optional.ofNullable(name));
         }
 
         /**
-         * Optionally sets the name of the {@link StringMenuItem}.
+         * Optionally sets the name of the {@link OptionsMenuItem}.
          *
          * @param name The name of the menu item.
          */
-        public StringMenuItemBuilder withName(@NotNull Optional<String> name) {
+        public OptionsMenuItemBuilder withName(@NotNull Optional<String> name) {
             this.fieldBuilder.withName(name);
             return this;
         }
 
         /**
-         * The options available for selection {@link StringMenuItem}.
+         * The options available for selection {@link OptionsMenuItem}.
          *
          * @param options The options available for selection.
          */
-        public StringMenuItemBuilder withOptions(@NotNull Map.Entry<String, String>... options) {
+        public OptionsMenuItemBuilder withOptions(@NotNull Map.Entry<String, String>... options) {
             return this.withOptions(Arrays.asList(options));
         }
 
         /**
-         * The options available for selection {@link StringMenuItem}.
+         * The options available for selection {@link OptionsMenuItem}.
          *
          * @param options The options available for selection.
          */
-        public StringMenuItemBuilder withOptions(@NotNull Iterable<Map.Entry<String, String>> options) {
+        public OptionsMenuItemBuilder withOptions(@NotNull Iterable<Map.Entry<String, String>> options) {
             this.options.clear();
             options.forEach(option -> this.options.put(option.getKey(), option.getValue()));
             return this;
         }
 
         /**
-         * Sets the selected value of the {@link StringMenuItem}.
+         * Sets the selected value of the {@link OptionsMenuItem}.
          *
          * @param value The selected value of the menu item.
          */
-        public StringMenuItemBuilder withValue(@Nullable String value) {
+        public OptionsMenuItemBuilder withValue(@Nullable String value) {
             return this.withValue(Optional.ofNullable(value));
         }
 
         /**
-         * Sets the selected value of the {@link StringMenuItem}.
+         * Sets the selected value of the {@link OptionsMenuItem}.
          *
          * @param value The selected value of the menu item.
          */
-        public StringMenuItemBuilder withValue(@NotNull Optional<String> value) {
+        public OptionsMenuItemBuilder withValue(@NotNull Optional<String> value) {
             this.fieldBuilder.withValue(value);
             return this;
         }
 
         @Override
-        public StringMenuItem build() {
-            return new StringMenuItem(
+        public OptionsMenuItem build() {
+            return new OptionsMenuItem(
                 this.uniqueId,
                 this.fieldBuilder.build(),
                 this.options
