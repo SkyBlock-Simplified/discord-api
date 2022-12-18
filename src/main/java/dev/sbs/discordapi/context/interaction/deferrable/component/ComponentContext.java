@@ -3,6 +3,7 @@ package dev.sbs.discordapi.context.interaction.deferrable.component;
 import dev.sbs.discordapi.context.ResponseContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
@@ -37,6 +38,8 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     default Snowflake getChannelId() {
         return this.getEvent().getInteraction().getChannelId();
     }
+
+    Component getComponent();
 
     @Override
     default Mono<Guild> getGuild() {
@@ -79,9 +82,12 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
-        return this.getResponse()
-            .map(response -> response.getCurrentPage().presentModal(this, modal))
-            .orElse(Mono.empty());
+        return this.getEvent().presentModal(
+            this.getResponseCacheEntry()
+                .getResponse()
+                .presentModal(modal)
+                .getD4jPresentSpec()
+        );
     }
 
 }

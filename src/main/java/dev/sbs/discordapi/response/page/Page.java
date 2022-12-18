@@ -9,21 +9,19 @@ import dev.sbs.api.util.data.tuple.Triple;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
-import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
+import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -46,7 +44,6 @@ public class Page implements Paging {
     @Getter protected final Optional<Triple<String, String, String>> fieldNames;
     @Getter protected final int itemsPerPage;
     @Getter protected int currentItemPage = 1;
-    @Getter protected Optional<Modal> activeModal = Optional.empty();
 
     protected Page(
         UUID uniqueId,
@@ -251,10 +248,6 @@ public class Page implements Paging {
         return this.currentItemPage > 1;
     }
 
-    public final boolean hasActiveModal() {
-        return this.getActiveModal().isPresent();
-    }
-
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
@@ -280,21 +273,6 @@ public class Page implements Paging {
 
     public PageBuilder mutate() {
         return from(this);
-    }
-
-    public Mono<Void> presentModal(@NotNull ComponentContext componentContext, @NotNull Modal modal) {
-        this.activeModal = Optional.of(modal);
-
-        return componentContext.getEvent()
-            .presentModal(
-                modal.mutate()
-                    .onInteract(modalContext -> {
-                        this.activeModal = Optional.empty();
-                        return modal.getInteraction().apply(modalContext);
-                    })
-                    .build()
-                    .getD4jPresentSpec()
-            );
     }
 
     private void updatePagingComponents() {
@@ -348,6 +326,8 @@ public class Page implements Paging {
                 .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
                 .forEach(layoutComponent -> layoutComponent.getComponents()
                     .stream()
+                    .filter(PreservableComponent.class::isInstance)
+                    .map(PreservableComponent.class::cast)
                     .filter(component -> !enforcePreserve || component.notPreserved())
                     .forEach(component -> layoutComponent.getComponents().remove(component))
                 );

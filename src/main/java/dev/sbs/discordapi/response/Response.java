@@ -13,6 +13,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.context.message.text.TextCommandContext;
+import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -68,6 +69,7 @@ public class Response implements Paging {
     @Getter protected final boolean ephemeral;
     @Getter protected final boolean renderingPagingComponents;
     @Getter protected Button backButton = Button.PageType.BACK.build();
+    @Getter protected Optional<Modal> activeModal = Optional.empty();
 
     private Response(
         UUID uniqueId,
@@ -339,6 +341,10 @@ public class Response implements Paging {
         }
     }
 
+    public final boolean hasActiveModal() {
+        return this.getActiveModal().isPresent();
+    }
+
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
@@ -364,6 +370,17 @@ public class Response implements Paging {
 
     public Response.ResponseBuilder mutate() {
         return from(this);
+    }
+
+    public Modal presentModal(@NotNull Modal modal) {
+        return (this.activeModal = Optional.of(
+            modal.mutate()
+                .onInteract(modalContext -> {
+                    this.activeModal = Optional.empty();
+                    return modal.getInteraction().apply(modalContext);
+                })
+                .build()
+        )).get();
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

@@ -11,6 +11,9 @@ public interface ModalContext extends ComponentContext {
     @Override
     ModalSubmitInteractionEvent getEvent();
 
+    @Override
+    Modal getComponent();
+
     static ModalContext of(DiscordBot discordBot, ModalSubmitInteractionEvent event, Response response, Modal modal) {
         return new ModalContextImpl(discordBot, event, response.getUniqueId(), modal);
     }
