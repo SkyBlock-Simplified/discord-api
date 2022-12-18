@@ -18,14 +18,13 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-public class Menu {
+public class Menu extends MenuItem {
 
     @Getter protected final long buildTime = System.currentTimeMillis();
-    @Getter protected final UUID uniqueId;
     @Getter protected final ConcurrentList<MenuItem> items;
 
-    private Menu(UUID uniqueId, ConcurrentList<MenuItem> items) {
-        this.uniqueId = uniqueId;
+    private Menu(@NotNull UUID uniqueId, @NotNull ConcurrentList<MenuItem> items) {
+        super(uniqueId, Type.MENU);
         this.items = Concurrent.newUnmodifiableList(items);
     }
 

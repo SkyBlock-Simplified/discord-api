@@ -35,30 +35,18 @@ public abstract class MenuItem {
         return ToggleMenuItem.builder();
     }
 
-    /*
-    Build a base MenuItem to inherit from and setup versions that do the following:
-    - Yes/No / On/Off (Same file, toggle for verbage)
-    - Temporary Selections (Optimizer Command)
-    - Permanent Changes (Database Changes)
-
-    The base should have a save function that only works for permanent changes (may rewrite this later if i think of something better).
-    Setup a choice for when to save, on change or at the end of the menu.
-    Create an annotation? that lets Menu build MenuItem's automatically so i don't have to actually use these builders everywhere.
-     */
-
     public enum Type {
 
         UNKNOWN(-1),
-        AUTHOR(1),
-        TITLE(2),
-        DESCRIPTION(3),
-        THUMBNAIL_URL(4),
-        IMAGE_URL(5),
-        FIELD(6),
-        FOOTER(7),
-        TIMESTAMP(8);
-
-        // timestamp
+        MENU(1),
+        AUTHOR(2),
+        TITLE(3),
+        DESCRIPTION(4),
+        THUMBNAIL_URL(5),
+        IMAGE_URL(6),
+        FIELD(7),
+        FOOTER(8),
+        TIMESTAMP(9);
 
         @Getter private final int value;
 
