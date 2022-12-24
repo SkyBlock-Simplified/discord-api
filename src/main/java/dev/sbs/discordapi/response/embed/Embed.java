@@ -11,6 +11,7 @@ import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.AccessLevel;
@@ -30,9 +31,9 @@ import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Embed {
+public class Embed implements IdentifiableComponent {
 
-    @Getter private final UUID uniqueId;
+    @Getter private final String identifier;
     @LengthLimit(256)
     @Getter private final Optional<String> title;
     @LengthLimit(4096)
@@ -47,7 +48,7 @@ public class Embed {
     @Getter private final ConcurrentList<Field> fields;
 
     public static EmbedBuilder builder() {
-        return new EmbedBuilder(UUID.randomUUID());
+        return new EmbedBuilder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -72,7 +73,8 @@ public class Embed {
     }
 
     public static EmbedBuilder from(Embed embed) {
-        return new EmbedBuilder(embed.getUniqueId())
+        return new EmbedBuilder()
+            .withIdentifier(embed.getIdentifier())
             .withTitle(embed.getTitle())
             .withDescription(embed.getDescription())
             .withUrl(embed.getUrl())
@@ -85,7 +87,8 @@ public class Embed {
     }
 
     public static EmbedBuilder from(@NotNull Throwable throwable) {
-        return new EmbedBuilder(UUID.randomUUID())
+        return new EmbedBuilder()
+            .withIdentifier(UUID.randomUUID().toString())
             .withColor(Color.RED)
             .withTitle("An exception has occurred!")
             .withDescription(ExceptionUtil.getRootCauseMessage(throwable))
@@ -112,7 +115,7 @@ public class Embed {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getUniqueId())
+            .append(this.getIdentifier())
             .append(this.getTitle())
             .append(this.getDescription())
             .append(this.getUrl())
@@ -133,7 +136,7 @@ public class Embed {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class EmbedBuilder implements Builder<Embed> {
 
-        private final UUID uniqueId;
+        private String identifier;
         private Optional<String> title = Optional.empty();
         private Optional<String> description = Optional.empty();
         private Optional<String> url = Optional.empty();
@@ -270,17 +273,8 @@ public class Embed {
          * @param description The description of the embed.
          * @param objects Objects used to format the description.
          */
-        public EmbedBuilder withDescription(@NotNull String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.format(description, objects));
-        }
-
-        /**
-         * Sets the description of the {@link Embed}.
-         *
-         * @param description The description of the embed.
-         */
-        public EmbedBuilder withDescription(@Nullable String description) {
-            return this.withDescription(Optional.ofNullable(description));
+        public EmbedBuilder withDescription(@Nullable String description, @NotNull Object... objects) {
+            return this.withDescription(FormatUtil.formatNullable(description, objects));
         }
 
         /**
@@ -373,6 +367,17 @@ public class Embed {
 
             List<Field> fieldList = List.class.isAssignableFrom(fields.getClass()) ? (List<Field>) fields : StreamSupport.stream(fields.spliterator(), false).toList();
             IntStream.range(0, Math.min(fieldList.size(), (Field.MAX_ALLOWED - this.fields.size()))).forEach(index -> this.fields.add(fieldList.get(index)));
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link Embed}.
+         *
+         * @param identifier The identifier to use.
+         * @param objects The objects used to format the identifier.
+         */
+        public EmbedBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            this.identifier = FormatUtil.format(identifier, objects);
             return this;
         }
 
@@ -562,7 +567,7 @@ public class Embed {
         @Override
         public Embed build() {
             return new Embed(
-                this.uniqueId,
+                this.identifier,
                 this.title,
                 this.description,
                 this.url,
