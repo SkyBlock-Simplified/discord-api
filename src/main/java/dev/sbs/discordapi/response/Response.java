@@ -54,20 +54,20 @@ import java.util.function.Function;
 public class Response implements Paging {
 
     protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
-    @Getter protected final long buildTime = System.currentTimeMillis();
-    @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
-    @Getter protected final ConcurrentList<Page> pages;
-    @Getter protected final ConcurrentList<Attachment> attachments;
-    @Getter protected final Optional<Snowflake> referenceId;
-    @Getter protected final Scheduler reactorScheduler;
-    @Getter protected final boolean replyMention;
-    @Getter protected final int timeToLive;
-    @Getter protected final boolean interactable;
-    @Getter protected final boolean loader;
-    @Getter protected final boolean ephemeral;
-    @Getter protected final boolean renderingPagingComponents;
-    @Getter protected Button backButton = Button.PageType.BACK.build();
+    @Getter private final long buildTime = System.currentTimeMillis();
+    @Getter private final UUID uniqueId;
+    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
+    @Getter private final ConcurrentList<Page> pages;
+    @Getter private final ConcurrentList<Attachment> attachments;
+    @Getter private final Optional<Snowflake> referenceId;
+    @Getter private final Scheduler reactorScheduler;
+    @Getter private final boolean replyMention;
+    @Getter private final int timeToLive;
+    @Getter private final boolean interactable;
+    @Getter private final boolean loader;
+    @Getter private final boolean ephemeral;
+    @Getter private final boolean renderingPagingComponents;
+    @Getter private Button backButton = Button.PageType.BACK.build();
 
     private Response(
         UUID uniqueId,
@@ -234,9 +234,9 @@ public class Response implements Paging {
                 Embed.builder()
                     .withFields(
                         this.getCurrentPage()
-                            .getPageItemStyle()
-                            .getConverter(this.getCurrentPage().getFieldNames())
-                            .apply(
+                            .getItemStyle()
+                            .getPageItems(
+                                this.getCurrentPage().getFieldNames(),
                                 this.getCurrentPage()
                                     .getItems()
                                     .subList(startIndex, endIndex)
@@ -428,7 +428,7 @@ public class Response implements Paging {
          */
         public ResponseBuilder editPage(@NotNull Page page) {
             this.pages.stream()
-                .filter(existingPage -> existingPage.getUniqueId().equals(page.getUniqueId()))
+                .filter(existingPage -> existingPage.getIdentifier().equals(page.getIdentifier()))
                 .findFirst()
                 .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
