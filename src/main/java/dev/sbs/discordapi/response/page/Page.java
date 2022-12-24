@@ -17,6 +17,7 @@ import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.page.item.PageItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,43 +30,42 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class Page implements Paging {
+public class Page extends PageItem implements Paging {
 
-    @Getter protected final UUID uniqueId;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
-    @Getter protected final ConcurrentList<Page> pages;
-    @Getter protected final ConcurrentList<LayoutComponent<ActionComponent>> components;
-    @Getter protected final ConcurrentList<Emoji> reactions;
-    @Getter protected final ConcurrentList<Embed> embeds;
-    @Getter protected final ConcurrentList<PageItem> items;
-    @Getter protected final Optional<String> content;
-    @Getter protected final Optional<SelectMenu.Option> option;
-    @Getter protected final PageItem.Style pageItemStyle;
-    @Getter protected final Optional<Triple<String, String, String>> fieldNames;
-    @Getter protected final int itemsPerPage;
-    @Getter protected int currentItemPage = 1;
+    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
+    @Getter private final ConcurrentList<Page> pages;
+    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> components;
+    @Getter private final ConcurrentList<Emoji> reactions;
+    @Getter private final ConcurrentList<Embed> embeds;
+    @Getter private final ConcurrentList<PageItem> items;
+    @Getter private final Optional<String> content;
+    @Getter private final Optional<SelectMenu.Option> option;
+    @Getter private final PageItem.Style itemStyle;
+    @Getter private final Optional<Triple<String, String, String>> fieldNames;
+    @Getter private final int itemsPerPage;
+    @Getter private int currentItemPage = 1;
 
     protected Page(
-        UUID uniqueId,
-        ConcurrentList<LayoutComponent<ActionComponent>> components,
-        ConcurrentList<Emoji> reactions,
-        ConcurrentList<Embed> embeds,
-        ConcurrentList<Page> pages,
-        ConcurrentList<PageItem> items,
-        Optional<String> content,
-        Optional<SelectMenu.Option> option,
-        PageItem.Style pageItemStyle,
-        Optional<Triple<String, String, String>> fieldNames,
+        @NotNull String identifier,
+        @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components,
+        @NotNull ConcurrentList<Emoji> reactions,
+        @NotNull ConcurrentList<Embed> embeds,
+        @NotNull ConcurrentList<Page> pages,
+        @NotNull ConcurrentList<PageItem> items,
+        @NotNull Optional<String> content,
+        @NotNull Optional<SelectMenu.Option> option,
+        @NotNull PageItem.Style itemStyle,
+        @NotNull Optional<Triple<String, String, String>> fieldNames,
         int itemsPerPage) {
+        super(identifier, option, Type.PAGE, true);
         this.pages = pages;
-        this.uniqueId = uniqueId;
         this.components = components;
         this.reactions = reactions;
         this.embeds = embeds;
         this.items = items;
         this.option = option;
         this.content = content;
-        this.pageItemStyle = pageItemStyle;
+        this.itemStyle = itemStyle;
         this.fieldNames = fieldNames;
         this.itemsPerPage = itemsPerPage;
 
@@ -117,7 +117,7 @@ public class Page implements Paging {
     }
 
     public static PageBuilder builder() {
-        return new PageBuilder(UUID.randomUUID());
+        return new PageBuilder().withIdentifier(UUID.randomUUID().toString());
     }
 
     /**
@@ -147,11 +147,11 @@ public class Page implements Paging {
         Page page = (Page) o;
 
         return new EqualsBuilder()
-            .append(this.getPageItemStyle(), page.getPageItemStyle())
+            .append(this.getItemStyle(), page.getItemStyle())
             .append(this.getFieldNames(), page.getFieldNames())
             .append(this.getItemsPerPage(), page.getItemsPerPage())
             .append(this.getCurrentItemPage(), page.getCurrentItemPage())
-            .append(this.getUniqueId(), page.getUniqueId())
+            .append(this.getIdentifier(), page.getIdentifier())
             .append(this.getPages(), page.getPages())
             .append(this.getPageComponents(), page.getPageComponents())
             .append(this.getComponents(), page.getComponents())
@@ -186,18 +186,19 @@ public class Page implements Paging {
     /**
      * Finds an existing {@link Embed}.
      *
-     * @param uniqueId The unique id of the embed to search for.
+     * @param identifier The unique id of the embed to search for.
      * @return The matching embed, if it exists.
      */
-    public Optional<Embed> findEmbed(UUID uniqueId) {
+    public Optional<Embed> findEmbed(@NotNull String identifier) {
         return this.getEmbeds()
             .stream()
-            .filter(embed -> embed.getUniqueId().equals(uniqueId))
+            .filter(embed -> embed.getIdentifier().equals(identifier))
             .findFirst();
     }
 
     public static PageBuilder from(@NotNull Page page) {
-        return new PageBuilder(page.getUniqueId())
+        return new PageBuilder()
+            .withIdentifier(page.getIdentifier())
             .withComponents(page.getComponents())
             .withReactions(page.getReactions())
             .withEmbeds(page.getEmbeds())
@@ -205,9 +206,14 @@ public class Page implements Paging {
             .withItems(page.getItems())
             .withContent(page.getContent())
             .withOption(page.getOption())
-            .withPageItemStyle(page.getPageItemStyle())
-            .withFieldNames(page.getFieldNames())
+            .withItemStyle(page.getItemStyle())
+            .withColumnNames(page.getFieldNames())
             .withItemsPerPage(page.getItemsPerPage());
+    }
+
+    @Override
+    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
+        return null; // TODO: NOT IMPLEMENTED
     }
 
     // Item Paging
@@ -251,7 +257,7 @@ public class Page implements Paging {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getUniqueId())
+            .append(this.getIdentifier())
             .append(this.getPages())
             .append(this.getPageComponents())
             .append(this.getComponents())
@@ -260,7 +266,7 @@ public class Page implements Paging {
             .append(this.getItems())
             .append(this.getContent())
             .append(this.getOption())
-            .append(this.getPageItemStyle())
+            .append(this.getItemStyle())
             .append(this.getItemsPerPage())
             .append(this.getFieldNames())
             .append(this.getCurrentItemPage())
@@ -286,17 +292,17 @@ public class Page implements Paging {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public static class PageBuilder implements Builder<Page> {
 
-        protected final UUID uniqueId;
-        protected final ConcurrentList<Embed> embeds = Concurrent.newList();
-        protected final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
-        protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
-        protected final ConcurrentList<Page> pages = Concurrent.newList();
-        protected final ConcurrentList<PageItem> items = Concurrent.newList();
-        protected Optional<String> content = Optional.empty();
-        protected Optional<SelectMenu.Option> option = Optional.empty();
-        protected PageItem.Style pageItemStyle = PageItem.Style.FIELD;
-        protected Optional<Triple<String, String, String>> fieldNames = Optional.empty();
-        protected int itemsPerPage = 12;
+        private String identifier;
+        private final ConcurrentList<Embed> embeds = Concurrent.newList();
+        private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
+        private final ConcurrentList<Emoji> reactions = Concurrent.newList();
+        private final ConcurrentList<Page> pages = Concurrent.newList();
+        private final ConcurrentList<PageItem> items = Concurrent.newList();
+        private Optional<String> content = Optional.empty();
+        private Optional<SelectMenu.Option> option = Optional.empty();
+        private PageItem.Style itemStyle = PageItem.Style.FIELD;
+        private Optional<Triple<String, String, String>> fieldNames = Optional.empty();
+        private int itemsPerPage = 12;
 
         /**
          * Clear all but preservable components from {@link Page}.
@@ -358,7 +364,7 @@ public class Page implements Paging {
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
                 .map(actionComponent.getClass()::cast)
-                .filter(innerComponent -> innerComponent.getUniqueId().equals(actionComponent.getUniqueId()))
+                .filter(innerComponent -> innerComponent.getIdentifier().equals(actionComponent.getIdentifier()))
                 .findFirst()
                 .ifPresent(innerComponent -> layoutComponent.getComponents().set(
                     layoutComponent.getComponents().indexOf(innerComponent),
@@ -372,16 +378,16 @@ public class Page implements Paging {
         /**
          * Edits an existing {@link Embed}.
          *
-         * @param uniqueId The unique id of the embed to search for.
+         * @param identifier The identifier of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
-        public PageBuilder editEmbed(@NotNull UUID uniqueId, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
-            this.findEmbed(uniqueId).ifPresent(embed -> {
+        public PageBuilder editEmbed(@NotNull String identifier, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
+            this.findEmbed(identifier).ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
 
                 // Locate and Update Existing Embed
                 for (int i = 0; i < this.embeds.size(); i++) {
-                    if (this.embeds.get(i).getUniqueId().equals(uniqueId)) {
+                    if (this.embeds.get(i).getIdentifier().equals(identifier)) {
                         this.embeds.set(i, editedEmbed);
                         break;
                     }
@@ -420,7 +426,7 @@ public class Page implements Paging {
          */
         public PageBuilder editPage(@NotNull Page page) {
             this.pages.stream()
-                .filter(existingPage -> existingPage.getUniqueId().equals(page.getUniqueId()))
+                .filter(existingPage -> existingPage.getIdentifier().equals(page.getIdentifier()))
                 .findFirst()
                 .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
@@ -430,12 +436,12 @@ public class Page implements Paging {
         /**
          * Finds an existing {@link Embed}.
          *
-         * @param uniqueId The unique id of the embed to search for.
+         * @param identifier The identifier of the embed to search for.
          * @return The matching embed, if it exists.
          */
-        public Optional<Embed> findEmbed(@NotNull UUID uniqueId) {
+        public Optional<Embed> findEmbed(@NotNull String identifier) {
             return this.embeds.stream()
-                .filter(embed -> embed.getUniqueId().equals(uniqueId))
+                .filter(embed -> embed.getIdentifier().equals(identifier))
                 .findFirst();
         }
 
@@ -502,7 +508,7 @@ public class Page implements Paging {
          *
          * @param embeds Variable number of embeds to add.
          */
-        public PageBuilder withEmbeds(Embed... embeds) {
+        public PageBuilder withEmbeds(@NotNull Embed... embeds) {
             return this.withEmbeds(Arrays.asList(embeds));
         }
 
@@ -511,7 +517,7 @@ public class Page implements Paging {
          *
          * @param embeds Collection of embeds to add.
          */
-        public PageBuilder withEmbeds(Iterable<Embed> embeds) {
+        public PageBuilder withEmbeds(@NotNull Iterable<Embed> embeds) {
             embeds.forEach(this.embeds::add);
             return this;
         }
@@ -523,8 +529,8 @@ public class Page implements Paging {
          * @param columnTwo The field name for page items in column 2.
          * @param columnThree The field name for page items in column 3.
          */
-        public PageBuilder withFieldNames(@Nullable String columnOne, @Nullable String columnTwo, @Nullable String columnThree) {
-            return this.withFieldNames(Triple.of(columnOne, columnTwo, columnThree));
+        public PageBuilder withColumnNames(@Nullable String columnOne, @Nullable String columnTwo, @Nullable String columnThree) {
+            return this.withColumnNames(Triple.of(columnOne, columnTwo, columnThree));
         }
 
         /**
@@ -532,8 +538,8 @@ public class Page implements Paging {
          *
          * @param fieldNames The field names for page items.
          */
-        public PageBuilder withFieldNames(@Nullable Triple<String, String, String> fieldNames) {
-            return this.withFieldNames(Optional.ofNullable(fieldNames));
+        public PageBuilder withColumnNames(@Nullable Triple<String, String, String> fieldNames) {
+            return this.withColumnNames(Optional.ofNullable(fieldNames));
         }
 
         /**
@@ -541,8 +547,19 @@ public class Page implements Paging {
          *
          * @param fieldNames The field names for page items.
          */
-        public PageBuilder withFieldNames(@NotNull Optional<Triple<String, String, String>> fieldNames) {
+        public PageBuilder withColumnNames(@NotNull Optional<Triple<String, String, String>> fieldNames) {
             this.fieldNames = fieldNames;
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link Page}.
+         *
+         * @param identifier The identifier to use.
+         * @param objects The objects used to format the identifier.
+         */
+        public PageBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            this.identifier = FormatUtil.format(identifier, objects);
             return this;
         }
 
@@ -551,7 +568,7 @@ public class Page implements Paging {
          *
          * @param pageItems Variable number of page items to add.
          */
-        public PageBuilder withItems(@NotNull PageItem... pageItems) {
+        public <E extends PageItem> PageBuilder withItems(@NotNull E... pageItems) {
             return this.withItems(Arrays.asList(pageItems));
         }
 
@@ -560,7 +577,7 @@ public class Page implements Paging {
          *
          * @param pageItems Collection of page items to add.
          */
-        public PageBuilder withItems(@NotNull Iterable<PageItem> pageItems) {
+        public <E extends PageItem> PageBuilder withItems(@NotNull Iterable<E> pageItems) {
             pageItems.forEach(this.items::add);
             return this;
         }
@@ -599,10 +616,10 @@ public class Page implements Paging {
         /**
          * Sets the render style for {@link PageItem PageItems}.
          *
-         * @param pageItemStyle The page item style.
+         * @param itemStyle The page item style.
          */
-        public PageBuilder withPageItemStyle(@NotNull PageItem.Style pageItemStyle) {
-            this.pageItemStyle = pageItemStyle;
+        public PageBuilder withItemStyle(@NotNull PageItem.Style itemStyle) {
+            this.itemStyle = itemStyle;
             return this;
         }
 
@@ -652,7 +669,7 @@ public class Page implements Paging {
         @Override
         public Page build() {
             return new Page(
-                this.uniqueId,
+                this.identifier,
                 Concurrent.newUnmodifiableList(this.components),
                 Concurrent.newUnmodifiableList(this.reactions),
                 Concurrent.newUnmodifiableList(this.embeds),
@@ -660,7 +677,7 @@ public class Page implements Paging {
                 Concurrent.newUnmodifiableList(this.items),
                 this.content,
                 this.option,
-                this.pageItemStyle,
+                this.itemStyle,
                 this.fieldNames,
                 this.itemsPerPage
             );

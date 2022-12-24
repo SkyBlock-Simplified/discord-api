@@ -1,0 +1,136 @@
+package dev.sbs.discordapi.response.page.item;
+
+import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public final class ToggleItem extends SingletonItem<Boolean> {
+
+    private ToggleItem(@NotNull SelectMenu.Option option, boolean editable, Boolean value) {
+        super(option, Type.FIELD, editable, Optional.of(value));
+    }
+
+    public static Builder builder() {
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
+    }
+
+    @Override
+    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
+        return null; // TODO: NOT IMPLEMENTED
+    }
+
+    public Builder mutate() {
+        return new Builder()
+            .isEnabled(this.getValue().orElse(false))
+            .withOption(this.getOption().orElseThrow())
+            .isEditable(this.isEditable());
+    }
+
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Builder extends PageItemBuilder<ToggleItem> {
+
+        private Boolean value;
+
+        /**
+         * Disables the value of the {@link ToggleItem}.
+         */
+        public Builder isDisabled() {
+            return this.isDisabled(true);
+        }
+
+        /**
+         * Sets the status of the {@link ToggleItem}.
+         *
+         * @param value The value of the menu item.
+         */
+        public Builder isDisabled(boolean value) {
+            this.value = !value;
+            return this;
+        }
+
+        /**
+         * Enables the value of the {@link ToggleItem}.
+         */
+        public Builder isEnabled() {
+            return this.isEnabled(true);
+        }
+
+        /**
+         * Sets the status of the {@link ToggleItem}.
+         *
+         * @param value The value of the menu item.
+         */
+        public Builder isEnabled(boolean value) {
+            this.value = value;
+            return this;
+        }
+
+        public Builder isEditable() {
+            return this.isEditable(true);
+        }
+
+        public Builder isEditable(boolean value) {
+            super.editable = value;
+            return this;
+        }
+
+        public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
+            return this.withDescription(FormatUtil.formatNullable(description, objects));
+        }
+
+        public Builder withDescription(@NotNull Optional<String> description) {
+            super.optionBuilder.withDescription(description);
+            return this;
+        }
+
+        public Builder withEmoji(@Nullable Emoji emoji) {
+            return this.withEmoji(Optional.ofNullable(emoji));
+        }
+
+        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
+            super.optionBuilder.withEmoji(emoji);
+            return this;
+        }
+
+        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            super.optionBuilder.withIdentifier(identifier, objects);
+            return this;
+        }
+
+        public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
+            super.optionBuilder.withLabel(label, objects);
+            return this;
+        }
+
+        public Builder withOption(@NotNull SelectMenu.Option option) {
+            return this.withIdentifier(option.getIdentifier())
+                .withDescription(option.getDescription())
+                .withEmoji(option.getEmoji())
+                .withLabel(option.getLabel())
+                .withOptionValue(option.getValue());
+        }
+
+        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
+            super.optionBuilder.withValue(value, objects);
+            return this;
+        }
+
+        @Override
+        public ToggleItem build() {
+            return new ToggleItem(
+                super.optionBuilder.build(),
+                super.editable,
+                this.value
+            );
+        }
+
+    }
+
+}
