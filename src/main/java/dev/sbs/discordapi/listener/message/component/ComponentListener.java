@@ -34,7 +34,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                 .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                 .filter(this.componentClass::isInstance) // Validate Component Type
                 .map(this.componentClass::cast)
-                .filter(component -> event.getCustomId().equals(component.getUniqueId().toString())) // Validate Component ID
+                .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
                 .singleOrEmpty()
                 .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Response Paging
                 .switchIfEmpty(
@@ -42,12 +42,12 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                         .filter(this.componentClass::isInstance) // Validate Component Type
                         .map(this.componentClass::cast)
-                        .filter(component -> event.getCustomId().equals(component.getUniqueId().toString()))
+                        .filter(component -> event.getCustomId().equals(component.getIdentifier()))
                         .singleOrEmpty()
                         .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component))
                         .switchIfEmpty(
                             Mono.justOrEmpty(responseCacheEntry.getActiveModal()) // Handle Active Modal
-                                .filter(modal -> event.getCustomId().equals(modal.getUniqueId().toString()))
+                                .filter(modal -> event.getCustomId().equals(modal.getIdentifier()))
                                 .filter(this.componentClass::isInstance)
                                 .map(this.componentClass::cast)
                                 .flatMap(modal -> this.handleInteraction(event, responseCacheEntry, modal))
@@ -56,14 +56,14 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                                         .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                                         .filter(this.componentClass::isInstance) // Validate Component Type
                                         .map(this.componentClass::cast)
-                                        .filter(component -> event.getCustomId().equals(component.getUniqueId().toString()))
+                                        .filter(component -> event.getCustomId().equals(component.getIdentifier()))
                                         .singleOrEmpty()
                                         .flatMap(component -> this.handleInteraction(event, responseCacheEntry, component))
                                         .switchIfEmpty(
                                             Mono.just(responseCacheEntry.getResponse().getBackButton()) // Handle Back Button
                                                 .filter(this.componentClass::isInstance) // Validate Component Type
                                                 .map(this.componentClass::cast)
-                                                .filter(component -> event.getCustomId().equals(component.getUniqueId().toString()))
+                                                .filter(component -> event.getCustomId().equals(component.getIdentifier()))
                                                 .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component))
                                         )
                                 )
