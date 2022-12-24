@@ -275,6 +275,7 @@ public abstract class PageItem {
 
     }
 
+    @RequiredArgsConstructor
     public enum Type {
 
         UNKNOWN(-1),
@@ -289,10 +290,6 @@ public abstract class PageItem {
         TIMESTAMP(9);
 
         @Getter private final int value;
-
-        Type(int value) {
-            this.value = value;
-        }
 
         public static Type of(int value) {
             return Arrays.stream(values())

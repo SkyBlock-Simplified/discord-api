@@ -236,7 +236,7 @@ public class Response implements Paging {
                         this.getCurrentPage()
                             .getItemStyle()
                             .getPageItems(
-                                this.getCurrentPage().getFieldNames(),
+                                this.getCurrentPage().getColumnNames(),
                                 this.getCurrentPage()
                                     .getItems()
                                     .subList(startIndex, endIndex)

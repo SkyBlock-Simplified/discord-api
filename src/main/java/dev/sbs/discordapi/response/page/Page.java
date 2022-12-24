@@ -41,7 +41,7 @@ public class Page extends PageItem implements Paging {
     @Getter private final Optional<String> content;
     @Getter private final Optional<SelectMenu.Option> option;
     @Getter private final PageItem.Style itemStyle;
-    @Getter private final Optional<Triple<String, String, String>> fieldNames;
+    @Getter private final Optional<Triple<String, String, String>> columnNames;
     @Getter private final int itemsPerPage;
     @Getter private int currentItemPage = 1;
 
@@ -55,7 +55,7 @@ public class Page extends PageItem implements Paging {
         @NotNull Optional<String> content,
         @NotNull Optional<SelectMenu.Option> option,
         @NotNull PageItem.Style itemStyle,
-        @NotNull Optional<Triple<String, String, String>> fieldNames,
+        @NotNull Optional<Triple<String, String, String>> columnNames,
         int itemsPerPage) {
         super(identifier, option, Type.PAGE, true);
         this.pages = pages;
@@ -66,7 +66,7 @@ public class Page extends PageItem implements Paging {
         this.option = option;
         this.content = content;
         this.itemStyle = itemStyle;
-        this.fieldNames = fieldNames;
+        this.columnNames = columnNames;
         this.itemsPerPage = itemsPerPage;
 
         // Page Components
@@ -148,7 +148,7 @@ public class Page extends PageItem implements Paging {
 
         return new EqualsBuilder()
             .append(this.getItemStyle(), page.getItemStyle())
-            .append(this.getFieldNames(), page.getFieldNames())
+            .append(this.getColumnNames(), page.getColumnNames())
             .append(this.getItemsPerPage(), page.getItemsPerPage())
             .append(this.getCurrentItemPage(), page.getCurrentItemPage())
             .append(this.getIdentifier(), page.getIdentifier())
@@ -207,7 +207,7 @@ public class Page extends PageItem implements Paging {
             .withContent(page.getContent())
             .withOption(page.getOption())
             .withItemStyle(page.getItemStyle())
-            .withColumnNames(page.getFieldNames())
+            .withColumnNames(page.getColumnNames())
             .withItemsPerPage(page.getItemsPerPage());
     }
 
@@ -268,7 +268,7 @@ public class Page extends PageItem implements Paging {
             .append(this.getOption())
             .append(this.getItemStyle())
             .append(this.getItemsPerPage())
-            .append(this.getFieldNames())
+            .append(this.getColumnNames())
             .append(this.getCurrentItemPage())
             .build();
     }
@@ -301,7 +301,7 @@ public class Page extends PageItem implements Paging {
         private Optional<String> content = Optional.empty();
         private Optional<SelectMenu.Option> option = Optional.empty();
         private PageItem.Style itemStyle = PageItem.Style.FIELD;
-        private Optional<Triple<String, String, String>> fieldNames = Optional.empty();
+        private Optional<Triple<String, String, String>> columnNames = Optional.empty();
         private int itemsPerPage = 12;
 
         /**
@@ -548,7 +548,7 @@ public class Page extends PageItem implements Paging {
          * @param fieldNames The field names for page items.
          */
         public PageBuilder withColumnNames(@NotNull Optional<Triple<String, String, String>> fieldNames) {
-            this.fieldNames = fieldNames;
+            this.columnNames = fieldNames;
             return this;
         }
 
@@ -678,7 +678,7 @@ public class Page extends PageItem implements Paging {
                 this.content,
                 this.option,
                 this.itemStyle,
-                this.fieldNames,
+                this.columnNames,
                 this.itemsPerPage
             );
         }
