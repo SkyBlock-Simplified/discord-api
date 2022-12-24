@@ -8,7 +8,6 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.OptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
@@ -40,8 +39,7 @@ import java.util.stream.StreamSupport;
 public final class SelectMenu extends ActionComponent implements InteractableComponent<SelectMenuContext>, PreservableComponent {
 
     private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-    @Getter private final @NotNull UUID uniqueId;
-    @Getter private final @NotNull Optional<String> identifier;
+    @Getter private final @NotNull String identifier;
     @Getter private final boolean disabled;
     @Getter private final @NotNull Optional<String> placeholder;
     @Getter private final @NotNull Optional<Integer> minValue;
@@ -55,7 +53,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
 
     public static SelectMenuBuilder builder() {
-        return new SelectMenuBuilder(UUID.randomUUID());
+        return new SelectMenuBuilder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -69,11 +67,15 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         return new EqualsBuilder()
             .append(this.isDisabled(), that.isDisabled())
             .append(this.isPlaceholderUsingSelectedOption(), that.isPlaceholderUsingSelectedOption())
+            .append(this.isPreserved(), that.isPreserved())
+            .append(this.isDeferEdit(), that.isDeferEdit())
+            .append(this.getIdentifier(), that.getIdentifier())
             .append(this.getPlaceholder(), that.getPlaceholder())
             .append(this.getMinValue(), that.getMinValue())
             .append(this.getMaxValue(), that.getMaxValue())
-            .append(this.getPageType(), that.getPageType())
             .append(this.getOptions(), that.getOptions())
+            .append(this.getPageType(), that.getPageType())
+            .append(this.getSelected(), that.getSelected())
             .build();
     }
 
@@ -91,7 +93,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     }
 
     public static SelectMenuBuilder from(@NotNull SelectMenu selectMenu) {
-        return new SelectMenuBuilder(selectMenu.getUniqueId())
+        return new SelectMenuBuilder()
+            .withIdentifier(selectMenu.getIdentifier())
             .setDisabled(selectMenu.isDisabled())
             .withPlaceholder(selectMenu.getPlaceholder())
             .withMinValue(selectMenu.getMinValue())
@@ -104,7 +107,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @Override
     public discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
-                this.getUniqueId().toString(),
+                this.getIdentifier(),
                 this.getOptions().stream().map(Option::getD4jOption).collect(Concurrent.toList())
             )
             .withPlaceholder(this.getPlaceholder().orElse(""))
@@ -171,13 +174,17 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
+            .append(this.getIdentifier())
             .append(this.isDisabled())
             .append(this.getPlaceholder())
             .append(this.getMinValue())
             .append(this.getMaxValue())
-            .append(this.getPageType())
             .append(this.isPlaceholderUsingSelectedOption())
             .append(this.getOptions())
+            .append(this.isPreserved())
+            .append(this.isDeferEdit())
+            .append(this.getPageType())
+            .append(this.getSelected())
             .build();
     }
 
@@ -203,8 +210,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class SelectMenuBuilder implements Builder<SelectMenu> {
 
-        private final UUID uniqueId;
-        private Optional<String> identifier = Optional.empty();
+        private String identifier;
         private boolean disabled;
         private Optional<String> placeholder = Optional.empty();
         private boolean placeholderUsesSelectedOption;
@@ -223,7 +229,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          */
         public SelectMenuBuilder editOption(@NotNull Option option) {
             this.options.stream()
-                .filter(innerOption -> innerOption.getUniqueId().equals(option.getUniqueId()))
+                .filter(innerOption -> innerOption.getIdentifier().equals(option.getIdentifier()))
                 .findFirst()
                 .ifPresent(innerOption -> {
                     int index = this.options.indexOf(innerOption);
@@ -322,21 +328,13 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         }
 
         /**
-         * Sets the identifier of the {@link SelectMenu}.
+         * Overrides the default identifier of the {@link SelectMenu}.
          *
          * @param identifier The identifier to use.
+         * @param objects The objects used to format the identifier.
          */
-        public SelectMenuBuilder withIdentifier(@Nullable String identifier) {
-            return this.withIdentifier(Optional.ofNullable(identifier));
-        }
-
-        /**
-         * Sets the identifier of the {@link SelectMenu}.
-         *
-         * @param identifier The identifier to use.
-         */
-        public SelectMenuBuilder withIdentifier(@NotNull Optional<String> identifier) {
-            this.identifier = identifier;
+        public SelectMenuBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            this.identifier = FormatUtil.format(identifier, objects);
             return this;
         }
 
@@ -457,7 +455,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         @Override
         public SelectMenu build() {
             return new SelectMenu(
-                this.uniqueId,
                 this.identifier,
                 this.disabled,
                 this.placeholder,
@@ -479,7 +476,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
 
         public static final int MAX_ALLOWED = 25;
         private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-        @Getter private final @NotNull UUID uniqueId;
+        @Getter private final @NotNull String identifier;
         @Getter private final @NotNull String label;
         @Getter private final @NotNull String value;
         @Getter private final @NotNull Optional<String> description;
@@ -488,7 +485,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
 
         public static OptionBuilder builder() {
-            return new OptionBuilder(UUID.randomUUID());
+            return new OptionBuilder().withIdentifier(UUID.randomUUID().toString());
         }
 
         @Override
@@ -499,19 +496,19 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             Option option = (Option) o;
 
             return new EqualsBuilder()
-                .append(this.getUniqueId(), option.getUniqueId())
+                .append(this.isPlaceholderSelected(), option.isPlaceholderSelected())
+                .append(this.getIdentifier(), option.getIdentifier())
                 .append(this.getLabel(), option.getLabel())
                 .append(this.getValue(), option.getValue())
                 .append(this.getDescription(), option.getDescription())
                 .append(this.getEmoji(), option.getEmoji())
-                .append(this.isPlaceholderSelected(), option.isPlaceholderSelected())
                 .build();
         }
 
         @Override
         public int hashCode() {
             return new HashCodeBuilder()
-                .append(this.getUniqueId())
+                .append(this.getIdentifier())
                 .append(this.getLabel())
                 .append(this.getValue())
                 .append(this.getDescription())
@@ -536,7 +533,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         }
 
         public OptionBuilder mutate() {
-            return new OptionBuilder(this.getUniqueId())
+            return new OptionBuilder()
+                .withIdentifier(this.getIdentifier())
                 .withLabel(this.getLabel())
                 .withValue(this.getValue())
                 .withDescription(this.getDescription())
@@ -552,9 +550,9 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         public static final class OptionBuilder implements Builder<Option> {
 
-            private final UUID uniqueId;
-            private String label;
-            private String value;
+            private String identifier;
+            private Optional<String> label = Optional.empty();
+            private Optional<String> value = Optional.empty();
             private Optional<String> description = Optional.empty();
             private Optional<Emoji> emoji = Optional.empty();
             private boolean placeholderSelected;
@@ -612,9 +610,10 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * Sets the description of the {@link Option} shown under the label.
              *
              * @param description The description of the option.
+             * @param objects The objects used to format the description.
              */
-            public OptionBuilder withDescription(@Nullable String description) {
-                return this.withDescription(Optional.ofNullable(description));
+            public OptionBuilder withDescription(@Nullable String description, @NotNull Object... objects) {
+                return this.withDescription(FormatUtil.formatNullable(description, objects));
             }
 
             /**
@@ -647,12 +646,23 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             }
 
             /**
+             * Overrides the default identifier of the {@link SelectMenu}.
+             *
+             * @param identifier The identifier to use.
+             * @param objects The objects used to format the identifier.
+             */
+            public OptionBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+                this.identifier = FormatUtil.format(identifier, objects);
+                return this;
+            }
+
+            /**
              * Sets the label text of the {@link Option}.
              *
              * @param label The label of the option.
              */
             public OptionBuilder withLabel(@NotNull String label, @NotNull Object... objects) {
-                this.label = FormatUtil.format(label, objects);
+                this.label = Optional.of(FormatUtil.format(label, objects));
                 return this;
             }
 
@@ -661,8 +671,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param value The option value.
              */
-            public OptionBuilder withValue(@NotNull String value) {
-                this.value = value;
+            public OptionBuilder withValue(@NotNull String value, @NotNull Object... objects) {
+                this.value = Optional.of(FormatUtil.format(value, objects));
                 return this;
             }
 
@@ -673,16 +683,10 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              */
             @Override
             public Option build() {
-                if (StringUtil.isEmpty(this.label))
-                    throw SimplifiedException.of(DiscordException.class).withMessage("Option label cannot be NULL!").build();
-
-                if (StringUtil.isEmpty(this.value))
-                    throw SimplifiedException.of(DiscordException.class).withMessage("Option value cannot be NULL!").build();
-
                 return new Option(
-                    this.uniqueId,
-                    this.label,
-                    this.value,
+                    this.identifier,
+                    this.label.orElse(this.identifier),
+                    this.value.orElse(this.identifier),
                     this.description,
                     this.emoji,
                     this.placeholderSelected,

@@ -6,8 +6,6 @@ import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
-
 public abstract class InteractionComponent extends Component implements IdentifiableComponent {
 
     @Override
@@ -16,15 +14,15 @@ public abstract class InteractionComponent extends Component implements Identifi
         if (!(o instanceof InteractionComponent that)) return false;
 
         return new EqualsBuilder()
-            .append(this.getUniqueId(), that.getUniqueId())
+            .append(this.getIdentifier(), that.getIdentifier())
             .build();
     }
 
-    public abstract @NotNull UUID getUniqueId();
+    public abstract @NotNull String getIdentifier();
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(this.getUniqueId()).build();
+        return new HashCodeBuilder().append(this.getIdentifier()).build();
     }
 
 }

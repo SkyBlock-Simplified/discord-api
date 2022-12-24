@@ -11,9 +11,7 @@ import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.response.component.type.SearchableComponent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.object.component.MessageComponent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
@@ -35,7 +33,7 @@ import java.util.function.Function;
 public final class Modal extends InteractionComponent implements InteractableComponent<ModalContext> {
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    @Getter private final @NotNull UUID uniqueId;
+    @Getter private final @NotNull String identifier;
     @Getter private final @NotNull Optional<String> title;
     @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
     @Getter private final boolean isPaging = false;
@@ -67,12 +65,12 @@ public final class Modal extends InteractionComponent implements InteractableCom
      * @param identifier The identifier to search for.
      * @return The matching component, if it exists.
      */
-    public <A extends ActionComponent & SearchableComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, component -> component.getIdentifier().orElse(null), identifier);
+    public <A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
+        return this.findComponent(tClass, InteractionComponent::getIdentifier, identifier);
     }
 
     public static ModalBuilder from(@NotNull Modal modal) {
-        return new ModalBuilder(modal.getUniqueId())
+        return new ModalBuilder(modal.getIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
             .onInteract(modal.getInteraction());
@@ -80,7 +78,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
 
     public InteractionPresentModalSpec getD4jPresentSpec() {
         return InteractionPresentModalSpec.builder()
-            .customId(this.getUniqueId().toString())
+            .customId(this.getIdentifier())
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
             .components(this.getComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
@@ -97,7 +95,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
     }
 
     public static ModalBuilder builder() {
-        return new ModalBuilder(UUID.randomUUID());
+        return new ModalBuilder(UUID.randomUUID().toString());
     }
 
     public ModalBuilder mutate() {
@@ -107,7 +105,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class ModalBuilder implements Builder<Modal> {
 
-        private final UUID uniqueId;
+        private final String identifier;
         private Optional<String> title = Optional.empty();
         private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
@@ -151,7 +149,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
                 .map(actionComponent.getClass()::cast)
-                .filter(innerComponent -> innerComponent.getUniqueId().equals(actionComponent.getUniqueId()))
+                .filter(innerComponent -> innerComponent.getIdentifier().equals(actionComponent.getIdentifier()))
                 .findFirst()
                 .ifPresent(innerComponent -> layoutComponent.getComponents().set(
                     layoutComponent.getComponents().indexOf(innerComponent),
@@ -208,12 +206,10 @@ public final class Modal extends InteractionComponent implements InteractableCom
                 .map(discord4j.core.object.component.LayoutComponent::getChildren)
                 .flatMap(List::stream)
                 .forEach(d4jComponent -> {
-                    MessageComponent.Type type = d4jComponent.getType();
-
                     switch (d4jComponent.getType()) {
                         case TEXT_INPUT -> this.findComponent(
                             TextInput.class,
-                            textInput -> textInput.getUniqueId().toString(),
+                            TextInput::getIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(textInput -> this.editComponent(
                             textInput.mutate()
@@ -222,7 +218,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
                         ));
                         case SELECT_MENU -> this.findComponent(
                             SelectMenu.class,
-                            selectMenu -> selectMenu.getUniqueId().toString(),
+                            SelectMenu::getIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(selectMenu -> selectMenu.updateSelected(
                             d4jComponent.getData()
@@ -278,7 +274,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
         @Override
         public Modal build() {
             return new Modal(
-                this.uniqueId,
+                this.identifier,
                 this.title,
                 this.components,
                 this.interaction

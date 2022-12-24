@@ -3,9 +3,9 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.type.SearchableComponent;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
@@ -21,10 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput extends ActionComponent implements SearchableComponent {
+public final class TextInput extends ActionComponent {
 
-    @Getter private final @NotNull UUID uniqueId;
-    @Getter private final @NotNull Optional<String> identifier;
+    @Getter private final @NotNull String identifier;
     @Getter private final @NotNull Style style;
     @Getter private final @NotNull Optional<String> label;
     @Getter private final @NotNull Optional<String> value;
@@ -34,7 +33,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
     @Getter private final boolean required;
 
     public static TextInputBuilder builder() {
-        return new TextInputBuilder(UUID.randomUUID());
+        return new TextInputBuilder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -49,7 +48,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
             .append(this.getMinLength(), textInput.getMinLength())
             .append(this.getMaxLength(), textInput.getMaxLength())
             .append(this.isRequired(), textInput.isRequired())
-            .append(this.getUniqueId(), textInput.getUniqueId())
+            .append(this.getIdentifier(), textInput.getIdentifier())
             .append(this.getStyle(), textInput.getStyle())
             .append(this.getLabel(), textInput.getLabel())
             .append(this.getValue(), textInput.getValue())
@@ -58,7 +57,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
     }
 
     public static TextInputBuilder from(@NotNull TextInput textInput) {
-        return new TextInputBuilder(textInput.getUniqueId())
+        return new TextInputBuilder()
             .withIdentifier(textInput.getIdentifier())
             .withStyle(textInput.getStyle())
             .withLabel(textInput.getLabel())
@@ -75,7 +74,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
             ComponentData.builder()
                 .type(MessageComponent.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
-                .customId(this.getUniqueId().toString())
+                .customId(this.getIdentifier())
                 .label(this.getLabel().map(Possible::of).orElse(Possible.absent()))
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
@@ -90,7 +89,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
-            .append(this.getUniqueId())
+            .append(this.getIdentifier())
             .append(this.getStyle())
             .append(this.getLabel())
             .append(this.getValue())
@@ -108,8 +107,7 @@ public final class TextInput extends ActionComponent implements SearchableCompon
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class TextInputBuilder implements Builder<TextInput> {
 
-        private final UUID uniqueId;
-        private Optional<String> identifier = Optional.empty();
+        private String identifier;
         private Style style = Style.UNKNOWN;
         private Optional<String> label = Optional.empty();
         private Optional<String> value = Optional.empty();
@@ -136,31 +134,25 @@ public final class TextInput extends ActionComponent implements SearchableCompon
         }
 
         /**
-         * Sets the identifier of the {@link TextInput}.
+         * Overrides the default identifier of the {@link TextInput}.
          *
          * @param identifier The identifier to use.
+         * @param objects Objects used to format the identifier.
          */
-        public TextInputBuilder withIdentifier(@Nullable String identifier) {
-            return this.withIdentifier(Optional.ofNullable(identifier));
-        }
-
-        /**
-         * Sets the identifier of the {@link TextInput}.
-         *
-         * @param identifier The identifier to use.
-         */
-        public TextInputBuilder withIdentifier(@NotNull Optional<String> identifier) {
-            this.identifier = identifier;
+        public TextInputBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            this.identifier = FormatUtil.format(identifier, objects);
             return this;
         }
 
         /**
-         * Sets the label of the {@link TextInput}.
+         * Sets the label text of the {@link TextInput}.
          *
-         * @param label The label of the textinput.
+         * @param label The label of the field item.
+         * @param objects The objects used to format the label.
          */
-        public TextInputBuilder withLabel(@Nullable String label) {
-            return this.withLabel(Optional.ofNullable(label));
+        public TextInputBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
+            this.withLabel(FormatUtil.formatNullable(label, objects));
+            return this;
         }
 
         /**
@@ -197,9 +189,10 @@ public final class TextInput extends ActionComponent implements SearchableCompon
          * Sets the placeholder text of the {@link TextInput}.
          *
          * @param placeholder The placeholder text of the textinput.
+         * @param objects The objects used to format the placeholder.
          */
-        public TextInputBuilder withPlaceholder(@Nullable String placeholder) {
-            return this.withPlaceholder(Optional.ofNullable(placeholder));
+        public TextInputBuilder withPlaceholder(@Nullable String placeholder, @NotNull Object... objects) {
+            return this.withPlaceholder(FormatUtil.formatNullable(placeholder, objects));
         }
 
         /**
@@ -226,9 +219,10 @@ public final class TextInput extends ActionComponent implements SearchableCompon
          * Sets the value of the {@link TextInput}.
          *
          * @param value The label of the textinput.
+         * @param objects The objects used to format the value.
          */
-        public TextInputBuilder withValue(@Nullable String value) {
-            return this.withValue(Optional.ofNullable(value));
+        public TextInputBuilder withValue(@Nullable String value, @NotNull Object... objects) {
+            return this.withValue(FormatUtil.formatNullable(value, objects));
         }
 
         /**
@@ -249,7 +243,6 @@ public final class TextInput extends ActionComponent implements SearchableCompon
         @Override
         public TextInput build() {
             return new TextInput(
-                this.uniqueId,
                 this.identifier,
                 this.style,
                 this.label,

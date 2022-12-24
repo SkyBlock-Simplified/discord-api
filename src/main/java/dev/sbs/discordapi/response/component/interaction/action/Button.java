@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.button.ButtonContext;
@@ -29,7 +30,7 @@ import java.util.function.Function;
 public final class Button extends ActionComponent implements InteractableComponent<ButtonContext>, PreservableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    @Getter private final @NotNull UUID uniqueId;
+    @Getter private final @NotNull String identifier;
     @Getter private final @NotNull Style style;
     @Getter private final boolean disabled;
     @Getter private final @NotNull Optional<Emoji> emoji;
@@ -46,7 +47,7 @@ public final class Button extends ActionComponent implements InteractableCompone
     }
 
     public static ButtonBuilder builder() {
-        return new ButtonBuilder(UUID.randomUUID());
+        return new ButtonBuilder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -58,14 +59,29 @@ public final class Button extends ActionComponent implements InteractableCompone
         Button button = (Button) o;
 
         return new EqualsBuilder()
-            .append(this.isDisabled(), button.isDisabled())
-            .append(this.isPreserved(), button.isPreserved())
+            .append(this.getIdentifier(), button.getIdentifier())
             .append(this.getStyle(), button.getStyle())
+            .append(this.isDisabled(), button.isDisabled())
             .append(this.getEmoji(), button.getEmoji())
             .append(this.getLabel(), button.getLabel())
             .append(this.getUrl(), button.getUrl())
+            .append(this.isPreserved(), button.isPreserved())
+            .append(this.isDeferEdit(), button.isDeferEdit())
             .append(this.getPageType(), button.getPageType())
             .build();
+    }
+
+    public static ButtonBuilder from(@NotNull Button button) {
+        return new ButtonBuilder()
+            .withIdentifier(button.getIdentifier())
+            .withStyle(button.getStyle())
+            .setDisabled(button.isDisabled())
+            .withEmoji(button.getEmoji())
+            .withLabel(button.getLabel())
+            .withUrl(button.getUrl())
+            .isPreserved(button.isPreserved())
+            .withDeferEdit(button.isDeferEdit())
+            .withPageType(button.getPageType());
     }
 
     @Override
@@ -74,11 +90,11 @@ public final class Button extends ActionComponent implements InteractableCompone
         String label = this.getLabel().orElse(null);
 
         return (switch (this.getStyle()) {
-            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getUniqueId().toString(), d4jReaction, label);
-            case SUCCESS -> discord4j.core.object.component.Button.success(this.getUniqueId().toString(), d4jReaction, label);
-            case DANGER -> discord4j.core.object.component.Button.danger(this.getUniqueId().toString(), d4jReaction, label);
+            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getIdentifier(), d4jReaction, label);
+            case SUCCESS -> discord4j.core.object.component.Button.success(this.getIdentifier(), d4jReaction, label);
+            case DANGER -> discord4j.core.object.component.Button.danger(this.getIdentifier(), d4jReaction, label);
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
-            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getUniqueId().toString(), d4jReaction, label);
+            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
         }).disabled(this.isDisabled());
     }
 
@@ -102,21 +118,13 @@ public final class Button extends ActionComponent implements InteractableCompone
     }
 
     public ButtonBuilder mutate() {
-        return new ButtonBuilder(this.getUniqueId())
-            .withStyle(this.getStyle())
-            .setDisabled(this.isDisabled())
-            .isPreserved(this.isPreserved())
-            .withPageType(this.getPageType())
-            .withEmoji(this.getEmoji())
-            .withLabel(this.getLabel())
-            .withUrl(this.getUrl())
-            .onInteract(this.buttonInteraction);
+        return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class ButtonBuilder implements Builder<Button> {
 
-        private final UUID uniqueId;
+        private String identifier;
         private Style style = Style.UNKNOWN;
         private boolean disabled;
         private boolean preserved;
@@ -214,6 +222,17 @@ public final class Button extends ActionComponent implements InteractableCompone
         }
 
         /**
+         * Overrides the default identifier of the {@link Button}.
+         *
+         * @param identifier The identifier to use.
+         * @param objects The objects used to format the identifier.
+         */
+        public ButtonBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            this.identifier = FormatUtil.format(identifier, objects);
+            return this;
+        }
+
+        /**
          * Sets the label text of the {@link Button}.
          *
          * @param label The label of the button.
@@ -298,7 +317,7 @@ public final class Button extends ActionComponent implements InteractableCompone
         @Override
         public Button build() {
             return new Button(
-                this.uniqueId,
+                this.identifier,
                 this.style,
                 this.disabled,
                 this.emoji,
