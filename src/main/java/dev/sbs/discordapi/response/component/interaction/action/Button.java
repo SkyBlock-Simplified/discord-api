@@ -236,9 +236,10 @@ public final class Button extends ActionComponent implements InteractableCompone
          * Sets the label text of the {@link Button}.
          *
          * @param label The label of the button.
+         * @param objects The objects used to format the url.
          */
-        public ButtonBuilder withLabel(@Nullable String label) {
-            return this.withLabel(Optional.ofNullable(label));
+        public ButtonBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
+            return this.withLabel(FormatUtil.formatNullable(label, objects));
         }
 
         /**
@@ -294,9 +295,10 @@ public final class Button extends ActionComponent implements InteractableCompone
          * Sets the {@link Button} url for a given LINK {@link Style}.
          *
          * @param url The url to open.
+         * @param objects The objects used to format the url.
          */
-        public ButtonBuilder withUrl(@Nullable String url) {
-            return this.withUrl(Optional.ofNullable(url));
+        public ButtonBuilder withUrl(@Nullable String url, @NotNull Object... objects) {
+            return this.withUrl(FormatUtil.formatNullable(url, objects));
         }
 
         /**
@@ -353,53 +355,37 @@ public final class Button extends ActionComponent implements InteractableCompone
 
     }
 
-    @RequiredArgsConstructor
+    @AllArgsConstructor
     public enum PageType {
 
         NONE("", false),
-        FIRST("First", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
-        PREVIOUS("Previous", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
-        INDEX("Index", true, buttonBuilder -> buttonBuilder.setDisabled(true)),
-        NEXT("Next", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", true, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", false, buttonBuilder -> buttonBuilder.setDisabled(true), DiscordHelper.getEmoji("ARROW_LEFT"));
+        FIRST("First", true, DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
+        PREVIOUS("Previous", true, DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
+        INDEX("Index", true),
+        NEXT("Next", true, DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", true, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
+        BACK("Back", false, DiscordHelper.getEmoji("ARROW_LEFT"));
 
         @Getter private final @NotNull String label;
-        @Getter private final @NotNull Optional<Emoji> emoji;
         @Getter private final boolean forItemList;
-        @Getter private final Function<ButtonBuilder, ButtonBuilder> defaultBuilder;
+        @Getter private final @NotNull Optional<Emoji> emoji;
 
         PageType(@NotNull String label, boolean forItemList) {
-            this(label, forItemList, __ -> __);
-        }
-
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder) {
-            this(label, forItemList, defaultBuilder, Optional.empty());
-        }
-
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder, @Nullable Emoji emoji) {
-            this(label, forItemList, defaultBuilder, Optional.ofNullable(emoji));
-        }
-
-        PageType(@NotNull String label, boolean forItemList, Function<ButtonBuilder, ButtonBuilder> defaultBuilder, @NotNull Optional<Emoji> emoji) {
-            this.label = label;
-            this.emoji = emoji;
-            this.forItemList = forItemList;
-            this.defaultBuilder = defaultBuilder;
+            this(label, forItemList, Optional.empty());
         }
 
         public Button build() {
             return this.build(Optional.empty());
         }
 
-        public Button build(Optional<String> label) {
-            return this.getDefaultBuilder().apply(
-                Button.builder()
-                    .withStyle(Button.Style.SECONDARY)
-                    .withEmoji(this.getEmoji())
-                    .withLabel(label.orElse(this.getLabel()))
-                    .withPageType(this)
-            ).build();
+        public Button build(@NotNull Optional<String> label) {
+            return Button.builder()
+                .withStyle(Button.Style.SECONDARY)
+                .withEmoji(this.getEmoji())
+                .withLabel(label.orElse(this.getLabel()))
+                .withPageType(this)
+                .setDisabled(true)
+                .build();
         }
 
     }
