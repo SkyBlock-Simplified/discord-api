@@ -1,6 +1,6 @@
 # SkyBlock Simplified Bot
 
-[![Support Server Invite](https://img.shields.io/discord/652148034448261150.svg?color=7289da&label=SkyBlock%20Simplified&logo=discord)](https://discord.gg/sbs)
+[![Support Server Invite](https://img.shields.io/discord/652148034448261150.svg?color=7289da&label=SkyBlock%20Simplified&logo=discord&style=flat-square)](https://discord.gg/sbs)
 
 SkyBlock Simplified is a fast and powerful Hypixel SkyBlock Discord Bot that offers a plethora of features for users and
 servers alike.
