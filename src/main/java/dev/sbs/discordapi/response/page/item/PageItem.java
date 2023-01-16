@@ -27,8 +27,6 @@ public abstract class PageItem {
     @Getter private final @NotNull Type type;
     @Getter private final boolean editable;
 
-    public abstract String getFieldValue(@NotNull Style itemStyle, @NotNull Column column);
-
     @RequiredArgsConstructor
     public enum Column {
 
@@ -197,10 +195,13 @@ public abstract class PageItem {
         private ConcurrentList<Field> getPageItems(@NotNull Triple<String, String, String> columnNames, @NotNull ConcurrentList<PageItem> pageItems) {
             return switch (this) {
                 case FIELD, FIELD_INLINE -> pageItems.stream()
-                    .map(pageItem -> Field.builder()
-                        .withEmoji(pageItem.getOption().flatMap(SelectMenu.Option::getEmoji))
-                        .withName(pageItem.getOption().map(SelectMenu.Option::getLabel))
-                        .withValue(pageItem.getFieldValue(this, PageItem.Column.ONE))
+                    .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                    .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                    .map(FieldItem.class::cast)
+                    .map(fieldItem -> Field.builder()
+                        .withEmoji(fieldItem.getOption().flatMap(SelectMenu.Option::getEmoji))
+                        .withName(fieldItem.getOption().map(SelectMenu.Option::getLabel))
+                        .withValue(fieldItem.getFieldValue(this, PageItem.Column.ONE))
                         .isInline(this.isInline())
                         .build()
                     )
@@ -210,6 +211,9 @@ public abstract class PageItem {
                         .withName(columnNames.getLeft())
                         .withValue(
                             pageItems.stream()
+                                .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                                .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                                .map(FieldItem.class::cast)
                                 .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.ONE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
@@ -220,6 +224,9 @@ public abstract class PageItem {
                         .withName(columnNames.getMiddle())
                         .withValue(
                             pageItems.stream()
+                                .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                                .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                                .map(FieldItem.class::cast)
                                 .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.TWO))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
@@ -230,6 +237,9 @@ public abstract class PageItem {
                         .withName(columnNames.getRight())
                         .withValue(
                             pageItems.stream()
+                                .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                                .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                                .map(FieldItem.class::cast)
                                 .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.THREE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
@@ -242,6 +252,9 @@ public abstract class PageItem {
                         .withName(columnNames.getLeft())
                         .withValue(
                             pageItems.stream()
+                                .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                                .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                                .map(FieldItem.class::cast)
                                 .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.ONE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
@@ -250,6 +263,9 @@ public abstract class PageItem {
                         .build()
                 );
                 case TABLE, TABLE_DESCRIPTION -> pageItems.stream()
+                    .filter(pageItem -> pageItem.getType() == Type.FIELD)
+                    .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
+                    .map(FieldItem.class::cast)
                     .map(pageItem -> Concurrent.newList(
                         Field.builder()
                             .withEmoji(pageItem.getOption().flatMap(SelectMenu.Option::getEmoji))
@@ -278,18 +294,19 @@ public abstract class PageItem {
     @RequiredArgsConstructor
     public enum Type {
 
-        UNKNOWN(-1),
-        PAGE(1),
-        AUTHOR(2),
-        TITLE(3),
-        DESCRIPTION(4),
-        THUMBNAIL_URL(5),
-        IMAGE_URL(6),
-        FIELD(7),
-        FOOTER(8),
-        TIMESTAMP(9);
+        UNKNOWN(-1, true),
+        PAGE(1, true),
+        AUTHOR(2, false),
+        TITLE(3, false),
+        DESCRIPTION(4, false),
+        THUMBNAIL_URL(5, false),
+        IMAGE_URL(6, false),
+        FIELD(7, true),
+        FOOTER(8, false);
 
         @Getter private final int value;
+
+        @Getter private final boolean fieldRender;
 
         public static Type of(int value) {
             return Arrays.stream(values())

@@ -11,6 +11,7 @@ import dev.sbs.api.util.helper.StreamUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,16 +24,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public class FieldItem extends PageItem {
+public class FieldItem extends PageItem implements SingletonFieldItem {
 
-    @Getter private final @NotNull ConcurrentMap<Column, ConcurrentList<String>> data;
+    @Getter private final ConcurrentMap<PageItem.Column, ConcurrentList<String>> data;
 
-    private FieldItem(
-        @NotNull SelectMenu.Option option,
-        boolean editable,
-        @NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
+    private FieldItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
         super(option.getIdentifier(), Optional.of(option), Type.FIELD, editable);
-        this.data = Concurrent.newUnmodifiableMap(data);
+        this.data = data;
     }
 
     public static Builder builder() {
@@ -67,6 +65,14 @@ public class FieldItem extends PageItem {
     }
 
     @Override
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse("**null**"))
+            .isInline()
+            .build();
+    }
+
     public String getFieldValue(@NotNull PageItem.Style itemStyle, @NotNull Column column) {
         return switch (itemStyle) {
             case FIELD, FIELD_INLINE -> StringUtil.join(this.getAllData(), "\n");

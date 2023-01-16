@@ -7,6 +7,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-public final class ModelItem<T extends Model> extends SingletonItem<T> {
+public final class ModelItem<T extends Model> extends SingletonItem<T> implements SingletonFieldItem {
 
     @Getter private final @NotNull Class<T> modelClass;
     @Getter private final @NotNull ConcurrentList<T> options;
@@ -48,8 +49,16 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> {
     }
 
     @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(
+                this.getValue()
+                    .map(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
+                    .orElse(this.getOption().map(SelectMenu.Option::getLabel))
+            )
+            .withValue(this.getValue().map(model -> this.getValueFunction().apply(model)).orElse("**null**"))
+            .isInline()
+            .build();
     }
 
     public Builder<T> mutate() {

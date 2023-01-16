@@ -1,8 +1,10 @@
 package dev.sbs.discordapi.response.page.item;
 
+import dev.sbs.api.util.date.RealDate;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.Field;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -12,13 +14,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class TimestampItem extends SingletonItem<Instant> {
+public final class TimestampItem extends SingletonItem<Instant> implements SingletonFieldItem {
 
-    private TimestampItem(
-        @NotNull SelectMenu.Option option,
-        boolean editable,
-        @NotNull Optional<Instant> value) {
-        super(option, Type.TIMESTAMP, editable, value);
+    private TimestampItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<Instant> value) {
+        super(option, Type.FIELD, editable, value);
     }
 
     public static Builder builder() {
@@ -26,8 +25,12 @@ public final class TimestampItem extends SingletonItem<Instant> {
     }
 
     @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withValue(this.getValue().map(RealDate::new).map(RealDate::toString))
+            .isInline()
+            .build();
     }
 
     public Builder mutate() {

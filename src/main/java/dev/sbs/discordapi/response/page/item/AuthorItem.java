@@ -34,11 +34,6 @@ public final class AuthorItem extends PageItem {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
-    }
-
     public Builder mutate() {
         return new Builder()
             .withName(this.getName())

@@ -5,6 +5,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.Field;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,31 +16,28 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
+public final class NumberItem<T extends Number> extends SingletonItem<T> implements SingletonFieldItem {
 
     @Getter private final @NotNull Class<T> numberClass;
     @Getter private final @NotNull ConcurrentList<T> options;
 
-    private NumberMenuItem(
-        @NotNull SelectMenu.Option option,
-        boolean editable,
-        @NotNull Optional<T> value,
-        @NotNull Class<T> numberClass,
-        @NotNull ConcurrentList<T> options
-    ) {
+    private NumberItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<T> value, @NotNull Class<T> numberClass, @NotNull ConcurrentList<T> options) {
         super(option, Type.FIELD, editable, value);
         this.numberClass = numberClass;
         this.options = options;
     }
 
     public static <T extends Number> Builder<T> builder(@NotNull Class<T> numberClass) {
-        return new Builder<>(numberClass)
-            .withIdentifier(UUID.randomUUID().toString());
+        return new Builder<>(numberClass).withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withValue(this.getValue().map(value -> this.getNumberClass().cast(value)).map(String::valueOf))
+            .isInline()
+            .build();
     }
 
     public Builder<T> mutate() {
@@ -51,7 +49,7 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T extends Number> extends PageItemBuilder<NumberMenuItem<T>> {
+    public static class Builder<T extends Number> extends PageItemBuilder<NumberItem<T>> {
 
         private final Class<T> modelClass;
         private final ConcurrentList<T> options = Concurrent.newList();
@@ -108,7 +106,7 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
         }
 
         /**
-         * The options available for selection {@link NumberMenuItem}.
+         * The options available for selection {@link NumberItem}.
          *
          * @param options The options available for selection.
          */
@@ -117,7 +115,7 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
         }
 
         /**
-         * The options available for selection {@link NumberMenuItem}.
+         * The options available for selection {@link NumberItem}.
          *
          * @param options The options available for selection.
          */
@@ -128,7 +126,7 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
         }
 
         /**
-         * Sets the selected value of the {@link NumberMenuItem}.
+         * Sets the selected value of the {@link NumberItem}.
          *
          * @param selected The selected value of the menu item.
          */
@@ -137,7 +135,7 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
         }
 
         /**
-         * Sets the selected value of the {@link NumberMenuItem}.
+         * Sets the selected value of the {@link NumberItem}.
          *
          * @param selected The selected value of the menu item.
          */
@@ -147,8 +145,8 @@ public final class NumberMenuItem<T extends Number> extends SingletonItem<T> {
         }
 
         @Override
-        public NumberMenuItem<T> build() {
-            return new NumberMenuItem<>(
+        public NumberItem<T> build() {
+            return new NumberItem<>(
                 super.optionBuilder.build(),
                 super.editable,
                 this.value,

@@ -24,11 +24,6 @@ public final class ImageUrlItem extends SingletonItem<String> {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
-    }
-
     public Builder mutate() {
         return new Builder().withValue(this.getValue())
             .withOption(this.getOption().orElseThrow());

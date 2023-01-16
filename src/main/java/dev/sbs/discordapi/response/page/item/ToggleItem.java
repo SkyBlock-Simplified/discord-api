@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.page.item;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.Field;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class ToggleItem extends SingletonItem<Boolean> {
+public final class ToggleItem extends SingletonItem<Boolean> implements SingletonFieldItem {
 
     private ToggleItem(@NotNull SelectMenu.Option option, boolean editable, Boolean value) {
         super(option, Type.FIELD, editable, Optional.of(value));
@@ -22,13 +23,17 @@ public final class ToggleItem extends SingletonItem<Boolean> {
     }
 
     @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withValue(this.getValue().map(String::valueOf).orElse("**null**"))
+            .isInline()
+            .build();
     }
 
     public Builder mutate() {
         return new Builder()
-            .isEnabled(this.getValue().orElse(false))
+            .setEnabled(this.getValue().orElse(false))
             .withOption(this.getOption().orElseThrow())
             .isEditable(this.isEditable());
     }
@@ -38,11 +43,20 @@ public final class ToggleItem extends SingletonItem<Boolean> {
 
         private Boolean value;
 
+        public Builder isEditable() {
+            return this.isEditable(true);
+        }
+
+        public Builder isEditable(boolean value) {
+            super.editable = value;
+            return this;
+        }
+
         /**
          * Disables the value of the {@link ToggleItem}.
          */
-        public Builder isDisabled() {
-            return this.isDisabled(true);
+        public Builder setDisabled() {
+            return this.setDisabled(true);
         }
 
         /**
@@ -50,7 +64,7 @@ public final class ToggleItem extends SingletonItem<Boolean> {
          *
          * @param value The value of the menu item.
          */
-        public Builder isDisabled(boolean value) {
+        public Builder setDisabled(boolean value) {
             this.value = !value;
             return this;
         }
@@ -58,8 +72,8 @@ public final class ToggleItem extends SingletonItem<Boolean> {
         /**
          * Enables the value of the {@link ToggleItem}.
          */
-        public Builder isEnabled() {
-            return this.isEnabled(true);
+        public Builder setEnabled() {
+            return this.setEnabled(true);
         }
 
         /**
@@ -67,17 +81,8 @@ public final class ToggleItem extends SingletonItem<Boolean> {
          *
          * @param value The value of the menu item.
          */
-        public Builder isEnabled(boolean value) {
+        public Builder setEnabled(boolean value) {
             this.value = value;
-            return this;
-        }
-
-        public Builder isEditable() {
-            return this.isEditable(true);
-        }
-
-        public Builder isEditable(boolean value) {
-            super.editable = value;
             return this;
         }
 
