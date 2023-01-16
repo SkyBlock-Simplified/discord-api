@@ -17,7 +17,9 @@ import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.item.PageItem;
+import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class Page extends PageItem implements Paging {
+public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
     @Getter private final ConcurrentList<Page> pages;
@@ -98,7 +100,7 @@ public class Page extends PageItem implements Paging {
                     .collect(Concurrent.toList())
             ));
 
-            // Item Selector
+            // Item Editor
             /*pageComponents.add(ActionRow.of(
                 SelectMenu.builder()
                     .isPageSelector(true)
@@ -211,14 +213,17 @@ public class Page extends PageItem implements Paging {
             .withItemsPerPage(page.getItemsPerPage());
     }
 
-    @Override
-    public String getFieldValue(@NotNull Style itemStyle, @NotNull Column column) {
-        return null; // TODO: NOT IMPLEMENTED
-    }
-
-    // Item Paging
     public final Optional<PageItem> getItem(int index) {
         return this.getCurrentItemPage() < this.getPages().size() ? Optional.of(this.getItems().get(index)) : Optional.empty();
+    }
+
+    @Override
+    public Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withValue("Goto page.")
+            .isInline()
+            .build();
     }
 
     public final int getTotalItemPages() {
