@@ -35,7 +35,12 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
     public Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().map(SelectMenu.Option::getLabel))
-            .withValue(this.getValue().map(value -> this.getNumberClass().cast(value)).map(String::valueOf))
+            .withValue(
+                this.getValue()
+                    .map(value -> this.getNumberClass().cast(value))
+                    .map(T::toString)
+                    .orElse(getNullEmoji().asFormat())
+            )
             .isInline()
             .build();
     }

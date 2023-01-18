@@ -56,7 +56,11 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
                     .map(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
                     .orElse(this.getOption().map(SelectMenu.Option::getLabel))
             )
-            .withValue(this.getValue().map(model -> this.getValueFunction().apply(model)).orElse("**null**"))
+            .withValue(
+                this.getValue()
+                    .map(this.getValueFunction())
+                    .orElse(getNullEmoji().asFormat())
+            )
             .isInline()
             .build();
     }

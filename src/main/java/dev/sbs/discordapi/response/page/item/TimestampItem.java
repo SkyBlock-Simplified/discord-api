@@ -28,7 +28,12 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
     public Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().map(SelectMenu.Option::getLabel))
-            .withValue(this.getValue().map(RealDate::new).map(RealDate::toString))
+            .withValue(
+                this.getValue()
+                    .map(RealDate::new)
+                    .map(RealDate::toString)
+                    .orElse(getNullEmoji().asFormat())
+            )
             .isInline()
             .build();
     }

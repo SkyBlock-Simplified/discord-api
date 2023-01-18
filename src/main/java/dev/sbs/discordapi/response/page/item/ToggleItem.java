@@ -26,7 +26,11 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
     public Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().map(SelectMenu.Option::getLabel))
-            .withValue(this.getValue().map(String::valueOf).orElse("**null**"))
+            .withValue(
+                this.getValue()
+                    .map(String::valueOf)
+                    .orElse(getNullEmoji().asFormat())
+            )
             .isInline()
             .build();
     }

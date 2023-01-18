@@ -1,6 +1,10 @@
 package dev.sbs.discordapi.response.page.item;
 
+import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.util.builder.EqualsBuilder;
+import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.data.tuple.Triple;
@@ -22,10 +26,39 @@ import java.util.Optional;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class PageItem {
 
+    @Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel .class)
+        .findFirst(EmojiModel::getKey, "TEXT_NULL")
+        .flatMap(Emoji::of)
+        .orElseThrow();
     @Getter private final @NotNull String identifier;
     @Getter private final @NotNull Optional<SelectMenu.Option> option;
     @Getter private final @NotNull Type type;
     @Getter private final boolean editable;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PageItem pageItem = (PageItem) o;
+
+        return new EqualsBuilder()
+            .append(this.isEditable(), pageItem.isEditable())
+            .append(this.getIdentifier(), pageItem.getIdentifier())
+            .append(this.getOption(), pageItem.getOption())
+            .append(this.getType(), pageItem.getType())
+            .build();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getIdentifier())
+            .append(this.getOption())
+            .append(this.getType())
+            .append(this.isEditable())
+            .build();
+    }
 
     @RequiredArgsConstructor
     public enum Column {

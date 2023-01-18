@@ -68,7 +68,7 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
     public Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().map(SelectMenu.Option::getLabel))
-            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse("**null**"))
+            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse(getNullEmoji().asFormat()))
             .isInline()
             .build();
     }
