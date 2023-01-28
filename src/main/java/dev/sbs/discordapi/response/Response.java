@@ -21,6 +21,7 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
+import dev.sbs.discordapi.response.page.item.PageItem;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -216,6 +217,30 @@ public class Response implements Paging {
 
             // Current Page - Components
             components.addAll(this.getCurrentPage().getComponents());
+        }
+
+        if (this.getCurrentPage().doesHaveItems()) {
+            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage();
+            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()));
+
+            // Viewer/Editor
+            // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
+            components.add(ActionRow.of(
+                SelectMenu.builder()
+                    .withPageType(SelectMenu.PageType.ITEM)
+                    .withPlaceholder("Select an item to view.")
+                    .withOptions(
+                        this.getCurrentPage()
+                            .getItemData()
+                            .getItems()
+                            .subList(startIndex, endIndex)
+                            .stream()
+                            .map(PageItem::getOption)
+                            .flatMap(Optional::stream)
+                            .collect(Concurrent.toList())
+                    )
+                    .build()
+            ));
         }
 
         return components;
