@@ -12,6 +12,4 @@ public interface InteractableComponent<T extends ComponentContext> extends Ident
 
     boolean isDeferEdit();
 
-    boolean isPaging();
-
 }

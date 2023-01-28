@@ -36,7 +36,6 @@ public final class Modal extends InteractionComponent implements InteractableCom
     @Getter private final @NotNull String identifier;
     @Getter private final @NotNull Optional<String> title;
     @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
-    @Getter private final boolean isPaging = false;
     private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
 
     /**

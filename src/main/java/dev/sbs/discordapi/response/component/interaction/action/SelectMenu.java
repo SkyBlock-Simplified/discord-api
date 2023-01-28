@@ -8,6 +8,7 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.OptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
@@ -116,6 +117,13 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .disabled(this.isDisabled());
     }
 
+    public static SelectMenu getDivider() {
+        return SelectMenu.builder()
+            .withPlaceholder(StringUtil.repeat('⎯', 25))
+            .setDisabled()
+            .build();
+    }
+
     @Override
     public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
@@ -186,11 +194,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .append(this.getPageType())
             .append(this.getSelected())
             .build();
-    }
-
-    @Override
-    public boolean isPaging() {
-        return this.getPageType() != PageType.NONE;
     }
 
     public @NotNull SelectMenuBuilder mutate() {
@@ -703,7 +706,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
 
         NONE,
         PAGE,
-        SUBPAGE
+        SUBPAGE,
+        ITEM
 
     }
 
