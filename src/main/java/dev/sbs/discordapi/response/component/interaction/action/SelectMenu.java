@@ -119,7 +119,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
 
     public static SelectMenu getDivider() {
         return SelectMenu.builder()
-            .withPlaceholder(StringUtil.repeat("-", 25))
+            .withPlaceholder(StringUtil.repeat('\u23af', 44))
             .setDisabled()
             .withOptions(Option.builder().withValue("DIVIDER").build())
             .build();
