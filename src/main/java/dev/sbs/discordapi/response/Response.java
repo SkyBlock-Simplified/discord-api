@@ -220,8 +220,8 @@ public class Response implements Paging {
         }
 
         if (this.getCurrentPage().doesHaveItems()) {
-            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage();
-            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()));
+            int startIndex = Math.max((this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage() - 1, 0);
+            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()) - 1);
 
             // Viewer/Editor
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
@@ -252,8 +252,8 @@ public class Response implements Paging {
 
         // Handle Item List
         if (this.getCurrentPage().doesHaveItems()) {
-            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage();
-            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()));
+            int startIndex = Math.max((this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage() - 1, 0);
+            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()) - 1);
 
             embeds.add(
                 Embed.builder()
