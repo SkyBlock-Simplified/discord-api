@@ -127,7 +127,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                             // Remove Non-Preserved Components
                             Response editedResponse = response.mutate()
                                 .clearAllComponents()
-                                .isRenderingPagingComponents(false)
+                                //.isRenderingPagingComponents(false) //TODO: fix this crafted plox
                                 .build();
 
                             // Traverse Page History
