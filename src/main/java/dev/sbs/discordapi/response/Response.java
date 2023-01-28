@@ -66,7 +66,7 @@ public class Response implements Paging {
     @Getter private final boolean interactable;
     @Getter private final boolean loader;
     @Getter private final boolean ephemeral;
-    @Getter private final boolean renderingPagingComponents;
+    @Getter private final SelectMenu divider = SelectMenu.getDivider();
     @Getter private Button backButton = Button.PageType.BACK.build();
 
     private Response(
@@ -79,8 +79,7 @@ public class Response implements Paging {
         int timeToLive,
         boolean interactable,
         boolean loader,
-        boolean ephemeral,
-        boolean renderingPagingComponents) {
+        boolean ephemeral) {
         ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
 
         // Page List
@@ -92,7 +91,6 @@ public class Response implements Paging {
                     .withPlaceholderUsesSelectedOption()
                     .withOptions(
                         pages.stream()
-                            .filter(page -> !page.isItemSelector() || ListUtil.notEmpty(page.getItems()))
                             .map(Page::getOption)
                             .flatMap(Optional::stream)
                             .collect(Concurrent.toList())
@@ -113,7 +111,6 @@ public class Response implements Paging {
         this.interactable = interactable;
         this.loader = loader;
         this.ephemeral = ephemeral;
-        this.renderingPagingComponents = renderingPagingComponents;
     }
 
     public static ResponseBuilder builder() {
@@ -204,19 +201,24 @@ public class Response implements Paging {
     private ConcurrentList<LayoutComponent<?>> getCurrentComponents() {
         ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
 
-        // Paging Components
-        if (this.isRenderingPagingComponents()) {
-            // SubPages / ItemList
-            components.addAll(this.getCurrentPage().getPageComponents());
+        // Response - Paging Components
+        if (!this.hasPageHistory()) // Top-Level Pages
+            components.addAll(this.getPageComponents());
+        else // Response - Back Button
+            components.add(ActionRow.of(this.getBackButton()));
 
-            if (!this.hasPageHistory()) // Pages
-                components.addAll(this.getPageComponents());
-            else // Back Button
-                components.add(ActionRow.of(this.getBackButton()));
+        // Response - Paging Divider
+        if (ListUtil.notEmpty(components))
+            components.add(ActionRow.of(this.getDivider()));
+
+        // Current Page - Components
+        if (ListUtil.notEmpty(this.getCurrentPage().getComponents())) {
+            components.addAll(this.getCurrentPage().getComponents());
+            components.add(ActionRow.of(this.getDivider()));
         }
 
-        // Current Page Components
-        components.addAll(this.getCurrentPage().getComponents());
+        // Current Page - Paging Components
+        components.addAll(this.getCurrentPage().getPageComponents());
 
         return components;
     }
@@ -226,19 +228,23 @@ public class Response implements Paging {
         embeds.addAll(this.getCurrentPage().getEmbeds()); // Handle Current Page
 
         // Handle Item List
-        if (this.getCurrentPage().isItemSelector()) {
-            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemsPerPage();
-            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemsPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItems()));
+        if (this.getCurrentPage().doesHaveItems()) {
+            int startIndex = (this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage();
+            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()));
 
             embeds.add(
                 Embed.builder()
                     .withFields(
                         this.getCurrentPage()
-                            .getItemStyle()
+                            .getItemData()
+                            .getStyle()
                             .getPageItems(
-                                this.getCurrentPage().getColumnNames(),
                                 this.getCurrentPage()
-                                    .getItems()
+                                    .getItemData()
+                                    .getColumnNames(),
+                                this.getCurrentPage()
+                                    .getItemData()
+                                    .getTransformedFieldItems()
                                     .subList(startIndex, endIndex)
                             )
                     )
@@ -380,7 +386,6 @@ public class Response implements Paging {
         private boolean interactable = true;
         private boolean loader = false;
         private boolean ephemeral = false;
-        private boolean renderPagingComponents = true;
 
         /**
          * Recursively clear all but preservable components from all {@link Page Pages} in {@link Response}.
@@ -487,23 +492,6 @@ public class Response implements Paging {
          */
         public ResponseBuilder isLoader(boolean value) {
             this.loader = value;
-            return this;
-        }
-
-        /**
-         * Sets the {@link Response} to render paging components.
-         */
-        public ResponseBuilder isRenderingPagingComponents() {
-            return this.isRenderingPagingComponents(true);
-        }
-
-        /**
-         * Sets if the {@link Response} should render paging components.
-         *
-         * @param value True if rendering components.
-         */
-        public ResponseBuilder isRenderingPagingComponents(boolean value) {
-            this.renderPagingComponents = value;
             return this;
         }
 
@@ -689,8 +677,7 @@ public class Response implements Paging {
                 this.timeToLive,
                 this.interactable,
                 this.loader,
-                this.ephemeral,
-                this.renderPagingComponents
+                this.ephemeral
             );
         }
 
