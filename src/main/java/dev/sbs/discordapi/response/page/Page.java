@@ -100,24 +100,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                         .collect(Concurrent.toList())
                 ));
             }
-
-            // Viewer/Editor
-            /*pageComponents.add(ActionRow.of(
-                SelectMenu.builder()
-                    .withPageType(SelectMenu.PageType.ITEM)
-                    .withPlaceholder("Select an item to view.")
-                    .withOptions(
-                        this.getItemData()
-                            .getItems()
-                            .stream()
-                            .map(PageItem::getOption)
-                            .flatMap(Optional::stream)
-                            .collect(Concurrent.toList())
-                    )
-                    .build()
-            ));*/
-
-            // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
         }
 
         this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
