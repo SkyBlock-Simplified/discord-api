@@ -74,7 +74,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                     .withPlaceholder("Select a subpage.")
                     .withOptions(
                         pages.stream()
-                            .filter(Page::doesNotHaveItems)
+                            //.filter(Page::doesNotHaveItems)
                             .map(Page::getOption)
                             .flatMap(Optional::stream)
                             .collect(Concurrent.toList())
