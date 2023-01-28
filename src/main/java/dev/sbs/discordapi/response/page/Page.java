@@ -102,7 +102,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             // Viewer/Editor
-            pageComponents.add(ActionRow.of(
+            /*pageComponents.add(ActionRow.of(
                 SelectMenu.builder()
                     .withPageType(SelectMenu.PageType.ITEM)
                     .withPlaceholder("Select an item to view.")
@@ -115,7 +115,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                             .collect(Concurrent.toList())
                     )
                     .build()
-            ));
+            ));*/
 
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
         }
