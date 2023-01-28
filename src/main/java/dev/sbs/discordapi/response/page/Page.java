@@ -45,6 +45,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
     @Getter private final @NotNull ConcurrentList<Emoji> reactions;
     @Getter private final @NotNull ItemData<?> itemData;
     @Getter private int currentItemPage = 1;
+    private ConcurrentList<PageItem> lastRenderedPageItems = Concurrent.newUnmodifiableList();
 
     protected Page(
         @NotNull String identifier,
@@ -86,7 +87,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         // Item List
         if (this.doesHaveItems()) {
             // Divider
-            pageComponents.add(ActionRow.of(SelectMenu.getDivider()));
+            //pageComponents.add(ActionRow.of(SelectMenu.getDivider()));
 
             // Traversal
             for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
@@ -218,6 +219,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     public final void gotoItemPage(int index) {
         this.currentItemPage = Math.min(this.getItemData().getFieldItems().size(), Math.max(1, index));
+        this.lastRenderedPageItems = Concurrent.newUnmodifiableList();
         this.updatePagingComponents();
     }
 
@@ -262,6 +264,16 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     public PageBuilder mutate() {
         return from(this);
+    }
+
+    public final ConcurrentList<PageItem> getCachedPageItems() {
+        if (ListUtil.isEmpty(this.lastRenderedPageItems)) {
+            int startIndex = (this.getCurrentItemPage() - 1) * this.getItemData().getAmountPerPage();
+            int endIndex = Math.min(startIndex + this.getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getItemData().getFieldItems()));
+            this.lastRenderedPageItems = Concurrent.newUnmodifiableList(this.getItemData().getTransformedFieldItems(startIndex, endIndex));
+        }
+
+        return this.lastRenderedPageItems;
     }
 
     private void updatePagingComponents() {
@@ -655,9 +667,14 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         public final ConcurrentList<PageItem> getTransformedFieldItems() {
+            return this.getTransformedFieldItems(0, ListUtil.sizeOf(this.getFieldItems()));
+        }
+
+        public final ConcurrentList<PageItem> getTransformedFieldItems(int startIndex, int endIndex) {
             return this.getTransformer()
                 .apply(
-                    this.getFieldItems()
+                    Concurrent.newList(this.getFieldItems())
+                        .subList(startIndex, endIndex)
                         .sorted(this.getSortOrder(), this.getSortFunctions())
                         .stream()
                 )

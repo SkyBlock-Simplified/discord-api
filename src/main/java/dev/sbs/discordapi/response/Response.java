@@ -213,16 +213,13 @@ public class Response implements Paging {
 
         if (ListUtil.notEmpty(this.getCurrentPage().getComponents())) {
             // Response - Paging Divider
-            components.add(ActionRow.of(this.getDivider()));
+            //components.add(ActionRow.of(this.getDivider()));
 
             // Current Page - Components
             components.addAll(this.getCurrentPage().getComponents());
         }
 
         if (this.getCurrentPage().doesHaveItems()) {
-            int startIndex = Math.max((this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage() - 1, 0);
-            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()) - 1);
-
             // Viewer/Editor
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
             components.add(ActionRow.of(
@@ -231,9 +228,7 @@ public class Response implements Paging {
                     .withPlaceholder("Select an item to view.")
                     .withOptions(
                         this.getCurrentPage()
-                            .getItemData()
-                            .getItems()
-                            .subList(startIndex, endIndex)
+                            .getCachedPageItems()
                             .stream()
                             .map(PageItem::getOption)
                             .flatMap(Optional::stream)
@@ -252,9 +247,6 @@ public class Response implements Paging {
 
         // Handle Item List
         if (this.getCurrentPage().doesHaveItems()) {
-            int startIndex = Math.max((this.getCurrentPage().getCurrentItemPage() - 1) * this.getCurrentPage().getItemData().getAmountPerPage() - 1, 0);
-            int endIndex = Math.min(startIndex + this.getCurrentPage().getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getCurrentPage().getItemData().getFieldItems()) - 1);
-
             embeds.add(
                 Embed.builder()
                     .withFields(
@@ -266,9 +258,7 @@ public class Response implements Paging {
                                     .getItemData()
                                     .getColumnNames(),
                                 this.getCurrentPage()
-                                    .getItemData()
-                                    .getTransformedFieldItems()
-                                    .subList(startIndex, endIndex)
+                                    .getCachedPageItems()
                             )
                     )
                     .build()
