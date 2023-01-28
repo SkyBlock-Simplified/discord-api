@@ -634,20 +634,29 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @Getter private final int amountPerPage;
         @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
 
-        public final ConcurrentList<PageItem> getTransformedFieldItems() {
-            return this.getTransformer()
-                .apply(
-                    this.getFieldItems()
-                        .sorted(this.getSortOrder(), this.getSortFunctions())
-                        .stream()
-                )
-                .filter(PageItem.class::isInstance)
-                .map(PageItem.class::cast)
-                .collect(Concurrent.toList());
-        }
-
         public static <T> Builder<T> builder(@NotNull Class<T> type) {
             return new Builder<>(type);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ItemData<?> itemData = (ItemData<?>) o;
+
+            return new EqualsBuilder()
+                .append(this.getAmountPerPage(), itemData.getAmountPerPage())
+                .append(this.getType(), itemData.getType())
+                .append(this.getFieldItems(), itemData.getFieldItems())
+                .append(this.getItems(), itemData.getItems())
+                .append(this.getTransformer(), itemData.getTransformer())
+                .append(this.getComparators(), itemData.getComparators())
+                .append(this.getSortFunctions(), itemData.getSortFunctions())
+                .append(this.getSortOrder(), itemData.getSortOrder())
+                .append(this.getStyle(), itemData.getStyle())
+                .append(this.getColumnNames(), itemData.getColumnNames())
+                .build();
         }
 
         public static <T> Builder<T> from(@NotNull ItemData<T> itemData) {
@@ -661,6 +670,34 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .withStyle(itemData.getStyle())
                 .withAmountPerPage(itemData.getAmountPerPage())
                 .withColumnNames(itemData.getColumnNames());
+        }
+
+        public final ConcurrentList<PageItem> getTransformedFieldItems() {
+            return this.getTransformer()
+                .apply(
+                    this.getFieldItems()
+                        .sorted(this.getSortOrder(), this.getSortFunctions())
+                        .stream()
+                )
+                .filter(PageItem.class::isInstance)
+                .map(PageItem.class::cast)
+                .collect(Concurrent.toList());
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder()
+                .append(this.getType())
+                .append(this.getFieldItems())
+                .append(this.getItems())
+                .append(this.getTransformer())
+                .append(this.getComparators())
+                .append(this.getSortFunctions())
+                .append(this.getSortOrder())
+                .append(this.getStyle())
+                .append(this.getAmountPerPage())
+                .append(this.getColumnNames())
+                .build();
         }
 
         public Builder<T> mutate() {
