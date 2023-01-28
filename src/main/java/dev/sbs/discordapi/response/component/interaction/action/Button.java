@@ -112,11 +112,6 @@ public final class Button extends ActionComponent implements InteractableCompone
             .build();
     }
 
-    @Override
-    public boolean isPaging() {
-        return this.getPageType() != PageType.NONE;
-    }
-
     public ButtonBuilder mutate() {
         return from(this);
     }
@@ -358,34 +353,37 @@ public final class Button extends ActionComponent implements InteractableCompone
     @AllArgsConstructor
     public enum PageType {
 
-        NONE("", false),
-        FIRST("First", true, DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
-        PREVIOUS("Previous", true, DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
-        INDEX("Index", true),
-        NEXT("Next", true, DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", true, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", false, DiscordHelper.getEmoji("ARROW_LEFT"));
+        NONE("", -1),
+        FIRST("First", 1, DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
+        PREVIOUS("Previous", 1, DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
+        INDEX("Index", 1),
+        NEXT("Next", 1, DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", 1, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
+        BACK("Back", -1, DiscordHelper.getEmoji("ARROW_LEFT")),
+        SEARCH("Search", 2, DiscordHelper.getEmoji("SEARCH")),
+        SORT("Sort: {0}", 2, DiscordHelper.getEmoji("SORT")),
+        ORDER("Order: {0}", 2, DiscordHelper.getEmoji("SORT_DESCENDING"));
 
         @Getter private final @NotNull String label;
-        @Getter private final boolean forItemList;
+        @Getter private final int row;
         @Getter private final @NotNull Optional<Emoji> emoji;
 
-        PageType(@NotNull String label, boolean forItemList) {
-            this(label, forItemList, Optional.empty());
+        PageType(@NotNull String label, int row) {
+            this(label, row, Optional.empty());
         }
 
         public Button build() {
-            return this.build(Optional.empty());
-        }
-
-        public Button build(@NotNull Optional<String> label) {
             return Button.builder()
                 .withStyle(Button.Style.SECONDARY)
                 .withEmoji(this.getEmoji())
-                .withLabel(label.orElse(this.getLabel()))
+                .withLabel(this.getLabel())
                 .withPageType(this)
                 .setDisabled(true)
                 .build();
+        }
+
+        public static int getNumberOfRows() {
+            return Arrays.stream(values()).mapToInt(PageType::getRow).max().orElse(1);
         }
 
     }
