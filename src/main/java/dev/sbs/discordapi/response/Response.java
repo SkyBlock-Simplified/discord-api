@@ -207,17 +207,16 @@ public class Response implements Paging {
         else // Response - Back Button
             components.add(ActionRow.of(this.getBackButton()));
 
+        // Current Page - Paging Components
+        components.addAll(this.getCurrentPage().getPageComponents());
+
         if (ListUtil.notEmpty(this.getCurrentPage().getComponents())) {
             // Response - Paging Divider
             components.add(ActionRow.of(this.getDivider()));
 
             // Current Page - Components
             components.addAll(this.getCurrentPage().getComponents());
-            components.add(ActionRow.of(this.getDivider()));
         }
-
-        // Current Page - Paging Components
-        components.addAll(this.getCurrentPage().getPageComponents());
 
         return components;
     }
