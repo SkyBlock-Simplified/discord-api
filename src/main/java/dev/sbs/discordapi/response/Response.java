@@ -211,16 +211,12 @@ public class Response implements Paging {
         // Current Page - Paging Components
         components.addAll(this.getCurrentPage().getPageComponents());
 
-        if (ListUtil.notEmpty(this.getCurrentPage().getComponents())) {
-            // Response - Paging Divider
-            //components.add(ActionRow.of(this.getDivider()));
-
-            // Current Page - Components
+        // Current Page - Components
+        if (ListUtil.notEmpty(this.getCurrentPage().getComponents()))
             components.addAll(this.getCurrentPage().getComponents());
-        }
 
+        // Viewer/Editor
         if (this.getCurrentPage().doesHaveItems()) {
-            // Viewer/Editor
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
             components.add(ActionRow.of(
                 SelectMenu.builder()

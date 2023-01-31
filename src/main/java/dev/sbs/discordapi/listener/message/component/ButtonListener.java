@@ -40,6 +40,7 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
                     case NEXT -> currentPage.gotoNextItemPage();
                     case PREVIOUS -> currentPage.gotoPreviousItemPage();
                     case BACK -> response.gotoPreviousPage();
+                    case SORT -> currentPage.getItemData().gotoNextSorter();
                 }
 
                 context.getResponseCacheEntry().updateResponse(response, false); // Update Response
