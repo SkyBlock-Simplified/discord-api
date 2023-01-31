@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -239,7 +240,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     public void gotoNextSorter() {
         this.getItemData().gotoNextSorter();
-
+        this.updatePagingComponents();
     }
 
     public final void gotoPreviousItemPage() {
@@ -269,6 +270,11 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             .build();
     }
 
+    public void invertOrder() {
+        this.getItemData().invertOrder();
+        this.updatePagingComponents();
+    }
+
     public PageBuilder mutate() {
         return from(this);
     }
@@ -290,6 +296,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.notEmpty(this.getItemData().getSorters())));
+        this.editPageButton(Button::getPageType, Button.PageType.ORDER, buttonBuilder -> buttonBuilder.setEnabled(true));
 
         // Labels
         this.editPageButton(
@@ -303,12 +310,21 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
-            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "Sort: {0}", this.getItemData()
-                    .getCurrentSorter()
-                    .map(sorter -> sorter.getOption().getLabel())
-                    .orElse("N/A")
-            ))
+            buttonBuilder -> buttonBuilder
+                .withLabel(FormatUtil.format(
+                    "Sort: {0}", this.getItemData()
+                        .getCurrentSorter()
+                        .map(sorter -> sorter.getOption().getLabel())
+                        .orElse("N/A")
+                ))
+        );
+
+        this.editPageButton(
+            Button::getPageType,
+            Button.PageType.SORT,
+            buttonBuilder -> buttonBuilder
+                .withLabel(FormatUtil.format("Order: {0}", this.getItemData().getCurrentOrder().getShortName()))
+                .withEmoji(Emoji.of(FormatUtil.format("SORT_{0}", this.getItemData().getCurrentOrder().name())))
         );
     }
 
@@ -645,16 +661,16 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
     @SuppressWarnings("all")
     public static class ItemData<T> {
 
-        @Getter private final Class<T> type;
-        @Getter private final ConcurrentList<T> fieldItems;
-        @Getter private final ConcurrentList<PageItem> items;
-        @Getter private final Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer;
-        @Getter private final ConcurrentList<Sorter<T>> sorters;
-        @Getter private final @NotNull SortOrder order;
+        @Getter private final @NotNull Class<T> type;
+        @Getter private final @NotNull ConcurrentList<T> fieldItems;
+        @Getter private final @NotNull ConcurrentList<PageItem> items;
+        @Getter private final @NotNull Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer;
+        @Getter private final @NotNull ConcurrentList<Sorter<T>> sorters;
         @Getter private final @NotNull PageItem.Style style;
         @Getter private final int amountPerPage;
         @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
         @Getter private int currentSorterIndex = -1;
+        @Getter private boolean reversed = false;
 
         public static <T> Builder<T> builder(@NotNull Class<T> type) {
             return new Builder<>(type);
@@ -674,7 +690,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.getItems(), itemData.getItems())
                 .append(this.getTransformer(), itemData.getTransformer())
                 .append(this.getSorters(), itemData.getSorters())
-                .append(this.getOrder(), itemData.getOrder())
+                .append(this.isReversed(), itemData.isReversed())
                 .append(this.getStyle(), itemData.getStyle())
                 .append(this.getColumnNames(), itemData.getColumnNames())
                 .build();
@@ -686,10 +702,15 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .withItems(itemData.getItems())
                 .withTransformer(itemData.getTransformer())
                 .withFilters(itemData.getSorters())
-                .withOrder(itemData.getOrder())
                 .withStyle(itemData.getStyle())
                 .withAmountPerPage(itemData.getAmountPerPage())
                 .withColumnNames(itemData.getColumnNames());
+        }
+
+        public SortOrder getCurrentOrder() {
+            return this.getCurrentSorter()
+                .map(sorter -> sorter.getOrder() == SortOrder.DESCENDING ? SortOrder.ASCENDING : SortOrder.DESCENDING)
+                .orElse(this.isReversed() ? SortOrder.ASCENDING : SortOrder.DESCENDING);
         }
 
         public Optional<Sorter<T>> getCurrentSorter() {
@@ -704,7 +725,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             return this.getTransformer()
                 .apply(
                     this.getCurrentSorter()
-                        .map(sorter -> sorter.apply(this.getFieldItems()))
+                        .map(sorter -> sorter.apply(this.getFieldItems(), this.isReversed()))
                         .orElse(this.getFieldItems())
                         .subList(startIndex, endIndex)
                         .stream()
@@ -729,11 +750,23 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.getItems())
                 .append(this.getTransformer())
                 .append(this.getSorters())
-                .append(this.getOrder())
+                .append(this.isReversed())
                 .append(this.getStyle())
                 .append(this.getAmountPerPage())
                 .append(this.getColumnNames())
                 .build();
+        }
+
+        public void invertOrder() {
+            this.reversed = !this.isReversed();
+        }
+
+        public void setReversed() {
+            this.setReversed(true);
+        }
+
+        public void setReversed(boolean value) {
+            this.reversed = value;
         }
 
         public Builder<T> mutate() {
@@ -741,15 +774,18 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-        public static class Sorter<T> implements Function<ConcurrentList<T>, ConcurrentList<T>> {
+        public static class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>> {
 
             @Getter private final @NotNull SelectMenu.Option option;
             @Getter private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
             @Getter private final @NotNull SortOrder order;
 
             @Override
-            public ConcurrentList<T> apply(ConcurrentList<T> list) {
+            public ConcurrentList<T> apply(ConcurrentList<T> list, Boolean reversed) {
                 ConcurrentList<T> copy = Concurrent.newList(list);
+
+                if (reversed)
+                    copy = copy.inverse();
 
                 copy.sort((o1, o2) -> {
                     Iterator<Map.Entry<Comparator<? extends T>, SortOrder>> iterator = this.getComparators().iterator();
@@ -1011,7 +1047,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             private final ConcurrentList<PageItem> items = Concurrent.newList();
             private Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer;
             private final ConcurrentList<Sorter<T>> filters = Concurrent.newList();
-            private SortOrder order = SortOrder.DESCENDING;
             private PageItem.Style style = Style.FIELD_INLINE;
             private int amountPerPage = 12;
             private Optional<Triple<String, String, String>> columnNames = Optional.empty();
@@ -1126,19 +1161,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             /**
-             * Sets the sort order for the {@link PageItem PageItems}.
-             * <br><br>
-             * Descending - Highest to Lowest (Default)<br>
-             * Ascending - Lowest to Highest
-             *
-             * @param order The order to sort the items in.
-             */
-            public Builder<T> withOrder(@NotNull SortOrder order) {
-                this.order = order;
-                return this;
-            }
-
-            /**
              * Sets the transformer used to render the {@link SingletonFieldItem SingletonFieldItems}.
              *
              * @param transformer How to render {@link T}.
@@ -1166,7 +1188,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                     Concurrent.newUnmodifiableList(this.items),
                     this.transformer,
                     this.filters,
-                    this.order,
                     this.style,
                     this.amountPerPage,
                     this.columnNames

@@ -383,7 +383,10 @@ public final class Button extends ActionComponent implements InteractableCompone
         }
 
         public static int getNumberOfRows() {
-            return Arrays.stream(values()).mapToInt(PageType::getRow).max().orElse(1);
+            return Arrays.stream(values())
+                .mapToInt(PageType::getRow)
+                .max()
+                .orElse(1);
         }
 
     }
