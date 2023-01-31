@@ -1,10 +1,12 @@
 package dev.sbs.discordapi.response.page;
 
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.sort.SortOrder;
 import dev.sbs.api.util.data.tuple.Triple;
 import dev.sbs.api.util.helper.FormatUtil;
@@ -21,14 +23,18 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.item.PageItem;
 import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
+import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -621,12 +627,12 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @Getter private final ConcurrentList<T> fieldItems;
         @Getter private final ConcurrentList<PageItem> items;
         @Getter private final Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer;
-        @Getter private final ConcurrentList<Comparator<? extends T>> comparators;
-        @Getter private final ConcurrentList<Function<T, ? extends Comparable>> sortFunctions;
-        @Getter private final SortOrder sortOrder;
+        @Getter private final ConcurrentList<Filter<T>> filters;
+        @Getter private final @NotNull SortOrder order;
         @Getter private final @NotNull PageItem.Style style;
         @Getter private final int amountPerPage;
         @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
+        @Getter private Optional<Filter<T>> currentFilter = Optional.empty();
 
         public static <T> Builder<T> builder(@NotNull Class<T> type) {
             return new Builder<>(type);
@@ -645,9 +651,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.getFieldItems(), itemData.getFieldItems())
                 .append(this.getItems(), itemData.getItems())
                 .append(this.getTransformer(), itemData.getTransformer())
-                .append(this.getComparators(), itemData.getComparators())
-                .append(this.getSortFunctions(), itemData.getSortFunctions())
-                .append(this.getSortOrder(), itemData.getSortOrder())
+                .append(this.getFilters(), itemData.getFilters())
+                .append(this.getOrder(), itemData.getOrder())
                 .append(this.getStyle(), itemData.getStyle())
                 .append(this.getColumnNames(), itemData.getColumnNames())
                 .build();
@@ -658,9 +663,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .withFieldItems(itemData.getFieldItems())
                 .withItems(itemData.getItems())
                 .withTransformer(itemData.getTransformer())
-                .withComparators(itemData.getComparators())
-                .withSortFunctions(itemData.getSortFunctions())
-                .withSortOrder(itemData.getSortOrder())
+                .withFilters(itemData.getFilters())
+                .withOrder(itemData.getOrder())
                 .withStyle(itemData.getStyle())
                 .withAmountPerPage(itemData.getAmountPerPage())
                 .withColumnNames(itemData.getColumnNames());
@@ -671,11 +675,15 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         public final ConcurrentList<PageItem> getTransformedFieldItems(int startIndex, int endIndex) {
+            if (this.getCurrentFilter().isEmpty() && ListUtil.isEmpty(this.getFilters()))
+                this.currentFilter = Optional.of(this.getFilters().getFirst());
+
             return this.getTransformer()
                 .apply(
-                    Concurrent.newList(this.getFieldItems())
+                    this.getCurrentFilter()
+                        .map(filter -> filter.apply(this.getFieldItems()))
+                        .orElse(this.getFieldItems())
                         .subList(startIndex, endIndex)
-                        .sorted(this.getSortOrder(), this.getSortFunctions())
                         .stream()
                 )
                 .filter(PageItem.class::isInstance)
@@ -690,9 +698,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.getFieldItems())
                 .append(this.getItems())
                 .append(this.getTransformer())
-                .append(this.getComparators())
-                .append(this.getSortFunctions())
-                .append(this.getSortOrder())
+                .append(this.getFilters())
+                .append(this.getOrder())
                 .append(this.getStyle())
                 .append(this.getAmountPerPage())
                 .append(this.getColumnNames())
@@ -704,15 +711,277 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+        public static class Filter<T> implements Function<ConcurrentList<T>, ConcurrentList<T>> {
+
+            @Getter private final @NotNull SelectMenu.Option option;
+            @Getter private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
+            @Getter private final @NotNull SortOrder order;
+
+            @Override
+            public ConcurrentList<T> apply(ConcurrentList<T> list) {
+                ConcurrentList<T> copy = Concurrent.newList(list);
+
+                copy.sort((o1, o2) -> {
+                    Iterator<Map.Entry<Comparator<? extends T>, SortOrder>> iterator = this.getComparators().iterator();
+                    Map.Entry<Comparator<? extends T>, SortOrder> entry = iterator.next();
+                    Comparator comparator = entry.getKey();
+
+                    if (entry.getValue() == SortOrder.DESCENDING)
+                        comparator = comparator.reversed();
+
+                    while (iterator.hasNext()) {
+                        entry = iterator.next();
+                        comparator = comparator.thenComparing(entry.getKey());
+
+                        if (entry.getValue() == SortOrder.DESCENDING)
+                            comparator = comparator.reversed();
+                    }
+
+                    return this.getOrder() == SortOrder.ASCENDING ? comparator.compare(o1, o2) : comparator.compare(o2, o1);
+                });
+
+                return copy;
+            }
+
+            public static <T> Builder<T> builder() {
+                return new Builder<>();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Filter<?> filter = (Filter<?>) o;
+
+                return new EqualsBuilder()
+                    .append(this.getOption(), filter.getOption())
+                    .append(this.getComparators(), filter.getComparators())
+                    .append(this.getOrder(), filter.getOrder())
+                    .build();
+            }
+
+            public static <T> Builder<T> from(@NotNull Filter<T> filter) {
+                return new Builder<>()
+                    .withOption(filter.getOption())
+                    .withComparators(filter.getComparators())
+                    .withOrder(filter.getOrder());
+            }
+
+            @Override
+            public int hashCode() {
+                return new HashCodeBuilder()
+                    .append(this.getOption())
+                    .append(this.getComparators())
+                    .append(this.getOrder())
+                    .build();
+            }
+
+            public Builder<T> mutate() {
+                return from(this);
+            }
+
+            @NoArgsConstructor(access = AccessLevel.PRIVATE)
+            public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Filter<T>> {
+
+                private final SelectMenu.Option.OptionBuilder optionBuilder = SelectMenu.Option.builder();
+                private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
+                private SortOrder order = SortOrder.DESCENDING;
+
+                /**
+                 * Add custom comparators for the {@link PageItem FieldItems}.
+                 *
+                 * @param comparators A variable amount of comparators.
+                 */
+                public Builder<T> withComparators(@NotNull Comparator<? extends T>... comparators) {
+                    return this.withComparators(Arrays.asList(comparators));
+                }
+
+                /**
+                 * Add custom comparators for the {@link PageItem FieldItems}.
+                 *
+                 * @param order How the comparators are sorted.
+                 * @param comparators A variable amount of comparators.
+                 */
+                public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Comparator<? extends T>... comparators) {
+                    return this.withComparators(Arrays.asList(comparators));
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param comparators A variable amount of comparators.
+                 */
+                public Builder<T> withComparators(@NotNull Iterable<Comparator<? extends T>> comparators) {
+                    return this.withComparators(SortOrder.DESCENDING, comparators);
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param order How the comparators are sorted.
+                 * @param comparators A variable amount of comparators.
+                 */
+                public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Iterable<Comparator<? extends T>> comparators) {
+                    comparators.forEach(comparator -> this.comparators.put(comparator, order));
+                    return this;
+                }
+
+                /**
+                 * Sets the description of the {@link Filter}.
+                 *
+                 * @param description The description to use.
+                 * @param objects The objects used to format the description.
+                 */
+                public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
+                    return this.withDescription(FormatUtil.formatNullable(description, objects));
+                }
+
+                /**
+                 * Sets the description of the {@link Filter}.
+                 *
+                 * @param description The description to use.
+                 */
+                public Builder<T> withDescription(@NotNull Optional<String> description) {
+                    this.optionBuilder.withDescription(description);
+                    return this;
+                }
+
+                /**
+                 * Sets the emoji of the {@link Filter}.
+                 * <br><br>
+                 * This is used for the {@link Button#getEmoji()}.
+                 *
+                 * @param emoji The emoji to use.
+                 */
+                public Builder<T> withEmoji(@Nullable Emoji emoji) {
+                    return this.withEmoji(Optional.ofNullable(emoji));
+                }
+
+                /**
+                 * Sets the emoji of the {@link Filter}.
+                 * <br><br>
+                 * This is used for the {@link Button#getEmoji()}.
+                 *
+                 * @param emoji The emoji to use.
+                 */
+                public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
+                    this.optionBuilder.withEmoji(emoji);
+                    return this;
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param functions A variable amount of sort functions.
+                 */
+                public Builder<T> withFunctions(@NotNull Function<T, ? extends Comparable>... functions) {
+                    return this.withFunctions(SortOrder.DESCENDING, functions);
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param functions A variable amount of sort functions.
+                 * @param order How the comparators are sorted.
+                 */
+                public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Function<T, ? extends Comparable>... functions) {
+                    return this.withFunctions(order, Arrays.asList(functions));
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param functions A collection of sort functions.
+                 */
+                public Builder<T> withFunctions(@NotNull Iterable<Function<T, ? extends Comparable>> functions) {
+                    return this.withFunctions(SortOrder.DESCENDING, functions);
+                }
+
+                /**
+                 * Add custom sort functions for the {@link PageItem FieldItems}.
+                 *
+                 * @param functions A collection of sort functions.
+                 * @param order How the comparators are sorted.
+                 */
+                public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Iterable<Function<T, ? extends Comparable>> functions) {
+                    functions.forEach(function -> this.comparators.put(Comparator.comparing(function), order));
+                    return this;
+                }
+
+                /**
+                 * Overrides the default identifier of the {@link Filter}.
+                 * <br><br>
+                 * This is used for the {@link Filter}.
+                 *
+                 * @param identifier The identifier to use.
+                 * @param objects The objects used to format the value.
+                 */
+                public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+                    this.optionBuilder.withIdentifier(identifier, objects);
+                    return this;
+                }
+
+                /**
+                 * Sets the label of the {@link Filter}.
+                 * <br><br>
+                 * This is used for the {@link Button}.
+                 *
+                 * @param label The label of the field item.
+                 * @param objects The objects used to format the label.
+                 */
+                public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
+                    this.optionBuilder.withLabel(label, objects);
+                    return this;
+                }
+
+                public Builder withOption(@NotNull SelectMenu.Option option) {
+                    return this.withIdentifier(option.getIdentifier())
+                        .withDescription(option.getDescription())
+                        .withEmoji(option.getEmoji())
+                        .withLabel(option.getLabel());
+                }
+
+                /**
+                 * Sets the sort order for the {@link PageItem PageItems}.
+                 * <br><br>
+                 * Descending - Highest to Lowest (Default)<br>
+                 * Ascending - Lowest to Highest
+                 *
+                 * @param order The order to sort the items in.
+                 */
+                public Builder<T> withOrder(@NotNull SortOrder order) {
+                    this.order = order;
+                    return this;
+                }
+
+                @Override
+                public Filter<T> build() {
+                    if (ListUtil.isEmpty(this.comparators))
+                        throw SimplifiedException.of(DiscordException.class)
+                            .withMessage("Comparators cannot be empty!")
+                            .build();
+
+                    return new Filter<>(
+                        this.optionBuilder.build(),
+                        Concurrent.newUnmodifiableMap(this.comparators),
+                        this.order
+                    );
+                }
+
+            }
+
+        }
+
+        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         public static class Builder<T> implements dev.sbs.api.util.builder.Builder<ItemData<T>> {
 
             private final Class<T> type;
             private final ConcurrentList<T> fieldItems = Concurrent.newList();
             private final ConcurrentList<PageItem> items = Concurrent.newList();
             private Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer;
-            private final ConcurrentList<Comparator<? extends T>> comparators = Concurrent.newList();
-            private final ConcurrentList<Function<T, ? extends Comparable>> sortFunctions = Concurrent.newList();
-            private SortOrder sortOrder = SortOrder.DESCENDING;
+            private final ConcurrentList<Filter<T>> filters = Concurrent.newList();
+            private SortOrder order = SortOrder.DESCENDING;
             private PageItem.Style style = Style.FIELD_INLINE;
             private int amountPerPage = 12;
             private Optional<Triple<String, String, String>> columnNames = Optional.empty();
@@ -770,25 +1039,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             /**
-             * Add custom comparators for the {@link PageItem FieldItems}.
-             *
-             * @param comparators A variable amount of comparators.
-             */
-            public Builder<T> withComparators(@NotNull Comparator<? extends T>... comparators) {
-                return this.withComparators(Arrays.asList(comparators));
-            }
-
-            /**
-             * Add custom sort functions for the {@link PageItem FieldItems}.
-             *
-             * @param comparators A variable amount of comparators.
-             */
-            public Builder<T> withComparators(@NotNull Iterable<Comparator<? extends T>> comparators) {
-                comparators.forEach(this.comparators::add);
-                return this;
-            }
-
-            /**
              * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
              *
              * @param fieldItems Variable number of field items to add.
@@ -804,6 +1054,25 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
              */
             public Builder<T> withFieldItems(@NotNull Iterable<T> fieldItems) {
                 fieldItems.forEach(this.fieldItems::add);
+                return this;
+            }
+
+            /**
+             * Add custom sort filter for the {@link PageItem FieldItems}.
+             *
+             * @param comparators A variable amount of filters.
+             */
+            public Builder<T> withFilters(@NotNull Filter<T>... filters) {
+                return this.withFilters(Arrays.asList(filters));
+            }
+
+            /**
+             * Add custom sort filters for the {@link PageItem FieldItems}.
+             *
+             * @param comparators A variable amount of filters.
+             */
+            public Builder<T> withFilters(@NotNull Iterable<Filter<T>> filters) {
+                filters.forEach(this.filters::add);
                 return this;
             }
 
@@ -827,44 +1096,25 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             /**
+             * Sets the sort order for the {@link PageItem PageItems}.
+             * <br><br>
+             * Descending - Highest to Lowest (Default)<br>
+             * Ascending - Lowest to Highest
+             *
+             * @param order The order to sort the items in.
+             */
+            public Builder<T> withOrder(@NotNull SortOrder order) {
+                this.order = order;
+                return this;
+            }
+
+            /**
              * Sets the transformer used to render the {@link SingletonFieldItem SingletonFieldItems}.
              *
              * @param transformer How to render {@link T}.
              */
             public Builder<T> withTransformer(@NotNull Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer) {
                 this.transformer = transformer;
-                return this;
-            }
-
-            /**
-             * Add custom sort functions for the {@link PageItem FieldItems}.
-             *
-             * @param sortFunctions A variable amount of sort functions.
-             */
-            public Builder<T> withSortFunctions(@NotNull Function<T, ? extends Comparable>... sortFunctions) {
-                return this.withSortFunctions(Arrays.asList(sortFunctions));
-            }
-
-            /**
-             * Add custom sort functions for the {@link PageItem FieldItems}.
-             *
-             * @param sortFunctions A collection of sort functions.
-             */
-            public Builder<T> withSortFunctions(@NotNull Iterable<Function<T, ? extends Comparable>> sortFunctions) {
-                sortFunctions.forEach(this.sortFunctions::add);
-                return this;
-            }
-
-            /**
-             * Sets the sort order for the {@link PageItem PageItems}.
-             * <br><br>
-             * Descending - Highest to Lowest (Default)<br>
-             * Ascending - Lowest to Highest
-             *
-             * @param sortOrder The order to sort the items in.
-             */
-            public Builder<T> withSortOrder(@NotNull SortOrder sortOrder) {
-                this.sortOrder = sortOrder;
                 return this;
             }
 
@@ -885,9 +1135,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                     Concurrent.newUnmodifiableList(this.fieldItems),
                     Concurrent.newUnmodifiableList(this.items),
                     this.transformer,
-                    this.comparators,
-                    this.sortFunctions,
-                    this.sortOrder,
+                    this.filters,
+                    this.order,
                     this.style,
                     this.amountPerPage,
                     this.columnNames
