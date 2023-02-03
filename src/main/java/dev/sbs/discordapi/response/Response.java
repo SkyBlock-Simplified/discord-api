@@ -216,7 +216,7 @@ public class Response implements Paging {
             components.addAll(this.getCurrentPage().getComponents());
 
         // Viewer/Editor
-        if (this.getCurrentPage().doesHaveItems()) {
+        if (this.getCurrentPage().doesHaveItems() && this.getCurrentPage().getItemData().isShowingSelector()) {
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
             components.add(ActionRow.of(
                 SelectMenu.builder()
@@ -238,8 +238,7 @@ public class Response implements Paging {
     }
 
     private ConcurrentList<Embed> getCurrentEmbeds() {
-        ConcurrentList<Embed> embeds = Concurrent.newList();
-        embeds.addAll(this.getCurrentPage().getEmbeds()); // Handle Current Page
+        ConcurrentList<Embed> embeds = Concurrent.newList(this.getCurrentPage().getEmbeds());
 
         // Handle Item List
         if (this.getCurrentPage().doesHaveItems()) {

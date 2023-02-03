@@ -296,7 +296,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.notEmpty(this.getItemData().getSorters())));
-        this.editPageButton(Button::getPageType, Button.PageType.ORDER, buttonBuilder -> buttonBuilder.setEnabled(true));
+        this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.ButtonBuilder::setEnabled);
 
         // Labels
         this.editPageButton(
@@ -669,6 +669,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @Getter private final @NotNull PageItem.Style style;
         @Getter private final int amountPerPage;
         @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
+        @Getter private final boolean showingSelector;
         @Getter private int currentSorterIndex = -1;
         @Getter private boolean reversed = false;
 
@@ -693,6 +694,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.isReversed(), itemData.isReversed())
                 .append(this.getStyle(), itemData.getStyle())
                 .append(this.getColumnNames(), itemData.getColumnNames())
+                .append(this.isShowingSelector(), itemData.isShowingSelector())
                 .build();
         }
 
@@ -704,7 +706,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .withFilters(itemData.getSorters())
                 .withStyle(itemData.getStyle())
                 .withAmountPerPage(itemData.getAmountPerPage())
-                .withColumnNames(itemData.getColumnNames());
+                .withColumnNames(itemData.getColumnNames())
+                .withSelector(itemData.isShowingSelector());
         }
 
         public SortOrder getCurrentOrder() {
@@ -754,6 +757,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .append(this.getStyle())
                 .append(this.getAmountPerPage())
                 .append(this.getColumnNames())
+                .append(this.isShowingSelector())
                 .build();
         }
 
@@ -1050,6 +1054,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             private PageItem.Style style = Style.FIELD_INLINE;
             private int amountPerPage = 12;
             private Optional<Triple<String, String, String>> columnNames = Optional.empty();
+            private boolean showingSelector = false;
 
             /**
              * Clear all items from the {@link Page}.
@@ -1171,6 +1176,23 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             /**
+             * Sets the item selector as enabled.
+             */
+            public Builder<T> withSelector() {
+                return this.withSelector(true);
+            }
+
+            /**
+             * Sets the item selector state.
+             *
+             * @param value True to enable the item selector.
+             */
+            public Builder<T> withSelector(boolean value) {
+                this.showingSelector = value;
+                return this;
+            }
+
+            /**
              * Sets the render style for {@link PageItem PageItems}.
              *
              * @param itemStyle The page item style.
@@ -1190,7 +1212,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                     this.filters,
                     this.style,
                     this.amountPerPage,
-                    this.columnNames
+                    this.columnNames,
+                    this.showingSelector
                 );
             }
 
