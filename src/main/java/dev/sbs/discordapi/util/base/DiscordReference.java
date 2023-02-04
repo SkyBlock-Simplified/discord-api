@@ -3,11 +3,11 @@ package dev.sbs.discordapi.util.base;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlModel;
-import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlRepository;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.discord.guild_data.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.data.model.discord.guild_data.guilds.GuildModel;
 import dev.sbs.api.data.model.discord.users.UserModel;
+import dev.sbs.api.data.sql.SqlRepository;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
@@ -85,7 +85,7 @@ public abstract class DiscordReference {
             newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.DEVELOPER));
             newCommandConfigModel.setEnabled(true);
             newCommandConfigModel.setInheritingPermissions(true);
-            return ((CommandConfigSqlRepository) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
+            return ((SqlRepository<CommandConfigSqlModel>) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
         }
 
         return commandConfigModel.get();
