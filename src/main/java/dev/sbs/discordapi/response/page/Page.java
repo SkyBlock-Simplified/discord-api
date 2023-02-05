@@ -13,6 +13,7 @@ import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -51,6 +52,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
     @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
     @Getter private final @NotNull ConcurrentList<Emoji> reactions;
     @Getter private final @NotNull ItemData<?> itemData;
+    @Getter private final boolean loadedFirst;
     @Getter private int currentItemPage = 1;
     private ConcurrentList<PageItem> lastRenderedPageItems = Concurrent.newUnmodifiableList();
 
@@ -62,7 +64,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @NotNull ConcurrentList<Embed> embeds,
         @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components,
         @NotNull ConcurrentList<Emoji> reactions,
-        @NotNull ItemData<?> itemData) {
+        @NotNull ItemData<?> itemData,
+        boolean loadedFirst) {
         super(identifier, option, Type.PAGE, false);
         this.content = content;
         this.pages = Concurrent.newUnmodifiableList(pages);
@@ -70,6 +73,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.components = Concurrent.newUnmodifiableList(components);
         this.reactions = Concurrent.newUnmodifiableList(reactions);
         this.itemData = itemData;
+        this.loadedFirst = loadedFirst;
 
         // Page Components
         ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
@@ -150,6 +154,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             .append(this.getComponents(), page.getComponents())
             .append(this.getReactions(), page.getReactions())
             .append(this.getItemData(), page.getItemData())
+            .append(this.isLoadedFirst(), page.isLoadedFirst())
             .build();
     }
 
@@ -204,7 +209,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             .withComponents(page.getComponents())
             .withReactions(page.getReactions())
             .withItemData(page.getItemData())
-            .withItemData(page.getItemData());
+            .isLoadedFirst(page.isLoadedFirst());
     }
 
     @Override
@@ -267,6 +272,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             .append(this.getReactions())
             .append(this.getItemData())
             .append(this.getCurrentItemPage())
+            .append(this.isLoadedFirst())
             .build();
     }
 
@@ -339,6 +345,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         private Optional<String> content = Optional.empty();
         private Optional<SelectMenu.Option> option = Optional.empty();
         private ItemData<?> itemData = ItemData.builder(PageItem.class).build();
+        private boolean loadedFirst = false;
 
         /**
          * Clear all but preservable components from {@link Page}.
@@ -501,6 +508,23 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         /**
+         * Sets this {@link Page} to appear when the {@link Response} first loads.
+         */
+        public PageBuilder isLoadedFirst() {
+            return this.isLoadedFirst(true);
+        }
+
+        /**
+         * Sets this {@link Page} to appear when the {@link Response} first loads.
+         *
+         * @param value True if this page should load first.
+         */
+        public PageBuilder isLoadedFirst(boolean value) {
+            this.loadedFirst = value;
+            return this;
+        }
+
+        /**
          * Add {@link LayoutComponent LayoutComponents} to the {@link Page}.
          *
          * @param components Variable number of layout components to add.
@@ -651,7 +675,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 this.embeds,
                 this.components,
                 this.reactions,
-                this.itemData
+                this.itemData,
+                this.loadedFirst
             );
         }
 

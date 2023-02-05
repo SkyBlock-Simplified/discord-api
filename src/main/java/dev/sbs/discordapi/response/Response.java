@@ -54,28 +54,27 @@ import java.util.function.Function;
 
 public class Response implements Paging {
 
-    protected final ConcurrentList<Page> pageHistory = Concurrent.newList();
+    protected final @NotNull ConcurrentList<Page> pageHistory = Concurrent.newList();
     @Getter private final long buildTime = System.currentTimeMillis();
-    @Getter private final UUID uniqueId;
-    @Getter private final ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
-    @Getter private final ConcurrentList<Page> pages;
-    @Getter private final ConcurrentList<Attachment> attachments;
-    @Getter private final Optional<Snowflake> referenceId;
-    @Getter private final Scheduler reactorScheduler;
+    @Getter private final @NotNull UUID uniqueId;
+    @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
+    @Getter private final @NotNull ConcurrentList<Page> pages;
+    @Getter private final @NotNull ConcurrentList<Attachment> attachments;
+    @Getter private final @NotNull Optional<Snowflake> referenceId;
+    @Getter private final @NotNull Scheduler reactorScheduler;
     @Getter private final boolean replyMention;
     @Getter private final int timeToLive;
     @Getter private final boolean interactable;
     @Getter private final boolean loader;
     @Getter private final boolean ephemeral;
-    @Getter private final SelectMenu divider = SelectMenu.getDivider();
     @Getter private Button backButton = Button.PageType.BACK.build();
 
     private Response(
-        UUID uniqueId,
-        ConcurrentList<Page> pages,
-        ConcurrentList<Attachment> attachments,
-        Optional<Snowflake> referenceId,
-        Scheduler reactorScheduler,
+        @NotNull UUID uniqueId,
+        @NotNull ConcurrentList<Page> pages,
+        @NotNull ConcurrentList<Attachment> attachments,
+        @NotNull Optional<Snowflake> referenceId,
+        @NotNull Scheduler reactorScheduler,
         boolean replyMention,
         int timeToLive,
         boolean interactable,
@@ -100,10 +99,9 @@ public class Response implements Paging {
             ));
         }
 
+        this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
         this.uniqueId = uniqueId;
         this.pages = pages;
-        this.pageHistory.add(pages.get(0));
-        this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
         this.attachments = attachments;
         this.referenceId = referenceId;
         this.reactorScheduler = reactorScheduler;
@@ -112,6 +110,13 @@ public class Response implements Paging {
         this.interactable = interactable;
         this.loader = loader;
         this.ephemeral = ephemeral;
+
+        // Page History
+        this.pageHistory.add(
+            this.getPages()
+                .matchFirst(Page::isLoadedFirst)
+                .orElse(this.getPages().get(0))
+        );
     }
 
     public static ResponseBuilder builder() {

@@ -359,7 +359,7 @@ public final class Button extends ActionComponent implements InteractableCompone
         INDEX("Index", 1),
         NEXT("Next", 1, DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
         LAST("Last", 1, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", -1, DiscordHelper.getEmoji("ARROW_LEFT")),
+        BACK("Back", 2, DiscordHelper.getEmoji("ARROW_LEFT")),
         SEARCH("Search", 2, DiscordHelper.getEmoji("SEARCH")),
         SORT("Sort: {0}", 2, DiscordHelper.getEmoji("SORT")),
         ORDER("Order: {0}", 2, DiscordHelper.getEmoji("SORT_DESCENDING"));
