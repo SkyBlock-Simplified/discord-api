@@ -80,7 +80,7 @@ public abstract class DiscordReference {
         if (commandConfigModel.isEmpty()) {
             CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
             newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
-            newCommandConfigModel.setCommandPath(this.getCommandPath(command));
+            newCommandConfigModel.setCommandPath(this.getCommandPath(command, true));
             newCommandConfigModel.setDescription("*<missing description>*");
             newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.DEVELOPER));
             newCommandConfigModel.setEnabled(true);
@@ -91,7 +91,19 @@ public abstract class DiscordReference {
         return commandConfigModel.get();
     }
 
+    public final @NotNull String getCommandPath(@NotNull Command command) {
+        return this.getCommandPath(command, false);
+    }
+
+    private @NotNull String getCommandPath(@NotNull Command command, boolean create) {
+        return StringUtil.join(this.getCommandPathList(command, create), " ");
+    }
+
     public final @NotNull ConcurrentList<String> getCommandPathList(@NotNull Command command) {
+        return this.getCommandPathList(command, false);
+    }
+
+    private @NotNull ConcurrentList<String> getCommandPathList(@NotNull Command command, boolean create) {
         ConcurrentList<String> path = command.getParentCommandNames();
 
         // Get Root Command Prefix
@@ -110,16 +122,13 @@ public abstract class DiscordReference {
         }
 
         // Add Group
-        command.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
+        if (!create)
+            command.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
 
         // Add Command Name
         path.add(command.getCommandInfo().name());
 
         return path;
-    }
-
-    public final @NotNull String getCommandPath(@NotNull Command command) {
-        return StringUtil.join(this.getCommandPathList(command), " ");
     }
 
     public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
