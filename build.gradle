@@ -45,7 +45,7 @@ dependencies {
     implementation group: 'org.hibernate', name: 'hibernate-hikaricp', version: "$hivernateVersion"
     implementation group: 'io.github.openfeign', name: 'feign-okhttp', version: '11.6'
     implementation group: 'io.github.openfeign', name: 'feign-gson', version: '11.6'
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.6'
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.9'
 
     // Projects
     implementation project(':api')
