@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
 import dev.sbs.api.util.SimplifiedException;
-import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -51,8 +50,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     private final @NotNull ConcurrentList<Option> selected = Concurrent.newList();
     private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
 
-    public static SelectMenuBuilder builder() {
-        return new SelectMenuBuilder().withIdentifier(UUID.randomUUID().toString());
+    public static Builder builder() {
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -91,8 +90,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .findFirst();
     }
 
-    public static SelectMenuBuilder from(@NotNull SelectMenu selectMenu) {
-        return new SelectMenuBuilder()
+    public static Builder from(@NotNull SelectMenu selectMenu) {
+        return new Builder()
             .withIdentifier(selectMenu.getIdentifier())
             .setDisabled(selectMenu.isDisabled())
             .withPlaceholder(selectMenu.getPlaceholder())
@@ -165,7 +164,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .build();
     }
 
-    public @NotNull SelectMenuBuilder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
@@ -189,7 +188,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class SelectMenuBuilder implements Builder<SelectMenu> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<SelectMenu> {
 
         private String identifier;
         private boolean disabled;
@@ -208,7 +207,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param option The option to update.
          */
-        public SelectMenuBuilder editOption(@NotNull Option option) {
+        public Builder editOption(@NotNull Option option) {
             this.options.stream()
                 .filter(innerOption -> innerOption.getIdentifier().equals(option.getIdentifier()))
                 .findFirst()
@@ -236,7 +235,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         /**
          * Sets this {@link SelectMenu} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
          */
-        public SelectMenuBuilder isPreserved() {
+        public Builder isPreserved() {
             return this.isPreserved(true);
         }
 
@@ -245,7 +244,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param preserved True to preserve this select menu.
          */
-        public SelectMenuBuilder isPreserved(boolean preserved) {
+        public Builder isPreserved(boolean preserved) {
             this.preserved = preserved;
             return this;
         }
@@ -255,7 +254,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param interaction The interaction function.
          */
-        public SelectMenuBuilder onInteract(@Nullable Function<SelectMenuContext, Mono<Void>> interaction) {
+        public Builder onInteract(@Nullable Function<SelectMenuContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
@@ -264,7 +263,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param interaction The interaction function.
          */
-        public SelectMenuBuilder onInteract(@NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction) {
+        public Builder onInteract(@NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
             return this;
         }
@@ -272,7 +271,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         /**
          * Sets the {@link SelectMenu} as disabled.
          */
-        public SelectMenuBuilder setDisabled() {
+        public Builder setDisabled() {
             return this.setDisabled(true);
         }
 
@@ -281,7 +280,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param disabled True to disable the select menu.
          */
-        public SelectMenuBuilder setDisabled(boolean disabled) {
+        public Builder setDisabled(boolean disabled) {
             this.disabled = disabled;
             return this;
         }
@@ -289,7 +288,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         /**
          * Sets this {@link SelectMenu} as deferred when interacting.
          */
-        public SelectMenuBuilder withDeferEdit() {
+        public Builder withDeferEdit() {
             return this.withDeferEdit(true);
         }
 
@@ -298,7 +297,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param deferEdit True to defer interaction.
          */
-        public SelectMenuBuilder withDeferEdit(boolean deferEdit) {
+        public Builder withDeferEdit(boolean deferEdit) {
             this.deferEdit = deferEdit;
             return this;
         }
@@ -309,7 +308,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          * @param identifier The identifier to use.
          * @param objects The objects used to format the identifier.
          */
-        public SelectMenuBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
             this.identifier = FormatUtil.format(identifier, objects);
             return this;
         }
@@ -319,7 +318,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param options Variable number of options to add.
          */
-        public SelectMenuBuilder withOptions(@NotNull Option... options) {
+        public Builder withOptions(@NotNull Option... options) {
             return this.withOptions(Arrays.asList(options));
         }
 
@@ -328,7 +327,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param options Collection of options to add.
          */
-        public SelectMenuBuilder withOptions(@NotNull Iterable<Option> options) {
+        public Builder withOptions(@NotNull Iterable<Option> options) {
             if (this.options.size() == Option.MAX_ALLOWED)
                 throw SimplifiedException.of(DiscordException.class)
                     .withMessage("Number of options cannot exceed {0}!", Option.MAX_ALLOWED)
@@ -344,7 +343,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param pageType The page type of the select menu.
          */
-        public SelectMenuBuilder withPageType(@NotNull PageType pageType) {
+        public Builder withPageType(@NotNull PageType pageType) {
             this.pageType = pageType;
             return this;
         }
@@ -354,7 +353,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param placeholder The placeholder text to use.
          */
-        public SelectMenuBuilder withPlaceholder(@Nullable String placeholder) {
+        public Builder withPlaceholder(@Nullable String placeholder) {
             return this.withPlaceholder(Optional.ofNullable(placeholder));
         }
 
@@ -363,7 +362,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param placeholder The placeholder text to use.
          */
-        public SelectMenuBuilder withPlaceholder(@NotNull Optional<String> placeholder) {
+        public Builder withPlaceholder(@NotNull Optional<String> placeholder) {
             this.placeholder = placeholder;
             return this;
         }
@@ -373,7 +372,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param minValue The minimum number of selected {@link Option Options}.
          */
-        public SelectMenuBuilder withMinValue(@Nullable Integer minValue) {
+        public Builder withMinValue(@Nullable Integer minValue) {
             return this.withMinValue(Optional.ofNullable(minValue));
         }
 
@@ -382,7 +381,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param minValue The minimum number of selected {@link Option Options}.
          */
-        public SelectMenuBuilder withMinValue(@NotNull Optional<Integer> minValue) {
+        public Builder withMinValue(@NotNull Optional<Integer> minValue) {
             this.minValue = minValue;
             return this;
         }
@@ -392,7 +391,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param maxValue The maximum number of selected {@link Option Options}.
          */
-        public SelectMenuBuilder withMaxValue(@Nullable Integer maxValue) {
+        public Builder withMaxValue(@Nullable Integer maxValue) {
             return this.withMaxValue(Optional.ofNullable(maxValue));
         }
 
@@ -401,7 +400,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param maxValue The maximum number of selected {@link Option Options}.
          */
-        public SelectMenuBuilder withMaxValue(@NotNull Optional<Integer> maxValue) {
+        public Builder withMaxValue(@NotNull Optional<Integer> maxValue) {
             this.maxValue = maxValue;
             return this;
         }
@@ -409,7 +408,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         /**
          * Sets the {@link SelectMenu} to override it's placeholder with the selected {@link Option}.
          */
-        public SelectMenuBuilder withPlaceholderUsesSelectedOption() {
+        public Builder withPlaceholderUsesSelectedOption() {
             return this.withPlaceholderUsesSelectedOption(true);
         }
 
@@ -418,7 +417,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          *
          * @param value True to override placeholder with selected option.
          */
-        public SelectMenuBuilder withPlaceholderUsesSelectedOption(boolean value) {
+        public Builder withPlaceholderUsesSelectedOption(boolean value) {
             this.placeholderUsesSelectedOption = value;
             return this;
         }
@@ -459,8 +458,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         @Getter private final @NotNull Optional<Emoji> emoji;
         private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
 
-        public static OptionBuilder builder() {
-            return new OptionBuilder().withIdentifier(UUID.randomUUID().toString());
+        public static Builder builder() {
+            return new Builder().withIdentifier(UUID.randomUUID().toString());
         }
 
         @Override
@@ -505,8 +504,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             return this.optionInteraction.orElse(NOOP_HANDLER);
         }
 
-        public OptionBuilder mutate() {
-            return new OptionBuilder()
+        public Builder mutate() {
+            return new Builder()
                 .withIdentifier(this.getIdentifier())
                 .withLabel(this.getLabel())
                 .withValue(this.getValue())
@@ -516,7 +515,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class OptionBuilder implements Builder<Option> {
+        public static final class Builder implements dev.sbs.api.util.builder.Builder<Option> {
 
             private String identifier;
             private Optional<String> label = Optional.empty();
@@ -534,7 +533,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param interaction The interaction consumer.
              */
-            public OptionBuilder onInteract(@Nullable Function<OptionContext, Mono<Void>> interaction) {
+            public Builder onInteract(@Nullable Function<OptionContext, Mono<Void>> interaction) {
                 return this.onInteract(Optional.ofNullable(interaction));
             }
 
@@ -547,7 +546,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param interaction The interaction consumer.
              */
-            public OptionBuilder onInteract(@NotNull Optional<Function<OptionContext, Mono<Void>>> interaction) {
+            public Builder onInteract(@NotNull Optional<Function<OptionContext, Mono<Void>>> interaction) {
                 this.interaction = interaction;
                 return this;
             }
@@ -558,7 +557,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @param description The description of the option.
              * @param objects The objects used to format the description.
              */
-            public OptionBuilder withDescription(@Nullable String description, @NotNull Object... objects) {
+            public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
                 return this.withDescription(FormatUtil.formatNullable(description, objects));
             }
 
@@ -567,7 +566,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param description The description of the option.
              */
-            public OptionBuilder withDescription(@NotNull Optional<String> description) {
+            public Builder withDescription(@NotNull Optional<String> description) {
                 this.description = description;
                 return this;
             }
@@ -577,7 +576,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param emoji The emoji of the option.
              */
-            public OptionBuilder withEmoji(@Nullable Emoji emoji) {
+            public Builder withEmoji(@Nullable Emoji emoji) {
                 return this.withEmoji(Optional.ofNullable(emoji));
             }
 
@@ -586,7 +585,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param emoji The emoji of the option.
              */
-            public OptionBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+            public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
                 this.emoji = emoji;
                 return this;
             }
@@ -597,7 +596,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @param identifier The identifier to use.
              * @param objects The objects used to format the identifier.
              */
-            public OptionBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+            public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
                 this.identifier = FormatUtil.format(identifier, objects);
                 return this;
             }
@@ -607,7 +606,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param label The label of the option.
              */
-            public OptionBuilder withLabel(@NotNull String label, @NotNull Object... objects) {
+            public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
                 this.label = Optional.of(FormatUtil.format(label, objects));
                 return this;
             }
@@ -617,7 +616,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param value The option value.
              */
-            public OptionBuilder withValue(@NotNull String value, @NotNull Object... objects) {
+            public Builder withValue(@NotNull String value, @NotNull Object... objects) {
                 this.value = Optional.of(FormatUtil.format(value, objects));
                 return this;
             }

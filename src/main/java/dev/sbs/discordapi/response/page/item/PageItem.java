@@ -81,7 +81,7 @@ public abstract class PageItem {
 
     protected static abstract class PageItemBuilder<T> implements Builder<T> {
 
-        protected final SelectMenu.Option.OptionBuilder optionBuilder = SelectMenu.Option.builder();
+        protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         protected boolean editable;
 
         /**

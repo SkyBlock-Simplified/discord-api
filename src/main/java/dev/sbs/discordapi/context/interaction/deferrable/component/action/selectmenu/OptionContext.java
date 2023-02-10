@@ -17,7 +17,7 @@ public interface OptionContext extends ActionComponentContext {
 
     SelectMenu.Option getOption();
 
-    default void modify(Function<SelectMenu.Option.OptionBuilder, SelectMenu.Option.OptionBuilder> optionBuilder) {
+    default void modify(Function<SelectMenu.Option.Builder, SelectMenu.Option.Builder> optionBuilder) {
         this.modify(
             this.getComponent()
                 .mutate()

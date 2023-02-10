@@ -21,7 +21,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         return this.getComponent().getSelected();
     }
 
-    default void modify(Function<SelectMenu.SelectMenuBuilder, SelectMenu.SelectMenuBuilder> selectMenuBuilder) {
+    default void modify(Function<SelectMenu.Builder, SelectMenu.Builder> selectMenuBuilder) {
         this.modify(selectMenuBuilder.apply(this.getComponent().mutate()).build());
     }
 
