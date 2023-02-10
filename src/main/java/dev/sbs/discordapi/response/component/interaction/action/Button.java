@@ -361,8 +361,8 @@ public final class Button extends ActionComponent implements InteractableCompone
         LAST("Last", 1, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
         BACK("Back", 2, DiscordHelper.getEmoji("ARROW_LEFT")),
         SEARCH("Search", 2, DiscordHelper.getEmoji("SEARCH")),
-        SORT("Sort", 2, DiscordHelper.getEmoji("MENU_LIST")),
-        ORDER("Order", 2, DiscordHelper.getEmoji("SORT"));
+        SORT("Sort", 2, DiscordHelper.getEmoji("SORT")),
+        ORDER("Order", 2, DiscordHelper.getEmoji("SORT_DESCENDING"));
 
         @Getter private final @NotNull String label;
         @Getter private final int row;
