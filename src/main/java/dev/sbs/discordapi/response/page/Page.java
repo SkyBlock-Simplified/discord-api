@@ -1055,7 +1055,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             @NoArgsConstructor(access = AccessLevel.PRIVATE)
             public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Sorter<T>> {
 
-                private final SelectMenu.Option.OptionBuilder optionBuilder = SelectMenu.Option.builder().withIdentifier(UUID.randomUUID().toString());
+                private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder().withIdentifier(UUID.randomUUID().toString());
                 private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
                 private SortOrder order = SortOrder.DESCENDING;
 
