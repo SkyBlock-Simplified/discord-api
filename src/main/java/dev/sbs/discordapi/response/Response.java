@@ -9,12 +9,12 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
+import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.context.message.text.TextCommandContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
@@ -66,8 +66,8 @@ public class Response implements Paging {
     @Getter private final int timeToLive;
     @Getter private final boolean interactable;
     @Getter private final boolean loader;
+    @Getter private final boolean renderingPagingComponents;
     @Getter private final boolean ephemeral;
-    @Getter private Button backButton = Button.PageType.BACK.build();
 
     private Response(
         @NotNull UUID uniqueId,
@@ -79,6 +79,7 @@ public class Response implements Paging {
         int timeToLive,
         boolean interactable,
         boolean loader,
+        boolean renderingPagingComponents,
         boolean ephemeral) {
         ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
 
@@ -109,14 +110,9 @@ public class Response implements Paging {
         this.timeToLive = timeToLive;
         this.interactable = interactable;
         this.loader = loader;
+        this.renderingPagingComponents = renderingPagingComponents;
         this.ephemeral = ephemeral;
-
-        // Page History
-        this.pageHistory.add(
-            this.getPages()
-                .matchFirst(Page::isLoadedFirst)
-                .orElse(this.getPages().get(0))
-        );
+        this.pageHistory.add(this.getPages().get(0));
     }
 
     public static ResponseBuilder builder() {
@@ -140,6 +136,7 @@ public class Response implements Paging {
             .append(this.getTimeToLive(), response.getTimeToLive())
             .append(this.isInteractable(), response.isInteractable())
             .append(this.isLoader(), response.isLoader())
+            .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
             .append(this.isEphemeral(), response.isEphemeral())
             .append(this.getUniqueId(), response.getUniqueId())
             .append(this.getPageHistory(), response.getPageHistory())
@@ -147,7 +144,6 @@ public class Response implements Paging {
             .append(this.getAttachments(), response.getAttachments())
             .append(this.getReferenceId(), response.getReferenceId())
             .append(this.getReactorScheduler(), response.getReactorScheduler())
-            .append(this.getBackButton(), response.getBackButton())
             .build();
     }
 
@@ -161,6 +157,7 @@ public class Response implements Paging {
             .withTimeToLive(response.getTimeToLive())
             .isInteractable(response.isInteractable())
             .isLoader(response.isLoader())
+            .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral());
     }
 
@@ -199,6 +196,7 @@ public class Response implements Paging {
             .content(this.getCurrentPage().getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
+            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
@@ -207,21 +205,20 @@ public class Response implements Paging {
     private ConcurrentList<LayoutComponent<?>> getCurrentComponents() {
         ConcurrentList<LayoutComponent<?>> components = Concurrent.newList();
 
-        // Response - Paging Components
-        if (!this.hasPageHistory()) // Top-Level Pages
-            components.addAll(this.getPageComponents());
-        else // Response - Back Button
-            components.add(ActionRow.of(this.getBackButton()));
+        if (this.isRenderingPagingComponents()) {
+            // Response - Paging Components
+            if (!this.hasPageHistory()) // Top-Level Pages
+                components.addAll(this.getPageComponents());
 
-        // Current Page - Paging Components
-        components.addAll(this.getCurrentPage().getPageComponents());
+            // Current Page - Paging Components
+            components.addAll(this.getCurrentPage().getPageComponents());
+        }
 
         // Current Page - Components
-        if (ListUtil.notEmpty(this.getCurrentPage().getComponents()))
-            components.addAll(this.getCurrentPage().getComponents());
+        components.addAll(this.getCurrentPage().getComponents());
 
         // Viewer/Editor
-        if (this.getCurrentPage().doesHaveItems() && this.getCurrentPage().getItemData().isShowingSelector()) {
+        if (this.getCurrentPage().doesHaveItems() && this.isRenderingPagingComponents() && this.getCurrentPage().getItemData().isShowingSelector()) {
             // NumberUtil.round((double) items.size() / this.getSettings().getItemsPerPage()) > 1
             components.add(ActionRow.of(
                 SelectMenu.builder()
@@ -269,17 +266,16 @@ public class Response implements Paging {
     }
 
     public final Page getCurrentPage() {
-        return this.pageHistory.getLast();
+        return this.pageHistory.getLast().orElseThrow(); // Will Always Exist
     }
 
     public final ConcurrentList<String> getPageHistoryIdentifiers() {
-        return Concurrent.newUnmodifiableList(
-            this.pageHistory.stream()
-                .map(Page::getOption)
-                .flatMap(Optional::stream)
-                .map(SelectMenu.Option::getValue)
-                .collect(Concurrent.toList())
-        );
+        return this.pageHistory.stream()
+            .map(Page::getOption)
+            .flatMap(Optional::stream)
+            .map(SelectMenu.Option::getValue)
+            .collect(Concurrent.toList())
+            .toUnmodifiableList();
     }
 
     /**
@@ -324,15 +320,12 @@ public class Response implements Paging {
      */
     public final Response gotoPage(String identifier) {
         this.pageHistory.clear();
-        this.pageHistory.add(
-            this.getPage(identifier).orElseThrow(
-                () -> SimplifiedException.of(DiscordException.class)
-                    .withMessage("Unable to locate page identified by ''{0}''!", identifier)
-                    .build()
-            )
-        );
+        this.pageHistory.add(this.getPage(identifier).orElseThrow(
+            () -> SimplifiedException.of(DiscordException.class)
+                .withMessage("Unable to locate page identified by ''{0}''!", identifier)
+                .build()
+        ));
 
-        this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
         return this;
     }
 
@@ -347,15 +340,11 @@ public class Response implements Paging {
                 .withMessage("Unable to locate subpage identified by ''{0}''!", identifier)
                 .build()
         ));
-
-        this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
     }
 
     public final void gotoPreviousPage() {
-        if (this.hasPageHistory()) {
+        if (this.hasPageHistory())
             this.pageHistory.removeLast();
-            this.backButton = this.backButton.mutate().setEnabled(this.hasPageHistory()).build();
-        }
     }
 
     @Override
@@ -372,8 +361,8 @@ public class Response implements Paging {
             .append(this.getTimeToLive())
             .append(this.isInteractable())
             .append(this.isLoader())
+            .append(this.isRenderingPagingComponents())
             .append(this.isEphemeral())
-            .append(this.getBackButton())
             .build();
     }
 
@@ -398,6 +387,7 @@ public class Response implements Paging {
         private int timeToLive = 10;
         private boolean interactable = true;
         private boolean loader = false;
+        private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
 
         /**
@@ -492,19 +482,36 @@ public class Response implements Paging {
         }
 
         /**
-         * Sets the {@link Response} as a loader to be edited in the future.
+         * Sets the {@link Response} as a loader.
          */
         public ResponseBuilder isLoader() {
             return this.isLoader(true);
         }
 
         /**
-         * Sets if the {@link Response} as a loader to be edited in the future.
+         * Sets if the {@link Response} should be a loader.
          *
-         * @param value True if loader.
+         * @param value True if rendering page components.
          */
         public ResponseBuilder isLoader(boolean value) {
             this.loader = value;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Response} to render paging components.
+         */
+        public ResponseBuilder isRenderingPagingComponents() {
+            return this.isRenderingPagingComponents(true);
+        }
+
+        /**
+         * Sets if the {@link Response} should render paging components.
+         *
+         * @param value True if rendering page components.
+         */
+        public ResponseBuilder isRenderingPagingComponents(boolean value) {
+            this.renderingPagingComponents = value;
             return this;
         }
 
@@ -664,7 +671,7 @@ public class Response implements Paging {
          * @param secondsToLive How long the response should live without interaction in seconds.
          */
         public ResponseBuilder withTimeToLive(int secondsToLive) {
-            this.timeToLive = Math.max(5, Math.min(secondsToLive, 300));
+            this.timeToLive = NumberUtil.ensureRange(secondsToLive, 5, 300);
             return this;
         }
 
@@ -682,14 +689,15 @@ public class Response implements Paging {
 
             return new Response(
                 this.uniqueId,
-                Concurrent.newUnmodifiableList(this.pages),
-                Concurrent.newUnmodifiableList(this.attachments),
+                this.pages.toUnmodifiableList(),
+                this.attachments.toUnmodifiableList(),
                 this.referenceId,
                 this.reactorScheduler,
                 this.replyMention,
                 this.timeToLive,
                 this.interactable,
                 this.loader,
+                this.renderingPagingComponents,
                 this.ephemeral
             );
         }
