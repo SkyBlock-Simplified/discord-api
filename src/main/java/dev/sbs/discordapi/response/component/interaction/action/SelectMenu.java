@@ -8,7 +8,6 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.OptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
@@ -24,7 +23,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -109,20 +107,15 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     public discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
                 this.getIdentifier(),
-                this.getOptions().stream().map(Option::getD4jOption).collect(Concurrent.toList())
+                this.getOptions()
+                    .stream()
+                    .map(option -> option.getD4jOption(this.getSelected().contains(option)))
+                    .collect(Concurrent.toList())
             )
             .withPlaceholder(this.getPlaceholder().orElse(""))
             .withMinValues(this.getMinValue().orElse(1))
             .withMaxValues(this.getMaxValue().orElse(1))
             .disabled(this.isDisabled());
-    }
-
-    public static SelectMenu getDivider() {
-        return SelectMenu.builder()
-            .withPlaceholder(StringUtil.repeat('\u23af', 44))
-            .setDisabled()
-            .withOptions(Option.builder().withValue("DIVIDER").build())
-            .build();
     }
 
     @Override
@@ -142,39 +135,16 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .then();
     }
 
-    public @NotNull Function<SelectMenuContext, Mono<SelectMenuContext>> getPlaceholderUpdate() {
-        return selectMenuContext -> Flux.fromIterable(this.getOptions())
-            .filter(option -> option.getValue().equals(selectMenuContext.getEvent().getValues().get(0)))
-            .singleOrEmpty()
-            .flatMap(option -> {
-                Mono<Void> mono = Mono.empty();
-
-                if (this.isPlaceholderUsingSelectedOption()) {
-                    option.placeholderSelected = true;
-
-                    mono = Flux.fromIterable(this.getOptions())
-                        .filter(_option -> !_option.equals(option))
-                        .doOnNext(Option::setNotSelected)
-                        .then();
-                }
-
-                return mono.thenReturn(selectMenuContext);
-            });
-    }
-
     public @NotNull ConcurrentList<Option> getSelected() {
         return this.selected.toUnmodifiableList();
     }
 
     private @NotNull Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
-        return Mono.just(selectMenuContext).flatMap(context -> this.getPlaceholderUpdate()
-            .apply(selectMenuContext)
-            .then(
-                Mono.justOrEmpty(context.getResponse())
-                    .flatMap(response -> option.getInteraction()
-                        .apply(OptionContext.of(selectMenuContext, response, option))
-                    )
-            ));
+        return Mono.just(selectMenuContext).flatMap(context -> Mono.justOrEmpty(context.getResponse())
+            .flatMap(response -> option.getInteraction()
+                .apply(OptionContext.of(context, response, option))
+            )
+        );
     }
 
     @Override
@@ -197,6 +167,15 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
 
     public @NotNull SelectMenuBuilder mutate() {
         return from(this);
+    }
+
+    public void updateSelected() {
+        this.updateSelected(Concurrent.newList());
+    }
+
+    public SelectMenu initPlaceholder(@NotNull String value) {
+        this.findOption(Option::getValue, value).ifPresent(this.selected::add);
+        return this;
     }
 
     public void updateSelected(@NotNull List<String> values) {
@@ -238,11 +217,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                     this.options.remove(index);
                     this.options.add(index, option);
                 });
-            return this;
-        }
-
-        public SelectMenuBuilder clearSelectOption() {
-            this.options.forEach(Option::setNotSelected);
             return this;
         }
 
@@ -483,7 +457,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         @Getter private final @NotNull String value;
         @Getter private final @NotNull Optional<String> description;
         @Getter private final @NotNull Optional<Emoji> emoji;
-        @Getter private boolean placeholderSelected;
         private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
 
         public static OptionBuilder builder() {
@@ -498,7 +471,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             Option option = (Option) o;
 
             return new EqualsBuilder()
-                .append(this.isPlaceholderSelected(), option.isPlaceholderSelected())
                 .append(this.getIdentifier(), option.getIdentifier())
                 .append(this.getLabel(), option.getLabel())
                 .append(this.getValue(), option.getValue())
@@ -515,14 +487,13 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 .append(this.getValue())
                 .append(this.getDescription())
                 .append(this.getEmoji())
-                .append(this.isPlaceholderSelected())
                 .build();
         }
 
-        public discord4j.core.object.component.SelectMenu.Option getD4jOption() {
+        public discord4j.core.object.component.SelectMenu.Option getD4jOption(boolean selected) {
             discord4j.core.object.component.SelectMenu.Option d4jOption = discord4j.core.object.component.SelectMenu.Option.of(this.getLabel(), this.getValue())
                 .withDescription(this.getDescription().orElse(""))
-                .withDefault(this.isPlaceholderSelected());
+                .withDefault(selected);
 
             if (this.getEmoji().isPresent())
                 d4jOption = d4jOption.withEmoji(this.getEmoji().get().getD4jReaction());
@@ -541,12 +512,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 .withValue(this.getValue())
                 .withDescription(this.getDescription())
                 .withEmoji(this.getEmoji())
-                .isPlaceholderSelected(this.isPlaceholderSelected())
                 .onInteract(this.optionInteraction);
-        }
-
-        private void setNotSelected() {
-            this.placeholderSelected = false;
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -557,29 +523,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             private Optional<String> value = Optional.empty();
             private Optional<String> description = Optional.empty();
             private Optional<Emoji> emoji = Optional.empty();
-            private boolean placeholderSelected;
             private Optional<Function<OptionContext, Mono<Void>>> interaction = Optional.empty();
-
-            /**
-             * Sets the {@link Option} as selected in the {@link SelectMenu}.
-             * <br><br>
-             * Only one {@link Option} per enclosing {@link SelectMenu} can be set as default.
-             */
-            public OptionBuilder isPlaceholderSelected() {
-                return this.isPlaceholderSelected(true);
-            }
-
-            /**
-             * Sets if the {@link Option} is displayed as selected in the {@link SelectMenu}.
-             * <br><br>
-             * Only one {@link Option} per enclosing {@link SelectMenu} can be set as default.
-             *
-             * @param isDefault True if the option is default selected.
-             */
-            public OptionBuilder isPlaceholderSelected(boolean isDefault) {
-                this.placeholderSelected = isDefault;
-                return this;
-            }
 
             /**
              * Sets the interaction to execute when the {@link Option} is interacted with by a user.
@@ -691,7 +635,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                     this.value.orElse(this.identifier),
                     this.description,
                     this.emoji,
-                    this.placeholderSelected,
                     this.interaction
                 );
             }
