@@ -80,8 +80,26 @@ public class Response implements Paging {
         boolean interactable,
         boolean loader,
         boolean renderingPagingComponents,
-        boolean ephemeral) {
+        boolean ephemeral,
+        @NotNull Optional<String> defaultPage) {
+        this.uniqueId = uniqueId;
+        this.pages = pages;
+        this.attachments = attachments;
+        this.referenceId = referenceId;
+        this.reactorScheduler = reactorScheduler;
+        this.replyMention = replyMention;
+        this.timeToLive = timeToLive;
+        this.interactable = interactable;
+        this.loader = loader;
+        this.renderingPagingComponents = renderingPagingComponents;
+        this.ephemeral = ephemeral;
         ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
+
+        // First Page
+        if (defaultPage.isPresent())
+            this.gotoPage(defaultPage.get());
+        else
+            this.pageHistory.add(this.getPages().get(0));
 
         // Page List
         if (ListUtil.sizeOf(pages) > 1) {
@@ -97,22 +115,11 @@ public class Response implements Paging {
                             .collect(Concurrent.toList())
                     )
                     .build()
+                    .initPlaceholder(this.getPageHistoryIdentifiers().get(0))
             ));
         }
 
         this.pageComponents = Concurrent.newUnmodifiableList(pageComponents);
-        this.uniqueId = uniqueId;
-        this.pages = pages;
-        this.attachments = attachments;
-        this.referenceId = referenceId;
-        this.reactorScheduler = reactorScheduler;
-        this.replyMention = replyMention;
-        this.timeToLive = timeToLive;
-        this.interactable = interactable;
-        this.loader = loader;
-        this.renderingPagingComponents = renderingPagingComponents;
-        this.ephemeral = ephemeral;
-        this.pageHistory.add(this.getPages().get(0));
     }
 
     public static ResponseBuilder builder() {
@@ -318,15 +325,13 @@ public class Response implements Paging {
      *
      * @param identifier The page option value.
      */
-    public final Response gotoPage(String identifier) {
+    public final void gotoPage(String identifier) {
         this.pageHistory.clear();
         this.pageHistory.add(this.getPage(identifier).orElseThrow(
             () -> SimplifiedException.of(DiscordException.class)
                 .withMessage("Unable to locate page identified by ''{0}''!", identifier)
                 .build()
         ));
-
-        return this;
     }
 
     /**
@@ -389,6 +394,7 @@ public class Response implements Paging {
         private boolean loader = false;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
+        private Optional<String> defaultPage = Optional.empty();
 
         /**
          * Recursively clear all but preservable components from all {@link Page Pages} in {@link Response}.
@@ -587,6 +593,25 @@ public class Response implements Paging {
         }
 
         /**
+         * Sets the default page the {@link Response} should load.
+         *
+         * @param pageIdentifier The page identifier to load.
+         */
+        public ResponseBuilder withDefaultPage(@Nullable String pageIdentifier) {
+            return this.withDefaultPage(Optional.ofNullable(pageIdentifier));
+        }
+
+        /**
+         * Sets the default page the {@link Response} should load.
+         *
+         * @param pageIdentifier The page identifier to load.
+         */
+        public ResponseBuilder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
+            this.defaultPage = pageIdentifier;
+            return this;
+        }
+
+        /**
          * Add {@link Page Pages} to the {@link Response}.
          *
          * @param pages Variable number of pages to add.
@@ -698,7 +723,8 @@ public class Response implements Paging {
                 this.interactable,
                 this.loader,
                 this.renderingPagingComponents,
-                this.ephemeral
+                this.ephemeral,
+                this.defaultPage
             );
         }
 
