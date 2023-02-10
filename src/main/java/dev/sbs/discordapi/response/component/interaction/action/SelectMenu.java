@@ -49,8 +49,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @Getter private final @NotNull ConcurrentList<Option> options;
     @Getter private final boolean preserved;
     @Getter private final boolean deferEdit;
-    @Getter private final PageType pageType;
-    private final ConcurrentList<Option> selected = Concurrent.newList();
+    @Getter private final @NotNull PageType pageType;
+    private final @NotNull ConcurrentList<Option> selected = Concurrent.newList();
     private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
 
     public static SelectMenuBuilder builder() {
@@ -128,15 +128,13 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @Override
     public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
-            .doOnNext(context -> this.updateSelected(context.getValues()))
+            .doOnNext(context -> this.updateSelected(context.getEvent().getValues()))
             .flatMap(context -> Mono.justOrEmpty(this.selectMenuInteraction)
                 .flatMap(interaction -> interaction.apply(context))
                 .thenReturn(context)
             )
             .filter(context -> ListUtil.sizeOf(context.getEvent().getValues()) == 1)
-            .flatMap(context -> Flux.fromIterable(this.getOptions())
-                .filter(option -> option.getValue().equals(context.getEvent().getValues().get(0)))
-                .singleOrEmpty()
+            .flatMap(context -> Mono.justOrEmpty(this.getSelected().getFirst())
                 .filter(option -> option.optionInteraction.isPresent())
                 .flatMap(option -> this.handleOptionInteraction(context, option).thenReturn(context))
                 .switchIfEmpty(selectMenuContext.deferEdit().thenReturn(selectMenuContext))
@@ -165,7 +163,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     }
 
     public @NotNull ConcurrentList<Option> getSelected() {
-        return Concurrent.newUnmodifiableList(this.selected);
+        return this.selected.toUnmodifiableList();
     }
 
     private @NotNull Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
