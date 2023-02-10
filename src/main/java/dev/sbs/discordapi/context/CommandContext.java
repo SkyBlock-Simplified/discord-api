@@ -4,14 +4,21 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.command.data.CommandInfo;
+import dev.sbs.discordapi.command.data.Parameter;
 import discord4j.core.event.domain.Event;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 public interface CommandContext<T extends Event> extends EventContext<T> {
 
-    default Optional<Argument> getArgument(String name) {
-        return this.getArguments().stream().filter(argument -> argument.getParameter().getName().equalsIgnoreCase(name)).findFirst();
+    /**
+     * Finds the argument for a known {@link Parameter}.
+     *
+     * @param name The name of the parameter.
+     */
+    default Argument getArgument(@NotNull String name) {
+        return this.getArguments().findFirstOrNull(argument -> argument.getParameter().getName(), name);
     }
 
     ConcurrentList<Argument> getArguments();
