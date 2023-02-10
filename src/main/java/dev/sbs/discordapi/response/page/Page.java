@@ -66,10 +66,10 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @NotNull ItemData<?> itemData) {
         super(identifier, option, Type.PAGE, false);
         this.content = content;
-        this.pages = Concurrent.newUnmodifiableList(pages);
-        this.embeds = Concurrent.newUnmodifiableList(embeds);
-        this.components = Concurrent.newUnmodifiableList(components);
-        this.reactions = Concurrent.newUnmodifiableList(reactions);
+        this.pages = pages.toUnmodifiableList();
+        this.embeds = embeds.toUnmodifiableList();
+        this.components = components.toUnmodifiableList();
+        this.reactions = reactions.toUnmodifiableList();
         this.itemData = itemData;
 
         // Page Components
@@ -228,7 +228,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     public final void gotoItemPage(int index) {
         this.currentItemPage = NumberUtil.ensureRange(index, 1, this.getItemData().getFieldItems().size());
-        this.lastRenderedPageItems = Concurrent.newUnmodifiableList();
         this.updatePagingComponents();
     }
 
@@ -296,13 +295,16 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
     }
 
     private void updatePagingComponents() {
+        // Require Render Update
+        this.lastRenderedPageItems = Concurrent.newUnmodifiableList();
+
         // Enabled
         this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.hasPreviousItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.hasPreviousItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.BACK, buttonBuilder -> buttonBuilder.setEnabled(false)); // TODO: Item Paging?
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.notEmpty(this.getItemData().getSorters())));
+        this.editPageButton(Button::getPageType, Button.PageType.BACK, Button.ButtonBuilder::setDisabled); // TODO: Item Paging?
+        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.sizeOf(this.getItemData().getSorters()) > 1));
         this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.ButtonBuilder::setEnabled);
 
         // Labels
@@ -317,21 +319,20 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
-            buttonBuilder -> buttonBuilder
-                .withLabel(FormatUtil.format(
-                    "Sort: {0}", this.getItemData()
-                        .getCurrentSorter()
-                        .map(sorter -> sorter.getOption().getLabel())
-                        .orElse("N/A")
-                ))
+            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
+                "Sort: {0}", this.getItemData()
+                    .getCurrentSorter()
+                    .map(sorter -> sorter.getOption().getLabel())
+                    .orElse("N/A")
+            ))
         );
 
         this.editPageButton(
             Button::getPageType,
             Button.PageType.ORDER,
             buttonBuilder -> buttonBuilder
-                .withLabel(FormatUtil.format("Order: {0}", this.getItemData().getCurrentOrder().getShortName()))
-                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getItemData().getCurrentOrder().name())))
+                .withLabel(FormatUtil.format("Order: {0}", this.getItemData().isReversed() ? "Reversed" : "Normal"))
+                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getItemData().isReversed() ? "ASCENDING" : "DESCENDING")))
         );
     }
 
@@ -512,7 +513,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
          *
          * @param components Variable number of layout components to add.
          */
-        @SuppressWarnings("all")
         public PageBuilder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
             return this.withComponents(Arrays.asList(components));
         }
@@ -746,7 +746,12 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         public void gotoNextSorter() {
-            this.currentSorterIndex = NumberUtil.ensureRange(this.currentSorterIndex++, -1, ListUtil.sizeOf(this.getSorters()));
+            if (ListUtil.notEmpty(this.getSorters())) {
+                this.currentSorterIndex++;
+
+                if (this.currentSorterIndex >= ListUtil.sizeOf(this.getSorters()))
+                    this.currentSorterIndex = 0;
+            }
         }
 
         @Override
@@ -983,9 +988,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             public ConcurrentList<T> apply(ConcurrentList<T> list, Boolean reversed) {
                 ConcurrentList<T> copy = Concurrent.newList(list);
 
-                if (reversed)
-                    copy = copy.inverse();
-
                 copy.sort((o1, o2) -> {
                     Iterator<Map.Entry<Comparator<? extends T>, SortOrder>> iterator = this.getComparators().iterator();
                     Map.Entry<Comparator<? extends T>, SortOrder> entry = iterator.next();
@@ -1004,6 +1006,10 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
                     return this.getOrder() == SortOrder.ASCENDING ? comparator.compare(o1, o2) : comparator.compare(o2, o1);
                 });
+
+                // Reverse Results
+                if (reversed)
+                    copy = copy.inverse();
 
                 return copy;
             }
