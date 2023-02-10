@@ -81,6 +81,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 SelectMenu.builder()
                     .withPageType(SelectMenu.PageType.SUBPAGE)
                     .withPlaceholder("Select a subpage.")
+                    .withPlaceholderUsesSelectedOption()
                     .withOptions(
                         SelectMenu.Option.builder()
                             .withValue("BACK")
@@ -89,7 +90,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                     )
                     .withOptions(
                         pages.stream()
-                            //.filter(Page::doesNotHaveItems)
                             .map(Page::getOption)
                             .flatMap(Optional::stream)
                             .collect(Concurrent.toList())
