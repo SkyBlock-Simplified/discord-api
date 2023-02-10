@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.history;
+package dev.sbs.discordapi.response.page.handler;
 
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.EqualsBuilder;
