@@ -16,14 +16,14 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.page.history.ItemHandler;
+import dev.sbs.discordapi.response.page.history.Paging;
 import dev.sbs.discordapi.response.page.item.PageItem;
 import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
-import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,17 +43,14 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public class Page extends PageItem implements Paging, SingletonFieldItem {
+public class Page extends PageItem implements SingletonFieldItem, Paging<Page> {
 
-    @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> pageComponents;
     @Getter private final @NotNull Optional<String> content;
     @Getter private final @NotNull ConcurrentList<Page> pages;
     @Getter private final @NotNull ConcurrentList<Embed> embeds;
     @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
     @Getter private final @NotNull ConcurrentList<Emoji> reactions;
     @Getter private final @NotNull ItemData<?> itemData;
-    @Getter private int currentItemPage = 1;
-    private ConcurrentList<PageItem> lastRenderedPageItems = Concurrent.newUnmodifiableList();
 
     protected Page(
         @NotNull String identifier,
@@ -71,73 +68,10 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         this.components = components.toUnmodifiableList();
         this.reactions = reactions.toUnmodifiableList();
         this.itemData = itemData;
-
-        // Page Components
-        ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
-
-        // SubPage List
-        if (ListUtil.notEmpty(this.getPages())) {
-            pageComponents.add(ActionRow.of(
-                SelectMenu.builder()
-                    .withPageType(SelectMenu.PageType.SUBPAGE)
-                    .withPlaceholder("Select a subpage.")
-                    .withPlaceholderUsesSelectedOption()
-                    .withOptions(
-                        SelectMenu.Option.builder()
-                            .withValue("BACK")
-                            .withLabel("Back")
-                            .build()
-                    )
-                    .withOptions(
-                        pages.stream()
-                            .map(Page::getOption)
-                            .flatMap(Optional::stream)
-                            .collect(Concurrent.toList())
-                    )
-                    .build()
-            ));
-        }
-
-        // Item List
-        if (this.getTotalItemPages() > 1) {
-            for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
-                int row = i;
-
-                // Button Rows
-                pageComponents.add(ActionRow.of(
-                    Arrays.stream(Button.PageType.values())
-                        .filter(pageType -> pageType.getRow() == row)
-                        .map(Button.PageType::build)
-                        .collect(Concurrent.toList())
-                ));
-            }
-        }
-
-        this.pageComponents = pageComponents.toUnmodifiableList();
-        this.updatePagingComponents();
     }
 
     public static PageBuilder builder() {
         return new PageBuilder().withIdentifier(UUID.randomUUID().toString());
-    }
-
-    /**
-     * Updates an existing paging {@link Button}.
-     *
-     * @param buttonBuilder The button to edit.
-     */
-    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
-        this.pageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
-            .stream()
-            .filter(Button.class::isInstance)
-            .map(Button.class::cast)
-            .filter(button -> Objects.equals(function.apply(button), value))
-            .findFirst()
-            .ifPresent(button -> layoutComponent.getComponents().set(
-                layoutComponent.getComponents().indexOf(button),
-                buttonBuilder.apply(button.mutate()).build()
-            ))
-        );
     }
 
     @Override
@@ -149,8 +83,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         Page page = (Page) o;
 
         return new EqualsBuilder()
-            .append(this.getCurrentItemPage(), page.getCurrentItemPage())
-            .append(this.getPageComponents(), page.getPageComponents())
             .append(this.getContent(), page.getContent())
             .append(this.getPages(), page.getPages())
             .append(this.getEmbeds(), page.getEmbeds())
@@ -161,7 +93,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
     }
 
     public final boolean doesHaveItems() {
-        return ListUtil.notEmpty(this.getItemData().getFieldItems());
+        return ListUtil.notEmpty(this.getItemData().getItems());
     }
 
     public final boolean doesNotHaveItems() {
@@ -222,118 +154,31 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             .build();
     }
 
-    public final int getTotalItemPages() {
-        return NumberUtil.roundUp((double) this.getItemData().getFieldItems().size() / this.getItemData().getAmountPerPage(), 1);
-    }
-
-    public final void gotoItemPage(int index) {
-        this.currentItemPage = NumberUtil.ensureRange(index, 1, this.getItemData().getFieldItems().size());
-        this.updatePagingComponents();
-    }
-
-    public final void gotoFirstItemPage() {
-        this.gotoItemPage(1);
-    }
-
-    public final void gotoLastItemPage() {
-        this.gotoItemPage(this.getTotalItemPages());
-    }
-
-    public final void gotoNextItemPage() {
-        this.gotoItemPage(this.currentItemPage + 1);
-    }
-
     public void gotoNextSorter() {
         this.getItemData().gotoNextSorter();
-        this.updatePagingComponents();
-    }
-
-    public final void gotoPreviousItemPage() {
-        this.gotoItemPage(this.currentItemPage - 1);
-    }
-
-    public final boolean hasNextItemPage() {
-        return this.currentItemPage < this.getTotalItemPages();
-    }
-
-    public final boolean hasPreviousItemPage() {
-        return this.currentItemPage > 1;
+        this.getItemData().setCacheUpdateRequired();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
-            .append(this.getPageComponents())
             .append(this.getContent())
             .append(this.getPages())
             .append(this.getEmbeds())
             .append(this.getComponents())
             .append(this.getReactions())
             .append(this.getItemData())
-            .append(this.getCurrentItemPage())
             .build();
     }
 
     public void invertOrder() {
         this.getItemData().invertOrder();
-        this.updatePagingComponents();
+        this.getItemData().setCacheUpdateRequired();
     }
 
     public PageBuilder mutate() {
         return from(this);
-    }
-
-    public final ConcurrentList<PageItem> getCachedPageItems() {
-        if (ListUtil.isEmpty(this.lastRenderedPageItems)) {
-            int startIndex = (this.getCurrentItemPage() - 1) * this.getItemData().getAmountPerPage();
-            int endIndex = Math.min(startIndex + this.getItemData().getAmountPerPage(), ListUtil.sizeOf(this.getItemData().getFieldItems()));
-            this.lastRenderedPageItems = Concurrent.newUnmodifiableList(this.getItemData().getTransformedFieldItems(startIndex, endIndex));
-        }
-
-        return this.lastRenderedPageItems;
-    }
-
-    private void updatePagingComponents() {
-        // Require Render Update
-        this.lastRenderedPageItems = Concurrent.newUnmodifiableList();
-
-        // Enabled
-        this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.BACK, Button.ButtonBuilder::setDisabled); // TODO: Item Paging?
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.sizeOf(this.getItemData().getSorters()) > 1));
-        this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.ButtonBuilder::setEnabled);
-
-        // Labels
-        this.editPageButton(
-            Button::getPageType,
-            Button.PageType.INDEX,
-            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "{0} / {1}", this.getCurrentItemPage(), this.getTotalItemPages()
-            ))
-        );
-
-        this.editPageButton(
-            Button::getPageType,
-            Button.PageType.SORT,
-            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "Sort: {0}", this.getItemData()
-                    .getCurrentSorter()
-                    .map(sorter -> sorter.getOption().getLabel())
-                    .orElse("N/A")
-            ))
-        );
-
-        this.editPageButton(
-            Button::getPageType,
-            Button.PageType.ORDER,
-            buttonBuilder -> buttonBuilder
-                .withLabel(FormatUtil.format("Order: {0}", this.getItemData().isReversed() ? "Reversed" : "Normal"))
-                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getItemData().isReversed() ? "ASCENDING" : "DESCENDING")))
-        );
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
@@ -664,20 +509,41 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
     }
 
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class ItemData<T> {
+    public static class ItemData<T> extends ItemHandler<T, Page, String> {
 
         @Getter private final @NotNull Class<T> type;
-        @Getter private final @NotNull ConcurrentList<T> fieldItems;
-        @Getter private final @NotNull ConcurrentList<PageItem> items;
+        @Getter private final @NotNull ConcurrentList<PageItem> pageItems;
         @Getter private final @NotNull Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer;
         @Getter private final @NotNull ConcurrentList<Sorter<T>> sorters;
         @Getter private final @NotNull PageItem.Style style;
-        @Getter private final int amountPerPage;
         @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
-        @Getter private final boolean showingSelector;
+        @Getter private final boolean viewerEnabled;
         @Getter private int currentSorterIndex = -1;
         @Getter private boolean reversed = false;
+        private ConcurrentList<PageItem> cachedPageItems = Concurrent.newUnmodifiableList();
+
+        private ItemData(
+            @NotNull ConcurrentList<Page> pages,
+            @NotNull Function<Page, String> historyTransformer,
+            @NotNull BiFunction<Page, String, Boolean> historyMatcher,
+            @NotNull ConcurrentList<T> items,
+            int amountPerPage,
+            @NotNull Class<T> type,
+            @NotNull ConcurrentList<PageItem> pageItems,
+            @NotNull Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer,
+            @NotNull ConcurrentList<Sorter<T>> sorters,
+            @NotNull PageItem.Style style,
+            @NotNull Optional<Triple<String, String, String>> columnNames,
+            boolean viewerEnabled) {
+            super(pages, Optional.of(historyTransformer), Optional.of(historyMatcher), items, amountPerPage);
+            this.type = type;
+            this.pageItems = pageItems;
+            this.transformer = transformer;
+            this.sorters = sorters;
+            this.style = style;
+            this.columnNames = columnNames;
+            this.viewerEnabled = viewerEnabled;
+        }
 
         public static <T> Builder<T> builder(@NotNull Class<T> type) {
             return new Builder<>(type);
@@ -687,39 +553,45 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
 
             ItemData<?> itemData = (ItemData<?>) o;
 
             return new EqualsBuilder()
                 .append(this.getAmountPerPage(), itemData.getAmountPerPage())
+                .append(this.isViewerEnabled(), itemData.isViewerEnabled())
+                .append(this.getCurrentSorterIndex(), itemData.getCurrentSorterIndex())
+                .append(this.isReversed(), itemData.isReversed())
                 .append(this.getType(), itemData.getType())
-                .append(this.getFieldItems(), itemData.getFieldItems())
-                .append(this.getItems(), itemData.getItems())
+                .append(this.getPageItems(), itemData.getPageItems())
                 .append(this.getTransformer(), itemData.getTransformer())
                 .append(this.getSorters(), itemData.getSorters())
-                .append(this.isReversed(), itemData.isReversed())
                 .append(this.getStyle(), itemData.getStyle())
                 .append(this.getColumnNames(), itemData.getColumnNames())
-                .append(this.isShowingSelector(), itemData.isShowingSelector())
                 .build();
         }
 
         public static <T> Builder<T> from(@NotNull ItemData<T> itemData) {
             return new Builder<>(itemData.getType())
-                .withFieldItems(itemData.getFieldItems())
                 .withItems(itemData.getItems())
+                .withPageItems(itemData.getPageItems())
                 .withTransformer(itemData.getTransformer())
                 .withSorters(itemData.getSorters())
                 .withStyle(itemData.getStyle())
                 .withAmountPerPage(itemData.getAmountPerPage())
                 .withColumnNames(itemData.getColumnNames())
-                .withSelector(itemData.isShowingSelector());
+                .isViewerEnabled(itemData.isViewerEnabled());
         }
 
-        public SortOrder getCurrentOrder() {
-            return this.getCurrentSorter()
-                .map(Sorter::getOrder)
-                .orElse(SortOrder.DESCENDING);
+        public ConcurrentList<PageItem> getCachedPageItems() {
+            if (this.isCacheUpdateRequired()) {
+                this.setCacheUpdateRequired(false);
+                int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
+                int endIndex = Math.min(startIndex + this.getAmountPerPage(), ListUtil.sizeOf(this.getItems()));
+                this.cachedPageItems = Concurrent.newUnmodifiableList(this.getTransformedFieldItems(startIndex, endIndex));
+            }
+
+            return this.cachedPageItems;
         }
 
         public Optional<Sorter<T>> getCurrentSorter() {
@@ -727,7 +599,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         }
 
         public final ConcurrentList<PageItem> getTransformedFieldItems() {
-            return this.getTransformedFieldItems(0, ListUtil.sizeOf(this.getFieldItems()));
+            return this.getTransformedFieldItems(0, ListUtil.sizeOf(this.getItems()));
         }
 
         public final ConcurrentList<PageItem> getTransformedFieldItems(int startIndex, int endIndex) {
@@ -735,8 +607,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
                 .stream()
                 .flatMap(transformer -> transformer.apply(
                     this.getCurrentSorter()
-                        .map(sorter -> sorter.apply(this.getFieldItems(), this.isReversed()))
-                        .orElse(this.getFieldItems())
+                        .map(sorter -> sorter.apply(this.getItems(), this.isReversed()))
+                        .orElse(this.getItems())
                         .subList(startIndex, endIndex)
                         .stream()
                 ))
@@ -757,16 +629,17 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         @Override
         public int hashCode() {
             return new HashCodeBuilder()
+                .appendSuper(super.hashCode())
                 .append(this.getType())
-                .append(this.getFieldItems())
-                .append(this.getItems())
+                .append(this.getPageItems())
                 .append(this.getTransformer())
                 .append(this.getSorters())
-                .append(this.isReversed())
                 .append(this.getStyle())
-                .append(this.getAmountPerPage())
                 .append(this.getColumnNames())
-                .append(this.isShowingSelector())
+                .append(this.getAmountPerPage())
+                .append(this.isViewerEnabled())
+                .append(this.getCurrentSorterIndex())
+                .append(this.isReversed())
                 .build();
         }
 
@@ -790,20 +663,45 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
         public static class Builder<T> implements dev.sbs.api.util.builder.Builder<ItemData<T>> {
 
             private final Class<T> type;
-            private final ConcurrentList<T> fieldItems = Concurrent.newList();
-            private final ConcurrentList<PageItem> items = Concurrent.newList();
+            private final ConcurrentList<T> items = Concurrent.newList();
+            private final ConcurrentList<PageItem> pageItems = Concurrent.newList();
             private Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer = Optional.empty();
             private final ConcurrentList<Sorter<T>> sorters = Concurrent.newList();
             private PageItem.Style style = Style.FIELD_INLINE;
             private int amountPerPage = 12;
             private Optional<Triple<String, String, String>> columnNames = Optional.empty();
-            private boolean showingSelector = false;
+            private boolean viewerEnabled = false;
 
             /**
-             * Clear all items from the {@link Page}.
+             * Clear all items from the {@link ItemData} list.
              */
             public Builder<T> clearItems() {
-                this.fieldItems.clear();
+                this.items.clear();
+                return this;
+            }
+
+            /**
+             * Clear all page items from the {@link ItemData} list.
+             */
+            public Builder<T> clearPageItems() {
+                this.pageItems.clear();
+                return this;
+            }
+
+            /**
+             * Sets the item viewer as enabled.
+             */
+            public Builder<T> isViewerEnabled() {
+                return this.isViewerEnabled(true);
+            }
+
+            /**
+             * Sets the item viewer state.
+             *
+             * @param value True to enable the item selector.
+             */
+            public Builder<T> isViewerEnabled(boolean value) {
+                this.viewerEnabled = value;
                 return this;
             }
 
@@ -853,20 +751,26 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
 
             /**
              * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+             * <br><br>
+             * Adding to this list will prevent the rendering of any {@link SingletonFieldItem}'s
+             * from {@link ItemData.Builder#withPageItems}.
              *
              * @param fieldItems Variable number of field items to add.
              */
-            public Builder<T> withFieldItems(@NotNull T... fieldItems) {
-                return this.withFieldItems(Arrays.asList(fieldItems));
+            public Builder<T> withItems(@NotNull T... fieldItems) {
+                return this.withItems(Arrays.asList(fieldItems));
             }
 
             /**
              * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+             * <br><br>
+             * Adding to this list will prevent the rendering of any {@link SingletonFieldItem}'s
+             * from {@link ItemData.Builder#withPageItems}.
              *
              * @param fieldItems Collection of field items to add.
              */
-            public Builder<T> withFieldItems(@NotNull Iterable<T> fieldItems) {
-                fieldItems.forEach(this.fieldItems::add);
+            public Builder<T> withItems(@NotNull Iterable<T> fieldItems) {
+                fieldItems.forEach(this.items::add);
                 return this;
             }
 
@@ -894,8 +798,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
              *
              * @param items Variable number of items to add.
              */
-            public Builder<T> withItems(@NotNull PageItem... items) {
-                return this.withItems(Arrays.asList(items));
+            public Builder<T> withPageItems(@NotNull PageItem... items) {
+                return this.withPageItems(Arrays.asList(items));
             }
 
             /**
@@ -903,8 +807,8 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
              *
              * @param items Variable number of items to add.
              */
-            public Builder<T> withItems(@NotNull Iterable<PageItem> items) {
-                items.forEach(this.items::add);
+            public Builder<T> withPageItems(@NotNull Iterable<PageItem> items) {
+                items.forEach(this.pageItems::add);
                 return this;
             }
 
@@ -928,23 +832,6 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             }
 
             /**
-             * Sets the item selector as enabled.
-             */
-            public Builder<T> withSelector() {
-                return this.withSelector(true);
-            }
-
-            /**
-             * Sets the item selector state.
-             *
-             * @param value True to enable the item selector.
-             */
-            public Builder<T> withSelector(boolean value) {
-                this.showingSelector = value;
-                return this;
-            }
-
-            /**
              * Sets the render style for {@link PageItem PageItems}.
              *
              * @param itemStyle The page item style.
@@ -957,20 +844,26 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             @Override
             public ItemData<T> build() {
                 ItemData<T> itemData = new ItemData<>(
+                    Concurrent.newUnmodifiableList(),
+                    page -> page.getOption().map(SelectMenu.Option::getValue).orElse(null),
+                    (page, identifier) -> page.getOption()
+                        .map(pageOption -> pageOption.getValue().equals(identifier))
+                        .orElse(false),
+                    this.items.toUnmodifiableList(),
+                    this.amountPerPage,
                     this.type,
-                    Concurrent.newUnmodifiableList(this.fieldItems),
-                    Concurrent.newUnmodifiableList(this.items),
+                    this.pageItems.toUnmodifiableList(),
                     this.transformer,
                     this.sorters,
                     this.style,
-                    this.amountPerPage,
                     this.columnNames,
-                    this.showingSelector
+                    this.viewerEnabled
                 );
 
                 if (ListUtil.notEmpty(this.sorters))
                     itemData.gotoNextSorter();
 
+                itemData.setCacheUpdateRequired();
                 return itemData;
             }
 
@@ -1055,7 +948,7 @@ public class Page extends PageItem implements Paging, SingletonFieldItem {
             @NoArgsConstructor(access = AccessLevel.PRIVATE)
             public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Sorter<T>> {
 
-                private final SelectMenu.Option.OptionBuilder optionBuilder = SelectMenu.Option.builder().withIdentifier(UUID.randomUUID().toString());
+                private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder().withIdentifier(UUID.randomUUID().toString());
                 private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
                 private SortOrder order = SortOrder.DESCENDING;
 
