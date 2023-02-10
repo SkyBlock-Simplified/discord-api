@@ -21,8 +21,9 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     @Override
     protected Mono<Void> handlePaging(SelectMenuContext selectMenuContext) {
         return Mono.just(selectMenuContext)
+            .doOnNext(context -> context.getComponent().updateSelected(context.getEvent().getValues()))
             .flatMap(context -> Mono.justOrEmpty(context.getResponse())
-                .flatMap(response -> {
+                .doOnNext(response -> {
                     String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
 
                     switch (context.getComponent().getPageType()) {
@@ -35,10 +36,7 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
                         }
                     }
 
-                    return selectMenuContext.getComponent()
-                        .getPlaceholderUpdate()
-                        .apply(selectMenuContext)
-                        .doOnNext(__ -> context.getResponseCacheEntry().updateResponse(response));
+                    context.getResponseCacheEntry().updateResponse(response);
                 })
                 .then()
             );
