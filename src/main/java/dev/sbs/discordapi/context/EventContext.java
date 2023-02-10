@@ -26,7 +26,9 @@ import java.util.function.Function;
 public interface EventContext<T extends Event> {
 
     default Mono<Message> buildMessage(Response response) {
-        return this.getChannel().flatMap(response::getD4jCreateMono);
+        return this.getChannel()
+            .flatMap(response::getD4jCreateMono)
+            .publishOn(response.getReactorScheduler());
     }
 
     default Mono<Void> deferReply() {
@@ -92,7 +94,7 @@ public interface EventContext<T extends Event> {
     default Mono<Void> reply(Response response) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> entry.getResponse().getUniqueId().equals(this.getUniqueId()))
-            .filter(entry -> entry.getResponse().isLoader())
+            .filter(entry -> entry.getResponse().isRenderingPagingComponents())
             .singleOrEmpty()
             .flatMap(deferredReply -> {
                 deferredReply.updateResponse(response);
@@ -131,7 +133,7 @@ public interface EventContext<T extends Event> {
                                         response
                                     );
 
-                                if (!response.isLoader()) {
+                                if (!response.isRenderingPagingComponents()) {
                                     responseCacheEntry.updateLastInteract(); // Update TTL
                                     responseCacheEntry.setUpdated();
                                 }
