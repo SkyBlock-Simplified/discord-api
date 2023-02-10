@@ -5,7 +5,6 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.button
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import reactor.core.publisher.Mono;
 
@@ -13,14 +12,6 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
 
     public ButtonListener(DiscordBot discordBot) {
         super(discordBot);
-    }
-
-    @Override
-    protected Mono<Void> handleEvent(ButtonInteractionEvent event, DiscordResponseCache.Entry responseCacheEntry) {
-        return Mono.just(responseCacheEntry.getResponse().getBackButton()) // Handle Back Button
-            .filter(component -> event.getCustomId().equals(component.getIdentifier()))
-            .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component))
-            .switchIfEmpty(super.handleEvent(event, responseCacheEntry));
     }
 
     @Override
@@ -39,12 +30,12 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
                     case LAST -> currentPage.gotoLastItemPage();
                     case NEXT -> currentPage.gotoNextItemPage();
                     case PREVIOUS -> currentPage.gotoPreviousItemPage();
-                    case BACK -> response.gotoPreviousPage();
+                    //case BACK -> response.gotoPreviousPage(); // TODO: Goto Previous Item Page
                     case SORT -> currentPage.gotoNextSorter();
                     case ORDER -> currentPage.invertOrder();
                 }
 
-                context.getResponseCacheEntry().updateResponse(response, false); // Update Response
+                context.getResponseCacheEntry().updateResponse(response); // Update Response
             })
             .then();
     }
