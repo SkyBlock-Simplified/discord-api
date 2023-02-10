@@ -23,14 +23,14 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     protected Mono<Void> handlePaging(ButtonContext context) {
         return Mono.justOrEmpty(context.getResponse())
             .doOnNext(response -> {
-                Page currentPage = response.getCurrentPage();
+                Page currentPage = response.getHandler().getCurrentPage();
 
                 switch (context.getComponent().getPageType()) {
-                    case FIRST -> currentPage.gotoFirstItemPage();
-                    case LAST -> currentPage.gotoLastItemPage();
-                    case NEXT -> currentPage.gotoNextItemPage();
-                    case PREVIOUS -> currentPage.gotoPreviousItemPage();
-                    //case BACK -> response.gotoPreviousPage(); // TODO: Goto Previous Item Page
+                    case FIRST -> currentPage.getItemData().gotoFirstItemPage();
+                    case LAST -> currentPage.getItemData().gotoLastItemPage();
+                    case NEXT -> currentPage.getItemData().gotoNextItemPage();
+                    case PREVIOUS -> currentPage.getItemData().gotoPreviousItemPage();
+                    case BACK -> currentPage.getItemData().gotoPreviousPage();
                     case SORT -> currentPage.gotoNextSorter();
                     case ORDER -> currentPage.invertOrder();
                 }

@@ -103,7 +103,7 @@ public interface EventContext<T extends Event> {
                 return this.getChannel()
                     .flatMap(channel -> channel.getMessageById(deferredReply.getMessageId()))
                     .flatMap(message -> message.edit(response.getD4jEditSpec()))
-                    .flatMap(message -> Flux.fromIterable(response.getCurrentPage().getReactions())
+                    .flatMap(message -> Flux.fromIterable(response.getHandler().getCurrentPage().getReactions())
                         .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
                         .then(Mono.just(deferredReply))
                     );
@@ -119,7 +119,7 @@ public interface EventContext<T extends Event> {
                             "Response Exception"
                         )
                     ))
-                    .flatMap(message -> Flux.fromIterable(response.getCurrentPage().getReactions())
+                    .flatMap(message -> Flux.fromIterable(response.getHandler().getCurrentPage().getReactions())
                         .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
                         .then(Mono.fromRunnable(() -> {
                             if (response.isInteractable()) {

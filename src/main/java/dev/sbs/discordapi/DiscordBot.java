@@ -83,6 +83,9 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
         this.getLog().info("Loading Configuration");
         this.loadConfig();
+        //SimplifiedApi.getLog("discord4j.rest.request").setLevel(Level.TRACE);
+        //SimplifiedApi.getLog("discord4j.gateway.protocol.sender").setLevel(Level.TRACE);
+        //SimplifiedApi.getLog("discord4j.gateway.protocol.receiver").setLevel(Level.TRACE);
 
         this.getLog().info("Validating Discord Token");
         if (StringUtil.isEmpty(this.getConfig().getDiscordToken()))
@@ -121,18 +124,19 @@ public abstract class DiscordBot extends DiscordErrorObject {
                             Mono<?> handle = message.removeAllReactions();
 
                             // Save Page History
-                            ConcurrentList<String> pageHistory = response.getPageHistoryIdentifiers();
-                            int currentItemPage = response.getCurrentPage().getCurrentItemPage();
+                            ConcurrentList<String> pageHistory = response.getHandler().getHistoryIdentifiers();
+                            int currentItemPage = response.getHandler().getCurrentPage().getItemData().getCurrentItemPage();
 
                             // Remove Non-Preserved Components
                             Response editedResponse = response.mutate()
                                 .clearAllComponents()
-                                //.isRenderingPagingComponents(false) //TODO: fix this crafted plox
+                                .isRenderingPagingComponents(false)
                                 .build();
 
                             // Traverse Page History
-                            pageHistory.forEach(editedResponse::gotoPage);
-                            editedResponse.getCurrentPage().gotoItemPage(currentItemPage);
+                            editedResponse.getHandler().gotoPage(pageHistory.removeFirst());
+                            pageHistory.forEach(identifier -> editedResponse.getHandler().gotoSubPage(identifier));
+                            editedResponse.getHandler().getCurrentPage().getItemData().gotoItemPage(currentItemPage);
 
                             // Update Message Components
                             return handle.then(message.edit(editedResponse.getD4jEditSpec()));

@@ -36,7 +36,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             ))
             .flatMap(message -> {
                 // Update Reactions
-                ConcurrentList<Emoji> newReactions = response.getCurrentPage().getReactions();
+                ConcurrentList<Emoji> newReactions = response.getHandler().getCurrentPage().getReactions();
 
                 // Current Reactions
                 ConcurrentList<Emoji> currentReactions = message.getReactions()
@@ -82,7 +82,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
     default Mono<Void> edit(Function<Page.PageBuilder, Page.PageBuilder> currentPage) {
         return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(
             response.mutate()
-                .editPage(currentPage.apply(response.getCurrentPage().mutate()).build())
+                .editPage(currentPage.apply(response.getHandler().getCurrentPage().mutate()).build())
                 .build()
         ));
     }

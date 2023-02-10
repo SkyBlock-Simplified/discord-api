@@ -13,7 +13,8 @@ public interface ActionComponentContext extends ComponentContext {
             .updateResponse(
                 response.mutate()
                     .editPage(
-                        response.getCurrentPage()
+                        response.getHandler()
+                            .getCurrentPage()
                             .mutate()
                             .editComponent(actionComponent)
                             .build()

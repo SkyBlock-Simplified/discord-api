@@ -27,12 +27,12 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
                     String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
 
                     switch (context.getComponent().getPageType()) {
-                        case PAGE -> response.gotoPage(selectedValue);
+                        case PAGE -> response.getHandler().gotoPage(selectedValue);
                         case SUBPAGE -> {
                             if (selectedValue.equals("BACK"))
-                                response.gotoPreviousPage();
+                                response.getHandler().gotoPreviousPage();
                             else
-                                response.gotoSubPage(selectedValue);
+                                response.getHandler().gotoSubPage(selectedValue);
                         }
                     }
 

@@ -32,7 +32,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
                 .flatMap(responseCacheEntry -> {
                     final Emoji emoji = this.getEmoji(event);
 
-                    return Flux.fromIterable(responseCacheEntry.getResponse().getCurrentPage().getReactions())
+                    return Flux.fromIterable(responseCacheEntry.getResponse().getHandler().getCurrentPage().getReactions())
                         .filter(reaction -> reaction.equals(emoji))
                         .flatMap(reaction -> this.handleInteraction(event, responseCacheEntry, reaction));
                 })
