@@ -23,15 +23,22 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
         return Mono.just(selectMenuContext)
             .flatMap(context -> Mono.justOrEmpty(context.getResponse())
                 .flatMap(response -> {
+                    String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
+
                     switch (context.getComponent().getPageType()) {
-                        case PAGE -> response.gotoPage(context.getValues().get(0));
-                        case SUBPAGE -> response.gotoSubPage(context.getValues().get(0));
+                        case PAGE -> response.gotoPage(selectedValue);
+                        case SUBPAGE -> {
+                            if (selectedValue.equals("BACK"))
+                                response.gotoPreviousPage();
+                            else
+                                response.gotoSubPage(selectedValue);
+                        }
                     }
 
                     return selectMenuContext.getComponent()
                         .getPlaceholderUpdate()
                         .apply(selectMenuContext)
-                        .doOnNext(__ -> context.getResponseCacheEntry().updateResponse(response, false));
+                        .doOnNext(__ -> context.getResponseCacheEntry().updateResponse(response));
                 })
                 .then()
             );
