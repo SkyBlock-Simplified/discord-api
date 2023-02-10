@@ -4,6 +4,7 @@ import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -51,7 +52,7 @@ public final class Parameter {
     @Getter private final @NotNull Optional<Emoji> emoji;
     @Getter private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
     @Getter private final @NotNull Function<String, Mono<Void>> autoComplete;
-    @Getter private final @NotNull ConcurrentMap<String, Object> choices;
+    @Getter private final @NotNull ConcurrentLinkedMap<String, Object> choices;
 
     public static ParameterBuilder builder(@NotNull String name, @NotNull String description, @NotNull Type type) {
         if (StringUtil.isEmpty(name))
@@ -94,7 +95,7 @@ public final class Parameter {
         private Optional<Emoji> emoji = Optional.empty();
         private BiFunction<String, CommandContext<?>, Boolean> validator = NOOP_HANDLER;
         private Function<String, Mono<Void>> autoComplete = __ -> Mono.empty();
-        private final ConcurrentMap<String, Object> choices = Concurrent.newMap();
+        private final ConcurrentLinkedMap<String, Object> choices = Concurrent.newLinkedMap();
 
         /**
          * Sets the {@link Parameter} as required by the {@link Command}.
