@@ -9,11 +9,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.File;
+import java.util.Optional;
 
 public class DiscordConfig extends SqlConfig {
 
     @Getter @Setter
-    private String discordToken = ResourceUtil.getEnv("DISCORD_TOKEN").orElse("");
+    private Optional<String> discordToken = ResourceUtil.getEnv("DISCORD_TOKEN");
 
     @Getter @Setter
     private String defaultUnicodeEmoji = ResourceUtil.getEnv("DEFAULT_UNICODE_EMOJI").orElse(StringUtil.unescapeJava("\\u2699"));
