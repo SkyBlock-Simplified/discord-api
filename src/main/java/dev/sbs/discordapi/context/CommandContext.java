@@ -1,10 +1,11 @@
 package dev.sbs.discordapi.context;
 
+import dev.sbs.api.data.model.discord.command_data.command_configs.CommandConfigModel;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
-import dev.sbs.discordapi.command.data.CommandInfo;
 import dev.sbs.discordapi.command.data.Parameter;
+import dev.sbs.discordapi.command.relationship.Relationship;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,8 +24,8 @@ public interface CommandContext<T extends Event> extends EventContext<T> {
 
     ConcurrentList<Argument> getArguments();
 
-    default CommandInfo getCommandInfo() {
-        return this.getRelationship().getCommandInfo();
+    default CommandConfigModel getConfig() {
+        return this.getRelationship().getInstance().getConfig();
     }
 
     default Class<? extends Command> getCommandClass() {
@@ -35,7 +36,7 @@ public interface CommandContext<T extends Event> extends EventContext<T> {
         return Optional.of(this.getRelationship().getInstance().getCommandPath(this.isSlashCommand()));
     }
 
-    Command.Relationship getRelationship();
+    Relationship.Command getRelationship();
 
     boolean isSlashCommand();
 

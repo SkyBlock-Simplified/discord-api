@@ -2,8 +2,8 @@ package dev.sbs.discordapi.context.interaction.deferrable.application.slash;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
+import dev.sbs.discordapi.command.relationship.Relationship;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
 import discord4j.common.util.Snowflake;
@@ -60,7 +60,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return true;
     }
 
-    static SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, Command.Relationship commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
+    static SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, Relationship.Command commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
         return new SlashCommandContextImpl(discordBot, event, commandRelationship, commandAlias, arguments);
     }
 

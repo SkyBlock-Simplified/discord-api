@@ -2,8 +2,8 @@ package dev.sbs.discordapi.context.message.text;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.data.Argument;
+import dev.sbs.discordapi.command.relationship.Relationship;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import discord4j.common.util.Snowflake;
@@ -57,7 +57,7 @@ public interface TextCommandContext extends CommandContext<MessageCreateEvent>, 
         return false;
     }
 
-    static TextCommandContext of(DiscordBot discordBot, MessageCreateEvent event, Command.Relationship commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
+    static TextCommandContext of(DiscordBot discordBot, MessageCreateEvent event, Relationship.Command commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
         return new TextCommandContextImpl(discordBot, event, commandRelationship, commandAlias, arguments);
     }
 
