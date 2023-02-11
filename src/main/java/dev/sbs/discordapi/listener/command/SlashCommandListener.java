@@ -3,7 +3,6 @@ package dev.sbs.discordapi.listener.command;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.ParentCommand;
 import dev.sbs.discordapi.command.data.Argument;
 import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -30,7 +29,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getDeepestCommand(commandData))
-                .filter(relationship -> !relationship.getCommandClass().isAssignableFrom(ParentCommand.class))
                 .flatMap(relationship -> {
                     ConcurrentList<ApplicationCommandInteractionOptionData> parameterData = this.getDeepestOptionData(relationship, commandData);
 
@@ -51,7 +49,9 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                         this.getDiscordBot(),
                         event,
                         relationship,
-                        relationship.getCommandInfo().name(),
+                        relationship.getInstance()
+                            .getConfig()
+                            .getName(),
                         arguments
                     );
 
