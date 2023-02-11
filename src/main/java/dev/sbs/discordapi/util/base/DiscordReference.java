@@ -1,13 +1,9 @@
 package dev.sbs.discordapi.util.base;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.command_configs.CommandConfigModel;
-import dev.sbs.api.data.model.discord.command_configs.CommandConfigSqlModel;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
-import dev.sbs.api.data.model.discord.guild_data.guild_command_configs.GuildCommandConfigModel;
 import dev.sbs.api.data.model.discord.guild_data.guilds.GuildModel;
 import dev.sbs.api.data.model.discord.users.UserModel;
-import dev.sbs.api.data.sql.SqlRepository;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
@@ -19,7 +15,9 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.UserPermission;
 import dev.sbs.discordapi.command.data.CommandData;
-import dev.sbs.discordapi.command.data.CommandInfo;
+import dev.sbs.discordapi.command.data.CommandId;
+import dev.sbs.discordapi.command.relationship.Relationship;
+import dev.sbs.discordapi.command.relationship.TopLevelRelationship;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -56,62 +54,33 @@ public abstract class DiscordReference {
     }
 
     // --- Command Searching ---
-    public final boolean doesCommandMatch(@NotNull CommandInfo commandInfo1, @NotNull CommandInfo commandInfo2) {
-        return this.doesCommandMatch(commandInfo1, commandInfo2.name());
+    public final boolean doesCommandMatch(@NotNull Relationship relationship, @NotNull Relationship compare) {
+        return this.doesCommandMatch(relationship, compare.getName());
     }
 
-    public final boolean doesCommandMatch(@NotNull CommandInfo commandInfo, @NotNull String argument) {
-        return commandInfo.name().equalsIgnoreCase(argument);
+    public final boolean doesCommandMatch(@NotNull Relationship relationship, @NotNull String argument) {
+        return relationship.getName().equalsIgnoreCase(argument);
     }
 
-    public final @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandData> command) {
+    public static @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandData> command) {
         return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : Optional.empty();
     }
 
-    public final @NotNull Optional<CommandInfo> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
-        return this.getAnnotation(CommandInfo.class, command);
-    }
-
-    public final @NotNull CommandConfigModel getCommandConfig(@NotNull Command command) {
-        CommandInfo commandInfo = command.getCommandInfo();
-        Optional<CommandConfigModel> commandConfigModel = SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findFirst(CommandConfigModel::getUniqueId, StringUtil.toUUID(commandInfo.id()));
-
-        // Ensure Existing Command Config
-        if (commandConfigModel.isEmpty()) {
-            CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
-            newCommandConfigModel.setUniqueId(StringUtil.toUUID(commandInfo.id()));
-            newCommandConfigModel.setCommandPath(this.getCommandPath(command, true));
-            newCommandConfigModel.setDescription("*<missing description>*");
-            newCommandConfigModel.setDeveloperOnly(Concurrent.newList(commandInfo.userPermissions()).contains(UserPermission.DEVELOPER));
-            newCommandConfigModel.setEnabled(true);
-            newCommandConfigModel.setInheritingPermissions(true);
-            return ((SqlRepository<CommandConfigSqlModel>) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel);
-        }
-
-        return commandConfigModel.get();
+    public static @NotNull Optional<CommandId> getCommandAnnotation(@NotNull Class<? extends CommandData> command) {
+        return getAnnotation(CommandId.class, command);
     }
 
     public final @NotNull String getCommandPath(@NotNull Command command) {
-        return this.getCommandPath(command, false);
-    }
-
-    private @NotNull String getCommandPath(@NotNull Command command, boolean create) {
-        return StringUtil.join(this.getCommandPathList(command, create), " ");
+        return StringUtil.join(this.getCommandPathList(command), " ");
     }
 
     public final @NotNull ConcurrentList<String> getCommandPathList(@NotNull Command command) {
-        return this.getCommandPathList(command, false);
-    }
-
-    private @NotNull ConcurrentList<String> getCommandPathList(@NotNull Command command, boolean create) {
         ConcurrentList<String> path = command.getParentCommandNames();
 
         // Get Root Command Prefix
         String rootCommand = this.getDiscordBot()
             .getRootCommandRelationship()
-            .getOptionalCommandInfo()
-            .map(CommandInfo::name)
-            .orElse("");
+            .getName();
 
         // Remove Root For Slash
         if (ListUtil.notEmpty(path)) {
@@ -122,33 +91,29 @@ public abstract class DiscordReference {
         }
 
         // Add Group
-        if (!create)
-            command.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getGroup()));
+        command.getGroup().ifPresent(commandGroup -> path.add(commandGroup.getKey()));
 
         // Add Command Name
-        path.add(command.getCommandInfo().name());
+        path.add(command.getConfig().getName());
 
         return path;
-    }
-
-    public final @NotNull Optional<GuildCommandConfigModel> getGuildCommandConfig(@NotNull CommandInfo commandInfo) {
-        return SimplifiedApi.getRepositoryOf(GuildCommandConfigModel.class).findFirst(GuildCommandConfigModel::getName, commandInfo.name());
     }
 
     public final @NotNull Optional<GuildModel> getGuild(@NotNull Snowflake guildId) {
         return SimplifiedApi.getRepositoryOf(GuildModel.class).findFirst(GuildModel::getGuildId, guildId.asLong());
     }
 
-    public final @NotNull ConcurrentList<Command.RelationshipData> getCompactedRelationships() {
-        Command.RootRelationship rootRelationship = this.getDiscordBot().getRootCommandRelationship();
-        ConcurrentList<Command.RelationshipData> relationships = Concurrent.newList(rootRelationship);
-        rootRelationship.getSubCommands().forEach(subCommandRelationship -> relationships.addAll(this.getCompactedRelationships(subCommandRelationship)));
-        return relationships;
-    }
+    public final @NotNull ConcurrentList<Relationship> getCompactedRelationships() {
+        Relationship.Root rootRelationship = this.getDiscordBot().getRootCommandRelationship();
+        ConcurrentList<Relationship> relationships = Concurrent.newList(rootRelationship);
+        relationships.addAll(rootRelationship.getSubCommands());
 
-    private @NotNull ConcurrentList<Command.RelationshipData> getCompactedRelationships(@NotNull Command.Relationship rootRelationship) {
-        ConcurrentList<Command.RelationshipData> relationships = Concurrent.newList(rootRelationship);
-        rootRelationship.getSubCommands().forEach(subCommandRelationship -> relationships.addAll(this.getCompactedRelationships(subCommandRelationship)));
+        rootRelationship.getSubCommands()
+            .stream()
+            .filter(TopLevelRelationship.class::isInstance)
+            .map(TopLevelRelationship.class::cast)
+            .forEach(subCommandRelationship -> relationships.addAll(subCommandRelationship.getSubCommands()));
+
         return relationships;
     }
 
@@ -171,7 +136,7 @@ public abstract class DiscordReference {
         return getEmoji(key).map(Emoji::asFormat).orElse(defaultValue);
     }
 
-    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull ApplicationCommandInteractionData commandInteractionData) {
+    public final @NotNull Optional<Relationship.Command> getDeepestCommand(@NotNull ApplicationCommandInteractionData commandInteractionData) {
         ConcurrentList<String> commandTree = Concurrent.newList(commandInteractionData.name().toOptional().orElseThrow()); // Should never be NULL
 
         if (!commandInteractionData.type().isAbsent()) {
@@ -188,15 +153,15 @@ public abstract class DiscordReference {
         return this.getDeepestRelationship(commandTree, 0, this.getDiscordBot().getRootCommandRelationship(), true);
     }
 
-    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull String[] arguments) {
+    public final @NotNull Optional<Relationship.Command> getDeepestCommand(@NotNull String[] arguments) {
         return this.getDeepestCommand(arguments, 0);
     }
 
-    public final @NotNull Optional<Command.Relationship> getDeepestCommand(@NotNull String[] arguments, int index) {
+    public final @NotNull Optional<Relationship.Command> getDeepestCommand(@NotNull String[] arguments, int index) {
         return this.getDeepestRelationship(Concurrent.newList(arguments), index, this.getDiscordBot().getRootCommandRelationship(), false);
     }
 
-    public final ConcurrentList<ApplicationCommandInteractionOptionData> getDeepestOptionData(Command.Relationship relationship, ApplicationCommandInteractionData interactionOptionData) {
+    public final ConcurrentList<ApplicationCommandInteractionOptionData> getDeepestOptionData(Relationship.Command relationship, ApplicationCommandInteractionData interactionOptionData) {
         ConcurrentList<ApplicationCommandInteractionOptionData> optionData = Concurrent.newList(interactionOptionData.options().toOptional().orElseThrow());
         ConcurrentList<String> commandPathList = this.getCommandPathList(relationship.getInstance());
         commandPathList.remove(0); // Remove Root Command
@@ -214,28 +179,27 @@ public abstract class DiscordReference {
         return optionData;
     }
 
-    private @NotNull Optional<Command.Relationship> getDeepestRelationship(@NotNull ConcurrentList<String> arguments, int index, @NotNull Command.RootRelationship rootRelationship, boolean slashCommands) {
-        Command.Relationship deepestRelationship = null;
-        Optional<CommandInfo> optionalPrefixCommandInfo = this.getCommandAnnotation(rootRelationship.getCommandClass());
+    private @NotNull Optional<Relationship.Command> getDeepestRelationship(@NotNull ConcurrentList<String> arguments, int index, @NotNull Relationship.Root rootRelationship, boolean slashCommands) {
+        Relationship deepestRelationship = null;
 
         if (index < arguments.size()) {
             // Handle Prefix Command
-            if (optionalPrefixCommandInfo.isPresent()) {
-                if (this.doesCommandMatch(optionalPrefixCommandInfo.get(), arguments.get(index)))
-                    index++;
-                else if (!slashCommands)
-                    return Optional.empty();
-            }
+            if (this.doesCommandMatch(rootRelationship, arguments.get(index)))
+                index++;
+            else if (!slashCommands)
+                return Optional.empty();
 
-            for (Command.Relationship relationship : rootRelationship.getSubCommands()) {
-                if (this.doesCommandMatch(relationship.getCommandInfo(), arguments.get(index))) {
+            for (Relationship relationship : rootRelationship.getSubCommands()) {
+                if (this.doesCommandMatch(relationship, arguments.get(index))) {
                     deepestRelationship = relationship;
                     index++;
 
-                    for (Command.Relationship subRelationship : relationship.getSubCommands()) {
-                        if (this.doesCommandMatch(subRelationship.getCommandInfo(), arguments.get(index))) {
-                            deepestRelationship = subRelationship;
-                            break;
+                    if (relationship instanceof Relationship.Parent parentRelationship) {
+                        for (Relationship.Command commandRelationship : parentRelationship.getSubCommands()) {
+                            if (this.doesCommandMatch(commandRelationship, arguments.get(index))) {
+                                deepestRelationship = commandRelationship;
+                                break;
+                            }
                         }
                     }
 
@@ -244,51 +208,7 @@ public abstract class DiscordReference {
             }
         }
 
-        return Optional.ofNullable(deepestRelationship);
-    }
-
-    public final @NotNull ConcurrentList<Command.RelationshipData> getParentCommandList(@NotNull Class<? extends Command> commandClass) {
-        ConcurrentList<Command.RelationshipData> parentCommands = Concurrent.newList();
-        ConcurrentList<Command.RelationshipData> compactedRelationships = this.getCompactedRelationships();
-
-        // Handle Parent Commands
-        while (true) {
-            Optional<Command.RelationshipData> optionalRelationshipData = Optional.empty();
-
-            // Find Matching Relationship
-            for (Command.RelationshipData relationship : compactedRelationships) {
-                if (relationship.getCommandClass().equals(commandClass)) {
-                    optionalRelationshipData = Optional.of(relationship);
-                    break;
-                }
-            }
-
-            // Find Matching Parent Relationship
-            if (optionalRelationshipData.isPresent()) {
-                Command.RelationshipData relationshipData = optionalRelationshipData.get();
-
-                if (relationshipData.getOptionalCommandInfo().isPresent()) {
-                    CommandInfo commandInfo = relationshipData.getOptionalCommandInfo().get();
-
-                    if (commandInfo.parent().equals(Command.class))
-                        break;
-
-                    for (Command.RelationshipData relationship : compactedRelationships) {
-                        if (relationship.getCommandClass().equals(commandInfo.parent())) {
-                            parentCommands.add(relationship);
-                            commandClass = commandInfo.parent();
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Handle Prefix Command
-        if (this.getDiscordBot().getRootCommandRelationship().getOptionalCommandInfo().isPresent())
-            parentCommands.add(this.getDiscordBot().getRootCommandRelationship());
-
-        return Concurrent.newUnmodifiableList(parentCommands.inverse());
+        return Optional.ofNullable(deepestRelationship instanceof Relationship.Command ? (Relationship.Command) deepestRelationship : null);
     }
 
     // --- Permissions ---
