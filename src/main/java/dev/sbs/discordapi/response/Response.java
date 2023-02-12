@@ -29,6 +29,7 @@ import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
@@ -332,6 +333,16 @@ public class Response implements Paging<Page> {
             .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
+            .build();
+    }
+
+    public InteractionReplyEditSpec getD4jInteractionEditSpec() {
+        return InteractionReplyEditSpec.builder()
+            .contentOrNull(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .allowedMentionsOrNull(AllowedMentions.suppressEveryone())
+            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .componentsOrNull(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
+            .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .build();
     }
 
