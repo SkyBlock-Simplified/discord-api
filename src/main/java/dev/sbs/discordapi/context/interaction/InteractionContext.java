@@ -11,13 +11,13 @@ public interface InteractionContext<T extends InteractionCreateEvent> extends Ev
 
     @Override
     default Mono<Message> buildMessage(Response response) {
-        return this.interactionReply(response.getD4jComponentCallbackSpec())
+        return this.interactionEdit(response.getD4jComponentCallbackSpec())
             .publishOn(response.getReactorScheduler())
             .then(this.getReply());
     }
 
     Mono<Message> getReply();
 
-    Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec);
+    Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec);
 
 }

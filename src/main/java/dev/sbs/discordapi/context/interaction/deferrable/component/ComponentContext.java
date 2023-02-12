@@ -77,8 +77,8 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     @Override
-    default Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
-        return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
+    default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
+        return this.getEvent().edit(interactionApplicationCommandCallbackSpec);
     }
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
