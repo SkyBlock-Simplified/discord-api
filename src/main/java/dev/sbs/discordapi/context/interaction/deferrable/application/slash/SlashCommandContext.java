@@ -65,7 +65,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     }
 
     @Override
-    default Mono<Void> interactionReply(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
+    default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
         return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
     }
 
