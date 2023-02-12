@@ -123,6 +123,7 @@ public class DiscordCommandRegistrar extends DiscordHelper {
                     CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
                     newCommandConfigModel.setUniqueId(commandId);
                     newCommandConfigModel.setName(commandId.toString().substring(0, 8));
+                    newCommandConfigModel.setDescription("*<missing description>*");
                     newCommandConfigModel.setDeveloperOnly(true);
                     newCommandConfigModel.setEnabled(true);
                     newCommandConfigModel.setInheritingPermissions(true);
@@ -171,7 +172,6 @@ public class DiscordCommandRegistrar extends DiscordHelper {
     }
 
     public final ConcurrentList<ApplicationCommandRequest> getSlashCommands() {
-
         return this.getRootCommandRelationship()
             .getSubCommands()
             .stream()
