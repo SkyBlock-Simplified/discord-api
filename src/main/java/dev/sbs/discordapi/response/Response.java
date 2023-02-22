@@ -45,17 +45,22 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Response implements Paging<Page> {
@@ -635,6 +640,36 @@ public class Response implements Paging<Page> {
          */
         public ResponseBuilder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
             this.defaultPage = pageIdentifier;
+            return this;
+        }
+
+        /**
+         * Add {@link File Files} to the {@link Response}.
+         *
+         * @param files Variable number of files to add.
+         */
+        public ResponseBuilder withFiles(@NotNull File... files) {
+            return this.withFiles(Arrays.asList(files));
+        }
+
+        /**
+         * Add {@link File Files} to the {@link Response}.
+         *
+         * @param files Collection of files to add.
+         */
+        public ResponseBuilder withFiles(@NotNull Iterable<File> files) {
+            List<File> fileList = List.class.isAssignableFrom(files.getClass()) ? (List<File>) files : StreamSupport.stream(files.spliterator(), false).toList();
+
+            fileList.stream()
+                .map(file -> {
+                    try {
+                        return Attachment.of(file.getName(), new FileInputStream(file));
+                    } catch (FileNotFoundException fnfex) {
+                        throw SimplifiedException.wrapNative(fnfex).build();
+                    }
+                })
+                .forEach(this.attachments::add);
+
             return this;
         }
 
