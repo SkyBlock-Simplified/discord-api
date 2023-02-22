@@ -4,6 +4,7 @@ import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_data.command_categories.CommandCategoryModel;
 import dev.sbs.api.data.model.discord.command_data.command_configs.CommandConfigModel;
 import dev.sbs.api.data.model.discord.command_data.command_groups.CommandGroupModel;
+import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
@@ -33,7 +34,6 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -86,22 +86,7 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
 
     public final @NotNull ConcurrentList<Relationship> getParentCommands() {
         ConcurrentList<Relationship> parentCommands = Concurrent.newList();
-        ConcurrentList<Relationship> compactedRelationships = this.getCompactedRelationships();
-        Relationship.Command relationship = this.getRelationship();
-
-        // Handle Parent Commands
-        while (!Objects.isNull(relationship.getInstance().getConfig().getParent())) {
-            for (Relationship relationshipData : compactedRelationships) {
-                if (!(relationshipData instanceof Relationship.Command possibleParentRelationship))
-                    continue;
-
-                if (Objects.equals(possibleParentRelationship.getInstance().getConfig().getParent(), relationship.getInstance().getConfig().getParent())) {
-                    parentCommands.add(possibleParentRelationship);
-                    relationship = possibleParentRelationship;
-                    break;
-                }
-            }
-        }
+        this.getParentRelationship().ifPresent(parentCommands::add);
 
         // Handle Prefix Command
         if (this.getDiscordBot().getCommandRegistrar().getPrefix().isPresent())
@@ -115,6 +100,17 @@ public abstract class Command extends DiscordHelper implements CommandData, Func
             .stream()
             .map(Relationship::getName)
             .collect(Concurrent.toList());
+    }
+
+    public final @NotNull Optional<Relationship.Parent> getParentRelationship() {
+        return this.getCompactedRelationships()
+            .stream()
+            .filter(Relationship.Parent.class::isInstance)
+            .map(Relationship.Parent.class::cast)
+            .filter(relationship -> relationship.getValue().getKey().equals(Optional.ofNullable(
+                this.getConfig().getParent()).map(CommandParentModel::getKey).orElse("")
+            ))
+            .findFirst();
     }
 
     public final @NotNull Relationship.Command getRelationship() {
