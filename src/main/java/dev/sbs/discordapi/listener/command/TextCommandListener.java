@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+@Deprecated
 public class TextCommandListener extends DiscordListener<MessageCreateEvent> {
 
     public TextCommandListener(@NotNull DiscordBot discordBot) {
