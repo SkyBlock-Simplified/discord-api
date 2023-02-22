@@ -13,7 +13,6 @@ import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.relationship.Relationship;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
-import dev.sbs.discordapi.listener.command.TextCommandListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
@@ -38,13 +37,13 @@ import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
-import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.presence.ClientPresence;
+import discord4j.core.shard.MemberRequestFilter;
 import discord4j.gateway.ShardInfo;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
@@ -84,9 +83,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
         this.getLog().info("Loading Configuration");
         this.loadConfig();
-        //SimplifiedApi.getLog("discord4j.rest.request").setLevel(Level.TRACE);
-        //SimplifiedApi.getLog("discord4j.gateway.protocol.sender").setLevel(Level.TRACE);
-        //SimplifiedApi.getLog("discord4j.gateway.protocol.receiver").setLevel(Level.TRACE);
 
         this.getLog().info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(
@@ -108,6 +104,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .gateway()
             .setDisabledIntents(this.getDisabledIntents())
             .setInitialPresence(this::getInitialPresence)
+            .setMemberRequestFilter(this.getMemberRequestFilter())
             .withEventDispatcher(eventDispatcher -> eventDispatcher.on(ConnectEvent.class)
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
@@ -122,7 +119,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         SimplifiedApi.getSqlSession().getStartupTime()
                     );
 
-                    this.getLog().info("Registering Commands");
+                    this.getLog().info("Building Commands");
                     this.commandRegistrar = DiscordCommandRegistrar.builder(this)
                         .withPrefix(this.getPrefix())
                         .withCommands(this.getCommands())
@@ -172,7 +169,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
                     this.getLog().info("Registering Built-in Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
-                        eventDispatcher.on(MessageCreateEvent.class, new TextCommandListener(this)),
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
@@ -236,6 +232,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
                 .withMessage("Unable to locate self in Main Guild!")
                 .build()
             );
+    }
+
+    protected @NotNull MemberRequestFilter getMemberRequestFilter() {
+        return MemberRequestFilter.withGuilds(Snowflake.of(this.getConfig().getMainGuildId()));
     }
 
     protected @NotNull Optional<CommandParentModel> getPrefix() {
