@@ -21,7 +21,6 @@ import java.util.Optional;
 public final class Field {
 
     public static final int MAX_ALLOWED = 25;
-    public static final String ZERO_WIDTH_SPACE = "\u200B";
 
     @Getter private final Optional<Emoji> emoji;
     @LengthLimit(256)
@@ -62,9 +61,9 @@ public final class Field {
             FormatUtil.format(
                 "{0}{1}",
                 this.getEmoji().map(Emoji::asSpacedFormat).orElse(""),
-                this.getName().orElse(ZERO_WIDTH_SPACE)
+                this.getName().orElse(" ")
             ),
-            this.getValue().orElse(ZERO_WIDTH_SPACE),
+            this.getValue().orElse(" "),
             this.isInline()
         );
     }
