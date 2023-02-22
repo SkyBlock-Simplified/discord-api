@@ -154,6 +154,24 @@ public interface Relationship {
                 .orElse("");
         }
 
+        public @NotNull ConcurrentList<Command> getCommands() {
+            return this.getSubCommands()
+                .stream()
+                .filter(Command.class::isInstance)
+                .map(relationship -> (Command) relationship)
+                .collect(Concurrent.toList())
+                .toUnmodifiableList();
+        }
+
+        public @NotNull ConcurrentList<Parent> getParentCommands() {
+            return this.getSubCommands()
+                .stream()
+                .filter(Parent.class::isInstance)
+                .map(relationship -> (Parent) relationship)
+                .collect(Concurrent.toList())
+                .toUnmodifiableList();
+        }
+
         @Override
         public @NotNull ConcurrentSet<Permission> getPermissions() {
             return Concurrent.newUnmodifiableSet();
