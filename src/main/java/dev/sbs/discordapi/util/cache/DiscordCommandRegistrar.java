@@ -24,6 +24,7 @@ import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class DiscordCommandRegistrar extends DiscordHelper {
 
@@ -172,83 +174,82 @@ public class DiscordCommandRegistrar extends DiscordHelper {
     }
 
     public final ConcurrentList<ApplicationCommandRequest> getSlashCommands() {
-        return this.getRootCommandRelationship()
-            .getSubCommands()
-            .stream()
-            .filter(DataRelationship.class::isInstance)
-            .map(DataRelationship.class::cast)
-            .map(relationship -> ApplicationCommandRequest.builder() // Create Command
-                .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
-                .name(relationship.getName())
-                .description(relationship.getDescription())
-                .defaultPermission(true)
-                // Handle SubCommand Groups
-                .addAllOptions(
-                    Concurrent.newList(
-                            (relationship instanceof Relationship.Parent ?
-                                ((Relationship.Parent) relationship).getSubCommands() :
-                                Concurrent.newList())
-                        )
-                        .stream()
-                        .flatMap(subRelationship -> subRelationship.getInstance().getGroup().stream())
-                        .distinct()
-                        .map(commandGroup -> ApplicationCommandOptionData.builder()
-                            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                            .name(commandGroup.getKey().toLowerCase())
-                            .description(commandGroup.getDescription())
-                            .required(commandGroup.isRequired())
-                            .addAllOptions(
-                                Concurrent.newList(
-                                        (relationship instanceof Relationship.Parent ?
-                                            ((Relationship.Parent) relationship).getSubCommands() :
-                                            Concurrent.newList())
-                                    )
-                                    .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isPresent())
-                                    .stream()
-                                    .filter(subRelationship -> Objects.equals(
-                                        subRelationship.getInstance()
-                                            .getGroup()
-                                            .map(CommandGroupModel::getKey)
-                                            .map(String::toLowerCase)
-                                            .orElse(""),
-                                        commandGroup.getKey().toLowerCase()
-                                    ))
-                                    .map(this::buildCommand)
-                                    .collect(Concurrent.toList())
+        return Stream.concat(
+            // Handle Parent Commands
+            this.getRootCommandRelationship()
+                .getParentCommands()
+                .stream()
+                .map(parentRelationship -> this.buildCommand(parentRelationship)
+                    // Handle SubCommand Groups
+                    .addAllOptions(
+                        parentRelationship.getSubCommands()
+                            .stream()
+                            .flatMap(subRelationship -> subRelationship.getInstance().getGroup().stream())
+                            .distinct()
+                            .map(commandGroup -> ApplicationCommandOptionData.builder()
+                                .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+                                .name(commandGroup.getKey().toLowerCase())
+                                .description(commandGroup.getDescription())
+                                .required(commandGroup.isRequired())
+                                .addAllOptions(
+                                    parentRelationship.getSubCommands()
+                                        .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isPresent())
+                                        .stream()
+                                        .filter(subRelationship -> Objects.equals(
+                                            subRelationship.getInstance()
+                                                .getGroup()
+                                                .map(CommandGroupModel::getKey)
+                                                .map(String::toLowerCase)
+                                                .orElse(""),
+                                            commandGroup.getKey().toLowerCase()
+                                        ))
+                                        .map(this::buildSubCommand)
+                                        .collect(Concurrent.toList())
+                                )
+                                .build()
                             )
-                            .build()
+                            .collect(Concurrent.toList())
+                    )
+                    // Handle SubCommands
+                    .addAllOptions(
+                        parentRelationship.getSubCommands()
+                            .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isEmpty())
+                            .stream()
+                            .map(this::buildSubCommand)
+                            .collect(Concurrent.toList())
+                    )
+                    .build()
+                ),
+                // Handle Top-Level Commands
+                this.getRootCommandRelationship()
+                    .getCommands()
+                    .stream()
+                    .map(relationship -> this.buildCommand(relationship)
+                        // Handle Parameters
+                        .addAllOptions(
+                            relationship.getInstance()
+                                .getParameters()
+                                .stream()
+                                .map(this::buildParameter)
+                                .collect(Concurrent.toList())
                         )
-                        .collect(Concurrent.toList())
-                )
-                // Handle SubCommands
-                .addAllOptions(
-                    Concurrent.newList(
-                            (relationship instanceof Relationship.Parent ?
-                                ((Relationship.Parent) relationship).getSubCommands() :
-                                Concurrent.newList())
-                        )
-                        .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isEmpty())
-                        .stream()
-                        .map(this::buildCommand)
-                        .collect(Concurrent.toList())
-                )
-                // Handle Parameters
-                .addAllOptions(
-                    Concurrent.newList(
-                        (relationship instanceof Relationship.Command ?
-                            ((Relationship.Command) relationship).getInstance().getParameters() :
-                            Concurrent.newList())
-                        )
-                        .stream()
-                        .map(this::buildParameter)
-                        .collect(Concurrent.toList())
-                )
-                .build()
+                        .build()
+                    )
             )
-            .collect(Concurrent.toList());
+            .map(ApplicationCommandRequest.class::cast)
+            .collect(Concurrent.toList())
+            .toUnmodifiableList();
     }
 
-    public final ApplicationCommandOptionData buildCommand(Relationship.Command relationship) {
+    private ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DataRelationship relationship) {
+        return ApplicationCommandRequest.builder()
+            .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
+            .name(relationship.getName())
+            .description(relationship.getDescription())
+            .defaultPermission(true);
+    }
+
+    private ApplicationCommandOptionData buildSubCommand(Relationship.Command relationship) {
         return ApplicationCommandOptionData.builder()
             .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
             .name(relationship.getInstance().getConfig().getName())
@@ -257,12 +258,13 @@ public class DiscordCommandRegistrar extends DiscordHelper {
                 relationship.getInstance()
                     .getParameters()
                     .stream()
-                    .map(this::buildParameter).collect(Concurrent.toList())
+                    .map(this::buildParameter)
+                    .collect(Concurrent.toList())
             )
             .build();
     }
 
-    public final ApplicationCommandOptionData buildParameter(Parameter parameter) {
+    private ApplicationCommandOptionData buildParameter(Parameter parameter) {
         return ApplicationCommandOptionData.builder()
             .type(parameter.getType().getOptionType().getValue())
             .name(parameter.getName())
