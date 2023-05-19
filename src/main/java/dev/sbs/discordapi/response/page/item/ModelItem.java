@@ -76,7 +76,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T extends Model> extends PageItemBuilder<ModelItem<T>> {
+    public static class Builder<T extends Model> extends ItemBuilder<ModelItem<T>> {
 
         private final Class<T> modelClass;
         private final ConcurrentList<T> options = Concurrent.newList();
@@ -84,38 +84,46 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
         private Optional<Function<T, String>> nameFunction = Optional.empty();
         private Function<T, String> valueFunction;
 
+        @Override
         public Builder<T> isEditable() {
             return this.isEditable(true);
         }
 
+        @Override
         public Builder<T> isEditable(boolean value) {
             super.editable = value;
             return this;
         }
 
+        @Override
         public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
             return this.withDescription(FormatUtil.formatNullable(description, objects));
         }
 
+        @Override
         public Builder<T> withDescription(@NotNull Optional<String> description) {
             super.optionBuilder.withDescription(description);
             return this;
         }
 
+        @Override
         public Builder<T> withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
+        @Override
         public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
             super.optionBuilder.withEmoji(emoji);
             return this;
         }
 
+        @Override
         public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
             super.optionBuilder.withIdentifier(identifier, objects);
             return this;
         }
 
+        @Override
         public Builder<T> withLabel(@NotNull String label, @NotNull Object... objects) {
             super.optionBuilder.withLabel(label, objects);
             return this;
@@ -129,6 +137,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
                 .withOptionValue(option.getValue());
         }
 
+        @Override
         public Builder<T> withOptionValue(@NotNull String value, @NotNull Object... objects) {
             super.optionBuilder.withValue(value, objects);
             return this;

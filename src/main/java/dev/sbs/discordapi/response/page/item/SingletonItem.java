@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-abstract class SingletonItem<T> extends PageItem {
+abstract class SingletonItem<T> extends Item {
 
     @Getter private final @NotNull Optional<T> value;
 

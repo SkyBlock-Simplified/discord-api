@@ -24,9 +24,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public class FieldItem extends PageItem implements SingletonFieldItem {
+public class FieldItem extends Item implements SingletonFieldItem {
 
-    @Getter private final ConcurrentMap<PageItem.Column, ConcurrentList<String>> data;
+    @Getter private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
 
     private FieldItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
         super(option.getIdentifier(), Optional.of(option), Type.FIELD, editable);
@@ -73,7 +73,7 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
             .build();
     }
 
-    public String getFieldValue(@NotNull PageItem.Style itemStyle, @NotNull Column column) {
+    public String getFieldValue(@NotNull Item.Style itemStyle, @NotNull Column column) {
         return switch (itemStyle) {
             case FIELD, FIELD_INLINE -> StringUtil.join(this.getAllData(), "\n");
             case LIST, LIST_SINGLE, TABLE -> this.getData(column)
@@ -94,7 +94,7 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder extends PageItemBuilder<FieldItem> {
+    public static final class Builder extends ItemBuilder<FieldItem> {
 
         private final ConcurrentMap<Column, ConcurrentList<String>> data = Concurrent.newMap(
             Pair.of(Column.ONE, Concurrent.newList()),
@@ -121,11 +121,12 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
             return this;
         }
 
-
+        @Override
         public Builder isEditable() {
             return this.isEditable(true);
         }
 
+        @Override
         public Builder isEditable(boolean value) {
             super.editable = value;
             return this;
@@ -171,29 +172,35 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
             return this;
         }
 
+        @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
             return this.withDescription(FormatUtil.formatNullable(description, objects));
         }
 
+        @Override
         public Builder withDescription(@NotNull Optional<String> description) {
             super.optionBuilder.withDescription(description);
             return this;
         }
 
+        @Override
         public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
+        @Override
         public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             super.optionBuilder.withEmoji(emoji);
             return this;
         }
 
+        @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
             super.optionBuilder.withIdentifier(identifier, objects);
             return this;
         }
 
+        @Override
         public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
             super.optionBuilder.withLabel(label, objects);
             return this;
@@ -207,6 +214,7 @@ public class FieldItem extends PageItem implements SingletonFieldItem {
                 .withOptionValue(option.getValue());
         }
 
+        @Override
         public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
             super.optionBuilder.withValue(value, objects);
             return this;

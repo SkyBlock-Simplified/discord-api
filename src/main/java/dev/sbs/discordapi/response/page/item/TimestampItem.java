@@ -46,42 +46,50 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder extends PageItemBuilder<TimestampItem> {
+    public static class Builder extends ItemBuilder<TimestampItem> {
 
         private Optional<Instant> value = Optional.empty();
 
+        @Override
         public Builder isEditable() {
             return this.isEditable(true);
         }
 
+        @Override
         public Builder isEditable(boolean value) {
             super.editable = value;
             return this;
         }
 
+        @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
             return this.withDescription(FormatUtil.formatNullable(description, objects));
         }
 
+        @Override
         public Builder withDescription(@NotNull Optional<String> description) {
             super.optionBuilder.withDescription(description);
             return this;
         }
 
+        @Override
         public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
+        @Override
         public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             super.optionBuilder.withEmoji(emoji);
             return this;
         }
 
+        @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
             super.optionBuilder.withIdentifier(identifier, objects);
             return this;
         }
 
+        @Override
         public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
             super.optionBuilder.withLabel(label, objects);
             return this;
@@ -95,6 +103,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
                 .withOptionValue(option.getValue());
         }
 
+        @Override
         public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
             super.optionBuilder.withValue(value, objects);
             return this;

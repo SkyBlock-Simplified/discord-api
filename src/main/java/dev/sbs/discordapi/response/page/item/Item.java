@@ -24,9 +24,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class PageItem {
+public abstract class Item {
 
-    @Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel .class)
+    @Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel.class)
         .findFirst(EmojiModel::getKey, "TEXT_NULL")
         .flatMap(Emoji::of)
         .orElseThrow();
@@ -40,13 +40,13 @@ public abstract class PageItem {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        PageItem pageItem = (PageItem) o;
+        Item item = (Item) o;
 
         return new EqualsBuilder()
-            .append(this.isEditable(), pageItem.isEditable())
-            .append(this.getIdentifier(), pageItem.getIdentifier())
-            .append(this.getOption(), pageItem.getOption())
-            .append(this.getType(), pageItem.getType())
+            .append(this.isEditable(), item.isEditable())
+            .append(this.getIdentifier(), item.getIdentifier())
+            .append(this.getOption(), item.getOption())
+            .append(this.getType(), item.getType())
             .build();
     }
 
@@ -79,79 +79,79 @@ public abstract class PageItem {
 
     }
 
-    protected static abstract class PageItemBuilder<T> implements Builder<T> {
+    protected static abstract class ItemBuilder<T> implements Builder<T> {
 
         protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         protected boolean editable;
 
         /**
-         * Sets the {@link PageItem} as editable.
+         * Sets the {@link Item} as editable.
          */
-        public abstract PageItemBuilder<T> isEditable();
+        public abstract ItemBuilder<T> isEditable();
 
         /**
-         * Set the editable state of the {@link PageItem}.
+         * Set the editable state of the {@link Item}.
          *
          * @param value The value of the menu item.
          */
-        public abstract PageItemBuilder<T> isEditable(boolean value);
+        public abstract ItemBuilder<T> isEditable(boolean value);
 
         /**
-         * Sets the description of the {@link PageItem}.
+         * Sets the description of the {@link Item}.
          * <br><br>
          * This is used for the {@link SelectMenu.Option#getDescription()}.
          *
          * @param description The description to use.
          * @param objects The objects used to format the description.
          */
-        public abstract PageItemBuilder<T> withDescription(@Nullable String description, @NotNull Object... objects);
+        public abstract ItemBuilder<T> withDescription(@Nullable String description, @NotNull Object... objects);
 
         /**
-         * Sets the description of the {@link PageItem}.
+         * Sets the description of the {@link Item}.
          * <br><br>
          * This is used for the {@link SelectMenu.Option#getDescription()}.
          *
          * @param description The description to use.
          */
-        public abstract PageItemBuilder<T> withDescription(@NotNull Optional<String> description);
+        public abstract ItemBuilder<T> withDescription(@NotNull Optional<String> description);
 
         /**
-         * Sets the emoji of the {@link PageItem}.
+         * Sets the emoji of the {@link Item}.
          * <br><br>
          * This is used for the {@link SelectMenu.Option#getEmoji()} and {@link Field#getName()}.
          *
          * @param emoji The emoji to use.
          */
-        public abstract PageItemBuilder<T> withEmoji(@Nullable Emoji emoji);
+        public abstract ItemBuilder<T> withEmoji(@Nullable Emoji emoji);
 
         /**
-         * Sets the emoji of the {@link PageItem}.
+         * Sets the emoji of the {@link Item}.
          * <br><br>
          * This is used for the {@link SelectMenu.Option#getEmoji()} and {@link Field#getName()}.
          *
          * @param emoji The emoji to use.
          */
-        public abstract PageItemBuilder<T> withEmoji(@NotNull Optional<Emoji> emoji);
+        public abstract ItemBuilder<T> withEmoji(@NotNull Optional<Emoji> emoji);
 
         /**
-         * Overrides the default identifier of the {@link PageItem}.
+         * Overrides the default identifier of the {@link Item}.
          * <br><br>
-         * This is used for the {@link SelectMenu.Option#getIdentifier()} and {@link PageItem}.
+         * This is used for the {@link SelectMenu.Option#getIdentifier()} and {@link Item}.
          *
          * @param identifier The identifier to use.
          * @param objects The objects used to format the value.
          */
-        public abstract PageItemBuilder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects);
+        public abstract ItemBuilder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects);
 
         /**
-         * Sets the label of the {@link PageItem}.
+         * Sets the label of the {@link Item}.
          * <br><br>
          * This is used for the {@link SelectMenu.Option}.
          *
          * @param label The label of the field item.
          * @param objects The objects used to format the label.
          */
-        public abstract PageItemBuilder<T> withLabel(@NotNull String label, @NotNull Object... objects);
+        public abstract ItemBuilder<T> withLabel(@NotNull String label, @NotNull Object... objects);
 
 
         /**
@@ -162,7 +162,7 @@ public abstract class PageItem {
          * @param value The value of the field item.
          * @param objects The objects used to format the value.
          */
-        public abstract PageItemBuilder<T> withOptionValue(@NotNull String value, @NotNull Object... objects);
+        public abstract ItemBuilder<T> withOptionValue(@NotNull String value, @NotNull Object... objects);
 
     }
 
@@ -170,49 +170,49 @@ public abstract class PageItem {
     public enum Style {
 
         /**
-         * Displays {@link FieldItem} into a single {@link Field}.
+         * Displays {@link Item} into a single {@link Field}.
          * <br><br>
          * - Only uses column 1 data.
          * <br>
-         * - Field names and emojis are handled by the {@link FieldItem}.
+         * - Field names and emojis are handled by the {@link Item}.
          */
         FIELD(false),
         /**
-         * Displays {@link FieldItem} into a single inline {@link Field}.
+         * Displays {@link Item} into a single inline {@link Field}.
          * <br><br>
          * - Only uses column 1 data.
          * <br>
-         * Field names and emojis are handled by the {@link FieldItem}.
+         * Field names and emojis are handled by the {@link Item}.
          */
         FIELD_INLINE(true),
         /**
-         * Displays all {@link FieldItem FieldItems} in 3 columns as a list of data.
+         * Displays all {@link Item Items} in 3 columns as a list of data.
          * <br><br>
          * Field names and emojis are handled by column data specified on the {@link Page}.
          */
         LIST(true),
         /**
-         * Displays all {@link FieldItem FieldItems} in 1 column as a list of data.
+         * Displays all {@link Item Items} in 1 column as a list of data.
          * <br><br>
          * Field names and emojis are handled by column data specified on the {@link Page}.
          */
         LIST_SINGLE(false),
         /**
-         * Displays {@link FieldItem}'s 3 columns across 3 {@link Field Fields}.
+         * Displays {@link Item Items} 3 columns across 3 {@link Field Fields}.
          * <br><br>
-         * - The left field name and emoji are handled by the {@link FieldItem}.
+         * - The left field name and emoji are handled by the {@link Item}.
          * <br>
-         * - The left field value is provided by column 1 data specified by the {@link FieldItem}.
+         * - The left field value is provided by column 1 data specified by the {@link Item}.
          * <br>
          * - The middle and right field names are handled by the column data specified on the {@link Page}.
          */
         TABLE(true),
         /**
-         * Displays {@link FieldItem}'s 3 columns across 3 {@link Field Fields}.
+         * Displays {@link Item Items} 3 columns across 3 {@link Field Fields}.
          * <br><br>
-         * - The left field name and emoji are handled by the {@link FieldItem}.
+         * - The left field name and emoji are handled by the {@link Item}.
          * <br>
-         * - The left field value is provided by description specified by the {@link FieldItem}.
+         * - The left field value is provided by description specified by the {@link Item}.
          * <br>
          * - The middle and right field names are handled by the column data specified on the {@link Page}.
          */
@@ -221,20 +221,20 @@ public abstract class PageItem {
         private static final Triple<String, String, String> NOOP_HANDLER = Triple.of(null, null, null);
         @Getter private final boolean inline;
 
-        public ConcurrentList<Field> getPageItems(@NotNull Optional<Triple<String, String, String>> columnNames, @NotNull ConcurrentList<PageItem> pageItems) {
-            return this.getPageItems(columnNames.orElse(NOOP_HANDLER), pageItems);
+        public ConcurrentList<Field> getPageItems(@NotNull Optional<Triple<String, String, String>> columnNames, @NotNull ConcurrentList<Item> items) {
+            return this.getPageItems(columnNames.orElse(NOOP_HANDLER), items);
         }
 
-        private ConcurrentList<Field> getPageItems(@NotNull Triple<String, String, String> columnNames, @NotNull ConcurrentList<PageItem> pageItems) {
+        private ConcurrentList<Field> getPageItems(@NotNull Triple<String, String, String> columnNames, @NotNull ConcurrentList<Item> items) {
             return switch (this) {
-                case FIELD, FIELD_INLINE -> pageItems.stream()
+                case FIELD, FIELD_INLINE -> items.stream()
                     .filter(pageItem -> pageItem.getType() == Type.FIELD)
                     .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                     .map(FieldItem.class::cast)
                     .map(fieldItem -> Field.builder()
                         .withEmoji(fieldItem.getOption().flatMap(SelectMenu.Option::getEmoji))
                         .withName(fieldItem.getOption().map(SelectMenu.Option::getLabel))
-                        .withValue(fieldItem.getFieldValue(this, PageItem.Column.ONE))
+                        .withValue(fieldItem.getFieldValue(this, Item.Column.ONE))
                         .isInline(this.isInline())
                         .build()
                     )
@@ -243,11 +243,11 @@ public abstract class PageItem {
                     Field.builder()
                         .withName(columnNames.getLeft())
                         .withValue(
-                            pageItems.stream()
+                            items.stream()
                                 .filter(pageItem -> pageItem.getType() == Type.FIELD)
                                 .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                                 .map(FieldItem.class::cast)
-                                .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.ONE))
+                                .map(pageItem -> pageItem.getFieldValue(this, Item.Column.ONE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
                         )
@@ -256,11 +256,11 @@ public abstract class PageItem {
                     Field.builder()
                         .withName(columnNames.getMiddle())
                         .withValue(
-                            pageItems.stream()
+                            items.stream()
                                 .filter(pageItem -> pageItem.getType() == Type.FIELD)
                                 .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                                 .map(FieldItem.class::cast)
-                                .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.TWO))
+                                .map(pageItem -> pageItem.getFieldValue(this, Item.Column.TWO))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
                         )
@@ -269,11 +269,11 @@ public abstract class PageItem {
                     Field.builder()
                         .withName(columnNames.getRight())
                         .withValue(
-                            pageItems.stream()
+                            items.stream()
                                 .filter(pageItem -> pageItem.getType() == Type.FIELD)
                                 .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                                 .map(FieldItem.class::cast)
-                                .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.THREE))
+                                .map(pageItem -> pageItem.getFieldValue(this, Item.Column.THREE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
                         )
@@ -284,18 +284,18 @@ public abstract class PageItem {
                     Field.builder()
                         .withName(columnNames.getLeft())
                         .withValue(
-                            pageItems.stream()
+                            items.stream()
                                 .filter(pageItem -> pageItem.getType() == Type.FIELD)
                                 .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                                 .map(FieldItem.class::cast)
-                                .map(pageItem -> pageItem.getFieldValue(this, PageItem.Column.ONE))
+                                .map(pageItem -> pageItem.getFieldValue(this, Item.Column.ONE))
                                 .collect(StreamUtil.toStringBuilder(true))
                                 .build()
                         )
                         .isInline(this.isInline())
                         .build()
                 );
-                case TABLE, TABLE_DESCRIPTION -> pageItems.stream()
+                case TABLE, TABLE_DESCRIPTION -> items.stream()
                     .filter(pageItem -> pageItem.getType() == Type.FIELD)
                     .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                     .map(FieldItem.class::cast)
@@ -303,17 +303,17 @@ public abstract class PageItem {
                         Field.builder()
                             .withEmoji(pageItem.getOption().flatMap(SelectMenu.Option::getEmoji))
                             .withName(pageItem.getOption().map(SelectMenu.Option::getLabel))
-                            .withValue(pageItem.getFieldValue(this, PageItem.Column.ONE))
+                            .withValue(pageItem.getFieldValue(this, Item.Column.ONE))
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName(columnNames.getMiddle())
-                            .withValue(pageItem.getFieldValue(this, PageItem.Column.TWO))
+                            .withValue(pageItem.getFieldValue(this, Item.Column.TWO))
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName(columnNames.getRight())
-                            .withValue(pageItem.getFieldValue(this, PageItem.Column.THREE))
+                            .withValue(pageItem.getFieldValue(this, Item.Column.THREE))
                             .isInline()
                             .build()
                     ))
