@@ -3,8 +3,11 @@ package dev.sbs.discordapi.response.page.handler;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.helper.ListUtil;
+import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,13 +17,26 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class PageHandler<P extends Paging<P>, I> extends Handler<P, I> {
+/**
+ * A page handling wrapper.
+ *
+ * @param <P> Page type for history.
+ * @param <I> Identifier type for searching.
+ */
+public class PageHandler<P extends Paging<P>, I> extends Handler {
+
+    @Getter private final ConcurrentList<P> pages;
+    @Getter private final Optional<Function<P, I>> historyTransformer;
+    @Getter private final Optional<BiFunction<P, I, Boolean>> historyMatcher;
+    protected final ConcurrentList<P> history = Concurrent.newList();
 
     protected PageHandler(
         @NotNull ConcurrentList<P> pages,
         @NotNull Optional<Function<P, I>> historyTransformer,
         @NotNull Optional<BiFunction<P, I, Boolean>> historyMatcher) {
-        super(pages, historyTransformer, historyMatcher);
+        this.pages = Concurrent.newUnmodifiableList(pages);
+        this.historyTransformer = historyTransformer;
+        this.historyMatcher = historyMatcher;
     }
 
     public static <P extends Paging<P>, I> Builder<P, I> builder() {
@@ -61,6 +77,61 @@ public class PageHandler<P extends Paging<P>, I> extends Handler<P, I> {
         this.history.clear();
         this.history.add(page);
         this.setCacheUpdateRequired();
+    }
+
+    public final P getCurrentPage() {
+        return this.history.getLast().orElseThrow(); // Will Always Exist
+    }
+
+    public final Optional<P> getPreviousPage() {
+        return Optional.ofNullable(this.history.size() > 1 ? this.history.get(this.history.size() - 2) : null);
+    }
+
+    public final ConcurrentList<P> getHistory() {
+        return this.history.toUnmodifiableList();
+    }
+
+    public final ConcurrentList<I> getHistoryIdentifiers() {
+        return this.history.stream()
+            .map(page -> this.getHistoryTransformer().map(transformer -> transformer.apply(page)))
+            .flatMap(Optional::stream)
+            .collect(Concurrent.toList());
+    }
+
+    /**
+     * Gets a {@link P subpage} from the {@link P CurrentPage}.
+     *
+     * @param identifier The subpage option value.
+     */
+    public final Optional<P> getSubPage(I identifier) {
+        return this.getCurrentPage()
+            .getPages()
+            .stream()
+            .filter(page -> this.getHistoryMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
+            .findFirst();
+    }
+
+    public final void gotoPreviousPage() {
+        if (this.hasPageHistory())
+            this.history.removeLast();
+    }
+
+    /**
+     * Changes the current {@link P page} to a subpage of the current {@link P page} using the given identifier.
+     *
+     * @param identifier The subpage option value.
+     */
+    public final void gotoSubPage(I identifier) {
+        this.history.add(this.getSubPage(identifier).orElseThrow(
+            () -> SimplifiedException.of(DiscordException.class)
+                .withMessage("Unable to locate subpage identified by ''{0}''!", identifier)
+                .build()
+        ));
+        this.setCacheUpdateRequired();
+    }
+
+    public final boolean hasPageHistory() {
+        return ListUtil.sizeOf(this.history) > 1;
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
