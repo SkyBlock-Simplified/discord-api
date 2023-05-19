@@ -184,7 +184,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
 
-                    this.getLog().info(FormatUtil.format("Logged in as {0}", this.getSelf().getTag()));
+                    this.getLog().info(FormatUtil.format("Logged in as {0}", this.getSelf().getUsername()));
                     return Mono.when(eventListeners);
                 })
             )
