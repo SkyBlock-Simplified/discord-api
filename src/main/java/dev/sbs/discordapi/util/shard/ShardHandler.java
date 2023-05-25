@@ -12,13 +12,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-public final class DiscordShardHandler extends DiscordHelper {
+public final class ShardHandler extends DiscordHelper {
 
-    public DiscordShardHandler(@NotNull DiscordBot discordBot) {
+    public ShardHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
-    public @NotNull Optional<DiscordShard> getShard(int shardId) {
+    public @NotNull Optional<Shard> getShard(int shardId) {
         return this._getShard(this.getDiscordBot().getGateway(), shardId);
     }
 
@@ -26,18 +26,18 @@ public final class DiscordShardHandler extends DiscordHelper {
         return this.getDiscordBot().getGateway().getGatewayClientGroup().getShardCount();
     }
 
-    public @NotNull Optional<DiscordShard> getShardOfGuild(@NotNull Guild guild) {
+    public @NotNull Optional<Shard> getShardOfGuild(@NotNull Guild guild) {
         return this.getShardOfGuild(guild.getId());
     }
 
-    public @NotNull Optional<DiscordShard> getShardOfGuild(@NotNull Snowflake guildId) {
+    public @NotNull Optional<Shard> getShardOfGuild(@NotNull Snowflake guildId) {
         return this._getShard(
             this.getDiscordBot().getGateway(),
             this.getDiscordBot().getGateway().getGatewayClientGroup().computeShardIndex(guildId)
         );
     }
 
-    public @NotNull ConcurrentList<DiscordShard> getShards() {
+    public @NotNull ConcurrentList<Shard> getShards() {
         return IntStream.range(0, this.getShardCount() + 1)
             .mapToObj(shardId -> this._getShard(this.getDiscordBot().getGateway(), shardId))
             .filter(Optional::isPresent)
@@ -45,8 +45,8 @@ public final class DiscordShardHandler extends DiscordHelper {
             .collect(Concurrent.toList());
     }
 
-    private @NotNull Optional<DiscordShard> _getShard(GatewayDiscordClient gatewayDiscordClient, int shardId) {
-        return gatewayDiscordClient.getGatewayClient(shardId).map(gatewayClient -> new DiscordShard(this.getDiscordBot(), gatewayClient));
+    private @NotNull Optional<Shard> _getShard(GatewayDiscordClient gatewayDiscordClient, int shardId) {
+        return gatewayDiscordClient.getGatewayClient(shardId).map(gatewayClient -> new Shard(this.getDiscordBot(), gatewayClient));
     }
 
 }

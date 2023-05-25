@@ -15,11 +15,11 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-public class DiscordShard extends DiscordHelper {
+public class Shard extends DiscordHelper {
 
     @Getter private final GatewayClient gatewayClient;
 
-    public DiscordShard(@NotNull DiscordBot discordBot, @NotNull GatewayClient gatewayClient) {
+    public Shard(@NotNull DiscordBot discordBot, @NotNull GatewayClient gatewayClient) {
         super(discordBot);
         this.gatewayClient = gatewayClient;
     }

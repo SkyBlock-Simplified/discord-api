@@ -39,14 +39,14 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public class DiscordCommandRegistrar extends DiscordHelper {
+public class CommandRegistrar extends DiscordHelper {
 
     private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     @Getter private final @NotNull Relationship.Root rootCommandRelationship;
     @Getter private final @NotNull Optional<CommandParentModel> prefix;
     @Getter private final @NotNull ConcurrentSet<Class<? extends Command>> commands;
 
-    DiscordCommandRegistrar(@NotNull DiscordBot discordBot, @NotNull Optional<CommandParentModel> optionalPrefix, @NotNull ConcurrentSet<Class<? extends Command>> commands) {
+    CommandRegistrar(@NotNull DiscordBot discordBot, @NotNull Optional<CommandParentModel> optionalPrefix, @NotNull ConcurrentSet<Class<? extends Command>> commands) {
         super(discordBot);
 
         this.getLog().info("Validating Commands");
@@ -301,7 +301,7 @@ public class DiscordCommandRegistrar extends DiscordHelper {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordCommandRegistrar> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<CommandRegistrar> {
 
         private final DiscordBot discordBot;
         private final ConcurrentSet<Class<? extends Command>> subCommands = Concurrent.newSet();
@@ -323,8 +323,8 @@ public class DiscordCommandRegistrar extends DiscordHelper {
         }
 
         @Override
-        public DiscordCommandRegistrar build() {
-            return new DiscordCommandRegistrar(
+        public CommandRegistrar build() {
+            return new CommandRegistrar(
                 this.discordBot,
                 this.prefix,
                 this.subCommands

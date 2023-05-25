@@ -2,8 +2,11 @@ package dev.sbs.discordapi.util.cache;
 
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
@@ -12,72 +15,53 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCache.Entry> {
+public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
 
     /**
      * Adds a {@link Response} and it's assigned {@link MessageChannel}, User ID and Message ID.
      *
      * @param channelId the discord channel id of the response
+     * @param userId the user interacting with the response
      * @param messageId the discord response id of the response
      * @param response the response to cache
      */
-    public Entry add(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+    public Entry createAndGet(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
         Entry entry = new Entry(channelId, userId, messageId, response);
         this.add(entry);
         return entry;
     }
 
-    public Optional<Entry> getEntry(UUID uniqueId) {
-        return this.stream()
-            .filter(entry -> entry.getResponse().getUniqueId().equals(uniqueId))
-            .findFirst();
-    }
-
-    public Optional<Response> getResponse(UUID uniqueId) {
-        return this.getEntry(uniqueId).map(Entry::getResponse);
-    }
-
-    /**
-     * Updates the stored {@link Response}.
-     *
-     * @param response The response to update.
-     */
-    public void updateResponse(@NotNull Response response) {
-        this.updateResponse(response, true);
-    }
-
-    /**
-     * Updates the stored {@link Response}.
-     *
-     * @param response The response to update.
-     * @param updateTTL Update the Time To Live and set as non-busy.
-     */
-    public void updateResponse(@NotNull Response response, boolean updateTTL) {
-        this.stream()
-            .filter(cachedMessage -> cachedMessage.getResponse().getUniqueId().equals(response.getUniqueId()))
-            .findFirst()
-            .ifPresent(cachedMessaged -> cachedMessaged.updateResponse(response, updateTTL));
-    }
-
     public static final class Entry {
 
-        @Getter private final Snowflake channelId;
-        @Getter private final Snowflake userId;
-        @Getter private final Snowflake messageId;
-        @Getter private Response response;
-        @Getter private Optional<Modal> activeModal = Optional.empty();
+        @Getter private final @NotNull Snowflake channelId;
+        @Getter private final @NotNull Snowflake userId;
+        @Getter private final @NotNull Snowflake messageId;
+        @Getter private @NotNull Response response;
+        @Getter private final @NotNull ConcurrentMap<String, Entry> followups = Concurrent.newMap();
+        @Getter private @NotNull Optional<Modal> activeModal = Optional.empty();
         @Getter private long lastInteract = System.currentTimeMillis();
         @Getter private boolean modified;
         @Getter private boolean busy;
+        @Getter private boolean loading;
 
-        public Entry(Snowflake channelId, Snowflake userId, Snowflake messageId, Response response) {
+        public Entry(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
             this.channelId = channelId;
             this.userId = userId;
             this.messageId = messageId;
             this.response = response;
             this.busy = true;
+            this.loading = true;
+        }
+
+        public Entry addFollowup(@NotNull String key, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+            Entry entry = new Entry(channelId, userId, messageId, response);
+            this.followups.put(key, entry);
+            return entry;
+        }
+
+        public void removeFollowup(@NotNull String key) {
+            this.followups.remove(key);
         }
 
         public void clearModal() {
@@ -116,7 +100,7 @@ public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCa
          * @return True if busy or not expired.
          */
         public boolean isActive() {
-            return this.isBusy() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
+            return this.isBusy() || this.isLoading() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
         }
 
         /**
@@ -126,8 +110,16 @@ public final class DiscordResponseCache extends ConcurrentList<DiscordResponseCa
             this.busy = true;
         }
 
+        /**
+         * Sets this response as loaded, preventing it from being edited through {@link EventContext#reply}}.
+         */
+        public void setLoaded() {
+            this.loading = false;
+        }
+
         public void setUpdated() {
             this.modified = false;
+            this.response.setNoCacheUpdateRequired();
         }
 
         public void setActiveModal(Modal modal) {
