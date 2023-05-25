@@ -14,13 +14,14 @@ import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.page.handler.Handler;
+import dev.sbs.discordapi.response.page.handler.CacheHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,12 +30,11 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class ItemHandler<T> extends Handler {
+public abstract class ItemHandler<T> implements CacheHandler {
 
     @Getter private final @NotNull Class<T> type;
     @Getter private final @NotNull ConcurrentList<T> items;
@@ -46,6 +46,7 @@ public abstract class ItemHandler<T> extends Handler {
     @Getter private int currentSorterIndex = -1;
     @Getter private boolean reversed = false;
     @Getter private int currentItemPage = 1;
+    @Getter @Setter private boolean cacheUpdateRequired;
     private ConcurrentList<Item> cachedItems = Concurrent.newUnmodifiableList();
 
     @Override
@@ -72,10 +73,9 @@ public abstract class ItemHandler<T> extends Handler {
 
     public @NotNull ConcurrentList<Item> getCachedItems() {
         if (this.isCacheUpdateRequired()) {
-            this.setCacheUpdateRequired(false);
             int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
             int endIndex = Math.min(startIndex + this.getAmountPerPage(), ListUtil.sizeOf(this.getItems()));
-            this.cachedItems = Concurrent.newUnmodifiableList(this.getFieldItems(startIndex, endIndex));
+            this.cachedItems = this.getFieldItems(startIndex, endIndex).toUnmodifiableList();
         }
 
         return this.cachedItems;
@@ -118,6 +118,8 @@ public abstract class ItemHandler<T> extends Handler {
 
             if (this.currentSorterIndex >= ListUtil.sizeOf(this.getSorters()))
                 this.currentSorterIndex = 0;
+
+            this.setCacheUpdateRequired();
         }
     }
 
@@ -152,6 +154,7 @@ public abstract class ItemHandler<T> extends Handler {
 
     public void invertOrder() {
         this.reversed = !this.isReversed();
+        this.setCacheUpdateRequired();
     }
 
     public void setReversed() {
@@ -241,7 +244,7 @@ public abstract class ItemHandler<T> extends Handler {
         @NoArgsConstructor(access = AccessLevel.PRIVATE)
         public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Sorter<T>> {
 
-            private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder().withIdentifier(UUID.randomUUID().toString());
+            private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
             private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
             private SortOrder order = SortOrder.DESCENDING;
 
@@ -367,19 +370,6 @@ public abstract class ItemHandler<T> extends Handler {
             }
 
             /**
-             * Overrides the default identifier of the {@link Sorter}.
-             * <br><br>
-             * This is used for the {@link Sorter}.
-             *
-             * @param identifier The identifier to use.
-             * @param objects The objects used to format the value.
-             */
-            public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-                this.optionBuilder.withIdentifier(identifier, objects);
-                return this;
-            }
-
-            /**
              * Sets the label of the {@link Sorter}.
              * <br><br>
              * This is used for the {@link Button}.
@@ -393,10 +383,8 @@ public abstract class ItemHandler<T> extends Handler {
             }
 
             public Builder withOption(@NotNull SelectMenu.Option option) {
-                return this.withIdentifier(option.getIdentifier())
-                    .withDescription(option.getDescription())
-                    .withEmoji(option.getEmoji())
-                    .withLabel(option.getLabel());
+                this.optionBuilder = SelectMenu.Option.from(option);
+                return this;
             }
 
             /**
