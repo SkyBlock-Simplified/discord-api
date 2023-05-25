@@ -168,16 +168,15 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         return from(this);
     }
 
-    public void updateSelected() {
-        this.updateSelected(Concurrent.newList());
+    public @NotNull SelectMenu updateSelected() {
+        return this.updateSelected(Concurrent.newList());
     }
 
-    public SelectMenu initPlaceholder(@NotNull String value) {
-        this.findOption(Option::getValue, value).ifPresent(this.selected::add);
-        return this;
+    public @NotNull SelectMenu updateSelected(@NotNull String... values) {
+        return this.updateSelected(Arrays.asList(values));
     }
 
-    public void updateSelected(@NotNull List<String> values) {
+    public @NotNull SelectMenu updateSelected(@NotNull List<String> values) {
         this.selected.clear();
         this.selected.addAll(
             values.stream()
@@ -185,6 +184,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 .flatMap(Optional::stream)
                 .collect(Concurrent.toList())
         );
+        return this;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -209,7 +209,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          */
         public Builder editOption(@NotNull Option option) {
             this.options.stream()
-                .filter(innerOption -> innerOption.getIdentifier().equals(option.getIdentifier()))
+                .filter(innerOption -> innerOption.getUniqueId().equals(option.getUniqueId()))
                 .findFirst()
                 .ifPresent(innerOption -> {
                     int index = this.options.indexOf(innerOption);
@@ -451,7 +451,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
 
         public static final int MAX_ALLOWED = 25;
         private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-        @Getter private final @NotNull String identifier;
+        @Getter private final @NotNull UUID uniqueId;
         @Getter private final @NotNull String label;
         @Getter private final @NotNull String value;
         @Getter private final @NotNull Optional<String> description;
@@ -459,7 +459,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
 
         public static Builder builder() {
-            return new Builder().withIdentifier(UUID.randomUUID().toString());
+            return new Builder(UUID.randomUUID());
         }
 
         @Override
@@ -470,7 +470,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             Option option = (Option) o;
 
             return new EqualsBuilder()
-                .append(this.getIdentifier(), option.getIdentifier())
+                .append(this.getUniqueId(), option.getUniqueId())
                 .append(this.getLabel(), option.getLabel())
                 .append(this.getValue(), option.getValue())
                 .append(this.getDescription(), option.getDescription())
@@ -478,10 +478,19 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 .build();
         }
 
+        public static Builder from(@NotNull Option option) {
+            return new Builder(option.getUniqueId())
+                .withLabel(option.getLabel())
+                .withValue(option.getValue())
+                .withDescription(option.getDescription())
+                .withEmoji(option.getEmoji())
+                .onInteract(option.optionInteraction);
+        }
+
         @Override
         public int hashCode() {
             return new HashCodeBuilder()
-                .append(this.getIdentifier())
+                .append(this.getUniqueId())
                 .append(this.getLabel())
                 .append(this.getValue())
                 .append(this.getDescription())
@@ -505,19 +514,13 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         }
 
         public Builder mutate() {
-            return new Builder()
-                .withIdentifier(this.getIdentifier())
-                .withLabel(this.getLabel())
-                .withValue(this.getValue())
-                .withDescription(this.getDescription())
-                .withEmoji(this.getEmoji())
-                .onInteract(this.optionInteraction);
+            return from(this);
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         public static final class Builder implements dev.sbs.api.util.builder.Builder<Option> {
 
-            private String identifier;
+            private final UUID uniqueId;
             private Optional<String> label = Optional.empty();
             private Optional<String> value = Optional.empty();
             private Optional<String> description = Optional.empty();
@@ -591,17 +594,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             }
 
             /**
-             * Overrides the default identifier of the {@link SelectMenu}.
-             *
-             * @param identifier The identifier to use.
-             * @param objects The objects used to format the identifier.
-             */
-            public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-                this.identifier = FormatUtil.format(identifier, objects);
-                return this;
-            }
-
-            /**
              * Sets the label text of the {@link Option}.
              *
              * @param label The label of the option.
@@ -629,9 +621,9 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             @Override
             public Option build() {
                 return new Option(
-                    this.identifier,
-                    this.label.orElse(this.identifier),
-                    this.value.orElse(this.identifier),
+                    this.uniqueId,
+                    this.label.orElse(this.uniqueId.toString()),
+                    this.value.orElse(this.uniqueId.toString()),
                     this.description,
                     this.emoji,
                     this.interaction
