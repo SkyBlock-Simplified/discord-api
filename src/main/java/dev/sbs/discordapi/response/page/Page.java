@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.response.page;
 
-import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -13,11 +12,11 @@ import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.handler.item.CustomItemHandler;
 import dev.sbs.discordapi.response.page.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
+import dev.sbs.discordapi.response.page.item.PageItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -27,38 +26,22 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 
-public class Page extends Item implements SingletonFieldItem, Paging<Page> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class Page implements Paging<Page> {
 
+    @Getter private final @NotNull SelectMenu.Option option;
     @Getter private final @NotNull Optional<String> content;
     @Getter private final @NotNull ConcurrentList<Page> pages;
     @Getter private final @NotNull ConcurrentList<Embed> embeds;
     @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
     @Getter private final @NotNull ConcurrentList<Emoji> reactions;
     @Getter private final @NotNull ItemHandler<?> itemHandler;
+    @Getter private final @NotNull HistoryHandler<PageItem, String> historyHandler;
 
-    protected Page(
-        @NotNull String identifier,
-        @NotNull Optional<SelectMenu.Option> option,
-        @NotNull Optional<String> content,
-        @NotNull ConcurrentList<Page> pages,
-        @NotNull ConcurrentList<Embed> embeds,
-        @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components,
-        @NotNull ConcurrentList<Emoji> reactions,
-        @NotNull ItemHandler<?> itemHandler) {
-        super(identifier, option, Type.PAGE, false);
-        this.content = content;
-        this.pages = pages.toUnmodifiableList();
-        this.embeds = embeds.toUnmodifiableList();
-        this.components = components.toUnmodifiableList();
-        this.reactions = reactions.toUnmodifiableList();
-        this.itemHandler = itemHandler;
-    }
-
-    public static PageBuilder builder() {
-        return new PageBuilder().withIdentifier(UUID.randomUUID().toString());
+    public static Builder builder() {
+        return new Builder();
     }
 
     @Override
@@ -70,6 +53,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
         Page page = (Page) o;
 
         return new EqualsBuilder()
+            .append(this.getOption(), page.getOption())
             .append(this.getContent(), page.getContent())
             .append(this.getPages(), page.getPages())
             .append(this.getEmbeds(), page.getEmbeds())
@@ -120,9 +104,8 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
             .findFirst();
     }
 
-    public static PageBuilder from(@NotNull Page page) {
-        return new PageBuilder()
-            .withIdentifier(page.getIdentifier())
+    public static Builder from(@NotNull Page page) {
+        return new Builder()
             .withOption(page.getOption())
             .withContent(page.getContent())
             .withPages(page.getPages())
@@ -130,20 +113,6 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
             .withComponents(page.getComponents())
             .withReactions(page.getReactions())
             .withItemHandler(page.getItemHandler());
-    }
-
-    @Override
-    public Field getRenderField() {
-        return Field.builder()
-            .withName(this.getOption().map(SelectMenu.Option::getLabel))
-            .withValue("Goto page.")
-            .isInline()
-            .build();
-    }
-
-    public void gotoNextSorter() {
-        this.getItemHandler().gotoNextSorter();
-        this.getItemHandler().setCacheUpdateRequired();
     }
 
     @Override
@@ -159,19 +128,14 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
             .build();
     }
 
-    public void invertOrder() {
-        this.getItemHandler().invertOrder();
-        this.getItemHandler().setCacheUpdateRequired();
-    }
-
-    public PageBuilder mutate() {
+    public Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class PageBuilder implements Builder<Page> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<Page> {
 
-        private String identifier;
+        private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Embed> embeds = Concurrent.newList();
         private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
@@ -183,7 +147,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
         /**
          * Clear all but preservable components from {@link Page}.
          */
-        public PageBuilder clearComponents() {
+        public Builder clearComponents() {
             return this.clearComponents(false);
         }
 
@@ -192,7 +156,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param recursive True to recursively clear components.
          */
-        public PageBuilder clearComponents(boolean recursive) {
+        public Builder clearComponents(boolean recursive) {
             return this.clearComponents(recursive, true);
         }
 
@@ -202,7 +166,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          * @param recursive True to recursively clear components.
          * @param enforcePreserve True to leave preservable components.
          */
-        public PageBuilder clearComponents(boolean recursive, boolean enforcePreserve) {
+        public Builder clearComponents(boolean recursive, boolean enforcePreserve) {
             // Remove Possibly Preserved Components
             this.components.stream()
                 .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
@@ -225,7 +189,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
         /**
          * Clear all pages from the {@link Page}.
          */
-        public PageBuilder clearPages() {
+        public Builder clearPages() {
             this.pages.clear();
             return this;
         }
@@ -235,7 +199,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param actionComponent The component to edit.
          */
-        public PageBuilder editComponent(@NotNull ActionComponent actionComponent) {
+        public Builder editComponent(@NotNull ActionComponent actionComponent) {
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -257,7 +221,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          * @param identifier The identifier of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
-        public PageBuilder editEmbed(@NotNull String identifier, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
+        public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
             this.findEmbed(identifier).ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
 
@@ -278,7 +242,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(@NotNull Function<PageBuilder, PageBuilder> pageBuilder) {
+        public Builder editPage(@NotNull Function<Builder, Builder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
@@ -288,7 +252,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public PageBuilder editPage(int index, @NotNull Function<PageBuilder, PageBuilder> pageBuilder) {
+        public Builder editPage(int index, @NotNull Function<Builder, Builder> pageBuilder) {
             if (index < this.pages.size())
                 this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
 
@@ -300,9 +264,9 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param page The page to edit.
          */
-        public PageBuilder editPage(@NotNull Page page) {
+        public Builder editPage(@NotNull Page page) {
             this.pages.stream()
-                .filter(existingPage -> existingPage.getIdentifier().equals(page.getIdentifier()))
+                .filter(existingPage -> existingPage.getOption().getUniqueId().equals(page.getOption().getUniqueId()))
                 .findFirst()
                 .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
@@ -345,7 +309,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param components Variable number of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
+        public Builder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -354,7 +318,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param components Collection of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
+        public Builder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
             components.forEach(this.components::add);
             return this;
         }
@@ -364,7 +328,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param content The text to add to the page.
          */
-        public PageBuilder withContent(@Nullable String content) {
+        public Builder withContent(@Nullable String content) {
             return this.withContent(Optional.ofNullable(content));
         }
 
@@ -373,8 +337,17 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param content The text to add to the page.
          */
-        public PageBuilder withContent(@NotNull Optional<String> content) {
+        public Builder withContent(@NotNull Optional<String> content) {
             this.content = content;
+            return this;
+        }
+
+        public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
+            return this.withDescription(FormatUtil.formatNullable(description, objects));
+        }
+
+        public Builder withDescription(@NotNull Optional<String> description) {
+            this.optionBuilder.withDescription(description);
             return this;
         }
 
@@ -383,7 +356,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param embeds Variable number of embeds to add.
          */
-        public PageBuilder withEmbeds(@NotNull Embed... embeds) {
+        public Builder withEmbeds(@NotNull Embed... embeds) {
             return this.withEmbeds(Arrays.asList(embeds));
         }
 
@@ -392,19 +365,17 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param embeds Collection of embeds to add.
          */
-        public PageBuilder withEmbeds(@NotNull Iterable<Embed> embeds) {
+        public Builder withEmbeds(@NotNull Iterable<Embed> embeds) {
             embeds.forEach(this.embeds::add);
             return this;
         }
 
-        /**
-         * Overrides the default identifier of the {@link Page}.
-         *
-         * @param identifier The identifier to use.
-         * @param objects The objects used to format the identifier.
-         */
-        public PageBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = FormatUtil.format(identifier, objects);
+        public Builder withEmoji(@Nullable Emoji emoji) {
+            return this.withEmoji(Optional.ofNullable(emoji));
+        }
+
+        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
+            this.optionBuilder.withEmoji(emoji);
             return this;
         }
 
@@ -413,27 +384,18 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param itemHandler The item data for the page.
          */
-        public PageBuilder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
+        public Builder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
             this.itemHandler = itemHandler;
             return this;
         }
 
-        /**
-         * Define the {@link SelectMenu.Option} data of the {@link Page}.
-         *
-         * @param option The option to add.
-         */
-        public PageBuilder withOption(@Nullable SelectMenu.Option option) {
-            return this.withOption(Optional.ofNullable(option));
+        public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
+            this.optionBuilder.withLabel(label, objects);
+            return this;
         }
 
-        /**
-         * Define the {@link SelectMenu.Option} data of the {@link Page}.
-         *
-         * @param option The option to add.
-         */
-        public PageBuilder withOption(@NotNull Optional<SelectMenu.Option> option) {
-            this.option = option;
+        public Builder withOption(@NotNull SelectMenu.Option option) {
+            this.optionBuilder = SelectMenu.Option.from(option);
             return this;
         }
 
@@ -442,7 +404,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param subPages Variable number of pages to add.
          */
-        public PageBuilder withPages(@NotNull Page... subPages) {
+        public Builder withPages(@NotNull Page... subPages) {
             return this.withPages(Arrays.asList(subPages));
         }
 
@@ -451,7 +413,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param subPages Collection of pages to add.
          */
-        public PageBuilder withPages(@NotNull Iterable<Page> subPages) {
+        public Builder withPages(@NotNull Iterable<Page> subPages) {
             subPages.forEach(this.pages::add);
             return this;
         }
@@ -461,7 +423,7 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param reactions The reactions to add to the response.
          */
-        public PageBuilder withReactions(@NotNull Emoji... reactions) {
+        public Builder withReactions(@NotNull Emoji... reactions) {
             return this.withReactions(Arrays.asList(reactions));
         }
 
@@ -470,8 +432,13 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
          *
          * @param reactions The reactions to add to the response.
          */
-        public PageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
+        public Builder withReactions(@NotNull Iterable<Emoji> reactions) {
             reactions.forEach(this.reactions::add);
+            return this;
+        }
+
+        public Builder withValue(@NotNull String value, @NotNull Object... objects) {
+            this.optionBuilder.withValue(value, objects);
             return this;
         }
 
@@ -483,14 +450,26 @@ public class Page extends Item implements SingletonFieldItem, Paging<Page> {
         @Override
         public Page build() {
             return new Page(
-                this.identifier,
-                this.option,
+                this.optionBuilder.build(),
                 this.content,
-                this.pages,
-                this.embeds,
-                this.components,
-                this.reactions,
-                this.itemHandler
+                this.pages.toUnmodifiableList(),
+                this.embeds.toUnmodifiableList(),
+                this.components.toUnmodifiableList(),
+                this.reactions.toUnmodifiableList(),
+                this.itemHandler,
+                HistoryHandler.<PageItem, String>builder()
+                    .withPages(
+                        this.itemHandler
+                            .getItems()
+                            .stream()
+                            .filter(PageItem.class::isInstance)
+                            .map(PageItem.class::cast)
+                            .collect(Concurrent.toList())
+                    )
+                    .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
+                    .withHistoryTransformer(page -> page.getOption().getValue())
+                    .withMinimumSize(0)
+                    .build()
             );
         }
 
