@@ -8,20 +8,19 @@ public interface ActionComponentContext extends ComponentContext {
     ActionComponent getComponent();
 
     default void modify(ActionComponent actionComponent) {
-        this.getResponse().ifPresent(response -> this.getDiscordBot()
-            .getResponseCache()
-            .updateResponse(
-                response.mutate()
-                    .editPage(
-                        response.getHandler()
-                            .getCurrentPage()
-                            .mutate()
-                            .editComponent(actionComponent)
-                            .build()
-                    )
-                    .build(),
-                false
-            )
+        this.getResponseCacheEntry().updateResponse(
+            this.getResponse()
+                .mutate()
+                .editPage(
+                    this.getResponse()
+                        .getHistoryHandler()
+                        .getCurrentPage()
+                        .mutate()
+                        .editComponent(actionComponent)
+                        .build()
+                )
+                .build(),
+            false
         );
     }
 
