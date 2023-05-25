@@ -1,14 +1,10 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
@@ -16,6 +12,8 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,7 +23,7 @@ import java.util.function.Function;
 
 public interface EventContext<T extends Event> {
 
-    default Mono<Message> buildMessage(Response response) {
+    default Mono<Message> buildMessage(@NotNull Response response) {
         return this.getChannel()
             .flatMap(response::getD4jCreateMono)
             .publishOn(response.getReactorScheduler());
@@ -36,36 +34,55 @@ public interface EventContext<T extends Event> {
     }
 
     default Mono<Void> deferReply(boolean ephemeral) {
-        return Mono.defer(() -> this.reply(
-            Response.builder(this)
-                .isInteractable()
-                .isLoader()
-                .isEphemeral(ephemeral)
-                .withReference(this)
-                .withPages(
-                    Page.builder()
-                        .withContent(
-                            FormatUtil.format(
-                                "{0}{1} is working...",
-                                SimplifiedApi.getRepositoryOf(EmojiModel.class)
-                                    .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
-                                    .flatMap(Emoji::of)
-                                    .map(Emoji::asSpacedFormat)
-                                    .orElse(""),
-                                this.getDiscordBot().getSelf().getUsername()
-                            )
-                        )
-                        .build()
+        return this.deferReply(ephemeral, Optional.empty());
+    }
+
+    default Mono<Void> deferReply(boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
+        return this.deferReply(ephemeral, FormatUtil.formatNullable(content, objects));
+    }
+
+    default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
+        return Mono.defer(() -> this.reply(Response.loader(this, ephemeral, content)));
+    }
+
+    default Mono<Void> edit(@Nullable String content, @NotNull Object... objects) {
+        return this.edit(FormatUtil.formatNullable(content, objects));
+    }
+
+    default Mono<Void> edit(@NotNull Optional<String> content) {
+        return this.edit(Response.loader(this, false, content));
+    }
+
+    default Mono<Void> edit(@NotNull Response response) {
+        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
+            .checkpoint("EventContext#edit Processing")
+            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId()))
+            .filter(ResponseCache.Entry::isLoading) // Only Process Loading Responses Here
+            .singleOrEmpty()
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Response Edit Exception"
                 )
-                .build()
-        ));
+            ))
+            .flatMap(entry -> this.getChannel()
+                .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
+                .flatMap(message -> message.edit(response.getD4jEditSpec()))
+                .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
+                .then(Mono.fromRunnable(() -> {
+                    entry.updateResponse(response);
+                    entry.setUpdated();
+                }))
+            );
     }
 
     Mono<MessageChannel> getChannel();
 
-    Snowflake getChannelId();
+    @NotNull Snowflake getChannelId();
 
-    DiscordBot getDiscordBot();
+    @NotNull DiscordBot getDiscordBot();
 
     T getEvent();
 
@@ -73,75 +90,56 @@ public interface EventContext<T extends Event> {
 
     Optional<Snowflake> getGuildId();
 
-    default Optional<String> getIdentifier() {
-        return Optional.empty();
-    }
+    @NotNull User getInteractUser();
 
-    User getInteractUser();
-
-    Snowflake getInteractUserId();
+    @NotNull Snowflake getInteractUserId();
 
     default Mono<PrivateChannel> getInteractUserPrivateChannel() {
         return this.getInteractUser().getPrivateChannel();
     }
 
-    UUID getUniqueId();
+    @NotNull UUID getResponseId();
 
     default boolean isPrivateChannel() {
         return this.getGuildId().isEmpty();
     }
 
-    default Mono<Void> reply(Response response) {
+    default Mono<Void> reply(@NotNull Response response) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
-            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getUniqueId()))
-            .filter(entry -> entry.getResponse().isRenderingPagingComponents())
+            .checkpoint("EventContext#reply Processing")
+            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId()))
+            .filter(ResponseCache.Entry::isLoading)
             .singleOrEmpty()
-            .flatMap(deferredReply -> {
-                deferredReply.updateResponse(response);
-                deferredReply.setUpdated();
-
-                return this.getChannel()
-                    .flatMap(channel -> channel.getMessageById(deferredReply.getMessageId()))
-                    .flatMap(message -> message.edit(response.getD4jEditSpec()))
-                    .flatMap(message -> Flux.fromIterable(response.getHandler().getCurrentPage().getReactions())
-                        .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
-                        .then(Mono.just(deferredReply))
-                    );
-            })
+            .doOnNext(ResponseCache.Entry::setLoaded)
+            .flatMap(entry -> this.edit(response)) // Final Edit Message
             .switchIfEmpty(
-                this.buildMessage(response)
-                    .checkpoint(FormatUtil.format("Response Processing{0}", this.getIdentifier().map(identifier -> ": " + identifier).orElse("")))
+                this.buildMessage(response) // Create New Message
+                    .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
                     .onErrorResume(throwable -> this.getDiscordBot().handleException(
                         ExceptionContext.of(
                             this.getDiscordBot(),
                             this,
                             throwable,
-                            "Response Exception"
+                            "Response Create Exception"
                         )
                     ))
-                    .flatMap(message -> Flux.fromIterable(response.getHandler().getCurrentPage().getReactions())
-                        .flatMap(emoji -> message.addReaction(emoji.getD4jReaction()))
-                        .then(Mono.fromRunnable(() -> {
-                            if (response.isInteractable()) {
-                                // Cache Message
-                                DiscordResponseCache.Entry responseCacheEntry = this.getDiscordBot()
-                                    .getResponseCache()
-                                    .add(
-                                        message.getChannelId(),
-                                        this.getInteractUserId(),
-                                        message.getId(),
-                                        response
-                                    );
+                    .flatMap(message -> Mono.fromRunnable(() -> {
+                        if (response.isInteractable()) {
+                            // Cache Message
+                            ResponseCache.Entry responseCacheEntry = this.getDiscordBot()
+                                .getResponseCache()
+                                .createAndGet(
+                                    message.getChannelId(),
+                                    this.getInteractUserId(),
+                                    message.getId(),
+                                    response
+                                );
 
-                                if (!response.isRenderingPagingComponents()) {
-                                    responseCacheEntry.updateLastInteract(); // Update TTL
-                                    responseCacheEntry.setUpdated();
-                                }
-                            }
-                        }))
-                    )
-            )
-            .then();
+                            responseCacheEntry.updateLastInteract();
+                            responseCacheEntry.setUpdated();
+                        }
+                    }))
+            );
     }
 
     default Mono<Void> withChannel(Function<MessageChannel, Mono<Void>> messageChannelFunction) {
