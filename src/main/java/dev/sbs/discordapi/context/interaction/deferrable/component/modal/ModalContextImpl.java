@@ -14,7 +14,6 @@ class ModalContextImpl implements ModalContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ModalSubmitInteractionEvent event;
-    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final UUID responseId;
     @Getter private final Modal component;
 

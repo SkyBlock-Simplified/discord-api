@@ -17,7 +17,7 @@ class ExceptionContextImpl<T extends Event> implements ExceptionContext<T> {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final EventContext<T> eventContext;
-    @Getter private final UUID uniqueId = UUID.randomUUID();
+    @Getter private final UUID responseId = UUID.randomUUID();
     @Getter private final Throwable exception;
     @Getter private final String title;
     @Getter private final Optional<Consumer<Embed.EmbedBuilder>> embedBuilderConsumer;

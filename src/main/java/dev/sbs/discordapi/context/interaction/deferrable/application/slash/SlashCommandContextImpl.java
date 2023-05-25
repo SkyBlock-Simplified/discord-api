@@ -16,7 +16,7 @@ class SlashCommandContextImpl implements SlashCommandContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ChatInputInteractionEvent event;
-    @Getter private final UUID uniqueId = UUID.randomUUID();
+    @Getter private final UUID responseId = UUID.randomUUID();
     @Getter private final Relationship.Command relationship;
     @Getter private final String commandAlias;
     @Getter private final ConcurrentList<Argument> arguments;

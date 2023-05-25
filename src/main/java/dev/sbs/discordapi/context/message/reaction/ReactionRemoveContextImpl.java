@@ -10,8 +10,10 @@ import discord4j.core.object.entity.User;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,13 +22,12 @@ class ReactionRemoveContextImpl implements ReactionContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ReactionRemoveEvent event;
-    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final UUID responseId;
     @Getter private final Emoji emoji;
     @Getter private final Type type = Type.REMOVE;
 
     @Override
-    public Snowflake getChannelId() {
+    public @NotNull Snowflake getChannelId() {
         return this.getEvent().getChannelId();
     }
 
@@ -41,12 +42,12 @@ class ReactionRemoveContextImpl implements ReactionContext {
     }
 
     @Override
-    public User getInteractUser() {
-        return this.getEvent().getUser().block();
+    public @NotNull User getInteractUser() {
+        return Objects.requireNonNull(this.getEvent().getUser().block());
     }
 
     @Override
-    public Snowflake getInteractUserId() {
+    public @NotNull Snowflake getInteractUserId() {
         return this.getEvent().getUserId();
     }
 

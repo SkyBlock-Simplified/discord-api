@@ -14,7 +14,6 @@ class ButtonContextImpl implements ButtonContext {
 
     @Getter private final DiscordBot discordBot;
     @Getter private final ButtonInteractionEvent event;
-    @Getter private final UUID uniqueId = UUID.randomUUID();
     @Getter private final UUID responseId;
     @Getter private final Button component;
 
