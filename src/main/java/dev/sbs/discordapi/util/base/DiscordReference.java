@@ -19,11 +19,14 @@ import dev.sbs.discordapi.command.data.CommandId;
 import dev.sbs.discordapi.command.relationship.Relationship;
 import dev.sbs.discordapi.command.relationship.TopLevelRelationship;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildChannel;
+import discord4j.core.object.reaction.Reaction;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
@@ -243,6 +246,36 @@ public abstract class DiscordReference {
             permissionMap.put(permission, permissionSet.contains(permission));
 
         return permissionMap;
+    }
+
+    public final @NotNull Mono<Message> handleReactions(@NotNull Response response, @NotNull Message message) {
+        return Mono.just(message)
+            .checkpoint("DiscordReference#handleReactions Processing")
+            .flatMap(msg -> {
+                // Update Reactions
+                ConcurrentList<Emoji> newReactions = response.getHistoryHandler().getCurrentPage().getReactions();
+
+                // Current Reactions
+                ConcurrentList<Emoji> currentReactions = message.getReactions()
+                    .stream()
+                    .filter(Reaction::selfReacted)
+                    .map(Reaction::getEmoji)
+                    .map(Emoji::of)
+                    .collect(Concurrent.toList());
+
+                Mono<Void> mono = Mono.empty();
+
+                // Remove Existing Reactions
+                if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
+                    mono = message.removeAllReactions();
+
+                return mono.then(Mono.when(
+                    newReactions.stream()
+                        .map(emoji -> message.addReaction(emoji.getD4jReaction()))
+                        .collect(Concurrent.toList())
+                ));
+            })
+            .thenReturn(message);
     }
 
     // Channel Permissions
