@@ -1,7 +1,8 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.SimplifiedException;
-import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -22,13 +23,14 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
-import dev.sbs.discordapi.response.page.handler.PageHandler;
+import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
@@ -73,18 +75,41 @@ public class Response implements Paging<Page> {
     @Getter private final boolean replyMention;
     @Getter private final int timeToLive;
     @Getter private final boolean interactable;
-    @Getter private final boolean loader;
     @Getter private final boolean renderingPagingComponents;
     @Getter private final boolean ephemeral;
-    @Getter private final PageHandler<Page, String> handler;
+    @Getter private final @NotNull HistoryHandler<Page, String> historyHandler;
     private ConcurrentList<LayoutComponent<ActionComponent>> cachedPageComponents = Concurrent.newUnmodifiableList();
 
-    public static ResponseBuilder builder() {
-        return new ResponseBuilder(UUID.randomUUID());
+    public static @NotNull Builder builder() {
+        return new Builder();
     }
 
-    public static ResponseBuilder builder(@NotNull EventContext<?> eventContext) {
-        return new ResponseBuilder(eventContext.getUniqueId());
+    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
+        return loader(context, ephemeral, FormatUtil.formatNullable(content, objects));
+    }
+
+    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @NotNull Optional<String> content) {
+        return builder()
+            .isInteractable()
+            .isEphemeral(ephemeral)
+            .withReference(context)
+            .withUniqueId(context.getResponseId())
+            .withPages(
+                Page.builder()
+                    .withContent(
+                        content.orElse(FormatUtil.format(
+                            "{0}{1} is working...",
+                            SimplifiedApi.getRepositoryOf(EmojiModel.class)
+                                .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
+                                .flatMap(Emoji::of)
+                                .map(Emoji::asSpacedFormat)
+                                .orElse(""),
+                            context.getDiscordBot().getSelf().getUsername()
+                        ))
+                    )
+                    .build()
+            )
+            .build();
     }
 
     /**
@@ -118,11 +143,10 @@ public class Response implements Paging<Page> {
             .append(this.isReplyMention(), response.isReplyMention())
             .append(this.getTimeToLive(), response.getTimeToLive())
             .append(this.isInteractable(), response.isInteractable())
-            .append(this.isLoader(), response.isLoader())
             .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
             .append(this.isEphemeral(), response.isEphemeral())
             .append(this.getUniqueId(), response.getUniqueId())
-            .append(this.getHandler(), response.getHandler())
+            .append(this.getHistoryHandler(), response.getHistoryHandler())
             .append(this.getPages(), response.getPages())
             .append(this.getAttachments(), response.getAttachments())
             .append(this.getReferenceId(), response.getReferenceId())
@@ -130,8 +154,9 @@ public class Response implements Paging<Page> {
             .build();
     }
 
-    public static ResponseBuilder from(@NotNull Response response) {
-        return new ResponseBuilder(response.getUniqueId())
+    public static Builder from(@NotNull Response response) {
+        return new Builder()
+            .withUniqueId(response.getUniqueId())
             .withPages(response.getPages())
             .withAttachments(response.getAttachments())
             .withReference(response.getReferenceId())
@@ -139,111 +164,112 @@ public class Response implements Paging<Page> {
             .replyMention(response.isReplyMention())
             .withTimeToLive(response.getTimeToLive())
             .isInteractable(response.isInteractable())
-            .isLoader(response.isLoader())
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral());
     }
 
+    public boolean isComponentCacheUpdateRequired() {
+        return this.getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
+    }
+
+    public void setNoCacheUpdateRequired() {
+        this.getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
+    }
+
     public final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> getCachedPageComponents() {
-        if (this.isRenderingPagingComponents()) {
-            boolean cacheUpdateRequired = this.getHandler().isCacheUpdateRequired() || this.getHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired();
+        if (this.isRenderingPagingComponents() && this.isComponentCacheUpdateRequired()) {
+            ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
 
-            if (this.getHandler().isCacheUpdateRequired()) {
-                ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
-                this.getHandler().setCacheUpdateRequired(false);
+            // Page List
+            if (ListUtil.sizeOf(this.getPages()) > 1 && !this.getHistoryHandler().hasPageHistory()) {
+                pageComponents.add(ActionRow.of(
+                    SelectMenu.builder()
+                        .withPageType(SelectMenu.PageType.PAGE)
+                        .withPlaceholder("Select a page.")
+                        .withPlaceholderUsesSelectedOption()
+                        .withOptions(
+                            this.getPages()
+                                .stream()
+                                .map(Page::getOption)
+                                .collect(Concurrent.toList())
+                        )
+                        .build()
+                        .updateSelected(this.getHistoryHandler().getHistoryIdentifiers().get(0))
+                ));
+            }
 
-                // Page List
-                if (ListUtil.sizeOf(this.getPages()) > 1) {
-                    pageComponents.add(ActionRow.of(
-                        SelectMenu.builder()
-                            .withPageType(SelectMenu.PageType.PAGE)
-                            .withPlaceholder("Select a page.")
-                            .withPlaceholderUsesSelectedOption()
-                            .withOptions(
-                                this.getPages()
-                                    .stream()
-                                    .map(Page::getOption)
-                                    .flatMap(Optional::stream)
-                                    .collect(Concurrent.toList())
-                            )
-                            .build()
-                            .initPlaceholder(this.getHandler().getHistoryIdentifiers().get(0))
-                    ));
-                }
+            // SubPage List
+            if (ListUtil.notEmpty(this.getHistoryHandler().getCurrentPage().getPages()) || this.getHistoryHandler().hasPageHistory()) {
+                SelectMenu.Builder subPageBuilder = SelectMenu.builder()
+                    .withPageType(SelectMenu.PageType.SUBPAGE)
+                    .withPlaceholder("Select a subpage.")
+                    .withPlaceholderUsesSelectedOption();
 
-                // SubPage List
-                if (ListUtil.notEmpty(this.getHandler().getCurrentPage().getPages()) || this.getHandler().getPreviousPage().isPresent()) {
-                    SelectMenu.Builder subPageBuilder = SelectMenu.builder()
-                        .withPageType(SelectMenu.PageType.SUBPAGE)
-                        .withPlaceholder("Select a subpage.")
-                        .withPlaceholderUsesSelectedOption();
-
-                    if (this.getHandler().getPreviousPage().isPresent()) {
-                        subPageBuilder.withOptions(
-                            SelectMenu.Option.builder()
-                                .withValue("BACK")
-                                .withLabel("Back")
-                                .withEmoji(Button.PageType.BACK.getEmoji())
-                                .build()
-                        );
-                    }
-
-                    Page subPage = ListUtil.notEmpty(this.getHandler().getCurrentPage().getPages()) ?
-                        this.getHandler().getCurrentPage() :
-                        this.getHandler().getPreviousPage().orElse(this.getHandler().getCurrentPage());
-
+                if (this.getHistoryHandler().hasPageHistory()) {
                     subPageBuilder.withOptions(
-                        subPage.getPages()
-                            .stream()
-                            .map(Page::getOption)
-                            .flatMap(Optional::stream)
-                            .collect(Concurrent.toList())
+                        SelectMenu.Option.builder()
+                            .withValue("BACK")
+                            .withLabel("Back")
+                            .withEmoji(Button.PageType.BACK.getEmoji())
+                            .build()
                     );
-
-                    pageComponents.add(ActionRow.of(subPageBuilder.build()));
                 }
 
-                if (this.getHandler().getCurrentPage().doesHaveItems()) {
-                    // Item List
-                    if (this.getHandler().getCurrentPage().getItemHandler().getTotalItemPages() > 1) {
-                        for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
-                            int row = i;
+                Page subPage = ListUtil.notEmpty(this.getHistoryHandler().getCurrentPage().getPages()) ?
+                    this.getHistoryHandler().getCurrentPage() :
+                    this.getHistoryHandler().getPreviousPage().orElse(this.getHistoryHandler().getCurrentPage());
 
-                            pageComponents.add(ActionRow.of(
-                                Arrays.stream(Button.PageType.values())
-                                    .filter(pageType -> pageType.getRow() == row)
-                                    .map(Button.PageType::build)
-                                    .collect(Concurrent.toList())
-                            ));
-                        }
-                    }
+                subPageBuilder.withOptions(
+                    subPage.getPages()
+                        .stream()
+                        .map(Page::getOption)
+                        .collect(Concurrent.toList())
+                );
 
-                    // Viewer/Editor
-                    if (this.getHandler().getCurrentPage().getItemHandler().isViewerEnabled()) {
+                pageComponents.add(ActionRow.of(subPageBuilder.build()));
+            }
+
+            if (this.getHistoryHandler().getCurrentPage().doesHaveItems()) {
+                // Item List
+                if (this.getHistoryHandler().getCurrentPage().getItemHandler().getTotalItemPages() > 1) {
+                    for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
+                        int row = i;
+
                         pageComponents.add(ActionRow.of(
-                            SelectMenu.builder()
-                                .withPageType(SelectMenu.PageType.ITEM)
-                                .withPlaceholder("Select an item to view.")
-                                .withOptions(
-                                    this.getHandler()
-                                        .getCurrentPage()
-                                        .getItemHandler()
-                                        .getCachedItems()
-                                        .stream()
-                                        .map(Item::getOption)
-                                        .flatMap(Optional::stream)
-                                        .collect(Concurrent.toList())
-                                )
-                                .build()
+                            Arrays.stream(Button.PageType.values())
+                                .filter(pageType -> pageType.getRow() == row)
+                                .map(Button.PageType::build)
+                                .collect(Concurrent.toList())
                         ));
                     }
                 }
 
-                this.cachedPageComponents = pageComponents.toUnmodifiableList();
+                // Viewer/Editor
+                if (this.getHistoryHandler().getCurrentPage().getItemHandler().isViewerEnabled()) {
+                    pageComponents.add(ActionRow.of(
+                        SelectMenu.builder()
+                            .withPageType(SelectMenu.PageType.ITEM)
+                            .withPlaceholder("Select an item to view.")
+                            .withOptions(
+                                this.getHistoryHandler()
+                                    .getCurrentPage()
+                                    .getItemHandler()
+                                    .getCachedItems()
+                                    .stream()
+                                    .map(Item::getOption)
+                                    .collect(Concurrent.toList())
+                            )
+                            .build()
+                    ));
+                }
             }
 
-            if (cacheUpdateRequired)
-                this.updatePagingComponents();
+            this.cachedPageComponents = pageComponents.toUnmodifiableList();
+            this.updatePagingComponents();
         }
 
         return this.cachedPageComponents;
@@ -251,17 +277,17 @@ public class Response implements Paging<Page> {
 
     @Override
     public @NotNull ConcurrentList<Page> getPages() {
-        return this.getHandler().getPages();
+        return this.getHistoryHandler().getPages();
     }
 
     private void updatePagingComponents() {
         // Enabled
-        this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.getHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.getHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.getHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.getHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.BACK, Button.ButtonBuilder::setDisabled); // TODO: Item Paging?
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.sizeOf(this.getHandler().getCurrentPage().getItemHandler().getSorters()) > 1));
+        this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.BACK, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
+        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.sizeOf(this.getHistoryHandler().getCurrentPage().getItemHandler().getSorters()) > 1));
         this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.ButtonBuilder::setEnabled);
 
         // Labels
@@ -270,11 +296,11 @@ public class Response implements Paging<Page> {
             Button.PageType.INDEX,
             buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
                 "{0} / {1}",
-                this.getHandler()
+                this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
                     .getCurrentItemPage(),
-                this.getHandler()
+                this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
                     .getTotalItemPages()
@@ -285,7 +311,7 @@ public class Response implements Paging<Page> {
             Button::getPageType,
             Button.PageType.SORT,
             buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "Sort: {0}", this.getHandler()
+                "Sort: {0}", this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
                     .getCurrentSorter()
@@ -298,14 +324,14 @@ public class Response implements Paging<Page> {
             Button::getPageType,
             Button.PageType.ORDER,
             buttonBuilder -> buttonBuilder
-                .withLabel(FormatUtil.format("Order: {0}", this.getHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal"))
-                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
+                .withLabel(FormatUtil.format("Order: {0}", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal"))
+                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
         );
     }
 
     public MessageCreateSpec getD4jCreateSpec() {
         return MessageCreateSpec.builder()
-            .content(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .allowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -316,7 +342,7 @@ public class Response implements Paging<Page> {
 
     public MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
         return MessageCreateMono.of(channel)
-            .withContent(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .withContent(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .withAllowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .withFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -326,7 +352,7 @@ public class Response implements Paging<Page> {
 
     public MessageEditSpec getD4jEditSpec() {
         return MessageEditSpec.builder()
-            .contentOrNull(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .addAllFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .addAllEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
@@ -335,7 +361,7 @@ public class Response implements Paging<Page> {
 
     public InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
         return InteractionApplicationCommandCallbackSpec.builder()
-            .content(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
             .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -344,9 +370,21 @@ public class Response implements Paging<Page> {
             .build();
     }
 
-    public InteractionReplyEditSpec getD4jInteractionEditSpec() {
+    public InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec() {
+        return InteractionFollowupCreateSpec.builder()
+            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
+            .ephemeral(this.isEphemeral())
+            .allowedMentions(AllowedMentions.suppressEveryone())
+            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
+            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
+            .username("Test")
+            .build();
+    }
+
+    public InteractionReplyEditSpec getD4jInteractionReplyEditSpec() {
         return InteractionReplyEditSpec.builder()
-            .contentOrNull(this.getHandler().getCurrentPage().getContent().orElse(""))
+            .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .allowedMentionsOrNull(AllowedMentions.suppressEveryone())
             .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .componentsOrNull(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
@@ -357,28 +395,28 @@ public class Response implements Paging<Page> {
     private ConcurrentList<LayoutComponent<ActionComponent>> getCurrentComponents() {
         ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
         components.addAll(this.getCachedPageComponents()); // Paging Components
-        components.addAll(this.getHandler().getCurrentPage().getComponents()); // Current Page Components
+        components.addAll(this.getHistoryHandler().getCurrentPage().getComponents()); // Current Page Components
         return components;
     }
 
     private ConcurrentList<Embed> getCurrentEmbeds() {
-        ConcurrentList<Embed> embeds = Concurrent.newList(this.getHandler().getCurrentPage().getEmbeds());
+        ConcurrentList<Embed> embeds = Concurrent.newList(this.getHistoryHandler().getCurrentPage().getEmbeds());
 
         // Handle Item List
-        if (this.getHandler().getCurrentPage().doesHaveItems()) {
+        if (this.getHistoryHandler().getCurrentPage().doesHaveItems()) {
             embeds.add(
                 Embed.builder()
                     .withFields(
-                        this.getHandler()
+                        this.getHistoryHandler()
                             .getCurrentPage()
                             .getItemHandler()
                             .getStyle()
                             .getPageItems(
-                                this.getHandler()
+                                this.getHistoryHandler()
                                     .getCurrentPage()
                                     .getItemHandler()
                                     .getColumnNames(),
-                                this.getHandler()
+                                this.getHistoryHandler()
                                     .getCurrentPage()
                                     .getItemHandler()
                                     .getCachedItems()
@@ -395,7 +433,7 @@ public class Response implements Paging<Page> {
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getUniqueId())
-            .append(this.getHandler())
+            .append(this.getHistoryHandler())
             .append(this.getBuildTime())
             .append(this.getPages())
             .append(this.getAttachments())
@@ -404,20 +442,19 @@ public class Response implements Paging<Page> {
             .append(this.isReplyMention())
             .append(this.getTimeToLive())
             .append(this.isInteractable())
-            .append(this.isLoader())
             .append(this.isRenderingPagingComponents())
             .append(this.isEphemeral())
             .build();
     }
 
-    public Response.ResponseBuilder mutate() {
+    public Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class ResponseBuilder implements Builder<Response> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<Response> {
 
-        private final UUID uniqueId;
+        private UUID uniqueId = UUID.randomUUID();
         private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Attachment> attachments = Concurrent.newList();
         private boolean inlineItems;
@@ -426,7 +463,6 @@ public class Response implements Paging<Page> {
         private boolean replyMention;
         private int timeToLive = 10;
         private boolean interactable = true;
-        private boolean loader = false;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
         private Optional<String> defaultPage = Optional.empty();
@@ -434,7 +470,7 @@ public class Response implements Paging<Page> {
         /**
          * Recursively clear all but preservable components from all {@link Page Pages} in {@link Response}.
          */
-        public ResponseBuilder clearAllComponents() {
+        public Builder clearAllComponents() {
             return this.clearAllComponents(true);
         }
 
@@ -443,7 +479,7 @@ public class Response implements Paging<Page> {
          *
          * @param enforcePreserve True to leave preservable components.
          */
-        public ResponseBuilder clearAllComponents(boolean enforcePreserve) {
+        public Builder clearAllComponents(boolean enforcePreserve) {
             this.pages.forEach(page -> this.editPage(page.mutate().clearComponents(true, enforcePreserve).build()));
             return this;
         }
@@ -453,7 +489,7 @@ public class Response implements Paging<Page> {
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public ResponseBuilder editPage(@NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public Builder editPage(@NotNull Function<Page.Builder, Page.Builder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
@@ -463,7 +499,7 @@ public class Response implements Paging<Page> {
          * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public ResponseBuilder editPage(int index, @NotNull Function<Page.PageBuilder, Page.PageBuilder> pageBuilder) {
+        public Builder editPage(int index, @NotNull Function<Page.Builder, Page.Builder> pageBuilder) {
             if (index < this.pages.size())
                 this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
 
@@ -475,9 +511,9 @@ public class Response implements Paging<Page> {
          *
          * @param page The page to edit.
          */
-        public ResponseBuilder editPage(@NotNull Page page) {
+        public Builder editPage(@NotNull Page page) {
             this.pages.stream()
-                .filter(existingPage -> existingPage.getIdentifier().equals(page.getIdentifier()))
+                .filter(existingPage -> existingPage.getOption().getValue().equals(page.getOption().getValue()))
                 .findFirst()
                 .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
@@ -489,7 +525,7 @@ public class Response implements Paging<Page> {
          * <br><br>
          * Only applies to slash commands.
          */
-        public ResponseBuilder isEphemeral() {
+        public Builder isEphemeral() {
             return this.isEphemeral(true);
         }
 
@@ -500,7 +536,7 @@ public class Response implements Paging<Page> {
          *
          * @param value True if interactable.
          */
-        public ResponseBuilder isEphemeral(boolean value) {
+        public Builder isEphemeral(boolean value) {
             this.ephemeral = value;
             return this;
         }
@@ -508,7 +544,7 @@ public class Response implements Paging<Page> {
         /**
          * Sets the {@link Response} as cacheable for interaction.
          */
-        public ResponseBuilder isInteractable() {
+        public Builder isInteractable() {
             return this.isInteractable(true);
         }
 
@@ -517,32 +553,15 @@ public class Response implements Paging<Page> {
          *
          * @param value True if interactable.
          */
-        public ResponseBuilder isInteractable(boolean value) {
+        public Builder isInteractable(boolean value) {
             this.interactable = value;
-            return this;
-        }
-
-        /**
-         * Sets the {@link Response} as a loader.
-         */
-        public ResponseBuilder isLoader() {
-            return this.isLoader(true);
-        }
-
-        /**
-         * Sets if the {@link Response} should be a loader.
-         *
-         * @param value True if rendering page components.
-         */
-        public ResponseBuilder isLoader(boolean value) {
-            this.loader = value;
             return this;
         }
 
         /**
          * Sets the {@link Response} to render paging components.
          */
-        public ResponseBuilder isRenderingPagingComponents() {
+        public Builder isRenderingPagingComponents() {
             return this.isRenderingPagingComponents(true);
         }
 
@@ -551,7 +570,7 @@ public class Response implements Paging<Page> {
          *
          * @param value True if rendering page components.
          */
-        public ResponseBuilder isRenderingPagingComponents(boolean value) {
+        public Builder isRenderingPagingComponents(boolean value) {
             this.renderingPagingComponents = value;
             return this;
         }
@@ -559,7 +578,7 @@ public class Response implements Paging<Page> {
         /**
          * Sets if the {@link Response} should mention the author of the specified {@link #withReference}.
          */
-        public ResponseBuilder replyMention() {
+        public Builder replyMention() {
             return this.replyMention(true);
         }
 
@@ -568,7 +587,7 @@ public class Response implements Paging<Page> {
          *
          * @param mention True to mention the user in the response.
          */
-        public ResponseBuilder replyMention(boolean mention) {
+        public Builder replyMention(boolean mention) {
             this.replyMention = mention;
             return this;
         }
@@ -579,7 +598,7 @@ public class Response implements Paging<Page> {
          * @param name The name of the attachment.
          * @param inputStream The stream of attachment data.
          */
-        public ResponseBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
+        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
             return this.withAttachment(name, inputStream, false);
         }
 
@@ -590,7 +609,7 @@ public class Response implements Paging<Page> {
          * @param inputStream The stream of attachment data.
          * @param spoiler True if the attachment should be a spoiler.
          */
-        public ResponseBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
+        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
             return this.withAttachments(Attachment.of(name, inputStream, spoiler));
         }
 
@@ -599,7 +618,7 @@ public class Response implements Paging<Page> {
          *
          * @param attachments Variable number of attachments to add.
          */
-        public ResponseBuilder withAttachments(@NotNull Attachment... attachments) {
+        public Builder withAttachments(@NotNull Attachment... attachments) {
             return this.withAttachments(Arrays.asList(attachments));
         }
 
@@ -608,7 +627,7 @@ public class Response implements Paging<Page> {
          *
          * @param attachments Collection of attachments to add.
          */
-        public ResponseBuilder withAttachments(@NotNull Iterable<Attachment> attachments) {
+        public Builder withAttachments(@NotNull Iterable<Attachment> attachments) {
             attachments.forEach(this.attachments::add);
             return this;
         }
@@ -618,7 +637,7 @@ public class Response implements Paging<Page> {
          *
          * @param throwable The throwable exception stack trace to add.
          */
-        public ResponseBuilder withException(@NotNull Throwable throwable) {
+        public Builder withException(@NotNull Throwable throwable) {
             this.attachments.add(Attachment.of(
                 FormatUtil.format("stacktrace-{0}.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now())),
                 new ByteArrayInputStream(ExceptionUtil.getStackTrace(throwable).getBytes(StandardCharsets.UTF_8)))
@@ -632,7 +651,7 @@ public class Response implements Paging<Page> {
          *
          * @param pageIdentifier The page identifier to load.
          */
-        public ResponseBuilder withDefaultPage(@Nullable String pageIdentifier) {
+        public Builder withDefaultPage(@Nullable String pageIdentifier) {
             return this.withDefaultPage(Optional.ofNullable(pageIdentifier));
         }
 
@@ -641,7 +660,7 @@ public class Response implements Paging<Page> {
          *
          * @param pageIdentifier The page identifier to load.
          */
-        public ResponseBuilder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
+        public Builder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
             this.defaultPage = pageIdentifier;
             return this;
         }
@@ -651,7 +670,7 @@ public class Response implements Paging<Page> {
          *
          * @param files Variable number of files to add.
          */
-        public ResponseBuilder withFiles(@NotNull File... files) {
+        public Builder withFiles(@NotNull File... files) {
             return this.withFiles(Arrays.asList(files));
         }
 
@@ -660,7 +679,7 @@ public class Response implements Paging<Page> {
          *
          * @param files Collection of files to add.
          */
-        public ResponseBuilder withFiles(@NotNull Iterable<File> files) {
+        public Builder withFiles(@NotNull Iterable<File> files) {
             List<File> fileList = List.class.isAssignableFrom(files.getClass()) ? (List<File>) files : StreamSupport.stream(files.spliterator(), false).toList();
 
             fileList.stream()
@@ -681,7 +700,7 @@ public class Response implements Paging<Page> {
          *
          * @param pages Variable number of pages to add.
          */
-        public ResponseBuilder withPages(@NotNull Page... pages) {
+        public Builder withPages(@NotNull Page... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
@@ -690,17 +709,17 @@ public class Response implements Paging<Page> {
          *
          * @param pages Collection of pages to add.
          */
-        public ResponseBuilder withPages(@NotNull Iterable<Page> pages) {
+        public Builder withPages(@NotNull Iterable<Page> pages) {
             pages.forEach(this.pages::add);
             return this;
         }
 
-        public ResponseBuilder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
+        public Builder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
             this.reactorScheduler = reactorScheduler;
             return this;
         }
 
-        public ResponseBuilder withReactorScheduler(@NotNull ExecutorService executorService) {
+        public Builder withReactorScheduler(@NotNull ExecutorService executorService) {
             this.reactorScheduler = Schedulers.fromExecutorService(executorService);
             return this;
         }
@@ -710,7 +729,7 @@ public class Response implements Paging<Page> {
          *
          * @param eventContext The message to reference.
          */
-        public ResponseBuilder withReference(@NotNull EventContext<?> eventContext) {
+        public Builder withReference(@NotNull EventContext<?> eventContext) {
             return this.withReference(eventContext instanceof TextCommandContext ? ((TextCommandContext) eventContext).getMessageId() : null);
         }
 
@@ -719,7 +738,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageContext The message to reference.
          */
-        public ResponseBuilder withReference(@NotNull MessageContext<?> messageContext) {
+        public Builder withReference(@NotNull MessageContext<?> messageContext) {
             return this.withReference(messageContext.getMessageId());
         }
 
@@ -728,7 +747,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public ResponseBuilder withReference(@Nullable Snowflake messageId) {
+        public Builder withReference(@Nullable Snowflake messageId) {
             return this.withReference(Optional.ofNullable(messageId));
         }
 
@@ -737,7 +756,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public ResponseBuilder withReference(@NotNull Mono<Snowflake> messageId) {
+        public Builder withReference(@NotNull Mono<Snowflake> messageId) {
             return this.withReference(messageId.blockOptional());
         }
 
@@ -746,7 +765,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public ResponseBuilder withReference(@NotNull Optional<Snowflake> messageId) {
+        public Builder withReference(@NotNull Optional<Snowflake> messageId) {
             this.referenceId = messageId;
             return this;
         }
@@ -760,8 +779,18 @@ public class Response implements Paging<Page> {
          *
          * @param secondsToLive How long the response should live without interaction in seconds.
          */
-        public ResponseBuilder withTimeToLive(int secondsToLive) {
+        public Builder withTimeToLive(int secondsToLive) {
             this.timeToLive = NumberUtil.ensureRange(secondsToLive, 5, 300);
+            return this;
+        }
+
+        /**
+         * Used to replace an existing message with a known ID.
+         *
+         * @param uniqueId Unique ID to assign to {@link Response}.
+         */
+        public Builder withUniqueId(@NotNull UUID uniqueId) {
+            this.uniqueId = uniqueId;
             return this;
         }
 
@@ -785,24 +814,20 @@ public class Response implements Paging<Page> {
                 this.replyMention,
                 this.timeToLive,
                 this.interactable,
-                this.loader,
                 this.renderingPagingComponents,
                 this.ephemeral,
-                PageHandler.<Page, String>builder()
+                HistoryHandler.<Page, String>builder()
                     .withPages(this.pages.toUnmodifiableList())
-                    .withHistoryMatcher((page, identifier) -> page.getOption()
-                        .map(pageOption -> pageOption.getValue().equals(identifier))
-                        .orElse(false)
-                    )
-                    .withHistoryTransformer(page -> page.getOption().map(SelectMenu.Option::getValue).orElse(null))
+                    .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
+                    .withHistoryTransformer(page -> page.getOption().getValue())
                     .build()
             );
 
             // First Page
-            if (this.defaultPage.isPresent() && response.getHandler().getPage(this.defaultPage.get()).isPresent())
-                response.getHandler().gotoPage(this.defaultPage.get());
+            if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
+                response.getHistoryHandler().gotoPage(this.defaultPage.get());
             else
-                response.getHandler().gotoPage(response.getPages().get(0));
+                response.getHistoryHandler().gotoPage(response.getPages().get(0));
 
             return response;
         }
