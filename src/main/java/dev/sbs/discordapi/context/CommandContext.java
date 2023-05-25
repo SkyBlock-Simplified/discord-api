@@ -9,8 +9,6 @@ import dev.sbs.discordapi.command.relationship.Relationship;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Optional;
-
 public interface CommandContext<T extends Event> extends EventContext<T> {
 
     /**
@@ -32,8 +30,8 @@ public interface CommandContext<T extends Event> extends EventContext<T> {
         return this.getRelationship().getCommandClass();
     }
 
-    default Optional<String> getIdentifier() {
-        return Optional.of(this.getRelationship().getInstance().getCommandPath(this.isSlashCommand()));
+    default String getCommandPath() {
+        return this.getRelationship().getInstance().getCommandPath(this.isSlashCommand());
     }
 
     Relationship.Command getRelationship();
