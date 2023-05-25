@@ -1,90 +1,100 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.reaction.Reaction;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ResponseContext<T extends Event> extends MessageContext<T> {
+
+    Mono<Message> buildFollowup(@NotNull Response response);
 
     default Mono<Void> edit() {
         return Mono.justOrEmpty(this.getResponse()).flatMap(this::edit);
     }
 
-    default Mono<Void> edit(Response response) {
+    @Override
+    default Mono<Void> edit(@NotNull Response response) {
         return this.editMessage(response)
+            .checkpoint("ResponseContext#edit Processing")
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,
                     throwable,
-                    "User Interaction Exception"
+                    "Response Edit Exception"
                 )
             ))
-            .flatMap(message -> {
-                // Update Reactions
-                ConcurrentList<Emoji> newReactions = response.getHandler().getCurrentPage().getReactions();
-
-                // Current Reactions
-                ConcurrentList<Emoji> currentReactions = message.getReactions()
-                    .stream()
-                    .filter(Reaction::selfReacted)
-                    .map(Reaction::getEmoji)
-                    .map(Emoji::of)
-                    .collect(Concurrent.toList());
-
-                Mono<Void> mono = Mono.empty();
-
-                // Remove Existing Reactions
-                if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
-                    mono = message.removeAllReactions();
-
-                return mono.then(Mono.when(
-                    newReactions.stream()
-                        .map(emoji -> message.addReaction(emoji.getD4jReaction()))
-                        .collect(Concurrent.toList())
-                ));
-            })
-            .then(Mono.fromRunnable(() -> {
-                DiscordResponseCache.Entry responseCacheEntry = this.getResponseCacheEntry();
-                responseCacheEntry.updateResponse(response, true);
-                responseCacheEntry.setUpdated();
+            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
+            .then(this.withResponseCacheEntry(entry -> {
+                entry.updateResponse(response);
+                entry.setUpdated();
             }));
     }
 
-    default Mono<Message> editMessage(Response response) {
+    default Mono<Message> editMessage(@NotNull Response response) {
         return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
-    default @NotNull Optional<Response> getResponse() {
-        return this.getDiscordBot().getResponseCache().getResponse(this.getResponseId());
-    }
-
-    default DiscordResponseCache.Entry getResponseCacheEntry() {
-        return this.getDiscordBot().getResponseCache().getEntry(this.getResponseId()).orElse(null);
-    }
-
-    UUID getResponseId();
-
-    default Mono<Void> edit(Function<Page.PageBuilder, Page.PageBuilder> currentPage) {
+    default Mono<Void> editPage(Function<Page.Builder, Page.Builder> currentPage) {
         return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(
             response.mutate()
-                .editPage(currentPage.apply(response.getHandler().getCurrentPage().mutate()).build())
+                .editPage(currentPage.apply(response.getHistoryHandler().getCurrentPage().mutate()).build())
                 .build()
         ));
+    }
+
+    default Mono<Void> followup(@NotNull Response response) {
+        return this.followup(response.getUniqueId().toString(), response);
+    }
+
+    default Mono<Void> followup(@NotNull String key, @NotNull Response response) {
+        return this.buildFollowup(response)
+            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Followup Create Exception"
+                )
+            ))
+            .flatMap(message -> this.withResponseCacheEntry(entry -> {
+                entry.addFollowup(
+                    key,
+                    message.getChannelId(),
+                    this.getInteractUserId(),
+                    message.getId(),
+                    response
+                );
+
+                entry.updateLastInteract();
+                entry.setUpdated();
+            }));
+    }
+
+    default @NotNull Response getResponse() {
+        return this.getResponseCacheEntry().getResponse();
+    }
+
+    default @NotNull ResponseCache.Entry getResponseCacheEntry() {
+        return this.getDiscordBot()
+            .getResponseCache()
+            .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
+    }
+
+    default Mono<Void> withResponseCacheEntry(@NotNull Consumer<ResponseCache.Entry> entry) {
+        return Mono.just(this.getResponseCacheEntry())
+            .doOnNext(entry)
+            .then();
     }
 
 }

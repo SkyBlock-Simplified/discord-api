@@ -7,9 +7,20 @@ import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.message.MessageEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
+import discord4j.core.object.entity.Message;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 public interface ReactionContext extends ResponseContext<MessageEvent> {
+
+    @Override
+    default Mono<Message> buildFollowup(@NotNull Response response) {
+        return this.buildMessage(
+            response.mutate()
+                .withReference(this.getMessageId())
+                .build()
+        );
+    }
 
     Emoji getEmoji();
 

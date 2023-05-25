@@ -20,7 +20,14 @@ import java.util.Optional;
 public interface ComponentContext extends ResponseContext<ComponentInteractionEvent>, DeferrableInteractionContext<ComponentInteractionEvent> {
 
     @Override
-    default Mono<Message> editMessage(Response response) {
+    default Mono<Message> buildFollowup(@NotNull Response response) {
+        return this.getEvent()
+            .createFollowup(response.getD4jInteractionFollowupCreateSpec())
+            .publishOn(response.getReactorScheduler());
+    }
+
+    @Override
+    default Mono<Message> editMessage(@NotNull Response response) {
         return this.getEvent()
             .edit(response.getD4jComponentCallbackSpec())
             .then(Mono.justOrEmpty(this.getEvent().getMessage()));
@@ -35,7 +42,7 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     @Override
-    default Snowflake getChannelId() {
+    default @NotNull Snowflake getChannelId() {
         return this.getEvent().getInteraction().getChannelId();
     }
 
@@ -52,12 +59,12 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     @Override
-    default User getInteractUser() {
+    default @NotNull User getInteractUser() {
         return this.getEvent().getInteraction().getUser();
     }
 
     @Override
-    default Snowflake getInteractUserId() {
+    default @NotNull Snowflake getInteractUserId() {
         return this.getEvent().getInteraction().getUser().getId();
     }
 
@@ -82,18 +89,17 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
-        // Cache Modal
-        this.getResponseCacheEntry().setActiveModal(modal);
-
-        return this.getEvent().presentModal(
-            modal.mutate()
-                .onInteract(modalContext -> {
-                    this.getResponseCacheEntry().clearModal();
-                    return modal.getInteraction().apply(modalContext);
-                })
-                .build()
-                .getD4jPresentSpec()
-        );
+        return Mono.justOrEmpty(this.getResponseCacheEntry())
+            .doOnNext(entry -> entry.setActiveModal(modal))
+            .flatMap(entry -> this.getEvent().presentModal(
+                modal.mutate()
+                    .onInteract(modalContext -> {
+                        entry.clearModal();
+                        return modal.getInteraction().apply(modalContext);
+                    })
+                    .build()
+                    .getD4jPresentSpec()
+            ));
     }
 
 }
