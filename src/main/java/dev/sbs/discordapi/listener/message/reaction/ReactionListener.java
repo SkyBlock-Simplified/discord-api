@@ -7,21 +7,22 @@ import dev.sbs.discordapi.context.message.reaction.ReactionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageEvent;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public abstract class ReactionListener<E extends MessageEvent> extends DiscordListener<E> {
 
-    protected ReactionListener(DiscordBot discordBot) {
+    protected ReactionListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
     @Override
-    public Publisher<Void> apply(E reactionEvent) {
+    public Publisher<Void> apply(@NotNull E reactionEvent) {
         return Mono.just(reactionEvent)
             .filter(this::isBotMessage) // Only Bot Messages
             .filter(this::notBot) // Ignore Bots
@@ -32,7 +33,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
                 .flatMap(responseCacheEntry -> {
                     final Emoji emoji = this.getEmoji(event);
 
-                    return Flux.fromIterable(responseCacheEntry.getResponse().getHandler().getCurrentPage().getReactions())
+                    return Flux.fromIterable(responseCacheEntry.getResponse().getHistoryHandler().getCurrentPage().getReactions())
                         .filter(reaction -> reaction.equals(emoji))
                         .flatMap(reaction -> this.handleInteraction(event, responseCacheEntry, reaction));
                 })
@@ -40,15 +41,15 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
             );
     }
 
-    protected abstract ReactionContext getContext(E event, Response cachedMessage, Emoji reaction);
+    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction);
 
-    protected abstract Snowflake getMessageId(E event);
+    protected abstract Snowflake getMessageId(@NotNull E event);
 
-    protected abstract Emoji getEmoji(E event);
+    protected abstract Emoji getEmoji(@NotNull E event);
 
-    protected abstract Snowflake getUserId(E event);
+    protected abstract Snowflake getUserId(@NotNull E event);
 
-    private Mono<Void> handleInteraction(E event, DiscordResponseCache.Entry responseCacheEntry, Emoji reaction) {
+    private Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry responseCacheEntry, @NotNull Emoji reaction) {
         return Mono.just(this.getContext(event, responseCacheEntry.getResponse(), reaction))
             .flatMap(context -> Mono.just(responseCacheEntry)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
@@ -59,21 +60,21 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
                         FormatUtil.format("{0} Exception", this.getTitle())
                     )
                 ))
-                .doOnNext(DiscordResponseCache.Entry::setBusy)
+                .doOnNext(ResponseCache.Entry::setBusy)
                 .flatMap(entry -> reaction.getInteraction().apply(context))
                 .flatMap(__ -> Mono.just(responseCacheEntry))
-                .doOnNext(DiscordResponseCache.Entry::updateLastInteract)
-                .filter(DiscordResponseCache.Entry::isModified)
+                .doOnNext(ResponseCache.Entry::updateLastInteract)
+                .filter(ResponseCache.Entry::isModified)
                 .flatMap(entry -> context.edit())
             ).then();
     }
 
-    protected abstract boolean isBot(E event);
+    protected abstract boolean isBot(@NotNull E event);
 
-    protected final boolean notBot(E event) {
+    protected final boolean notBot(@NotNull E event) {
         return !this.isBot(event);
     }
 
-    protected abstract boolean isBotMessage(E event);
+    protected abstract boolean isBotMessage(@NotNull E event);
 
 }

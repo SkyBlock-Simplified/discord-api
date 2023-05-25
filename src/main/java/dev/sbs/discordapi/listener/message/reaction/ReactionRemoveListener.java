@@ -8,6 +8,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import org.jetbrains.annotations.NotNull;
 
 public final class ReactionRemoveListener extends ReactionListener<ReactionRemoveEvent> {
 
@@ -16,32 +17,32 @@ public final class ReactionRemoveListener extends ReactionListener<ReactionRemov
     }
 
     @Override
-    protected ReactionContext getContext(ReactionRemoveEvent event, Response cachedMessage, Emoji emoji) {
+    protected ReactionContext getContext(@NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji) {
         return ReactionContext.ofRemove(this.getDiscordBot(), event, cachedMessage, emoji);
     }
 
     @Override
-    protected Snowflake getMessageId(ReactionRemoveEvent event) {
+    protected Snowflake getMessageId(@NotNull ReactionRemoveEvent event) {
         return event.getMessageId();
     }
 
     @Override
-    protected Emoji getEmoji(ReactionRemoveEvent event) {
+    protected Emoji getEmoji(@NotNull ReactionRemoveEvent event) {
         return Emoji.of(event.getEmoji());
     }
 
     @Override
-    protected Snowflake getUserId(ReactionRemoveEvent event) {
+    protected Snowflake getUserId(@NotNull ReactionRemoveEvent event) {
         return event.getUserId();
     }
 
     @Override
-    protected boolean isBot(ReactionRemoveEvent event) {
+    protected boolean isBot(@NotNull ReactionRemoveEvent event) {
         return event.getUser().blockOptional().map(User::isBot).orElse(true);
     }
 
     @Override
-    protected boolean isBotMessage(ReactionRemoveEvent event) {
+    protected boolean isBotMessage(@NotNull ReactionRemoveEvent event) {
         return event.getMessage().blockOptional().flatMap(Message::getAuthor).map(User::isBot).orElse(false);
     }
 
