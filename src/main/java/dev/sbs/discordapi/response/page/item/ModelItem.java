@@ -53,8 +53,8 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
         return Field.builder()
             .withName(
                 this.getValue()
-                    .map(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
-                    .orElse(this.getOption().map(SelectMenu.Option::getLabel))
+                    .flatMap(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
+                    .orElse(this.getOption().getLabel())
             )
             .withValue(
                 this.getValue()
@@ -71,7 +71,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
             .withValue(this.getValue())
             .withNameFunction(this.getNameFunction())
             .withValueFunction(this.getValueFunction())
-            .withOption(this.getOption().orElseThrow())
+            .withOption(this.getOption())
             .isEditable(this.isEditable());
     }
 
@@ -119,7 +119,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
 
         @Override
         public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -130,17 +130,10 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
         }
 
         public Builder<T> withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder<T> withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         /**

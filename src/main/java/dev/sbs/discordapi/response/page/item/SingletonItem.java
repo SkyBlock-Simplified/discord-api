@@ -15,7 +15,7 @@ abstract class SingletonItem<T> extends Item {
         @NotNull Type type,
         boolean editable,
         @NotNull Optional<T> value) {
-        super(option.getIdentifier(), Optional.of(option), type, editable);
+        super(option, type, editable);
         this.value = value;
     }
 

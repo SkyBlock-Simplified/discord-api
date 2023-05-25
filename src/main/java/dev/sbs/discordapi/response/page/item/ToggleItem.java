@@ -25,7 +25,7 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
     @Override
     public Field getRenderField() {
         return Field.builder()
-            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withName(this.getOption().getLabel())
             .withValue(
                 this.getValue()
                     .map(String::valueOf)
@@ -38,7 +38,7 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
     public Builder mutate() {
         return new Builder()
             .setEnabled(this.getValue().orElse(false))
-            .withOption(this.getOption().orElseThrow())
+            .withOption(this.getOption())
             .isEditable(this.isEditable());
     }
 
@@ -116,7 +116,7 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -127,17 +127,10 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         @Override

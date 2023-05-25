@@ -27,7 +27,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
     @Override
     public Field getRenderField() {
         return Field.builder()
-            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withName(this.getOption().getLabel())
             .withValue(
                 this.getValue()
                     .map(RealDate::new)
@@ -42,7 +42,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
         return new Builder()
             .withValue(this.getValue())
             .isEditable(this.isEditable())
-            .withOption(this.getOption().orElseThrow());
+            .withOption(this.getOption());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -85,7 +85,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -96,17 +96,10 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         /**

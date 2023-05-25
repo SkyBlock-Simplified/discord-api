@@ -24,7 +24,7 @@ public final class AuthorItem extends Item {
         @NotNull Optional<String> name,
         @NotNull Optional<String> iconUrl,
         @NotNull Optional<String> url) {
-        super(option.getIdentifier(), Optional.of(option), Type.AUTHOR, editable);
+        super(option, Type.AUTHOR, editable);
         this.name = name;
         this.iconUrl = iconUrl;
         this.url = url;
@@ -39,7 +39,7 @@ public final class AuthorItem extends Item {
             .withName(this.getName())
             .withIconUrl(this.getIconUrl())
             .withUrl(this.getUrl())
-            .withOption(this.getOption().orElseThrow());
+            .withOption(this.getOption());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -82,7 +82,7 @@ public final class AuthorItem extends Item {
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -131,17 +131,10 @@ public final class AuthorItem extends Item {
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         /**

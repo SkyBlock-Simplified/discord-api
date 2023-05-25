@@ -29,7 +29,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
     @Getter private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
 
     private FieldItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
-        super(option.getIdentifier(), Optional.of(option), Type.FIELD, editable);
+        super(option, Type.FIELD, editable);
         this.data = data;
     }
 
@@ -40,7 +40,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
     public static Builder from(@NotNull FieldItem fieldItem) {
         return new Builder()
             .withData(fieldItem.getData())
-            .withOption(fieldItem.getOption().orElseThrow())
+            .withOption(fieldItem.getOption())
             .isEditable(fieldItem.isEditable());
     }
 
@@ -67,7 +67,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
     @Override
     public Field getRenderField() {
         return Field.builder()
-            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withName(this.getOption().getLabel())
             .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse(getNullEmoji().asFormat()))
             .isInline()
             .build();
@@ -81,7 +81,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
                 .collect(StreamUtil.toStringBuilder(true))
                 .build();
             case TABLE_DESCRIPTION -> column == Column.ONE ?
-                this.getOption().flatMap(SelectMenu.Option::getDescription).orElse("") :
+                this.getOption().getDescription().orElse("") :
                 this.getData(column)
                     .stream()
                     .collect(StreamUtil.toStringBuilder(true))
@@ -196,7 +196,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -207,17 +207,10 @@ public class FieldItem extends Item implements SingletonFieldItem {
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         @Override

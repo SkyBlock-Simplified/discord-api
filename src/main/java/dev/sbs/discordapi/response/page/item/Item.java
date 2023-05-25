@@ -30,8 +30,7 @@ public abstract class Item {
         .findFirst(EmojiModel::getKey, "TEXT_NULL")
         .flatMap(Emoji::of)
         .orElseThrow();
-    @Getter private final @NotNull String identifier;
-    @Getter private final @NotNull Optional<SelectMenu.Option> option;
+    @Getter private final @NotNull SelectMenu.Option option;
     @Getter private final @NotNull Type type;
     @Getter private final boolean editable;
 
@@ -43,11 +42,15 @@ public abstract class Item {
         Item item = (Item) o;
 
         return new EqualsBuilder()
-            .append(this.isEditable(), item.isEditable())
             .append(this.getIdentifier(), item.getIdentifier())
             .append(this.getOption(), item.getOption())
             .append(this.getType(), item.getType())
+            .append(this.isEditable(), item.isEditable())
             .build();
+    }
+
+    public final @NotNull String getIdentifier() {
+        return this.getOption().getValue();
     }
 
     @Override
@@ -136,7 +139,7 @@ public abstract class Item {
         /**
          * Overrides the default identifier of the {@link Item}.
          * <br><br>
-         * This is used for the {@link SelectMenu.Option#getIdentifier()} and {@link Item}.
+         * This is used for the {@link SelectMenu.Option#getValue()} and {@link Item}.
          *
          * @param identifier The identifier to use.
          * @param objects The objects used to format the value.
@@ -152,17 +155,6 @@ public abstract class Item {
          * @param objects The objects used to format the label.
          */
         public abstract ItemBuilder<T> withLabel(@NotNull String label, @NotNull Object... objects);
-
-
-        /**
-         * Sets the value of the {@link FieldItem}.
-         * <br><br>
-         * This is used for the {@link SelectMenu.Option}.
-         *
-         * @param value The value of the field item.
-         * @param objects The objects used to format the value.
-         */
-        public abstract ItemBuilder<T> withOptionValue(@NotNull String value, @NotNull Object... objects);
 
     }
 
@@ -232,8 +224,8 @@ public abstract class Item {
                     .filter(pageItem -> pageItem.getClass().isAssignableFrom(FieldItem.class))
                     .map(FieldItem.class::cast)
                     .map(fieldItem -> Field.builder()
-                        .withEmoji(fieldItem.getOption().flatMap(SelectMenu.Option::getEmoji))
-                        .withName(fieldItem.getOption().map(SelectMenu.Option::getLabel))
+                        .withEmoji(fieldItem.getOption().getEmoji())
+                        .withName(fieldItem.getOption().getLabel())
                         .withValue(fieldItem.getFieldValue(this, Item.Column.ONE))
                         .isInline(this.isInline())
                         .build()
@@ -301,8 +293,8 @@ public abstract class Item {
                     .map(FieldItem.class::cast)
                     .map(pageItem -> Concurrent.newList(
                         Field.builder()
-                            .withEmoji(pageItem.getOption().flatMap(SelectMenu.Option::getEmoji))
-                            .withName(pageItem.getOption().map(SelectMenu.Option::getLabel))
+                            .withEmoji(pageItem.getOption().getEmoji())
+                            .withName(pageItem.getOption().getLabel())
                             .withValue(pageItem.getFieldValue(this, Item.Column.ONE))
                             .isInline()
                             .build(),

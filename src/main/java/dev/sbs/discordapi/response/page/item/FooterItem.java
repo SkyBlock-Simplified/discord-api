@@ -18,7 +18,7 @@ public final class FooterItem extends Item {
     @Getter private final @NotNull Optional<String> iconUrl;
 
     private FooterItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<String> name, @NotNull Optional<String> iconUrl) {
-        super(option.getIdentifier(), Optional.of(option), Type.FOOTER, editable);
+        super(option, Type.FOOTER, editable);
         this.name = name;
         this.iconUrl = iconUrl;
     }
@@ -31,7 +31,7 @@ public final class FooterItem extends Item {
         return new Builder()
             .withIconUrl(this.getIconUrl())
             .withName(this.getName())
-            .withOption(this.getOption().orElseThrow())
+            .withOption(this.getOption())
             .isEditable(this.isEditable());
     }
 
@@ -96,7 +96,7 @@ public final class FooterItem extends Item {
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -127,17 +127,10 @@ public final class FooterItem extends Item {
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         @Override

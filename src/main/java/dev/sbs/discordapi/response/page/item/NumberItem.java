@@ -34,7 +34,7 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
     @Override
     public Field getRenderField() {
         return Field.builder()
-            .withName(this.getOption().map(SelectMenu.Option::getLabel))
+            .withName(this.getOption().getLabel())
             .withValue(
                 this.getValue()
                     .map(value -> this.getNumberClass().cast(value))
@@ -49,7 +49,7 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
         return new Builder<>(this.getNumberClass())
             .withOptions(this.getOptions())
             .withValue(this.getValue())
-            .withOption(this.getOption().orElseThrow())
+            .withOption(this.getOption())
             .isEditable(this.isEditable());
     }
 
@@ -95,7 +95,7 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
 
         @Override
         public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -106,17 +106,10 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
         }
 
         public Builder<T> withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder<T> withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         /**

@@ -25,8 +25,9 @@ public final class TitleItem extends SingletonItem<String> {
     }
 
     public Builder mutate() {
-        return new Builder().withValue(this.getValue())
-            .withOption(this.getOption().orElseThrow());
+        return new Builder()
+            .withValue(this.getValue())
+            .withOption(this.getOption());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -69,7 +70,7 @@ public final class TitleItem extends SingletonItem<String> {
 
         @Override
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withIdentifier(identifier, objects);
+            super.optionBuilder.withValue(identifier, objects);
             return this;
         }
 
@@ -80,17 +81,10 @@ public final class TitleItem extends SingletonItem<String> {
         }
 
         public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getIdentifier())
+            return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel())
-                .withOptionValue(option.getValue());
-        }
-
-        @Override
-        public Builder withOptionValue(@NotNull String value, @NotNull Object... objects) {
-            super.optionBuilder.withValue(value, objects);
-            return this;
+                .withLabel(option.getLabel());
         }
 
         /**
