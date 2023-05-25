@@ -6,6 +6,7 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 public final class ButtonListener extends ComponentListener<ButtonInteractionEvent, ButtonContext, Button> {
@@ -15,27 +16,28 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     }
 
     @Override
-    protected ButtonContext getContext(ButtonInteractionEvent event, Response response, Button component) {
+    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component) {
         return ButtonContext.of(this.getDiscordBot(), event, response, component);
     }
 
     @Override
-    protected Mono<Void> handlePaging(ButtonContext context) {
+    protected Mono<Void> handlePaging(@NotNull ButtonContext context) {
         return Mono.justOrEmpty(context.getResponse())
             .doOnNext(response -> {
-                Page currentPage = response.getHandler().getCurrentPage();
+                Page currentPage = response.getHistoryHandler().getCurrentPage();
 
                 switch (context.getComponent().getPageType()) {
-                    case FIRST -> currentPage.getItemData().gotoFirstItemPage();
-                    case LAST -> currentPage.getItemData().gotoLastItemPage();
-                    case NEXT -> currentPage.getItemData().gotoNextItemPage();
-                    case PREVIOUS -> currentPage.getItemData().gotoPreviousItemPage();
-                    case BACK -> currentPage.getItemData().gotoPreviousPage();
-                    case SORT -> currentPage.gotoNextSorter();
-                    case ORDER -> currentPage.invertOrder();
+                    case FIRST -> currentPage.getItemHandler().gotoFirstItemPage();
+                    case LAST -> currentPage.getItemHandler().gotoLastItemPage();
+                    case NEXT -> currentPage.getItemHandler().gotoNextItemPage();
+                    case PREVIOUS -> currentPage.getItemHandler().gotoPreviousItemPage();
+                    case BACK -> currentPage.getHistoryHandler().gotoPreviousPage();
+                    // TODO: SEARCH BUTTON
+                    case SORT -> currentPage.getItemHandler().gotoNextSorter();
+                    case ORDER -> currentPage.getItemHandler().invertOrder();
                 }
 
-                context.getResponseCacheEntry().updateResponse(response); // Update Response
+                context.getResponseCacheEntry().updateResponse(response);
             })
             .then();
     }
