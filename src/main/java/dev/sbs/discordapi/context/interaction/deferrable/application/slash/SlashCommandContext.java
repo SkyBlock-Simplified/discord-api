@@ -13,6 +13,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -24,6 +25,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().getInteraction().getChannel();
     }
 
+    @NotNull
     @Override
     default Snowflake getChannelId() {
         return this.getEvent().getInteraction().getChannelId();
@@ -40,11 +42,13 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().getInteraction().getGuildId();
     }
 
+    @NotNull
     @Override
     default User getInteractUser() {
         return this.getEvent().getInteraction().getUser();
     }
 
+    @NotNull
     @Override
     default Snowflake getInteractUserId() {
         return this.getEvent().getInteraction().getUser().getId();

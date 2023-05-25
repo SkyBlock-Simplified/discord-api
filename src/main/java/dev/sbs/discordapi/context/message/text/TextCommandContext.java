@@ -11,6 +11,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -18,7 +19,7 @@ import java.util.Optional;
 public interface TextCommandContext extends CommandContext<MessageCreateEvent>, MessageContext<MessageCreateEvent> {
 
     @Override
-    default Snowflake getChannelId() {
+    default @NotNull Snowflake getChannelId() {
         return this.getEvent().getMessage().getChannelId();
     }
 
@@ -33,12 +34,12 @@ public interface TextCommandContext extends CommandContext<MessageCreateEvent>, 
     }
 
     @Override
-    default User getInteractUser() {
+    default @NotNull User getInteractUser() {
         return new User(this.getEvent().getClient(), this.getEvent().getMessage().getUserData());
     }
 
     @Override
-    default Snowflake getInteractUserId() {
+    default @NotNull Snowflake getInteractUserId() {
         return Snowflake.of(this.getEvent().getMessage().getUserData().id());
     }
 

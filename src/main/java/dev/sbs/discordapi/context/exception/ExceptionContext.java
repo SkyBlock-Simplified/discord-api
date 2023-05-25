@@ -28,7 +28,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         return this.getEventContext().getChannel();
     }
 
-    default Snowflake getChannelId() {
+    default @NotNull Snowflake getChannelId() {
         return this.getEventContext().getChannelId();
     }
 
@@ -54,17 +54,17 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     @Override
-    default User getInteractUser() {
+    default @NotNull User getInteractUser() {
         return this.getEventContext().getInteractUser();
     }
 
     @Override
-    default Snowflake getInteractUserId() {
+    default @NotNull Snowflake getInteractUserId() {
         return this.getEventContext().getInteractUserId();
     }
 
     @Override
-    default Mono<Void> reply(Response response) {
+    default Mono<Void> reply(@NotNull Response response) {
         return this.getEventContext().reply(response);
     }
 
