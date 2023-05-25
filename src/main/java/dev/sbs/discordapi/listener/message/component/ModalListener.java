@@ -4,7 +4,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import reactor.core.publisher.Mono;
 
@@ -15,7 +15,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected Mono<Void> handleEvent(ModalSubmitInteractionEvent event, DiscordResponseCache.Entry responseCacheEntry) {
+    protected Mono<Void> handleEvent(ModalSubmitInteractionEvent event, ResponseCache.Entry responseCacheEntry) {
         return Mono.justOrEmpty(responseCacheEntry.getActiveModal()) // Handle Active Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier()))
             .flatMap(modal -> this.handleInteraction(event, responseCacheEntry, modal));
