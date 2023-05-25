@@ -1,5 +1,6 @@
 package dev.sbs.discordapi;
 
+import ch.qos.logback.classic.Level;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
 import dev.sbs.api.reflection.Reflection;
@@ -22,10 +23,10 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordLogger;
 import dev.sbs.discordapi.util.base.DiscordErrorObject;
-import dev.sbs.discordapi.util.cache.DiscordCommandRegistrar;
-import dev.sbs.discordapi.util.cache.DiscordResponseCache;
+import dev.sbs.discordapi.util.cache.CommandRegistrar;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
-import dev.sbs.discordapi.util.shard.DiscordShardHandler;
+import dev.sbs.discordapi.util.shard.ShardHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -72,10 +73,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
     @Getter private final @NotNull DiscordLogger log;
     @Getter private final @NotNull DiscordClient client;
     @Getter private final @NotNull GatewayDiscordClient gateway;
-    @Getter private final @NotNull DiscordShardHandler shardHandler;
+    @Getter private final @NotNull ShardHandler shardHandler;
     @Getter private final @NotNull Scheduler scheduler = new Scheduler();
-    @Getter private final @NotNull DiscordResponseCache responseCache = new DiscordResponseCache();
-    @Getter private DiscordCommandRegistrar commandRegistrar;
+    @Getter private final @NotNull ResponseCache responseCache = new ResponseCache();
+    @Getter private CommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
     protected DiscordBot() {
@@ -83,6 +84,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
         this.getLog().info("Loading Configuration");
         this.loadConfig();
+        SimplifiedApi.getLog("ch.qos.logback").setLevel(Level.ERROR);
 
         this.getLog().info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(
@@ -120,7 +122,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                     );
 
                     this.getLog().info("Building Commands");
-                    this.commandRegistrar = DiscordCommandRegistrar.builder(this)
+                    this.commandRegistrar = CommandRegistrar.builder(this)
                         .withPrefix(this.getPrefix())
                         .withCommands(this.getCommands())
                         .build();
@@ -145,8 +147,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                         Mono<?> handle = message.removeAllReactions();
 
                                         // Save Page History
-                                        ConcurrentList<String> pageHistory = response.getHandler().getHistoryIdentifiers();
-                                        int currentItemPage = response.getHandler().getCurrentPage().getItemHandler().getCurrentItemPage();
+                                        ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
+                                        int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();
 
                                         // Remove Non-Preserved Components
                                         Response editedResponse = response.mutate()
@@ -155,9 +157,9 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                             .build();
 
                                         // Traverse Page History
-                                        editedResponse.getHandler().gotoPage(pageHistory.removeFirst());
-                                        pageHistory.forEach(identifier -> editedResponse.getHandler().gotoSubPage(identifier));
-                                        editedResponse.getHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);
+                                        editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
+                                        pageHistory.forEach(identifier -> editedResponse.getHistoryHandler().gotoSubPage(identifier));
+                                        editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);
 
                                         // Update Message Components
                                         return handle.then(message.edit(editedResponse.getD4jEditSpec()));
@@ -195,7 +197,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                 .build()
             );
 
-        this.shardHandler = new DiscordShardHandler(this);
+        this.shardHandler = new ShardHandler(this);
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
