@@ -5,6 +5,8 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.Action
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
@@ -14,10 +16,10 @@ public interface ButtonContext extends ActionComponentContext {
     ButtonInteractionEvent getEvent();
 
     @Override
-    Button getComponent();
+    @NotNull Button getComponent();
 
-    default void modify(Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
-        this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
+    default Mono<Void> modify(Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
+        return this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
     }
 
     static ButtonContext of(DiscordBot discordBot, ButtonInteractionEvent event, Response response, Button button) {

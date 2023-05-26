@@ -4,6 +4,8 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.Action
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
@@ -13,12 +15,12 @@ public interface OptionContext extends ActionComponentContext {
     SelectMenuInteractionEvent getEvent();
 
     @Override
-    SelectMenu getComponent();
+    @NotNull SelectMenu getComponent();
 
-    SelectMenu.Option getOption();
+    @NotNull SelectMenu.Option getOption();
 
-    default void modify(Function<SelectMenu.Option.Builder, SelectMenu.Option.Builder> optionBuilder) {
-        this.modify(
+    default Mono<Void> modify(Function<SelectMenu.Option.Builder, SelectMenu.Option.Builder> optionBuilder) {
+        return this.modify(
             this.getComponent()
                 .mutate()
                 .editOption(
