@@ -1,6 +1,5 @@
 package dev.sbs.discordapi;
 
-import ch.qos.logback.classic.Level;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
 import dev.sbs.api.reflection.Reflection;
@@ -84,7 +83,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
         this.getLog().info("Loading Configuration");
         this.loadConfig();
-        SimplifiedApi.getLog("ch.qos.logback").setLevel(Level.ERROR);
 
         this.getLog().info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(
