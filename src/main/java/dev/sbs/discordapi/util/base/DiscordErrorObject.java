@@ -397,6 +397,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
                                     .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
                                     .map(ResponseCache.Entry::getMessageId);
 
+                            // Remove Response From Cache
+                            messageId.ifPresent(id -> this.getDiscordBot()
+                                .getResponseCache()
+                                .removeIf(entry -> entry.getMessageId().equals(id))
+                            );
+
                             // Build Exception Response
                             Response logResponse = Response.builder()
                                 .isInteractable(false)
