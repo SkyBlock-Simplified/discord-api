@@ -3,7 +3,6 @@ package dev.sbs.discordapi.context;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Message;
@@ -11,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public interface ResponseContext<T extends Event> extends MessageContext<T> {
 
@@ -40,16 +38,9 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             }));
     }
 
+    @Override
     default Mono<Message> editMessage(@NotNull Response response) {
         return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
-    }
-
-    default Mono<Void> editPage(Function<Page.Builder, Page.Builder> currentPage) {
-        return Mono.justOrEmpty(this.getResponse()).flatMap(response -> this.edit(
-            response.mutate()
-                .editPage(currentPage.apply(response.getHistoryHandler().getCurrentPage().mutate()).build())
-                .build()
-        ));
     }
 
     default Mono<Void> followup(@NotNull Response response) {
