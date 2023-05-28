@@ -31,11 +31,10 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Response Edit Exception"
                 )
             ))
-            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
-            .then(this.withResponseCacheEntry(entry -> {
-                entry.updateResponse(response);
-                entry.setUpdated();
-            }));
+            .flatMap(message -> this.getDiscordBot()
+                .handleReactions(response, message)
+                .then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
+            );
     }
 
     @Override
@@ -68,7 +67,6 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                 );
 
                 entry.updateLastInteract();
-                entry.setUpdated();
             }));
     }
 
