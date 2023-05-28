@@ -30,24 +30,24 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * Override for specific components.
      *
      * @param event Discord4J instance of ComponentInteractionEvent.
-     * @param responseCacheEntry Matched response cache entry.
+     * @param entry Matched response cache entry.
      */
-    protected Mono<C> handleEvent(@NotNull E event, @NotNull ResponseCache.Entry responseCacheEntry) {
-        return Flux.fromIterable(responseCacheEntry.getResponse().getCachedPageComponents()) // Handle Paging Components
+    protected Mono<C> handleEvent(@NotNull E event, @NotNull ResponseCache.Entry entry) {
+        return Flux.fromIterable(entry.getResponse().getCachedPageComponents()) // Handle Paging Components
             .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
             .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
             .map(this.componentClass::cast)
             .singleOrEmpty()
-            .flatMap(component -> this.handlePagingInteraction(event, responseCacheEntry, component)) // Handle Response Paging
+            .flatMap(component -> this.handlePagingInteraction(event, entry, component)) // Handle Response Paging
             .switchIfEmpty(
-                Flux.fromIterable(responseCacheEntry.getResponse().getHistoryHandler().getCurrentPage().getComponents()) // Handle Component Interaction
+                Flux.fromIterable(entry.getResponse().getHistoryHandler().getCurrentPage().getComponents()) // Handle Component Interaction
                     .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                     .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
                     .filter(this.componentClass::isInstance) // Validate Component Type
                     .map(this.componentClass::cast)
                     .singleOrEmpty()
-                    .flatMap(component -> this.handleInteraction(event, responseCacheEntry, component))
+                    .flatMap(component -> this.handleInteraction(event, entry, component))
             );
     }
 
