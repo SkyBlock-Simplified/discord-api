@@ -39,11 +39,11 @@ public final class Button extends ActionComponent implements InteractableCompone
     @Getter private final boolean preserved;
     @Getter private final boolean deferEdit;
     @Getter private final @NotNull PageType pageType;
-    private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> buttonInteraction;
+    private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction;
 
     @Override
     public @NotNull Function<ButtonContext, Mono<Void>> getInteraction() {
-        return this.buttonInteraction.orElse(NOOP_HANDLER);
+        return this.interaction.orElse(NOOP_HANDLER);
     }
 
     public static ButtonBuilder builder() {
