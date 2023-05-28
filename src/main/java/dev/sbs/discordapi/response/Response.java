@@ -84,6 +84,66 @@ public class Response implements Paging<Page> {
         return new Builder();
     }
 
+    /**
+     * Updates an existing paging {@link Button}.
+     *
+     * @param buttonBuilder The button to edit.
+     */
+    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
+        this.cachedPageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
+            .stream()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .filter(button -> Objects.equals(function.apply(button), value))
+            .findFirst()
+            .ifPresent(button -> layoutComponent.getComponents().set(
+                layoutComponent.getComponents().indexOf(button),
+                buttonBuilder.apply(button.mutate()).build()
+            ))
+        );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Response response = (Response) o;
+
+        return new EqualsBuilder()
+            .append(this.isReplyMention(), response.isReplyMention())
+            .append(this.getTimeToLive(), response.getTimeToLive())
+            .append(this.isInteractable(), response.isInteractable())
+            .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
+            .append(this.isEphemeral(), response.isEphemeral())
+            .append(this.getUniqueId(), response.getUniqueId())
+            .append(this.getHistoryHandler(), response.getHistoryHandler())
+            .append(this.getAttachments(), response.getAttachments())
+            .append(this.getReferenceId(), response.getReferenceId())
+            .append(this.getReactorScheduler(), response.getReactorScheduler())
+            .build();
+    }
+
+    public static Builder from(@NotNull Response response) {
+        return new Builder()
+            .withUniqueId(response.getUniqueId())
+            .withPages(response.getPages())
+            .withAttachments(response.getAttachments())
+            .withReference(response.getReferenceId())
+            .withReactorScheduler(response.getReactorScheduler())
+            .replyMention(response.isReplyMention())
+            .withTimeToLive(response.getTimeToLive())
+            .isInteractable(response.isInteractable())
+            .isRenderingPagingComponents(response.isRenderingPagingComponents())
+            .isEphemeral(response.isEphemeral());
+    }
+
+    public boolean isCacheUpdateRequired() {
+        return this.getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
+    }
+
     public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
         return loader(context, ephemeral, FormatUtil.formatNullable(content, objects));
     }
@@ -112,68 +172,6 @@ public class Response implements Paging<Page> {
             .build();
     }
 
-    /**
-     * Updates an existing paging {@link Button}.
-     *
-     * @param buttonBuilder The button to edit.
-     */
-    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
-        this.cachedPageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
-            .stream()
-            .filter(Button.class::isInstance)
-            .map(Button.class::cast)
-            .filter(button -> Objects.equals(function.apply(button), value))
-            .findFirst()
-            .ifPresent(button -> layoutComponent.getComponents().set(
-                layoutComponent.getComponents().indexOf(button),
-                buttonBuilder.apply(button.mutate()).build()
-            ))
-        );
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Response response = (Response) o;
-
-        return new EqualsBuilder()
-            .append(this.getBuildTime(), response.getBuildTime())
-            .append(this.isReplyMention(), response.isReplyMention())
-            .append(this.getTimeToLive(), response.getTimeToLive())
-            .append(this.isInteractable(), response.isInteractable())
-            .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
-            .append(this.isEphemeral(), response.isEphemeral())
-            .append(this.getUniqueId(), response.getUniqueId())
-            .append(this.getHistoryHandler(), response.getHistoryHandler())
-            .append(this.getPages(), response.getPages())
-            .append(this.getAttachments(), response.getAttachments())
-            .append(this.getReferenceId(), response.getReferenceId())
-            .append(this.getReactorScheduler(), response.getReactorScheduler())
-            .build();
-    }
-
-    public static Builder from(@NotNull Response response) {
-        return new Builder()
-            .withUniqueId(response.getUniqueId())
-            .withPages(response.getPages())
-            .withAttachments(response.getAttachments())
-            .withReference(response.getReferenceId())
-            .withReactorScheduler(response.getReactorScheduler())
-            .replyMention(response.isReplyMention())
-            .withTimeToLive(response.getTimeToLive())
-            .isInteractable(response.isInteractable())
-            .isRenderingPagingComponents(response.isRenderingPagingComponents())
-            .isEphemeral(response.isEphemeral());
-    }
-
-    public boolean isComponentCacheUpdateRequired() {
-        return this.getHistoryHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
-    }
-
     public void setNoCacheUpdateRequired() {
         this.getHistoryHandler().setCacheUpdateRequired(false);
         this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
@@ -181,7 +179,7 @@ public class Response implements Paging<Page> {
     }
 
     public final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> getCachedPageComponents() {
-        if (this.isRenderingPagingComponents() && this.isComponentCacheUpdateRequired()) {
+        if (this.isRenderingPagingComponents() && this.isCacheUpdateRequired()) {
             ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
 
             // Page List
@@ -434,7 +432,6 @@ public class Response implements Paging<Page> {
         return new HashCodeBuilder()
             .append(this.getUniqueId())
             .append(this.getHistoryHandler())
-            .append(this.getBuildTime())
             .append(this.getPages())
             .append(this.getAttachments())
             .append(this.getReferenceId())
