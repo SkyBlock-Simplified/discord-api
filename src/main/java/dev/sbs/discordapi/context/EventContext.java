@@ -56,8 +56,7 @@ public interface EventContext<T extends Event> {
     default Mono<Void> edit(@NotNull Response response) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .checkpoint("EventContext#edit Processing")
-            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId()))
-            .filter(ResponseCache.Entry::isLoading) // Only Process Loading Responses Here
+            .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
             .singleOrEmpty()
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
@@ -67,15 +66,18 @@ public interface EventContext<T extends Event> {
                     "Response Edit Exception"
                 )
             ))
-            .flatMap(entry -> this.getChannel()
-                .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
-                .flatMap(message -> message.edit(response.getD4jEditSpec()))
+            .flatMap(entry -> this.editMessage(response)
                 .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
-                .then(Mono.fromRunnable(() -> {
-                    entry.updateResponse(response);
-                    entry.setUpdated();
-                }))
+                .then(Mono.fromRunnable(() -> entry.updateResponse(response)))
             );
+    }
+
+    default Mono<Message> editMessage(@NotNull Response response) {
+        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
+            .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
+            .singleOrEmpty()
+            .flatMap(entry -> this.getChannel().flatMap(channel -> channel.getMessageById(entry.getMessageId())))
+            .flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
     Mono<MessageChannel> getChannel();
@@ -104,29 +106,38 @@ public interface EventContext<T extends Event> {
         return this.getGuildId().isEmpty();
     }
 
+    default boolean isGuildChannel() {
+        return this.getGuildId().isPresent();
+    }
+
     default Mono<Void> reply(@NotNull Response response) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .checkpoint("EventContext#reply Processing")
-            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId()))
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Response Reply Exception"
+                )
+            ))
+            .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId())) // Search For Loader
             .filter(ResponseCache.Entry::isLoading)
             .singleOrEmpty()
-            .doOnNext(ResponseCache.Entry::setLoaded)
-            .flatMap(entry -> this.edit(response)) // Final Edit Message
+            .flatMap(entry -> {
+                entry.setLoaded();
+                entry.updateResponse(response);
+                entry.updateLastInteract();
+                return this.editMessage(response);  // Final Edit Message
+            })
+            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
             .switchIfEmpty(
                 this.buildMessage(response) // Create New Message
                     .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
-                    .onErrorResume(throwable -> this.getDiscordBot().handleException(
-                        ExceptionContext.of(
-                            this.getDiscordBot(),
-                            this,
-                            throwable,
-                            "Response Create Exception"
-                        )
-                    ))
-                    .flatMap(message -> Mono.fromRunnable(() -> {
+                    .doOnNext(message -> {
                         if (response.isInteractable()) {
                             // Cache Message
-                            ResponseCache.Entry responseCacheEntry = this.getDiscordBot()
+                            ResponseCache.Entry entry = this.getDiscordBot()
                                 .getResponseCache()
                                 .createAndGet(
                                     message.getChannelId(),
@@ -135,11 +146,11 @@ public interface EventContext<T extends Event> {
                                     response
                                 );
 
-                            responseCacheEntry.updateLastInteract();
-                            responseCacheEntry.setUpdated();
+                            entry.updateLastInteract();
                         }
-                    }))
-            );
+                    })
+            )
+            .then();
     }
 
     default Mono<Void> withChannel(Function<MessageChannel, Mono<Void>> messageChannelFunction) {
