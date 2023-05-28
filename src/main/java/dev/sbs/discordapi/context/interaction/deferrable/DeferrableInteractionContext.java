@@ -23,7 +23,12 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
     default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
         return this.getEvent()
             .deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build())
-            .then(this.edit(content));
+            .then(this.reply(Response.loader(this, ephemeral, content)));
+    }
+
+    @Override
+    default Mono<Message> editMessage(@NotNull Response response) {
+        return this.buildMessage(response);
     }
 
 }
