@@ -60,6 +60,7 @@ public class Page implements Paging<Page> {
             .append(this.getComponents(), page.getComponents())
             .append(this.getReactions(), page.getReactions())
             .append(this.getItemHandler(), page.getItemHandler())
+            .append(this.getHistoryHandler(), page.getHistoryHandler())
             .build();
     }
 
@@ -125,6 +126,7 @@ public class Page implements Paging<Page> {
             .append(this.getComponents())
             .append(this.getReactions())
             .append(this.getItemHandler())
+            .append(this.getHistoryHandler())
             .build();
     }
 
@@ -191,6 +193,16 @@ public class Page implements Paging<Page> {
          */
         public Builder clearPages() {
             this.pages.clear();
+            return this;
+        }
+
+        public Builder clearReaction(@NotNull Emoji emoji) {
+            this.reactions.remove(emoji);
+            return this;
+        }
+
+        public Builder clearReactions() {
+            this.reactions.clear();
             return this;
         }
 
