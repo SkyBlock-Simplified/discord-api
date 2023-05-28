@@ -38,20 +38,23 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         @Getter private final @NotNull Snowflake userId;
         @Getter private final @NotNull Snowflake messageId;
         @Getter private @NotNull Response response;
+        @Getter private @NotNull Response currentResponse;
         @Getter private final @NotNull ConcurrentMap<String, Entry> followups = Concurrent.newMap();
         @Getter private @NotNull Optional<Modal> activeModal = Optional.empty();
         @Getter private long lastInteract = System.currentTimeMillis();
-        @Getter private boolean modified;
-        @Getter private boolean busy;
         @Getter private boolean loading;
+        @Getter private boolean busy;
+        @Getter private boolean deferred;
 
         public Entry(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
             this.channelId = channelId;
             this.userId = userId;
             this.messageId = messageId;
             this.response = response;
+            this.currentResponse = response;
             this.busy = true;
             this.loading = true;
+            this.deferred = false;
         }
 
         public Entry addFollowup(@NotNull String key, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
@@ -69,16 +72,24 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-            Entry that = (Entry) obj;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Entry entry = (Entry) o;
 
             return new EqualsBuilder()
-                .append(this.getChannelId(), that.getChannelId())
-                .append(this.getUserId(), that.getUserId())
-                .append(this.getMessageId(), that.getMessageId())
-                .append(this.getResponse(), that.getResponse())
+                .append(this.getLastInteract(), entry.getLastInteract())
+                .append(this.isBusy(), entry.isBusy())
+                .append(this.isLoading(), entry.isLoading())
+                .append(this.isDeferred(), entry.isDeferred())
+                .append(this.getChannelId(), entry.getChannelId())
+                .append(this.getUserId(), entry.getUserId())
+                .append(this.getMessageId(), entry.getMessageId())
+                .append(this.getResponse(), entry.getResponse())
+                .append(this.getCurrentResponse(), entry.getCurrentResponse())
+                .append(this.getFollowups(), entry.getFollowups())
+                .append(this.getActiveModal(), entry.getActiveModal())
                 .build();
         }
 
@@ -89,6 +100,13 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
                 .append(this.getUserId())
                 .append(this.getMessageId())
                 .append(this.getResponse())
+                .append(this.getCurrentResponse())
+                .append(this.getFollowups())
+                .append(this.getActiveModal())
+                .append(this.getLastInteract())
+                .append(this.isBusy())
+                .append(this.isLoading())
+                .append(this.isDeferred())
                 .build();
         }
 
@@ -103,11 +121,19 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             return this.isBusy() || this.isLoading() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
         }
 
+        public boolean isModified() {
+            return !this.getCurrentResponse().equals(this.getResponse()) || this.getResponse().isCacheUpdateRequired();
+        }
+
         /**
          * Sets this response as busy, preventing it from being removed from the {@link DiscordBot#getResponseCache()}.
          */
         public void setBusy() {
             this.busy = true;
+        }
+
+        public void setDeferred() {
+            this.deferred = true;
         }
 
         /**
@@ -117,33 +143,25 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             this.loading = false;
         }
 
-        public void setUpdated() {
-            this.modified = false;
-            this.response.setNoCacheUpdateRequired();
-        }
-
-        public void setActiveModal(Modal modal) {
+        public void setActiveModal(@NotNull Modal modal) {
             this.activeModal = Optional.of(modal);
         }
 
         /**
          * Updates this response as not busy, allowing it to be later removed from the {@link DiscordBot#getResponseCache()}.
          */
-        public void updateLastInteract() {
+        public Entry updateLastInteract() {
+            this.currentResponse = this.response;
             this.lastInteract = System.currentTimeMillis();
+            this.response.setNoCacheUpdateRequired();
             this.busy = false;
+            this.deferred = false;
+            return this;
         }
 
-        public void updateResponse(Response response) {
-            this.updateResponse(response, true);
-        }
-
-        public void updateResponse(Response response, boolean updateTTL) {
+        public Entry updateResponse(@NotNull Response response) {
             this.response = response;
-            this.modified = true;
-
-            if (updateTTL)
-                this.updateLastInteract();
+            return this;
         }
 
     }
