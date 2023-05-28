@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.response.page.handler;
 
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.EqualsBuilder;
+import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
@@ -37,6 +39,23 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
 
     public static <P extends Paging<P>, I> Builder<P, I> builder() {
         return new Builder<>();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HistoryHandler<?, ?> that = (HistoryHandler<?, ?>) o;
+
+        return new EqualsBuilder()
+            .append(this.getMinimumSize(), that.getMinimumSize())
+            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
+            .append(this.getPages(), that.getPages())
+            .append(this.getHistoryMatcher(), that.getHistoryMatcher())
+            .append(this.getHistoryTransformer(), that.getHistoryTransformer())
+            .append(this.getHistory(), that.getHistory())
+            .build();
     }
 
     /**
@@ -124,6 +143,18 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
                 .build()
         ));
         this.setCacheUpdateRequired();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getPages())
+            .append(this.getHistoryMatcher())
+            .append(this.getHistoryTransformer())
+            .append(this.getMinimumSize())
+            .append(this.isCacheUpdateRequired())
+            .append(this.getHistory())
+            .build();
     }
 
     public boolean hasPageHistory() {
