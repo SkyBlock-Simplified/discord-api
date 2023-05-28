@@ -25,19 +25,19 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
     public Publisher<Void> apply(@NotNull E reactionEvent) {
         return Mono.just(reactionEvent)
             .filter(this::isBotMessage) // Only Bot Messages
-            .filter(this::notBot) // Ignore Bots
+            .filter(this::notBot) // Ignore Other Bots
             .flatMap(event -> Flux.fromIterable(this.getDiscordBot().getResponseCache())
-                .parallel()
                 .filter(responseCacheEntry -> responseCacheEntry.getMessageId().equals(this.getMessageId(event))) // Validate Message ID
                 .filter(responseCacheEntry -> responseCacheEntry.getUserId().equals(this.getUserId(event))) // Validate User ID
+                .singleOrEmpty()
                 .flatMap(responseCacheEntry -> {
                     final Emoji emoji = this.getEmoji(event);
 
                     return Flux.fromIterable(responseCacheEntry.getResponse().getHistoryHandler().getCurrentPage().getReactions())
                         .filter(reaction -> reaction.equals(emoji))
+                        .singleOrEmpty()
                         .flatMap(reaction -> this.handleInteraction(event, responseCacheEntry, reaction));
                 })
-                .then()
             );
     }
 
@@ -61,12 +61,11 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
                     )
                 ))
                 .doOnNext(ResponseCache.Entry::setBusy)
-                .flatMap(entry -> reaction.getInteraction().apply(context))
-                .flatMap(__ -> Mono.just(responseCacheEntry))
-                .doOnNext(ResponseCache.Entry::updateLastInteract)
+                .then(reaction.getInteraction().apply(context).thenReturn(responseCacheEntry))
                 .filter(ResponseCache.Entry::isModified)
                 .flatMap(entry -> context.edit())
-            ).then();
+                .switchIfEmpty(Mono.fromRunnable(responseCacheEntry::updateLastInteract))
+            );
     }
 
     protected abstract boolean isBot(@NotNull E event);
