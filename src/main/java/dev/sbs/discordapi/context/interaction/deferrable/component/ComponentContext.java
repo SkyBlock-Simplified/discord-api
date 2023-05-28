@@ -5,6 +5,7 @@ import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionCo
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Guild;
@@ -28,9 +29,14 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
 
     @Override
     default Mono<Message> editMessage(@NotNull Response response) {
-        return this.getEvent()
-            .edit(response.getD4jComponentCallbackSpec())
-            .then(Mono.justOrEmpty(this.getEvent().getMessage()));
+        return Mono.just(this.getResponseCacheEntry())
+            .filter(ResponseCache.Entry::isDeferred)
+            .flatMap(entry -> this.getEvent().editReply(response.getD4jInteractionReplyEditSpec()))
+            .switchIfEmpty(
+                this.getEvent()
+                    .edit(response.getD4jComponentCallbackSpec())
+                    .then(Mono.justOrEmpty(this.getEvent().getMessage()))
+            );
     }
 
     default Mono<Void> deferEdit() {
@@ -38,7 +44,9 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     default Mono<Void> deferEdit(boolean ephemeral) {
-        return this.getEvent().deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build());
+        return this.getEvent()
+            .deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build())
+            .then(Mono.fromRunnable(() -> this.getResponseCacheEntry().setDeferred()));
     }
 
     @Override
@@ -91,15 +99,7 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     default Mono<Void> presentModal(@NotNull Modal modal) {
         return Mono.justOrEmpty(this.getResponseCacheEntry())
             .doOnNext(entry -> entry.setActiveModal(modal))
-            .flatMap(entry -> this.getEvent().presentModal(
-                modal.mutate()
-                    .onInteract(modalContext -> {
-                        entry.clearModal();
-                        return modal.getInteraction().apply(modalContext);
-                    })
-                    .build()
-                    .getD4jPresentSpec()
-            ));
+            .flatMap(entry -> this.getEvent().presentModal(modal.getD4jPresentSpec()));
     }
 
 }
