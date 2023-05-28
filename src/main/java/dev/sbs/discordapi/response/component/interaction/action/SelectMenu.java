@@ -36,7 +36,6 @@ import java.util.stream.StreamSupport;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SelectMenu extends ActionComponent implements InteractableComponent<SelectMenuContext>, PreservableComponent {
 
-    private static final Function<SelectMenuContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     @Getter private final @NotNull String identifier;
     @Getter private final boolean disabled;
     @Getter private final @NotNull Optional<String> placeholder;
@@ -48,7 +47,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @Getter private final boolean deferEdit;
     @Getter private final @NotNull PageType pageType;
     private final @NotNull ConcurrentList<Option> selected = Concurrent.newList();
-    private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> selectMenuInteraction;
+    private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction;
 
     public static Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
@@ -121,29 +120,20 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
             .doOnNext(context -> this.updateSelected(context.getEvent().getValues()))
-            .flatMap(context -> Mono.justOrEmpty(this.selectMenuInteraction)
+            .flatMap(context -> Mono.justOrEmpty(this.interaction)
                 .flatMap(interaction -> interaction.apply(context))
                 .thenReturn(context)
             )
             .filter(context -> ListUtil.sizeOf(context.getEvent().getValues()) == 1)
             .flatMap(context -> Mono.justOrEmpty(this.getSelected().getFirst())
-                .filter(option -> option.optionInteraction.isPresent())
-                .flatMap(option -> this.handleOptionInteraction(context, option).thenReturn(context))
-                .switchIfEmpty(selectMenuContext.deferEdit().thenReturn(selectMenuContext))
-            )
-            .then();
+                .filter(option -> option.interaction.isPresent())
+                .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)))
+                .switchIfEmpty(context.deferEdit())
+            );
     }
 
     public @NotNull ConcurrentList<Option> getSelected() {
         return this.selected.toUnmodifiableList();
-    }
-
-    private @NotNull Mono<Void> handleOptionInteraction(SelectMenuContext selectMenuContext, Option option) {
-        return Mono.just(selectMenuContext).flatMap(context -> Mono.justOrEmpty(context.getResponse())
-            .flatMap(response -> option.getInteraction()
-                .apply(OptionContext.of(context, response, option))
-            )
-        );
     }
 
     @Override
@@ -193,7 +183,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         private String identifier;
         private boolean disabled;
         private Optional<String> placeholder = Optional.empty();
-        private boolean placeholderUsesSelectedOption;
+        private boolean placeholderUsingSelectedOption;
         private Optional<Integer> minValue = Optional.empty();
         private Optional<Integer> maxValue = Optional.empty();
         private final ConcurrentList<Option> options = Concurrent.newList();
@@ -418,7 +408,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          * @param value True to override placeholder with selected option.
          */
         public Builder withPlaceholderUsesSelectedOption(boolean value) {
-            this.placeholderUsesSelectedOption = value;
+            this.placeholderUsingSelectedOption = value;
             return this;
         }
 
@@ -435,7 +425,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 this.placeholder,
                 this.minValue,
                 this.maxValue,
-                this.placeholderUsesSelectedOption,
+                this.placeholderUsingSelectedOption,
                 this.options,
                 this.preserved,
                 this.deferEdit,
@@ -456,7 +446,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         @Getter private final @NotNull String value;
         @Getter private final @NotNull Optional<String> description;
         @Getter private final @NotNull Optional<Emoji> emoji;
-        private final @NotNull Optional<Function<OptionContext, Mono<Void>>> optionInteraction;
+        private final @NotNull Optional<Function<OptionContext, Mono<Void>>> interaction;
 
         public static Builder builder() {
             return new Builder(UUID.randomUUID());
@@ -484,7 +474,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
                 .withValue(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
-                .onInteract(option.optionInteraction);
+                .onInteract(option.interaction);
         }
 
         @Override
@@ -510,7 +500,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         }
 
         public Function<OptionContext, Mono<Void>> getInteraction() {
-            return this.optionInteraction.orElse(NOOP_HANDLER);
+            return this.interaction.orElse(NOOP_HANDLER);
         }
 
         public Builder mutate() {
