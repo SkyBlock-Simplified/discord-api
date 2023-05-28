@@ -27,11 +27,64 @@ public interface ReactionContext extends ResponseContext<MessageEvent> {
     Type getType();
 
     default Mono<Void> removeReactions() {
-        return this.getMessage().flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()));
+        return this.getMessage()
+            .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
+            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+                entry.getResponse()
+                    .mutate()
+                    .editPage(
+                        entry.getResponse()
+                            .getHistoryHandler()
+                            .getCurrentPage()
+                            .mutate()
+                            .clearComponents()
+                            .clearReactions()
+                            .build()
+                    )
+                    .build()
+            )));
+    }
+
+    default Mono<Void> removeReaction() {
+        return this.getMessage()
+            .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
+            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+                entry.getResponse()
+                    .mutate()
+                    .editPage(
+                        entry.getResponse()
+                            .getHistoryHandler()
+                            .getCurrentPage()
+                            .mutate()
+                            .clearComponents()
+                            .clearReaction(this.getEmoji())
+                            .build()
+                    )
+                    .build()
+            )));
     }
 
     default Mono<Void> removeUserReaction() {
         return this.getMessage().flatMap(message -> message.removeReaction(this.getEmoji().getD4jReaction(), this.getInteractUserId()));
+    }
+
+    default Mono<Void> removeSelfReaction() {
+        return this.getMessage()
+            .flatMap(message -> message.removeSelfReaction(this.getEmoji().getD4jReaction()))
+            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+                entry.getResponse()
+                    .mutate()
+                    .editPage(
+                        entry.getResponse()
+                            .getHistoryHandler()
+                            .getCurrentPage()
+                            .mutate()
+                            .clearComponents()
+                            .clearReaction(this.getEmoji())
+                            .build()
+                    )
+                    .build()
+            )));
     }
 
     static ReactionContext ofAdd(DiscordBot discordBot, ReactionAddEvent event, Response cachedMessage, Emoji emoji) {
