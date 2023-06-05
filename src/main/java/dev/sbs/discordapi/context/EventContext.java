@@ -23,12 +23,6 @@ import java.util.function.Function;
 
 public interface EventContext<T extends Event> {
 
-    default Mono<Message> buildMessage(@NotNull Response response) {
-        return this.getChannel()
-            .flatMap(response::getD4jCreateMono)
-            .publishOn(response.getReactorScheduler());
-    }
-
     default Mono<Void> deferReply() {
         return this.deferReply(false);
     }
@@ -43,6 +37,25 @@ public interface EventContext<T extends Event> {
 
     default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
         return Mono.defer(() -> this.reply(Response.loader(this, ephemeral, content)));
+    }
+
+    default Mono<Message> discordBuildMessage(@NotNull Response response) {
+        return this.getChannel()
+            .flatMap(response::getD4jCreateMono)
+            .publishOn(response.getReactorScheduler());
+    }
+
+    default Mono<Message> discordEditMessage(@NotNull Response response) {
+        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
+            .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
+            .singleOrEmpty()
+            .flatMap(entry -> this.discordEditMessage(entry.getMessageId(), response));
+    }
+
+    default Mono<Message> discordEditMessage(@NotNull Snowflake messageId, @NotNull Response response) {
+        return this.getChannel()
+            .flatMap(channel -> channel.getMessageById(messageId))
+            .flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
     default Mono<Void> edit(@Nullable String content, @NotNull Object... objects) {
@@ -66,18 +79,10 @@ public interface EventContext<T extends Event> {
                     "Response Edit Exception"
                 )
             ))
-            .flatMap(entry -> this.editMessage(response)
+            .flatMap(entry -> this.discordEditMessage(response)
                 .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
                 .then(Mono.fromRunnable(() -> entry.updateResponse(response)))
             );
-    }
-
-    default Mono<Message> editMessage(@NotNull Response response) {
-        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
-            .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
-            .singleOrEmpty()
-            .flatMap(entry -> this.getChannel().flatMap(channel -> channel.getMessageById(entry.getMessageId())))
-            .flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
     Mono<MessageChannel> getChannel();
@@ -86,7 +91,7 @@ public interface EventContext<T extends Event> {
 
     @NotNull DiscordBot getDiscordBot();
 
-    T getEvent();
+    @NotNull T getEvent();
 
     Mono<Guild> getGuild();
 
@@ -128,11 +133,11 @@ public interface EventContext<T extends Event> {
                 entry.setLoaded();
                 entry.updateResponse(response);
                 entry.updateLastInteract();
-                return this.editMessage(response);  // Final Edit Message
+                return this.discordEditMessage(response);  // Final Edit Message
             })
             .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
             .switchIfEmpty(
-                this.buildMessage(response) // Create New Message
+                this.discordBuildMessage(response) // Create New Message
                     .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
                     .doOnNext(message -> {
                         if (response.isInteractable()) {

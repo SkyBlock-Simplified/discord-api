@@ -21,14 +21,26 @@ import java.util.Optional;
 public interface ComponentContext extends ResponseContext<ComponentInteractionEvent>, DeferrableInteractionContext<ComponentInteractionEvent> {
 
     @Override
-    default Mono<Message> buildFollowup(@NotNull Response response) {
+    default Mono<Message> discordBuildFollowup(@NotNull Response response) {
         return this.getEvent()
             .createFollowup(response.getD4jInteractionFollowupCreateSpec())
             .publishOn(response.getReactorScheduler());
     }
 
     @Override
-    default Mono<Message> editMessage(@NotNull Response response) {
+    default Mono<Void> discordDeleteFollowup(@NotNull String identifier) {
+        return Mono.justOrEmpty(this.getFollowup(identifier)).flatMap(followup -> this.getEvent().deleteFollowup(followup.getMessageId()));
+    }
+
+    @Override
+    default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
+        return Mono.justOrEmpty(this.getFollowup(identifier))
+            .flatMap(followup -> this.getEvent().editFollowup(followup.getMessageId(), response.getD4jInteractionReplyEditSpec()))
+            .publishOn(response.getReactorScheduler());
+    }
+
+    @Override
+    default Mono<Message> discordEditMessage(@NotNull Response response) {
         return Mono.just(this.getResponseCacheEntry())
             .filter(ResponseCache.Entry::isDeferred)
             .flatMap(entry -> this.getEvent().editReply(response.getD4jInteractionReplyEditSpec()))
@@ -54,7 +66,7 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
         return this.getEvent().getInteraction().getChannelId();
     }
 
-    Component getComponent();
+    @NotNull Component getComponent();
 
     @Override
     default Mono<Guild> getGuild() {

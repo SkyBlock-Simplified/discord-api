@@ -9,11 +9,25 @@ import discord4j.core.object.entity.Message;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface ResponseContext<T extends Event> extends MessageContext<T> {
 
-    Mono<Message> buildFollowup(@NotNull Response response);
+    Mono<Message> discordBuildFollowup(@NotNull Response response);
+
+    Mono<Void> discordDeleteFollowup(@NotNull String identifier);
+
+    default Mono<Message> discordEditFollowup(@NotNull Response response) {
+        return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.discordEditFollowup(followup.getIdentifier(), response));
+    }
+
+    Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response);
+
+    @Override
+    default Mono<Message> discordEditMessage(@NotNull Response response) {
+        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
+    }
 
     default Mono<Void> edit() {
         return Mono.justOrEmpty(this.getResponse()).flatMap(this::edit);
@@ -21,7 +35,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
 
     @Override
     default Mono<Void> edit(@NotNull Response response) {
-        return this.editMessage(response)
+        return this.discordEditMessage(response)
             .checkpoint("ResponseContext#edit Processing")
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
@@ -33,21 +47,61 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             ))
             .flatMap(message -> this.getDiscordBot()
                 .handleReactions(response, message)
-                .then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
+                .then()
+                //.then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
             );
     }
 
-    @Override
-    default Mono<Message> editMessage(@NotNull Response response) {
-        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
+    default Mono<Void> editFollowup() {
+        return Mono.justOrEmpty(this.getResponse()).flatMap(this::editFollowup);
+    }
+
+    default Mono<Void> editFollowup(@NotNull Response response) {
+        return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.editFollowup(followup.getIdentifier(), response));
+    }
+
+    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Response response) {
+        return this.discordEditFollowup(identifier, response)
+            .checkpoint("ResponseContext#editFollowup Processing")
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Followup Edit Exception"
+                )
+            ))
+            .flatMap(message -> this.getDiscordBot()
+                .handleReactions(response, message)
+                .then()
+                //.then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
+            );
+    }
+
+    default Mono<Void> deleteFollowup() {
+        return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.deleteFollowup(followup.getIdentifier()));
+    }
+
+    default Mono<Void> deleteFollowup(@NotNull String identifier) {
+        return this.discordDeleteFollowup(identifier)
+            .checkpoint("ResponseContext#deleteFollowup Processing")
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Followup Delete Exception"
+                )
+            ))
+            .then(this.withResponseCacheEntry(entry -> entry.removeFollowup(identifier)));
     }
 
     default Mono<Void> followup(@NotNull Response response) {
         return this.followup(response.getUniqueId().toString(), response);
     }
 
-    default Mono<Void> followup(@NotNull String key, @NotNull Response response) {
-        return this.buildFollowup(response)
+    default Mono<Void> followup(@NotNull String identifier, @NotNull Response response) {
+        return this.discordBuildFollowup(response)
             .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
@@ -57,17 +111,19 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Followup Create Exception"
                 )
             ))
-            .flatMap(message -> this.withResponseCacheEntry(entry -> {
-                entry.addFollowup(
-                    key,
-                    message.getChannelId(),
-                    this.getInteractUserId(),
-                    message.getId(),
-                    response
-                );
+            .flatMap(message -> this.withResponseCacheEntry(entry -> entry.addFollowup(
+                identifier,
+                message.getChannelId(),
+                this.getInteractUserId(),
+                message.getId(),
+                response
+            )));
+    }
 
-                entry.updateLastInteract();
-            }));
+    @NotNull Optional<ResponseCache.Followup> getFollowup();
+
+    default @NotNull Optional<ResponseCache.Followup> getFollowup(@NotNull String identifier) {
+        return this.getResponseCacheEntry().findFollowup(identifier);
     }
 
     default @NotNull Response getResponse() {

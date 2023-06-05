@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 public interface InteractionContext<T extends InteractionCreateEvent> extends EventContext<T> {
 
     @Override
-    default Mono<Message> buildMessage(@NotNull Response response) {
+    default Mono<Message> discordBuildMessage(@NotNull Response response) {
         return this.interactionEdit(response.getD4jComponentCallbackSpec())
             .publishOn(response.getReactorScheduler())
             .then(this.getReply());
