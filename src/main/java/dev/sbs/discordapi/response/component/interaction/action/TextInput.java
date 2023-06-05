@@ -69,7 +69,7 @@ public final class TextInput extends ActionComponent {
     }
 
     @Override
-    public discord4j.core.object.component.TextInput getD4jComponent() {
+    public @NotNull discord4j.core.object.component.TextInput getD4jComponent() {
         return (discord4j.core.object.component.TextInput) discord4j.core.object.component.TextInput.fromData(
             ComponentData.builder()
                 .type(MessageComponent.Type.TEXT_INPUT.getValue())

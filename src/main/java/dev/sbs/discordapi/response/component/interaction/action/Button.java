@@ -85,7 +85,7 @@ public final class Button extends ActionComponent implements InteractableCompone
     }
 
     @Override
-    public discord4j.core.object.component.Button getD4jComponent() {
+    public @NotNull discord4j.core.object.component.Button getD4jComponent() {
         ReactionEmoji d4jReaction = this.getEmoji().map(Emoji::getD4jReaction).orElse(null);
         String label = this.getLabel().orElse(null);
 
@@ -333,9 +333,21 @@ public final class Button extends ActionComponent implements InteractableCompone
     public enum Style {
 
         UNKNOWN(-1),
+        /**
+         * Blue
+         */
         PRIMARY(1),
+        /**
+         * Gray
+         */
         SECONDARY(2),
+        /**
+         * Green
+         */
         SUCCESS(3),
+        /**
+         * Red
+         */
         DANGER(4),
         LINK(5);
 

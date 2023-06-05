@@ -102,7 +102,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     }
 
     @Override
-    public discord4j.core.object.component.SelectMenu getD4jComponent() {
+    public @NotNull discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
                 this.getIdentifier(),
                 this.getOptions()
