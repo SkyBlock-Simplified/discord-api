@@ -9,6 +9,8 @@ import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 public final class ModalListener extends ComponentListener<ModalSubmitInteractionEvent, ModalContext, Modal> {
 
     public ModalListener(@NotNull DiscordBot discordBot) {
@@ -16,16 +18,24 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected Mono<ModalContext> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry responseCacheEntry) {
-        return Mono.justOrEmpty(responseCacheEntry.getActiveModal()) // Handle Active Modal
+    protected Mono<ModalContext> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry) {
+        return Mono.justOrEmpty(entry.getActiveModal()) // Handle Active Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
-            .doOnNext(modal -> responseCacheEntry.clearModal())
-            .flatMap(modal -> this.handleInteraction(event, responseCacheEntry, modal));
+            .doOnNext(modal -> entry.clearModal())
+            .flatMap(modal -> this.handleInteraction(event, entry, modal, Optional.empty()));
     }
 
     @Override
-    protected ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component) {
-        return ModalContext.of(this.getDiscordBot(), event, response, component);
+    protected Mono<ModalContext> handleFollowupEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry, @NotNull ResponseCache.Followup followup) {
+        return Mono.justOrEmpty(entry.getActiveModal()) // Handle Active Modal
+            .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
+            .doOnNext(modal -> entry.clearModal())
+            .flatMap(modal -> this.handleInteraction(event, entry, modal, Optional.of(followup)));
+    }
+
+    @Override
+    protected ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<ResponseCache.Followup> followup) {
+        return ModalContext.of(this.getDiscordBot(), event, response, component, followup);
     }
 
     @Override
