@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface DeferrableInteractionContext<T extends DeferrableInteractionEvent> extends InteractionContext<T> {
 
     @Override
-    default Mono<Message> buildMessage(@NotNull Response response) {
+    default Mono<Message> discordBuildMessage(@NotNull Response response) {
         return this.getEvent()
             .editReply(response.getD4jInteractionReplyEditSpec())
             .publishOn(response.getReactorScheduler());
@@ -27,8 +27,8 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
     }
 
     @Override
-    default Mono<Message> editMessage(@NotNull Response response) {
-        return this.buildMessage(response);
+    default Mono<Message> discordEditMessage(@NotNull Response response) {
+        return this.discordBuildMessage(response);
     }
 
 }
