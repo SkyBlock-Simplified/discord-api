@@ -35,7 +35,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     Optional<Consumer<Embed.EmbedBuilder>> getEmbedBuilderConsumer();
 
     @Override
-    default T getEvent() {
+    default @NotNull T getEvent() {
         return this.getEventContext().getEvent();
     }
 

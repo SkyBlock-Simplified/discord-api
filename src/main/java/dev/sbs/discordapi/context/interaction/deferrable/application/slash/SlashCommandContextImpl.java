@@ -8,17 +8,18 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 class SlashCommandContextImpl implements SlashCommandContext {
 
-    @Getter private final DiscordBot discordBot;
-    @Getter private final ChatInputInteractionEvent event;
-    @Getter private final UUID responseId = UUID.randomUUID();
-    @Getter private final Relationship.Command relationship;
-    @Getter private final String commandAlias;
-    @Getter private final ConcurrentList<Argument> arguments;
+    @Getter private final @NotNull DiscordBot discordBot;
+    @Getter private final @NotNull ChatInputInteractionEvent event;
+    @Getter private final @NotNull UUID responseId = UUID.randomUUID();
+    @Getter private final @NotNull Relationship.Command relationship;
+    @Getter private final @NotNull String commandAlias;
+    @Getter private final @NotNull ConcurrentList<Argument> arguments;
 
 }

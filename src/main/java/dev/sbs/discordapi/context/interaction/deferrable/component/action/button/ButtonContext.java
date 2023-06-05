@@ -4,16 +4,18 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.ActionComponentContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 public interface ButtonContext extends ActionComponentContext {
 
     @Override
-    ButtonInteractionEvent getEvent();
+    @NotNull ButtonInteractionEvent getEvent();
 
     @Override
     @NotNull Button getComponent();
@@ -22,8 +24,14 @@ public interface ButtonContext extends ActionComponentContext {
         return this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
     }
 
-    static ButtonContext of(DiscordBot discordBot, ButtonInteractionEvent event, Response response, Button button) {
-        return new ButtonContextImpl(discordBot, event, response.getUniqueId(), button);
+    static ButtonContext of(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button button, @NotNull Optional<ResponseCache.Followup> followup) {
+        return new ButtonContextImpl(
+            discordBot,
+            event,
+            response.getUniqueId(),
+            button,
+            followup
+        );
     }
 
 }

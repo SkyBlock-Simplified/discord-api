@@ -4,24 +4,29 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 public interface ModalContext extends ComponentContext {
 
     @Override
-    ModalSubmitInteractionEvent getEvent();
+    @NotNull ModalSubmitInteractionEvent getEvent();
 
     @Override
-    Modal getComponent();
+    @NotNull Modal getComponent();
 
-    static ModalContext of(DiscordBot discordBot, ModalSubmitInteractionEvent event, Response response, Modal modal) {
+    static ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<ResponseCache.Followup> followup) {
         return new ModalContextImpl(
             discordBot,
             event,
             response.getUniqueId(),
             modal.mutate()
                 .updateComponents(event)
-                .build()
+                .build(),
+            followup
         );
     }
 

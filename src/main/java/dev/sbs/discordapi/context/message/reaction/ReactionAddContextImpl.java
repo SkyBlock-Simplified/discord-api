@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.message.reaction;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.object.entity.Guild;
@@ -20,11 +21,12 @@ import java.util.UUID;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 class ReactionAddContextImpl implements ReactionContext {
 
-    @Getter private final DiscordBot discordBot;
-    @Getter private final ReactionAddEvent event;
-    @Getter private final UUID responseId;
-    @Getter private final Emoji emoji;
-    @Getter private final Type type = Type.ADD;
+    @Getter private final @NotNull DiscordBot discordBot;
+    @Getter private final @NotNull ReactionAddEvent event;
+    @Getter private final @NotNull UUID responseId;
+    @Getter private final @NotNull Emoji emoji;
+    @Getter private final @NotNull Type type = Type.ADD;
+    @Getter private final @NotNull Optional<ResponseCache.Followup> followup;
 
     @Override
     public @NotNull Snowflake getChannelId() {

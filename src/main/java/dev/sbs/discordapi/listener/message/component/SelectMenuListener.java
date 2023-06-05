@@ -4,9 +4,12 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 public final class SelectMenuListener extends ComponentListener<SelectMenuInteractionEvent, SelectMenuContext, SelectMenu> {
 
@@ -15,8 +18,8 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     }
 
     @Override
-    protected SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component) {
-        return SelectMenuContext.of(this.getDiscordBot(), event, response, component);
+    protected SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component, @NotNull Optional<ResponseCache.Followup> followup) {
+        return SelectMenuContext.of(this.getDiscordBot(), event, response, component, followup);
     }
 
     @Override

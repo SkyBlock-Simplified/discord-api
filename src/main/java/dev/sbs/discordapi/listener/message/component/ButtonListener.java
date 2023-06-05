@@ -5,9 +5,12 @@ import dev.sbs.discordapi.context.interaction.deferrable.component.action.button
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 public final class ButtonListener extends ComponentListener<ButtonInteractionEvent, ButtonContext, Button> {
 
@@ -16,8 +19,8 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     }
 
     @Override
-    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component) {
-        return ButtonContext.of(this.getDiscordBot(), event, response, component);
+    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component, @NotNull Optional<ResponseCache.Followup> followup) {
+        return ButtonContext.of(this.getDiscordBot(), event, response, component, followup);
     }
 
     @Override

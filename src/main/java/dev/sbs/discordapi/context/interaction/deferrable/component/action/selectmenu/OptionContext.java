@@ -12,7 +12,7 @@ import java.util.function.Function;
 public interface OptionContext extends ActionComponentContext {
 
     @Override
-    SelectMenuInteractionEvent getEvent();
+    @NotNull SelectMenuInteractionEvent getEvent();
 
     @Override
     @NotNull SelectMenu getComponent();
@@ -30,8 +30,15 @@ public interface OptionContext extends ActionComponentContext {
         );
     }
 
-    static OptionContext of(SelectMenuContext selectMenuContext, Response response, SelectMenu.Option option) {
-        return new OptionContextImpl(selectMenuContext.getDiscordBot(), selectMenuContext.getEvent(), response.getUniqueId(), selectMenuContext.getComponent(), option);
+    static OptionContext of(@NotNull SelectMenuContext selectMenuContext, @NotNull Response response, @NotNull SelectMenu.Option option) {
+        return new OptionContextImpl(
+            selectMenuContext.getDiscordBot(),
+            selectMenuContext.getEvent(),
+            response.getUniqueId(),
+            selectMenuContext.getComponent(),
+            option,
+            selectMenuContext.getFollowup()
+        );
     }
 
 }
