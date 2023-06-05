@@ -4,14 +4,15 @@ import dev.sbs.api.util.builder.EqualsBuilder;
 import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.MessageChannel;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -32,14 +33,9 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         return entry;
     }
 
-    public static final class Entry {
+    public static final class Entry extends BaseEntry {
 
-        @Getter private final @NotNull Snowflake channelId;
-        @Getter private final @NotNull Snowflake userId;
-        @Getter private final @NotNull Snowflake messageId;
-        @Getter private @NotNull Response response;
-        @Getter private @NotNull Response currentResponse;
-        @Getter private final @NotNull ConcurrentMap<String, Entry> followups = Concurrent.newMap();
+        @Getter private final @NotNull ConcurrentList<Followup> followups = Concurrent.newList();
         @Getter private @NotNull Optional<Modal> activeModal = Optional.empty();
         @Getter private long lastInteract = System.currentTimeMillis();
         @Getter private boolean loading;
@@ -47,24 +43,28 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         @Getter private boolean deferred;
 
         public Entry(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-            this.channelId = channelId;
-            this.userId = userId;
-            this.messageId = messageId;
-            this.response = response;
-            this.currentResponse = response;
+            super(channelId, userId, messageId, response, response);
             this.busy = true;
             this.loading = true;
             this.deferred = false;
         }
 
-        public Entry addFollowup(@NotNull String key, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-            Entry entry = new Entry(channelId, userId, messageId, response);
-            this.followups.put(key, entry);
-            return entry;
+        public Followup addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+            Followup followup = new Followup(identifier, channelId, userId, messageId, response);
+            this.followups.add(followup);
+            return followup;
         }
 
-        public void removeFollowup(@NotNull String key) {
-            this.followups.remove(key);
+        public Optional<Followup> findFollowup(@NotNull String identifier) {
+            return this.getFollowups().findFirst(Followup::getIdentifier, identifier);
+        }
+
+        public Optional<Followup> findFollowup(@NotNull Snowflake messageId) {
+            return this.getFollowups().findFirst(Followup::getMessageId, messageId);
+        }
+
+        public void removeFollowup(@NotNull String identifier) {
+            this.followups.removeIf(followup -> followup.getIdentifier().equals(identifier));
         }
 
         public void clearModal() {
@@ -75,19 +75,15 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
 
             Entry entry = (Entry) o;
 
             return new EqualsBuilder()
                 .append(this.getLastInteract(), entry.getLastInteract())
-                .append(this.isBusy(), entry.isBusy())
                 .append(this.isLoading(), entry.isLoading())
+                .append(this.isBusy(), entry.isBusy())
                 .append(this.isDeferred(), entry.isDeferred())
-                .append(this.getChannelId(), entry.getChannelId())
-                .append(this.getUserId(), entry.getUserId())
-                .append(this.getMessageId(), entry.getMessageId())
-                .append(this.getResponse(), entry.getResponse())
-                .append(this.getCurrentResponse(), entry.getCurrentResponse())
                 .append(this.getFollowups(), entry.getFollowups())
                 .append(this.getActiveModal(), entry.getActiveModal())
                 .build();
@@ -96,18 +92,18 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         @Override
         public int hashCode() {
             return new HashCodeBuilder()
-                .append(this.getChannelId())
-                .append(this.getUserId())
-                .append(this.getMessageId())
-                .append(this.getResponse())
-                .append(this.getCurrentResponse())
+                .appendSuper(super.hashCode())
                 .append(this.getFollowups())
                 .append(this.getActiveModal())
                 .append(this.getLastInteract())
-                .append(this.isBusy())
                 .append(this.isLoading())
+                .append(this.isBusy())
                 .append(this.isDeferred())
                 .build();
+        }
+
+        public boolean matchesMessage(@NotNull Snowflake messageId) {
+            return this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent();
         }
 
         /**
@@ -121,8 +117,9 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             return this.isBusy() || this.isLoading() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
         }
 
-        public boolean isModified() {
-            return !this.getCurrentResponse().equals(this.getResponse()) || this.getResponse().isCacheUpdateRequired();
+        @Override
+        public boolean isFollowup() {
+            return true;
         }
 
         /**
@@ -151,17 +148,111 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
          * Updates this response as not busy, allowing it to be later removed from the {@link DiscordBot#getResponseCache()}.
          */
         public Entry updateLastInteract() {
-            this.currentResponse = this.response;
+            super.processLastInteract();
             this.lastInteract = System.currentTimeMillis();
-            this.response.setNoCacheUpdateRequired();
             this.busy = false;
             this.deferred = false;
             return this;
         }
 
         public Entry updateResponse(@NotNull Response response) {
-            this.response = response;
+            super.setUpdatedResponse(response);
             return this;
+        }
+
+    }
+
+    public static class Followup extends BaseEntry {
+
+        @Getter private final @NotNull String identifier;
+
+        private Followup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+            super(channelId, userId, messageId, response, response);
+            this.identifier = identifier;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+
+            Followup followup = (Followup) o;
+
+            return new EqualsBuilder()
+                .append(this.getIdentifier(), followup.getIdentifier())
+                .build();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder()
+                .appendSuper(super.hashCode())
+                .append(this.getIdentifier())
+                .build();
+        }
+
+        @Override
+        public boolean isFollowup() {
+            return true;
+        }
+
+        public Followup updateResponse(@NotNull Response response) {
+            super.setUpdatedResponse(response);
+            return this;
+        }
+
+    }
+
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static abstract class BaseEntry {
+
+        @Getter private final @NotNull Snowflake channelId;
+        @Getter private final @NotNull Snowflake userId;
+        @Getter private final @NotNull Snowflake messageId;
+        @Getter private @NotNull Response response;
+        @Getter private @NotNull Response currentResponse;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            BaseEntry baseEntry = (BaseEntry) o;
+
+            return new EqualsBuilder()
+                .append(this.getChannelId(), baseEntry.getChannelId())
+                .append(this.getUserId(), baseEntry.getUserId())
+                .append(this.getMessageId(), baseEntry.getMessageId())
+                .append(this.getResponse(), baseEntry.getResponse())
+                .append(this.getCurrentResponse(), baseEntry.getCurrentResponse())
+                .build();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder()
+                .append(this.getChannelId())
+                .append(this.getUserId())
+                .append(this.getMessageId())
+                .append(this.getResponse())
+                .append(this.getCurrentResponse())
+                .build();
+        }
+
+        public abstract boolean isFollowup();
+
+        public boolean isModified() {
+            return !this.getCurrentResponse().equals(this.getResponse()) || this.getResponse().isCacheUpdateRequired();
+        }
+
+        protected void processLastInteract() {
+            this.currentResponse = this.response;
+            this.response.setNoCacheUpdateRequired();
+        }
+
+        protected void setUpdatedResponse(@NotNull Response response) {
+            this.response = response;
         }
 
     }
