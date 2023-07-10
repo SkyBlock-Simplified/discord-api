@@ -36,6 +36,6 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-SNAPSHOT'
+    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-M2'
     implementation project(':api')
 }
