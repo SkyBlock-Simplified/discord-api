@@ -56,9 +56,10 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
-import reactor.retry.Retry;
+import reactor.util.retry.Retry;
 
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -96,7 +97,11 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Globally Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
-            .onClientResponse(ResponseFunction.retryWhen(RouteMatcher.any(), Retry.anyOf(SocketException.class, Errors.NativeIoException.class))) // Retry SocketExceptions
+            .onClientResponse(ResponseFunction.retryWhen(
+                RouteMatcher.any(),
+                Retry.backoff(10, Duration.ofSeconds(2))
+                    .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
+            ) // Retry SocketExceptions
             .build();
 
         this.getLog().info("Connecting to Discord Gateway");
