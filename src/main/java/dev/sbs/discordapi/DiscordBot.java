@@ -1,6 +1,5 @@
 package dev.sbs.discordapi;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
@@ -71,6 +70,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class DiscordBot extends DiscordErrorObject {
 
     @Getter private final @NotNull DiscordLogger log;
+    @Getter private final @NotNull DiscordConfig config;
     @Getter private final @NotNull DiscordClient client;
     @Getter private final @NotNull GatewayDiscordClient gateway;
     @Getter private final @NotNull ShardHandler shardHandler;
@@ -79,11 +79,9 @@ public abstract class DiscordBot extends DiscordErrorObject {
     @Getter private CommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
-    protected DiscordBot() {
-        this.log = new DiscordLogger(this, this.getClass()); // Initialize Logger
-
-        this.getLog().info("Loading Configuration");
-        this.loadConfig();
+    protected DiscordBot(@NotNull DiscordConfig discordConfig) {
+        this.log = new DiscordLogger(this, this.getClass());
+        this.config = discordConfig;
 
         this.getLog().info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(
@@ -116,22 +114,11 @@ public abstract class DiscordBot extends DiscordErrorObject {
                     this.getLog().info("Processing Gateway Connected Listener");
                     this.onGatewayConnected(gatewayDiscordClient);
 
-                    this.getLog().info("Connecting to Database");
-                    SimplifiedApi.connectDatabase(this.getConfig());
-                    this.getLog().debug(
-                        "Database Initialized in {0}ms and Cached in {1}ms",
-                        SimplifiedApi.getSqlSession().getInitializationTime(),
-                        SimplifiedApi.getSqlSession().getStartupTime()
-                    );
-
                     this.getLog().info("Building Commands");
                     this.commandRegistrar = CommandRegistrar.builder(this)
                         .withPrefix(this.getPrefix())
                         .withCommands(this.getCommands())
                         .build();
-
-                    this.getLog().info("Processing Database Connected Listener");
-                    this.onDatabaseConnected();
 
                     this.getLog().info("Scheduling Cache Cleaner");
                     this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
@@ -214,8 +201,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
     protected abstract @NotNull ConcurrentSet<Class<? extends Command>> getCommands();
 
-    public abstract @NotNull DiscordConfig getConfig();
-
     protected abstract @NotNull AllowedMentions getDefaultAllowedMentions();
 
     public @NotNull IntentSet getDisabledIntents() {
@@ -240,7 +225,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
     }
 
     protected @NotNull MemberRequestFilter getMemberRequestFilter() {
-        return MemberRequestFilter.withGuilds(Snowflake.of(this.getConfig().getMainGuildId()));
+        return MemberRequestFilter.withLargeGuilds();
     }
 
     protected @NotNull Optional<CommandParentModel> getPrefix() {
@@ -261,13 +246,9 @@ public abstract class DiscordBot extends DiscordErrorObject {
             );
     }
 
-    protected abstract void loadConfig();
-
     @SuppressWarnings("unused")
     protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) { }
 
     protected void onGatewayDisconnected() { }
-
-    protected void onDatabaseConnected() { }
 
 }
