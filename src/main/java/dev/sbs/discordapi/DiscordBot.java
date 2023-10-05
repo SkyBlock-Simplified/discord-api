@@ -1,6 +1,8 @@
 package dev.sbs.discordapi;
 
+import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
+import dev.sbs.api.data.sql.SqlConfig;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
@@ -18,8 +20,9 @@ import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
+import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.util.DiscordConfig;
-import dev.sbs.discordapi.util.DiscordLogger;
 import dev.sbs.discordapi.util.base.DiscordErrorObject;
 import dev.sbs.discordapi.util.cache.CommandRegistrar;
 import dev.sbs.discordapi.util.cache.ResponseCache;
@@ -52,6 +55,8 @@ import discord4j.rest.route.Routes;
 import discord4j.rest.util.AllowedMentions;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -67,20 +72,21 @@ import java.util.concurrent.TimeUnit;
  *
  * @see <a href="https://github.com/Discord4J/Discord4J">Discord4J</a>
  */
+@Getter
 public abstract class DiscordBot extends DiscordErrorObject {
 
-    @Getter private final @NotNull DiscordLogger log;
-    @Getter private final @NotNull DiscordConfig config;
-    @Getter private final @NotNull DiscordClient client;
-    @Getter private final @NotNull GatewayDiscordClient gateway;
-    @Getter private final @NotNull ShardHandler shardHandler;
-    @Getter private final @NotNull Scheduler scheduler = new Scheduler();
-    @Getter private final @NotNull ResponseCache responseCache = new ResponseCache();
-    @Getter private CommandRegistrar commandRegistrar;
+    private final @NotNull Logger log;
+    private final @NotNull DiscordConfig config;
+    private final @NotNull DiscordClient client;
+    private final @NotNull GatewayDiscordClient gateway;
+    private final @NotNull ShardHandler shardHandler;
+    private final @NotNull Scheduler scheduler = new Scheduler();
+    private final @NotNull ResponseCache responseCache = new ResponseCache();
+    private CommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig discordConfig) {
-        this.log = new DiscordLogger(this, this.getClass());
+        this.log = LogManager.getLogger(this);
         this.config = discordConfig;
 
         this.getLog().info("Creating Discord Client");
@@ -93,13 +99,13 @@ public abstract class DiscordBot extends DiscordErrorObject {
                     )
             )
             .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
-            .onClientResponse(ResponseFunction.emptyIfNotFound()) // Globally Suppress 404 Not Found
-            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Globally Suppress 400 Bad Request on Reaction Add
-            .onClientResponse(ResponseFunction.retryWhen(
+            .onClientResponse(ResponseFunction.emptyIfNotFound()) // Suppress 404 Not Found
+            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Suppress (Reaction Add) 400 Bad Request
+            .onClientResponse(ResponseFunction.retryWhen( // Retry Network Exceptions
                 RouteMatcher.any(),
                 Retry.backoff(10, Duration.ofSeconds(2))
                     .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
-            ) // Retry SocketExceptions
+            )
             .build();
 
         this.getLog().info("Connecting to Discord Gateway");
@@ -111,14 +117,18 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .withEventDispatcher(eventDispatcher -> eventDispatcher.on(ConnectEvent.class)
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
-                    this.getLog().info("Processing Gateway Connected Listener");
+                    this.getLog().info("Gateway Connected");
                     this.onGatewayConnected(gatewayDiscordClient);
 
-                    this.getLog().info("Building Commands");
-                    this.commandRegistrar = CommandRegistrar.builder(this)
-                        .withPrefix(this.getPrefix())
-                        .withCommands(this.getCommands())
-                        .build();
+                    // TODO: Somehow move this to override method / constructor
+                    this.getLog().info("Creating Database Session");
+                    SimplifiedApi.getSessionManager().connectSql((SqlConfig) this.getConfig().getDataConfig());
+                    this.getLog().info(
+                        "Database Connected in {0}ms",
+                        SimplifiedApi.getSessionManager().getSession().getInitializationTime() +
+                            SimplifiedApi.getSessionManager().getSession().getStartupTime()
+                    );
+                    this.onDatabaseConnected();
 
                     this.getLog().info("Scheduling Cache Cleaner");
                     this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
@@ -144,6 +154,21 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                         Response editedResponse = response.mutate()
                                             .clearAllComponents()
                                             .isRenderingPagingComponents(false)
+                                            .editPage(
+                                                response.getHistoryHandler()
+                                                    .getCurrentPage()
+                                                    .mutate()
+                                                    .withComponents(
+                                                        ActionRow.of(
+                                                            Button.builder()
+                                                                .withStyle(Button.Style.DANGER)
+                                                                .setDisabled()
+                                                                .withLabel("TIMED OUT")
+                                                                .build()
+                                                        )
+                                                    )
+                                                    .build()
+                                            )
                                             .build();
 
                                         // Traverse Page History
@@ -159,7 +184,13 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         }
                     }), 0, 1, TimeUnit.SECONDS);
 
-                    this.getLog().info("Registering Built-in Event Listeners");
+                    this.getLog().info("Building Commands");
+                    this.commandRegistrar = CommandRegistrar.builder(this)
+                        .withPrefix(this.getPrefix())
+                        .withCommands(this.getCommands())
+                        .build();
+
+                    this.getLog().info("Registering Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
@@ -170,14 +201,18 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(this::onGatewayDisconnected))
                     );
 
-                    this.getLog().info("Registering Custom Event Listeners");
                     this.getListeners().forEach(listenerClass -> {
                         DiscordListener<? super Event> discordListener = (DiscordListener<? super Event>) Reflection.of(listenerClass).newInstance(this);
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
 
+                    this.getLog().info("Registering Commands");
+                    Mono<Void> slashCommands = this.getDiscordBot()
+                        .getCommandRegistrar()
+                        .updateSlashCommands();
+
                     this.getLog().info(FormatUtil.format("Logged in as {0}", this.getSelf().getUsername()));
-                    return Mono.when(eventListeners);
+                    return Mono.when(eventListeners).and(slashCommands);
                 })
             )
             .login()
@@ -245,6 +280,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
                 .build()
             );
     }
+
+    protected void onDatabaseConnected() { }
 
     @SuppressWarnings("unused")
     protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) { }

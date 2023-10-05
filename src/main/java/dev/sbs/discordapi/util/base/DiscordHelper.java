@@ -1,18 +1,20 @@
 package dev.sbs.discordapi.util.base;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.util.DiscordLogger;
 import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+@Getter
 public abstract class DiscordHelper extends DiscordReference {
 
-    @Getter private final DiscordBot discordBot;
-    @Getter private final DiscordLogger log;
+    private final @NotNull DiscordBot discordBot;
+    private final @NotNull Logger log;
 
     protected DiscordHelper(@NotNull DiscordBot discordBot) {
         this.discordBot = discordBot;
-        this.log = new DiscordLogger(this.getDiscordBot(), this.getClass());
+        this.log = LogManager.getLogger(this);
     }
 
 }
