@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.embed;
 
-import dev.sbs.api.util.builder.EqualsBuilder;
-import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.builder.hash.EqualsBuilder;
+import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;
 import lombok.Getter;

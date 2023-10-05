@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.component.interaction;
 
-import dev.sbs.api.util.builder.EqualsBuilder;
-import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.builder.hash.EqualsBuilder;
+import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import org.jetbrains.annotations.NotNull;

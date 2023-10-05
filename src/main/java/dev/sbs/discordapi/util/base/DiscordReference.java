@@ -10,7 +10,6 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.helper.WordUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Command;
 import dev.sbs.discordapi.command.UserPermission;
@@ -53,7 +52,7 @@ public abstract class DiscordReference {
     }
 
     public static @NotNull String capitalizeFully(String value) {
-        return WordUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
+        return StringUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
     }
 
     // --- Command Searching ---

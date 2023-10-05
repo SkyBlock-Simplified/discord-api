@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.util.cache;
 
-import dev.sbs.api.util.builder.EqualsBuilder;
-import dev.sbs.api.util.builder.hashcode.HashCodeBuilder;
+import dev.sbs.api.util.builder.hash.EqualsBuilder;
+import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
@@ -102,8 +102,8 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
                 .build();
         }
 
-        public boolean matchesMessage(@NotNull Snowflake messageId) {
-            return this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent();
+        public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Snowflake userId) {
+            return this.getUserId().equals(userId) && (this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent());
         }
 
         /**
