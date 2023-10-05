@@ -1,7 +1,6 @@
 package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.DataSession;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.util.data.tuple.Pair;
 import dev.sbs.api.util.helper.DataUtil;
@@ -35,9 +34,10 @@ public class SqlToJsonDumpTest {
             dbDir.mkdirs();
 
         System.out.println("Connecting to database...");
-        SimplifiedApi.connectSession(DataSession.Type.SQL, testConfig);
+        SimplifiedApi.getSessionManager().connectSql(testConfig);
 
-        SimplifiedApi.getSession()
+        SimplifiedApi.getSessionManager()
+            .getSession()
             .getModels()
             .stream()
             .map(modelClass -> (Class<? extends Model>) modelClass)
