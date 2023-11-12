@@ -30,11 +30,6 @@ public class DebugCommand extends SlashCommand {
         super(discordBot);
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
-
     @NotNull
     @Override
     public String getDescription() {
@@ -46,15 +41,40 @@ public class DebugCommand extends SlashCommand {
         return 652148034448261150L;
     }
 
-    @Override
-    public long getId() {
-        return 0;
-    }
-
     @NotNull
     @Override
     public String getName() {
         return "debug";
+    }
+
+    /*@NotNull
+    @Override
+    public Optional<Parent> getParent() {
+        return Optional.of(Parent.of(
+            "dtop",
+            "reee"
+        ));
+    }
+
+    @NotNull
+    @Override
+    public Optional<Group> getGroup() {
+        return Optional.of(Group.of(
+            "dgroup",
+            "reee"
+        ));
+    }*/
+
+    @Override
+    public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
+        return Concurrent.newUnmodifiableList(
+            Parameter.builder("test1", "test parameter", Parameter.Type.WORD)
+                //.withAutoComplete(value -> Mono.empty())
+                .build(),
+            Parameter.builder("test2", "test parameter", Parameter.Type.WORD)
+                .withAutoComplete(value -> Mono.empty())
+                .build()
+        );
     }
 
     @Override
@@ -238,14 +258,6 @@ public class DebugCommand extends SlashCommand {
                 )
                 .build()
             );
-    }
-
-    @Override
-    public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
-        return Concurrent.newUnmodifiableList(
-            Parameter.builder("test2", "test parameter", Parameter.Type.WORD)
-                .build()
-        );
     }
 
     private Mono<Void> editPage(ResponseContext<?> responseContext, Function<Page.Builder, Page.Builder> currentPage) {
