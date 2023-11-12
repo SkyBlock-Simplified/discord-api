@@ -59,9 +59,6 @@ public class DebugCommand extends SlashCommand {
 
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
-        // TODO: https://en.wikipedia.org/wiki/ISO_8601#Durations
-        //  Duration.parse
-
         return commandContext.reply(
             Response.builder()
                 .replyMention()
