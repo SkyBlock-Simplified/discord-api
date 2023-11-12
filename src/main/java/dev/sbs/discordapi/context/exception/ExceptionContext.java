@@ -72,18 +72,17 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
 
     static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
         CommandReference command = commandContext.getCommand();
-        String commandPath = command.getCommandPath();
 
         return of(
             discordBot,
             commandContext,
             throwable,
             "Command Exception",
-            embedBuilder -> embedBuilder.withTitle("Command :: %s", commandPath)
+            embedBuilder -> embedBuilder.withTitle("Command :: %s", command.getName())
                 .withFields(
                     Field.builder()
                         .withName("Command")
-                        .withValue(commandPath)
+                        .withValue(command.getName())
                         .isInline()
                         .build(),
                     Field.builder()
