@@ -32,16 +32,6 @@ public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEv
         return NO_EXAMPLES;
     }
 
-    @Override
-    public final @NotNull String getCommandPath() {
-        return String.format(
-            "/%s%s%s",
-            this.getParent().map(Parent::getName).orElse("").toLowerCase(),
-            this.getGroup().map(Group::getName).orElse("").toLowerCase(),
-            this.getName().toLowerCase()
-        );
-    }
-
     public Embed createHelpEmbed() {
         String commandPath = this.getCommandPath();
         ConcurrentList<Parameter> parameters = this.getParameters();
