@@ -61,8 +61,8 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     }
 
     @Override
-    default boolean isSlashCommand() {
-        return true;
+    default @NotNull Type getType() {
+        return Type.CHAT_INPUT;
     }
 
     static @NotNull SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, SlashCommandReference slashCommandReference, ConcurrentList<Argument> arguments) {
