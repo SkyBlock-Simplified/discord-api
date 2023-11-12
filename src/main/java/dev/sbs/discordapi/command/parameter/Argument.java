@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.command.data;
+package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
