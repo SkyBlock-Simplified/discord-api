@@ -56,20 +56,4 @@ public interface CommandReference {
 
     @NotNull UUID getUniqueId();
 
-    interface Group {
-
-        @NotNull String getDescription();
-
-        @NotNull String getName();
-
-    }
-
-    interface Parent {
-
-        @NotNull String getDescription();
-
-        @NotNull String getName();
-
-    }
-
 }

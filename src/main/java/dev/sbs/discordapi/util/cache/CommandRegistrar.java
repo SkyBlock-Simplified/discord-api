@@ -159,7 +159,7 @@ public class CommandRegistrar extends DiscordHelper {
             .toUnmodifiableList();
     }
 
-    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference.Parent parent) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull SlashCommandReference.Parent parent) {
         return ApplicationCommandRequest.builder()
             .name(parent.getName())
             .description(parent.getDescription())
