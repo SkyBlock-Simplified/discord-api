@@ -24,11 +24,6 @@ public final class DebugBot extends DiscordBot {
     }
 
     public static void main(final String[] args) {
-        ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newUnmodifiableSet(
-            Reflection.getResources()
-                .filterPackage("dev.sbs.discordapi.debug.command")
-                .getSubtypesOf(CommandReference.class)
-        );
         new DebugBot();
     }
 
