@@ -16,6 +16,8 @@ import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.entity.channel.Channel;
+import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,7 +41,7 @@ import java.util.stream.Stream;
 public class CommandRegistrar extends DiscordHelper {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
-    private final @NotNull ConcurrentMap<Long, Class<? extends CommandReference>> commandIds = Concurrent.newMap();
+    private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
     @Getter private final @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> loadedCommands;
     @Getter private final @NotNull ConcurrentMap<Class<? extends SlashCommandReference>, SlashCommand> slashCommands;
 
@@ -201,6 +204,17 @@ public class CommandRegistrar extends DiscordHelper {
             .name(parameter.getName())
             .description(parameter.getDescription())
             .required(parameter.isRequired())
+            .channelTypes(
+                parameter.getChannelTypes()
+                    .stream()
+                    .map(Channel.Type::getValue)
+                    .collect(Concurrent.toList())
+            )
+            .minValue(parameter.getSizeLimit().getMinimum())
+            .maxValue(parameter.getSizeLimit().getMaximum())
+            .minLength(parameter.getLengthLimit().getMinimum())
+            .maxLength(parameter.getLengthLimit().getMaximum())
+            .autocomplete(parameter.isAutocompleting())
             .choices(
                 parameter.getChoices()
                     .stream()
@@ -224,8 +238,9 @@ public class CommandRegistrar extends DiscordHelper {
                 this.buildCommandRequests(-1)
             )
             .doOnNext(commandData -> {
-                // TODO: Back-update commands with their commandData.id()
-                return;
+                ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
+                Optional<CommandReference> possibleCommand = this.getCommandReference(commandTree);
+                possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
             })
             .thenMany(
                 Flux.fromIterable(this.getLoadedCommands())
@@ -240,12 +255,47 @@ public class CommandRegistrar extends DiscordHelper {
                             this.buildCommandRequests(entry.getValue().getGuildId())
                         )
                         .doOnNext(commandData -> {
-                            // TODO: Back-update commands with their commandData.id()
-                            return;
+                            ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
+                            Optional<CommandReference> possibleCommand = this.getCommandReference(commandTree);
+                            possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
                         })
                     )
             )
             .then();
+    }
+
+    private @NotNull ConcurrentList<String> getApiCommandTree(@NotNull ApplicationCommandData commandData) {
+        ConcurrentList<String> commandTree = Concurrent.newList(commandData.name());
+
+        if (!commandData.type().isAbsent() && commandData.type().get() <= 2) {
+            if (!commandData.options().isAbsent() && !commandData.options().get().isEmpty()) {
+                List<ApplicationCommandOptionData> optionDataList = commandData.options().get();
+                ApplicationCommandOptionData optionData = optionDataList.get(0);
+
+                if (optionData.type() <= 2) { // Sub Command / Group
+                    commandTree.add(optionData.name());
+
+                    if (!optionData.options().isAbsent() && !optionData.options().get().isEmpty()) {
+                        if (optionData.options().get().get(0).type() <= 2)
+                            commandTree.add(optionData.options().get().get(0).name());
+                    }
+                }
+            }
+        }
+
+        return commandTree;
+    }
+
+    public long getApiCommandId(@NotNull Class<? extends CommandReference> commandClass) {
+        return this.commandIds.get(commandClass);
+    }
+
+    private @NotNull Optional<CommandReference> getCommandReference(@NotNull ConcurrentList<String> commandTree) {
+        return this.getLoadedCommands()
+            .values()
+            .stream()
+            .filter(command -> command.doesMatch(commandTree))
+            .findFirst();
     }
 
     private <T extends CommandReference, I extends DiscordCommand<?, ?>> @NotNull ConcurrentMap<Class<? extends T>, I> retrieveTypedCommands(
@@ -282,7 +332,7 @@ public class CommandRegistrar extends DiscordHelper {
         return commands.stream()
             .map(commandClass -> Pair.of(
                 commandClass,
-                getCommandId(commandClass)
+                getCommandUniqueId(commandClass)
             ))
             .filter(commandLink -> {
                 if (commandLink.getRight().isEmpty()) {
