@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.listener.message.reaction;
 
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.reaction.ReactionContext;
@@ -15,6 +14,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 public abstract class ReactionListener<E extends MessageEvent> extends DiscordListener<E> {
 
     protected ReactionListener(@NotNull DiscordBot discordBot) {
@@ -22,26 +23,26 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
     }
 
     @Override
-    public Publisher<Void> apply(@NotNull E reactionEvent) {
-        return Mono.just(reactionEvent)
+    public Publisher<Void> apply(@NotNull E event) {
+        return Mono.just(event)
             .filter(this::isBotMessage) // Only Bot Messages
             .filter(this::notBot) // Ignore Other Bots
-            .flatMap(event -> Flux.fromIterable(this.getDiscordBot().getResponseCache())
-                .filter(responseCacheEntry -> responseCacheEntry.getMessageId().equals(this.getMessageId(event))) // Validate Message ID
-                .filter(responseCacheEntry -> responseCacheEntry.getUserId().equals(this.getUserId(event))) // Validate User ID
-                .singleOrEmpty()
-                .flatMap(responseCacheEntry -> {
-                    final Emoji emoji = this.getEmoji(event);
+            .thenMany(Flux.fromIterable(this.getDiscordBot().getResponseCache()))
+            .filter(entry -> entry.matchesMessage(this.getMessageId(event), this.getUserId(event))) // Validate Message & User ID
+            .singleOrEmpty()
+            .flatMap(entry -> {
+                final Emoji emoji = this.getEmoji(event);
 
-                    return Flux.fromIterable(responseCacheEntry.getResponse().getHistoryHandler().getCurrentPage().getReactions())
-                        .filter(reaction -> reaction.equals(emoji))
-                        .singleOrEmpty()
-                        .flatMap(reaction -> this.handleInteraction(event, responseCacheEntry, reaction));
-                })
-            );
+                return Flux.fromIterable(entry.getResponse().getHistoryHandler().getCurrentPage().getReactions())
+                    .filter(reaction -> reaction.equals(emoji))
+                    .singleOrEmpty()
+                    .flatMap(reaction -> this.handleInteraction(event, entry, reaction, entry.findFollowup(this.getMessageId(event))))
+                    .then(entry.updateLastInteract())
+                    .then();
+            });
     }
 
-    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction);
+    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<ResponseCache.Followup> followup);
 
     protected abstract Snowflake getMessageId(@NotNull E event);
 
@@ -49,22 +50,21 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
 
     protected abstract Snowflake getUserId(@NotNull E event);
 
-    private Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry responseCacheEntry, @NotNull Emoji reaction) {
-        return Mono.just(this.getContext(event, responseCacheEntry.getResponse(), reaction))
-            .flatMap(context -> Mono.just(responseCacheEntry)
+    private Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<ResponseCache.Followup> followup) {
+        return Mono.just(this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), reaction, followup))
+            .flatMap(context -> Mono.just(entry)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),
                         context,
                         throwable,
-                        FormatUtil.format("{0} Exception", this.getTitle())
+                        String.format("%s Exception", this.getTitle())
                     )
                 ))
                 .doOnNext(ResponseCache.Entry::setBusy)
-                .then(reaction.getInteraction().apply(context).thenReturn(responseCacheEntry))
+                .then(reaction.getInteraction().apply(context).thenReturn(entry))
                 .filter(ResponseCache.Entry::isModified)
-                .flatMap(entry -> context.edit())
-                .switchIfEmpty(Mono.fromRunnable(responseCacheEntry::updateLastInteract))
+                .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 

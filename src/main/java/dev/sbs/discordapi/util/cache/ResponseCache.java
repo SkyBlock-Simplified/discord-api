@@ -14,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -147,12 +148,13 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         /**
          * Updates this response as not busy, allowing it to be later removed from the {@link DiscordBot#getResponseCache()}.
          */
-        public Entry updateLastInteract() {
-            super.processLastInteract();
-            this.lastInteract = System.currentTimeMillis();
-            this.busy = false;
-            this.deferred = false;
-            return this;
+        public Mono<Entry> updateLastInteract() {
+            return Mono.fromRunnable(() -> {
+                super.processLastInteract();
+                this.lastInteract = System.currentTimeMillis();
+                this.busy = false;
+                this.deferred = false;
+            });
         }
 
         public Entry updateResponse(@NotNull Response response) {

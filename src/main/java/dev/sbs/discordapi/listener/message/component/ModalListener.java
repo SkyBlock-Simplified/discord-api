@@ -18,19 +18,13 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected Mono<ModalContext> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry) {
+    protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry, @NotNull Optional<ResponseCache.Followup> followup) {
         return Mono.justOrEmpty(entry.getActiveModal()) // Handle Active Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
             .doOnNext(modal -> entry.clearModal())
-            .flatMap(modal -> this.handleInteraction(event, entry, modal, Optional.empty()));
-    }
-
-    @Override
-    protected Mono<ModalContext> handleFollowupEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry, @NotNull ResponseCache.Followup followup) {
-        return Mono.justOrEmpty(entry.getActiveModal()) // Handle Active Modal
-            .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
-            .doOnNext(modal -> entry.clearModal())
-            .flatMap(modal -> this.handleInteraction(event, entry, modal, Optional.of(followup)));
+            .flatMap(modal -> this.handleInteraction(event, entry, modal, followup))
+            .then(entry.updateLastInteract())
+            .then();
     }
 
     @Override
