@@ -1,26 +1,21 @@
 package dev.sbs.discordapi.util.base;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.client.hypixel.exception.HypixelApiException;
 import dev.sbs.api.client.sbs.exception.SbsApiException;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
-import dev.sbs.api.data.model.discord.settings.SettingModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.data.tuple.Pair;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.discordapi.command.data.Argument;
-import dev.sbs.discordapi.command.data.Parameter;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
-import dev.sbs.discordapi.command.exception.HelpCommandException;
 import dev.sbs.discordapi.command.exception.parameter.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.user.UserInputException;
 import dev.sbs.discordapi.command.exception.user.UserVerificationException;
+import dev.sbs.discordapi.command.parameter.Argument;
+import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
@@ -129,7 +124,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
 
             Embed.EmbedBuilder embedBuilder = Embed.builder()
                 .withAuthor(
-                    FormatUtil.format("{0} Parameter", (missing ? "Missing" : "Invalid")),
+                    String.format("%s Parameter", (missing ? "Missing" : "Invalid")),
                     getEmoji("STATUS_INFO").map(Emoji::getUrl)
                 )
                 .withDescription(missing ? missingDescription : invalidDescription)
@@ -162,14 +157,11 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 );
 
             responseBuilder = Optional.of(embedBuilder.build());
-        } else if (exceptionContext.getException() instanceof HelpCommandException) {
-            CommandContext<?> commandContext = (CommandContext<?>) exceptionContext.getEventContext();
-            responseBuilder = Optional.of(commandContext.getRelationship().createHelpEmbed(commandContext.isSlashCommand()));
         } else if (exceptionContext.getException() instanceof PermissionException permissionException) {
             boolean botPermissions = (permissionException instanceof BotPermissionException);
 
             Embed.EmbedBuilder embedBuilder = Embed.builder()
-                .withAuthor(FormatUtil.format("Missing {0} Permissions", (botPermissions ? "Bot" : "User")), getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
+                .withAuthor(String.format("Missing %s Permissions", (botPermissions ? "Bot" : "User")), getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
                 .withDescription(permissionException.getMessage());
 
             if (botPermissions) {
@@ -230,21 +222,21 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 .orElse("Unknown")
                 .replace("`", "");
 
-            locationValue = FormatUtil.format(
-                "{0}\n{1}",
+            locationValue = String.format(
+                "%s\n%s",
                 exceptionContext.getGuildId().isPresent() ?
-                    FormatUtil.format(
-                        "[{0}]({1})",
+                    String.format(
+                        "[%s](%s)",
                         location,
-                        FormatUtil.format("https://discord.com/servers/{0}", exceptionContext.getGuildId().get().asString())
+                        String.format("https://discord.com/servers/%s", exceptionContext.getGuildId().get().asString())
                     ) : location,
                 exceptionContext.getGuildId()
                     .map(Snowflake::asString)
                     .orElse("---")
             );
 
-            channelValue = FormatUtil.format(
-                "{0}\n{1}",
+            channelValue = String.format(
+                "%s\n%s",
                 messageChannel.map(MessageChannel::getMention).orElse("Unknown"),
                 exceptionContext.getChannelId().asString()
             );
@@ -257,11 +249,11 @@ public abstract class DiscordErrorObject extends DiscordReference {
             .withField(
                 "Error ID",
                 (!exceptionContext.isPrivateChannel() && messageId.isPresent()) ?
-                    FormatUtil.format(
-                        "[{0}]({1})",
+                    String.format(
+                        "[%s](%s)",
                         defaultError.getLeft(),
-                        FormatUtil.format(
-                            "https://discord.com/channels/{0}/{1}/{2}",
+                        String.format(
+                            "https://discord.com/channels/%s/%s/%s",
                             exceptionContext.getGuildId().map(Snowflake::asString).orElse("@me"),
                             exceptionContext.getChannelId().asString(),
                             messageId.get().asString()
@@ -273,7 +265,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 Field.builder()
                     .withName("User")
                     .withValue(
-                        "{0}\n{1}",
+                        "%s\n%s",
                         exceptionContext.getInteractUser().getMention(),
                         exceptionContext.getInteractUserId().asString()
                     )
@@ -308,13 +300,14 @@ public abstract class DiscordErrorObject extends DiscordReference {
             .withColor(Color.DARK_GRAY)
             .withTimestamp(Instant.now())
             .withAuthor(
-                "Exception",
+                // TODO: Emoji handling
+                "Exception"/*,
                 SimplifiedApi.getRepositoryOf(EmojiModel.class)
                     .findFirst(EmojiModel::getKey, "STATUS_HIGH_IMPORTANCE")
                     .flatMap(Emoji::of)
-                    .map(Emoji::getUrl)
+                    .map(Emoji::getUrl)*/
             )
-            .withTitle("Error :: {0}", exceptionContext.getTitle())
+            .withTitle("Error :: %s", exceptionContext.getTitle())
             .withField(
                 "Error ID",
                 errorId
@@ -333,19 +326,13 @@ public abstract class DiscordErrorObject extends DiscordReference {
         // Load User Error
         Embed userError = reactiveError.orElse(defaultError.getRight());
 
-        // Toggle Ephemeral for Slash Commands
-        boolean ephemeral = false;
-
         // Modify Command Errors
         if (exceptionContext.getException() instanceof CommandException) {
             CommandContext<?> commandContext = (CommandContext<?>) exceptionContext.getEventContext();
-            ephemeral = commandContext.isSlashCommand();
-            String commandPath = commandContext.getRelationship()
-                .getInstance()
-                .getCommandPath(commandContext.isSlashCommand());
+            String commandPath = commandContext.getCommand().getCommandPath();
 
             userError = userError.mutate()
-                .withTitle("Command :: {0}", commandPath)
+                .withTitle("Command :: %s", commandPath)
                 .build();
         }
 
@@ -362,8 +349,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
         // Build User Error
         Response userErrorResponse = Response.builder()
             .isInteractable(false)
-            .isEphemeral(ephemeral)
-            .withReference(exceptionContext.getEventContext())
+            .isEphemeral(true)
             .withPages(
                 Page.builder()
                     .withEmbeds(userError)
@@ -378,11 +364,14 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 Mono.justOrEmpty(reactiveError).switchIfEmpty( // Do Not Log User Errors
                     Mono.just(this.getDiscordBot().getMainGuild())
                         .flatMap(guild -> guild.getChannelById(Snowflake.of(
-                            SimplifiedApi.getRepositoryOf(SettingModel.class)
+                            this.getDiscordBot()
+                                .getConfig()
+                                .getDebugChannelId()
+                            /*SimplifiedApi.getRepositoryOf(SettingModel.class)
                                 .findFirst(SettingModel::getKey, "DEVELOPER_ERROR_LOG_CHANNEL_ID")
                                 .map(SettingModel::getValue)
                                 .map(Long::valueOf)
-                                .orElse(0L)
+                                .orElse(0L)*/
                         )))
                         .ofType(MessageChannel.class)
                         .flatMap(messageChannel -> {
