@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
@@ -30,51 +29,15 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     public final Publisher<Void> apply(@NotNull E event) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> !event.getInteraction().getUser().isBot()) // Ignore Bots
-            .filter(entry -> entry.isMatch(entry.getMessageId(), event.getInteraction().getUser().getId())) // Validate Message & User ID
+            .filter(entry -> entry.matchesMessage(entry.getMessageId(), event.getInteraction().getUser().getId())) // Validate Message & User ID
+            // TODO: Support users other than response creator interactions
             .singleOrEmpty()
             .doOnNext(ResponseCache.Entry::setBusy)
-            .flatMap(entry -> this.handleEvent(event, entry))
-            .switchIfEmpty(
-                Flux.fromIterable(this.getDiscordBot().getResponseCache())
-                    .filter(entry -> !event.getInteraction().getUser().isBot()) // Ignore Bots
-                    .filter(entry -> entry.getUserId().equals(event.getInteraction().getUser().getId())) // Validate User ID
-                    .filter(entry -> entry.findFollowup(event.getMessageId()).isPresent()) // Validate Message ID
-                    .singleOrEmpty()
-                    .doOnNext(ResponseCache.Entry::setBusy)
-                    .flatMap(entry -> this.handleFollowupEvent(event, entry, entry.findFollowup(event.getMessageId()).orElseThrow()))
-                    .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
-            )
-            .then();
+            .flatMap(entry -> this.handleEvent(event, entry, entry.findFollowup(event.getMessageId())))
+            .switchIfEmpty(event.deferEdit().then(Mono.empty())); // Invalid User Interaction
     }
 
     protected abstract C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup);
-
-    /**
-     * Handle paging and component interaction.
-     * <br><br>
-     * Override for specific components.
-     *
-     * @param event Discord4J instance of ComponentInteractionEvent.
-     * @param entry Matched response cache entry.
-     */
-    protected Mono<C> handleEvent(@NotNull E event, @NotNull ResponseCache.Entry entry) {
-        return Flux.fromIterable(entry.getResponse().getCachedPageComponents()) // Handle Paging Components
-            .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
-            .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
-            .filter(this.componentClass::isInstance) // Validate Component Type
-            .map(this.componentClass::cast)
-            .singleOrEmpty()
-            .flatMap(component -> this.handlePagingInteraction(event, entry, component, Optional.empty())) // Handle Response Paging
-            .switchIfEmpty(
-                Flux.fromIterable(entry.getResponse().getHistoryHandler().getCurrentPage().getComponents()) // Handle Component Interaction
-                    .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
-                    .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
-                    .filter(this.componentClass::isInstance) // Validate Component Type
-                    .map(this.componentClass::cast)
-                    .singleOrEmpty()
-                    .flatMap(component -> this.handleInteraction(event, entry, component, Optional.empty()))
-            );
-    }
 
     /**
      * Handle paging and component interaction for followups.
@@ -85,26 +48,28 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * @param entry Matched response cache entry.
      * @param followup Matched followup cache entry.
      */
-    protected Mono<C> handleFollowupEvent(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull ResponseCache.Followup followup) {
-        return Flux.fromIterable(followup.getResponse().getCachedPageComponents()) // Handle Paging Components
+    protected Mono<Void> handleEvent(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull Optional<ResponseCache.Followup> followup) {
+        return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents()) // Handle Paging Components
             .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
             .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
             .map(this.componentClass::cast)
             .singleOrEmpty()
-            .flatMap(component -> this.handlePagingInteraction(event, entry, component, Optional.of(followup))) // Handle Response Paging
+            .flatMap(component -> this.handlePagingInteraction(event, entry, component, followup)) // Handle Response Paging
             .switchIfEmpty(
-                Flux.fromIterable(followup.getResponse().getHistoryHandler().getCurrentPage().getComponents()) // Handle Component Interaction
+                Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()) // Handle Component Interaction
                     .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
                     .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
                     .filter(this.componentClass::isInstance) // Validate Component Type
                     .map(this.componentClass::cast)
                     .singleOrEmpty()
-                    .flatMap(component -> this.handleInteraction(event, entry, component, Optional.of(followup)))
-            );
+                    .flatMap(component -> this.handleInteraction(event, entry, component, followup))
+            )
+            .then(entry.updateLastInteract())
+            .then();
     }
 
-    protected final Mono<C> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
         return Mono.just(this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup))
             .flatMap(context -> Mono.just(context)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
@@ -112,7 +77,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         this.getDiscordBot(),
                         context,
                         throwable,
-                        FormatUtil.format("{0} Exception", this.getTitle())
+                        String.format("%s Exception", this.getTitle())
                     )
                 ))
                 .then(component.isDeferEdit() ? context.deferEdit() : Mono.empty())
@@ -122,12 +87,10 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         .filter(ResponseCache.Entry::isModified)
                         .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
                 )
-                .doOnNext(__ -> entry.updateLastInteract())
-                .thenReturn(context)
             );
     }
 
-    protected final Mono<C> handlePagingInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected final Mono<Void> handlePagingInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
         return Mono.just(this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup))
             .flatMap(context -> Mono.just(context)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
@@ -135,7 +98,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         this.getDiscordBot(),
                         context,
                         throwable,
-                        FormatUtil.format("{0} Paging Exception", this.getTitle())
+                        String.format("%s Paging Exception", this.getTitle())
                     )
                 ))
                 .then(context.deferEdit())
@@ -145,8 +108,6 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                         .filter(ResponseCache.Entry::isModified)
                         .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
                 )
-                .doOnNext(__ -> entry.updateLastInteract())
-                .thenReturn(context)
             );
     }
 

@@ -3,7 +3,7 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.button.ButtonContext;
@@ -223,7 +223,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          * @param objects The objects used to format the identifier.
          */
         public ButtonBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = FormatUtil.format(identifier, objects);
+            this.identifier = String.format(identifier, objects);
             return this;
         }
 
@@ -234,7 +234,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          * @param objects The objects used to format the url.
          */
         public ButtonBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
-            return this.withLabel(FormatUtil.formatNullable(label, objects));
+            return this.withLabel(StringUtil.formatNullable(label, objects));
         }
 
         /**
@@ -293,7 +293,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          * @param objects The objects used to format the url.
          */
         public ButtonBuilder withUrl(@Nullable String url, @NotNull Object... objects) {
-            return this.withUrl(FormatUtil.formatNullable(url, objects));
+            return this.withUrl(StringUtil.formatNullable(url, objects));
         }
 
         /**

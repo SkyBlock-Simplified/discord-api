@@ -8,7 +8,6 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
@@ -271,10 +270,9 @@ public class Embed implements IdentifiableComponent {
          * Formats the description of the {@link Embed} with the given objects.
          *
          * @param description The description of the embed.
-         * @param objects Objects used to format the description.
          */
-        public EmbedBuilder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+        public EmbedBuilder withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
         }
 
         /**
@@ -362,7 +360,7 @@ public class Embed implements IdentifiableComponent {
         public EmbedBuilder withFields(@NotNull Iterable<Field> fields) {
             if (this.fields.size() == Field.MAX_ALLOWED)
                 throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("Number of fields cannot exceed {0}!", Field.MAX_ALLOWED)
+                    .withMessage("Number of fields cannot exceed %s.", Field.MAX_ALLOWED)
                     .build();
 
             List<Field> fieldList = List.class.isAssignableFrom(fields.getClass()) ? (List<Field>) fields : StreamSupport.stream(fields.spliterator(), false).toList();
@@ -377,7 +375,7 @@ public class Embed implements IdentifiableComponent {
          * @param objects The objects used to format the identifier.
          */
         public EmbedBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = FormatUtil.format(identifier, objects);
+            this.identifier = String.format(identifier, objects);
             return this;
         }
 
@@ -436,7 +434,7 @@ public class Embed implements IdentifiableComponent {
          * @param objects Objects used to format the image url.
          */
         public EmbedBuilder withImageUrl(@NotNull String imageUrl, @NotNull Object... objects) {
-            return this.withImageUrl(FormatUtil.format(imageUrl, objects));
+            return this.withImageUrl(String.format(imageUrl, objects));
         }
 
         /**
@@ -465,7 +463,7 @@ public class Embed implements IdentifiableComponent {
          * @param objects Objects used to format the thumbnail image url.
          */
         public EmbedBuilder withThumbnailUrl(@NotNull String thumbnailUrl, @NotNull Object... objects) {
-            return this.withThumbnailUrl(FormatUtil.format(thumbnailUrl, objects));
+            return this.withThumbnailUrl(String.format(thumbnailUrl, objects));
         }
 
         /**
@@ -494,7 +492,7 @@ public class Embed implements IdentifiableComponent {
          * @param objects Objects used to format the title.
          */
         public EmbedBuilder withTitle(@NotNull String title, @NotNull Object... objects) {
-            return this.withTitle(FormatUtil.format(title, objects));
+            return this.withTitle(String.format(title, objects));
         }
 
         /**
@@ -589,7 +587,7 @@ public class Embed implements IdentifiableComponent {
                     .ifPresent(lengthLimit -> {
                         if (StringUtil.trim(value).length() > lengthLimit.value())
                             throw SimplifiedException.of(DiscordException.class)
-                                .withMessage("The maximum allowed length of {0} ''{1}'' is {2} characters.", tClass.getSimpleName(), fieldName, lengthLimit.value())
+                                .withMessage("The maximum allowed length of %s '%s' is %s characters.", tClass.getSimpleName(), fieldName, lengthLimit.value())
                                 .build();
                     });
             }
