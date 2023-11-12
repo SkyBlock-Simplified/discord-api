@@ -110,7 +110,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
     public void gotoPage(I identifier) {
         this.gotoPage(this.getPage(identifier).orElseThrow(
             () -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate page identified by ''{0}''!", identifier)
+                .withMessage("Unable to locate page identified by '%s'.", identifier)
                 .build()
         ));
     }
@@ -139,7 +139,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
     public void gotoSubPage(I identifier) {
         this.history.add(this.getSubPage(identifier).orElseThrow(
             () -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate subpage identified by ''{0}''!", identifier)
+                .withMessage("Unable to locate subpage identified by '%s'.", identifier)
                 .build()
         ));
         this.setCacheUpdateRequired();

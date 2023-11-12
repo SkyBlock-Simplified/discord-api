@@ -8,9 +8,9 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.sort.SortOrder;
 import dev.sbs.api.util.data.tuple.Triple;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -294,7 +294,7 @@ public abstract class ItemHandler<T> implements CacheHandler {
              * @param objects The objects used to format the description.
              */
             public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
-                return this.withDescription(FormatUtil.formatNullable(description, objects));
+                return this.withDescription(StringUtil.formatNullable(description, objects));
             }
 
             /**
