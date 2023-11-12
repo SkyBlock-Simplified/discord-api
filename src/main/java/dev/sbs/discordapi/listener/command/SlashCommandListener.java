@@ -3,11 +3,13 @@ package dev.sbs.discordapi.listener.command;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.data.Argument;
+import dev.sbs.discordapi.command.parameter.Argument;
+import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -15,12 +17,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
 
     public SlashCommandListener(DiscordBot discordBot) {
         super(discordBot);
-
-        this.getLog().info("Registering Slash Commands");
-        this.getDiscordBot()
-            .getCommandRegistrar()
-            .updateSlashCommands()
-            .subscribe();
     }
 
     @Override
@@ -28,13 +24,12 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMap(commandData -> Mono.justOrEmpty(this.getDeepestCommand(commandData))
-                .flatMap(relationship -> {
-                    ConcurrentList<ApplicationCommandInteractionOptionData> parameterData = this.getDeepestOptionData(relationship, commandData);
+            .flatMap(commandData -> Mono.justOrEmpty(this.getMatchingCommand(SlashCommandReference.class, commandData))
+                .flatMap(slashCommandReference -> {
+                    ConcurrentList<ApplicationCommandInteractionOptionData> parameterData = this.getCommandOptionData(commandData);
 
                     // Build Arguments
-                    ConcurrentList<Argument> arguments = relationship.getInstance()
-                        .getParameters()
+                    ConcurrentList<Argument> arguments = slashCommandReference.getParameters()
                         .stream()
                         .map(parameter -> parameterData.stream()
                             .filter(optionData -> optionData.name().equals(parameter.getName()))
@@ -48,20 +43,21 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                     SlashCommandContext slashCommandContext = SlashCommandContext.of(
                         this.getDiscordBot(),
                         event,
-                        relationship,
-                        relationship.getInstance()
-                            .getConfig()
-                            .getName(),
+                        slashCommandReference,
                         arguments
                     );
 
                     // Apply Command
-                    return relationship.getInstance().apply(slashCommandContext);
+                    return this.getDiscordBot()
+                        .getCommandRegistrar()
+                        .getSlashCommands()
+                        .get(slashCommandReference.getClass())
+                        .apply(slashCommandContext);
                 })
             );
     }
 
-    private Argument.Data getArgumentData(ApplicationCommandInteractionOptionData interactionOptionData) {
+    private @NotNull Argument.Data getArgumentData(@NotNull ApplicationCommandInteractionOptionData interactionOptionData) {
         return new Argument.Data(
             interactionOptionData.value().toOptional(),
             interactionOptionData.options()

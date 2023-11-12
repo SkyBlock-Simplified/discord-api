@@ -1,23 +1,18 @@
 package dev.sbs.discordapi.util.cache;
 
-import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.command_data.command_configs.CommandConfigModel;
-import dev.sbs.api.data.model.discord.command_data.command_configs.CommandConfigSqlModel;
-import dev.sbs.api.data.model.discord.command_data.command_groups.CommandGroupModel;
-import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
-import dev.sbs.api.data.sql.SqlRepository;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.data.tuple.Pair;
-import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.helper.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.Command;
-import dev.sbs.discordapi.command.data.Parameter;
-import dev.sbs.discordapi.command.relationship.DataRelationship;
-import dev.sbs.discordapi.command.relationship.Relationship;
+import dev.sbs.discordapi.command.impl.DiscordCommand;
+import dev.sbs.discordapi.command.impl.SlashCommand;
+import dev.sbs.discordapi.command.parameter.Parameter;
+import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -29,206 +24,129 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class CommandRegistrar extends DiscordHelper {
 
-    private final static Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
-    @Getter private final @NotNull Relationship.Root rootCommandRelationship;
-    @Getter private final @NotNull Optional<CommandParentModel> prefix;
-    @Getter private final @NotNull ConcurrentSet<Class<? extends Command>> commands;
+    private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
+    private final @NotNull ConcurrentMap<Long, Class<? extends CommandReference>> commandIds = Concurrent.newMap();
+    @Getter private final @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> loadedCommands;
+    @Getter private final @NotNull ConcurrentMap<Class<? extends SlashCommandReference>, SlashCommand> slashCommands;
 
-    CommandRegistrar(@NotNull DiscordBot discordBot, @NotNull Optional<CommandParentModel> optionalPrefix, @NotNull ConcurrentSet<Class<? extends Command>> commands) {
+    CommandRegistrar(
+        @NotNull DiscordBot discordBot,
+        @NotNull ConcurrentSet<Class<? extends CommandReference>> commands
+    ) {
         super(discordBot);
 
         this.getLog().info("Validating Commands");
-        ConcurrentMap<Class<? extends Command>, Command> initializedCommands = this.validateCommands(commands, optionalPrefix);
+        ConcurrentMap<Class<? extends CommandReference>, CommandReference> initializedCommands = this.validateCommands(discordBot, commands);
 
-        this.getLog().info("Registering Commands");
-        this.prefix = optionalPrefix;
-        this.commands = Concurrent.newUnmodifiableSet(commands);
-        this.rootCommandRelationship = this.getRootRelationshipTree(initializedCommands, optionalPrefix);
-    }
-
-    private Relationship.Root getRootRelationshipTree(@NotNull ConcurrentMap<Class<? extends Command>, Command> commands, @NotNull Optional<CommandParentModel> optionalPrefix) {
-        ConcurrentList<Relationship> subCommandRelationships = Concurrent.newList();
-
-        // Top-Level Commands
-        commands.stream()
-            .filter(commandEntry -> Objects.isNull(commandEntry.getValue().getConfig().getParent()))
-            .map(commandEntry -> new Relationship.Command(
-                commandEntry.getKey(),
-                commandEntry.getValue()
-            ))
-            .forEach(subCommandRelationships::add);
-
-        // SubCommands
-        SimplifiedApi.getRepositoryOf(CommandParentModel.class)
-            .matchAll(CommandParentModel::notPrefix)
-            .stream()
-            .map(commandParentModel -> new Relationship.Parent(
-                commandParentModel,
-                this.getCommandRelationships(
-                    commands,
-                    commandParentModel
-                )
-            ))
-            .forEach(subCommandRelationships::add);
-
-        return new Relationship.Root(
-            optionalPrefix,
-            subCommandRelationships
+        this.slashCommands = this.retrieveTypedCommands(
+            SlashCommandReference.class,
+            SlashCommand.class,
+            initializedCommands,
+            (commandEntry, compareEntry) -> Objects.equals(
+                commandEntry.getValue().getParent(),
+                compareEntry.getValue().getParent()
+            ) && commandEntry.getValue()
+                .getName()
+                .equalsIgnoreCase(compareEntry.getValue().getName())
         );
+
+        this.getLog().info("Building Command Tree");
+        ConcurrentMap<Class<? extends CommandReference>, CommandReference> commandTree = Concurrent.newMap();
+        commandTree.putAll(this.slashCommands);
+        this.loadedCommands = Concurrent.newUnmodifiableMap(commandTree);
+
+        /* // Create Missing Command Config
+        if (commandConfigModel.isEmpty()) {
+            CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
+            newCommandConfigModel.setUniqueId(commandId);
+            newCommandConfigModel.setName(commandId.toString().substring(0, 8));
+            newCommandConfigModel.setDescription("*<missing description>*");
+            newCommandConfigModel.setDeveloperOnly(true);
+            newCommandConfigModel.setEnabled(true);
+            newCommandConfigModel.setInheritingPermissions(true);
+            this.getLog().info("Creating new CommandConfigModel for ''{0}''.", commandLink.getLeft().getName());
+            commandConfigModel = Optional.of(((SqlRepository<CommandConfigSqlModel>) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel));
+        }*/
     }
 
-    private ConcurrentList<Relationship.Command> getCommandRelationships(@NotNull ConcurrentMap<Class<? extends Command>, Command> commands, @NotNull CommandParentModel commandParentModel) {
-        return commands.stream()
-            .filter(commandEntry -> Objects.nonNull(commandEntry.getValue().getConfig().getParent()))
-            .filter(commandEntry -> Objects.equals(commandEntry.getValue().getConfig().getParent(), commandParentModel))
-            .map(commandEntry -> new Relationship.Command(
-                commandEntry.getKey(),
-                commandEntry.getValue()
-            ))
-            .collect(Concurrent.toList());
+    public static Builder builder(@NotNull DiscordBot discordBot) {
+        return new Builder(discordBot);
     }
 
-    private @NotNull ConcurrentMap<Class<? extends Command>, Command> validateCommands(ConcurrentSet<Class<? extends Command>> commands, Optional<CommandParentModel> optionalPrefix) {
-        ConcurrentList<CommandConfigModel> commandConfigModels = SimplifiedApi.getRepositoryOf(CommandConfigModel.class).findAll();
-
-        ConcurrentMap<Class<? extends Command>, CommandConfigModel> commandConfigMap = commands.stream()
-            .map(commandClass -> Pair.of(
-                commandClass,
-                getCommandAnnotation(commandClass)
-            ))
-            .filter(commandLink -> {
-                if (commandLink.getRight().isEmpty()) {
-                    this.getLog().info("''{0}'' command must be annotated by the @CommandId annotation!", commandLink.getLeft().getName());
-                    return false;
-                }
-
-                return true;
-            })
-            .map(commandLink -> {
-                UUID commandId = StringUtil.toUUID(commandLink.getRight().get().value());
-                Optional<CommandConfigModel> commandConfigModel = commandConfigModels.findFirst(CommandConfigModel::getUniqueId, commandId);
-
-                // Create Missing Command Config
-                if (commandConfigModel.isEmpty()) {
-                    CommandConfigSqlModel newCommandConfigModel = new CommandConfigSqlModel();
-                    newCommandConfigModel.setUniqueId(commandId);
-                    newCommandConfigModel.setName(commandId.toString().substring(0, 8));
-                    newCommandConfigModel.setDescription("*<missing description>*");
-                    newCommandConfigModel.setDeveloperOnly(true);
-                    newCommandConfigModel.setEnabled(true);
-                    newCommandConfigModel.setInheritingPermissions(true);
-                    this.getLog().info("Creating new CommandConfigModel for ''{0}''.", commandLink.getLeft().getName());
-                    commandConfigModel = Optional.of(((SqlRepository<CommandConfigSqlModel>) SimplifiedApi.getRepositoryOf(CommandConfigSqlModel.class)).save(newCommandConfigModel));
-                }
-
-                return Pair.of(commandLink.getLeft(), commandConfigModel.get());
-            })
-            .filter(commandEntry -> {
-                if (!validCommandPattern.matcher(commandEntry.getRight().getName()).matches()) {
-                    this.getLog().info("''{0}'' command name ''{1}'' must only contain english characters!", this.getClass().getName(), commandEntry.getRight().getName());
-                    return false;
-                }
-
-                String prefixName = optionalPrefix.map(CommandParentModel::getKey).orElse("");
-                if (prefixName.equalsIgnoreCase(commandEntry.getRight().getName())) {
-                    this.getLog().info("Command ''{0}'' conflicts with prefix ''{1}''!", commandEntry.getRight().getName(), prefixName);
-                    return false;
-                }
-
-                return true;
-            })
-            .collect(Concurrent.toMap());
-
-        return commandConfigMap.stream()
-            .filter(commandEntry -> {
-                Optional<Map.Entry<Class<? extends Command>, CommandConfigModel>> commandOverlap = commandConfigMap.stream() // Compare Commands
-                    .filter(compareEntry -> !commandEntry.getValue().getUniqueId().equals(compareEntry.getValue().getUniqueId()))
-                    .filter(compareEntry -> Objects.equals(commandEntry.getValue().getParent(), compareEntry.getValue().getParent()))
-                    .filter(compareEntry -> commandEntry.getValue().getName().equalsIgnoreCase(compareEntry.getValue().getName()))
-                    .findAny();
-
-                if (commandOverlap.isPresent()) {
-                    this.getLog().info("Command ''{0}'' conflicts with ''{1}''!", commandEntry.getValue().getName(), commandOverlap.get().getValue().getName());
-                    return false;
-                }
-
-                return true;
-            })
-            .map(commandEntry -> Pair.of(
-                commandEntry.getKey(),
-                Reflection.of(commandEntry.getKey()).newInstance(this.getDiscordBot())
-            ))
-            .collect(Concurrent.toMap());
-    }
-
-    public final ConcurrentList<ApplicationCommandRequest> getSlashCommands() {
+    private ConcurrentList<ApplicationCommandRequest> buildCommandRequests(long guildId) {
         return Stream.concat(
-            // Handle Parent Commands
-            this.getRootCommandRelationship()
-                .getParentCommands()
-                .stream()
-                .map(parentRelationship -> this.buildCommand(parentRelationship)
-                    // Handle SubCommand Groups
-                    .addAllOptions(
-                        parentRelationship.getSubCommands()
-                            .stream()
-                            .flatMap(subRelationship -> subRelationship.getInstance().getGroup().stream())
-                            .distinct()
-                            .map(commandGroup -> ApplicationCommandOptionData.builder()
-                                .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                                .name(commandGroup.getKey().toLowerCase())
-                                .description(commandGroup.getDescription())
-                                .required(commandGroup.isRequired())
-                                .addAllOptions(
-                                    parentRelationship.getSubCommands()
-                                        .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isPresent())
-                                        .stream()
-                                        .filter(subRelationship -> Objects.equals(
-                                            subRelationship.getInstance()
-                                                .getGroup()
-                                                .map(CommandGroupModel::getKey)
-                                                .map(String::toLowerCase)
-                                                .orElse(""),
-                                            commandGroup.getKey().toLowerCase()
-                                        ))
-                                        .map(this::buildSubCommand)
-                                        .collect(Concurrent.toList())
-                                )
-                                .build()
-                            )
-                            .collect(Concurrent.toList())
-                    )
-                    // Handle SubCommands
-                    .addAllOptions(
-                        parentRelationship.getSubCommands()
-                            .matchAll(subRelationship -> subRelationship.getInstance().getGroup().isEmpty())
-                            .stream()
-                            .map(this::buildSubCommand)
-                            .collect(Concurrent.toList())
-                    )
-                    .build()
-                ),
-                // Handle Top-Level Commands
-                this.getRootCommandRelationship()
-                    .getCommands()
+                // Handle Parent Commands
+                this.getSlashCommands()
                     .stream()
-                    .map(relationship -> this.buildCommand(relationship)
+                    .map(Map.Entry::getValue)
+                    .flatMap(command -> command.getParent().stream())
+                    .distinct()
+                    .map(parent -> this.buildCommand(parent)
+                        // Handle SubCommand Groups
+                        .addAllOptions(
+                            this.getSlashCommands()
+                                .stream()
+                                .map(Map.Entry::getValue)
+                                .filter(command -> command.getParent().map(compare -> parent.getName().equals(compare.getName())).orElse(false))
+                                .flatMap(command -> command.getGroup().stream())
+                                .distinct()
+                                .map(group -> ApplicationCommandOptionData.builder()
+                                    .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+                                    .name(group.getName().toLowerCase())
+                                    .description(group.getDescription())
+                                    .addAllOptions(
+                                        this.getSlashCommands()
+                                            .stream()
+                                            .map(Map.Entry::getValue)
+                                            .filter(command -> command.getParent().isPresent())
+                                            .filter(command -> parent.getName().equals(command.getParent().get().getName()))
+                                            .filter(command -> command.getGroup().isPresent())
+                                            .filter(command -> group.getName().equals(command.getGroup().get().getName()))
+                                            .filter(command -> command.getGuildId() == guildId)
+                                            .map(this::buildSubCommand)
+                                            .collect(Concurrent.toList())
+                                    )
+                                    .build()
+                                )
+                                .collect(Concurrent.toList())
+                        )
+                        // Handle SubCommands
+                        .addAllOptions(
+                            this.getSlashCommands()
+                                .stream()
+                                .map(Map.Entry::getValue)
+                                .filter(command -> command.getParent().isPresent())
+                                .filter(command -> parent.getName().equals(command.getParent().get().getName()))
+                                .filter(command -> command.getGroup().isEmpty())
+                                .filter(command -> command.getGuildId() == guildId)
+                                .map(this::buildSubCommand)
+                                .collect(Concurrent.toList())
+                        )
+                        .build()
+                    )
+                    .filter(commandRequest -> !commandRequest.options().isAbsent() && !commandRequest.options().get().isEmpty()),
+                // Handle Top-Level Commands
+                this.getSlashCommands()
+                    .stream()
+                    .map(Map.Entry::getValue)
+                    .filter(command -> command.getParent().isEmpty())
+                    .filter(command -> command.getGuildId() == guildId)
+                    .map(command -> this.buildCommand(command)
                         // Handle Parameters
                         .addAllOptions(
-                            relationship.getInstance()
-                                .getParameters()
+                            command.getParameters()
                                 .stream()
                                 .map(this::buildParameter)
                                 .collect(Concurrent.toList())
@@ -241,22 +159,27 @@ public class CommandRegistrar extends DiscordHelper {
             .toUnmodifiableList();
     }
 
-    private ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DataRelationship relationship) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference.Parent parent) {
         return ApplicationCommandRequest.builder()
-            .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
-            .name(relationship.getName())
-            .description(relationship.getDescription())
-            .defaultPermission(true);
+            .name(parent.getName())
+            .description(parent.getDescription())
+            .type(ApplicationCommand.Type.CHAT_INPUT.getValue());
     }
 
-    private ApplicationCommandOptionData buildSubCommand(Relationship.Command relationship) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference command) {
+        return ApplicationCommandRequest.builder()
+            .name(command.getName())
+            .description(command.getDescription())
+            .type(command.getType().getValue());
+    }
+
+    private @NotNull ApplicationCommandOptionData buildSubCommand(@NotNull SlashCommandReference command) {
         return ApplicationCommandOptionData.builder()
             .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
-            .name(relationship.getInstance().getConfig().getName())
-            .description(relationship.getInstance().getDescription())
+            .name(command.getName())
+            .description(command.getDescription())
             .addAllOptions(
-                relationship.getInstance()
-                    .getParameters()
+                command.getParameters()
                     .stream()
                     .map(this::buildParameter)
                     .collect(Concurrent.toList())
@@ -264,7 +187,7 @@ public class CommandRegistrar extends DiscordHelper {
             .build();
     }
 
-    private ApplicationCommandOptionData buildParameter(Parameter parameter) {
+    private @NotNull ApplicationCommandOptionData buildParameter(@NotNull Parameter parameter) {
         return ApplicationCommandOptionData.builder()
             .type(parameter.getType().getOptionType().getValue())
             .name(parameter.getName())
@@ -283,42 +206,113 @@ public class CommandRegistrar extends DiscordHelper {
             .build();
     }
 
-    public Mono<Void> updateSlashCommands() {
+    public Mono<Void> updateApplicationCommands() {
         return this.getDiscordBot()
             .getGateway()
             .getRestClient()
             .getApplicationService()
-            .bulkOverwriteGuildApplicationCommand(
+            .bulkOverwriteGlobalApplicationCommand(
                 this.getDiscordBot().getClientId().asLong(),
-                this.getDiscordBot().getMainGuild().getId().asLong(),
-                this.getSlashCommands()
+                this.buildCommandRequests(-1)
+            )
+            .doOnNext(commandData -> {
+                // TODO: Back-update commands with their commandData.id()
+                return;
+            })
+            .thenMany(
+                Flux.fromIterable(this.getLoadedCommands())
+                    .filter(commandEntry -> commandEntry.getValue().getGuildId() > 0)
+                    .flatMap(entry -> this.getDiscordBot()
+                        .getGateway()
+                        .getRestClient()
+                        .getApplicationService()
+                        .bulkOverwriteGuildApplicationCommand(
+                            this.getDiscordBot().getClientId().asLong(),
+                            entry.getValue().getGuildId(),
+                            this.buildCommandRequests(entry.getValue().getGuildId())
+                        )
+                        .doOnNext(commandData -> {
+                            // TODO: Back-update commands with their commandData.id()
+                            return;
+                        })
+                    )
             )
             .then();
     }
 
-    public static Builder builder(@NotNull DiscordBot discordBot) {
-        return new Builder(discordBot);
+    private <T extends CommandReference, I extends DiscordCommand<?, ?>> @NotNull ConcurrentMap<Class<? extends T>, I> retrieveTypedCommands(
+        @NotNull Class<T> referenceType,
+        @NotNull Class<I> instanceType,
+        @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> commands,
+        @NotNull BiFunction<Map.Entry<Class<T>, I>, Map.Entry<Class<T>, I>, Boolean> filter
+    ) {
+        ConcurrentMap<Class<T>, I> typedCommands = commands.stream()
+            .filter(commandEntry -> referenceType.isAssignableFrom(commandEntry.getKey()))
+            .map(commandEntry -> Pair.of(commandEntry.getKey(), instanceType.cast(commandEntry.getValue())))
+            .collect(Concurrent.toMap());
+
+        return Concurrent.newUnmodifiableMap(
+            typedCommands.stream()
+                .filter(commandEntry -> {
+                    Optional<Map.Entry<Class<T>, I>> commandOverlap = typedCommands.stream()
+                        .filter(compareEntry -> !commandEntry.getKey().equals(compareEntry.getKey()))
+                        .filter(compareEntry -> filter.apply(commandEntry, compareEntry)) // Compare Commands
+                        .findAny();
+
+                    if (commandOverlap.isPresent()) {
+                        this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getValue().getName(), commandOverlap.get().getValue().getName());
+                        return false;
+                    }
+
+                    return true;
+                })
+                .collect(Concurrent.toMap())
+        );
+    }
+
+    private @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<? extends CommandReference>> commands) {
+        return commands.stream()
+            .map(commandClass -> Pair.of(
+                commandClass,
+                getCommandId(commandClass)
+            ))
+            .filter(commandLink -> {
+                if (commandLink.getRight().isEmpty()) {
+                    this.getLog().warn("'{}' is missing the @CommandId annotation, ignoring.", commandLink.getLeft().getName());
+                    return false;
+                }
+
+                return true;
+            })
+            .filter(StreamUtil.distinctByKey(Pair::getRight))
+            .map(commandLink -> Pair.of(
+                commandLink.getLeft(),
+                Reflection.of(commandLink.getLeft()).newInstance(discordBot)
+            ))
+            .filter(commandEntry -> {
+                if (!validCommandPattern.matcher(commandEntry.getRight().getName()).matches()) {
+                    this.getLog().info("The command name of '{}' ('{}') must only contain english characters!", commandEntry.getLeft().getName(), commandEntry.getRight().getName());
+                    return false;
+                }
+
+                return true;
+            })
+            .collect(Concurrent.toMap());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<CommandRegistrar> {
 
         private final DiscordBot discordBot;
-        private final ConcurrentSet<Class<? extends Command>> subCommands = Concurrent.newSet();
-        private Optional<CommandParentModel> prefix = Optional.empty();
+        private final ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
 
-        public Builder addCommand(@NotNull Class<? extends Command> subCommand) {
-            this.subCommands.add(subCommand);
+        public Builder withCommand(@NotNull Class<? extends CommandReference> command) {
+            this.commands.add(command);
             return this;
         }
 
-        public Builder withPrefix(@Nullable Optional<CommandParentModel> prefix) {
-            this.prefix = prefix;
-            return this;
-        }
-
-        public Builder withCommands(@NotNull Iterable<Class<? extends Command>> subCommands) {
-            subCommands.forEach(this.subCommands::add);
+        public Builder withCommands(@NotNull Iterable<Class<? extends CommandReference>> commands) {
+            commands.forEach(this::withCommand);
             return this;
         }
 
@@ -326,8 +320,7 @@ public class CommandRegistrar extends DiscordHelper {
         public CommandRegistrar build() {
             return new CommandRegistrar(
                 this.discordBot,
-                this.prefix,
-                this.subCommands
+                this.commands
             );
         }
 

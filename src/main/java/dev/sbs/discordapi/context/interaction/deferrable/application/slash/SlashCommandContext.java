@@ -2,8 +2,8 @@ package dev.sbs.discordapi.context.interaction.deferrable.application.slash;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.data.Argument;
-import dev.sbs.discordapi.command.relationship.Relationship;
+import dev.sbs.discordapi.command.parameter.Argument;
+import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
 import discord4j.common.util.Snowflake;
@@ -25,6 +25,9 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().getInteraction().getChannel();
     }
 
+    @Override
+    @NotNull SlashCommandReference getCommand();
+
     @NotNull
     @Override
     default Snowflake getChannelId() {
@@ -42,15 +45,13 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().getInteraction().getGuildId();
     }
 
-    @NotNull
     @Override
-    default User getInteractUser() {
+    default @NotNull User getInteractUser() {
         return this.getEvent().getInteraction().getUser();
     }
 
-    @NotNull
     @Override
-    default Snowflake getInteractUserId() {
+    default @NotNull Snowflake getInteractUserId() {
         return this.getEvent().getInteraction().getUser().getId();
     }
 
@@ -64,8 +65,8 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return true;
     }
 
-    static SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, Relationship.Command commandRelationship, String commandAlias, ConcurrentList<Argument> arguments) {
-        return new SlashCommandContextImpl(discordBot, event, commandRelationship, commandAlias, arguments);
+    static @NotNull SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, SlashCommandReference slashCommandReference, ConcurrentList<Argument> arguments) {
+        return new SlashCommandContextImpl(discordBot, event, slashCommandReference, arguments);
     }
 
     @Override
