@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;
@@ -32,7 +32,7 @@ public interface EventContext<T extends Event> {
     }
 
     default Mono<Void> deferReply(boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
-        return this.deferReply(ephemeral, FormatUtil.formatNullable(content, objects));
+        return this.deferReply(ephemeral, StringUtil.formatNullable(content, objects));
     }
 
     default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
@@ -59,7 +59,7 @@ public interface EventContext<T extends Event> {
     }
 
     default Mono<Void> edit(@Nullable String content, @NotNull Object... objects) {
-        return this.edit(FormatUtil.formatNullable(content, objects));
+        return this.edit(StringUtil.formatNullable(content, objects));
     }
 
     default Mono<Void> edit(@NotNull Optional<String> content) {
@@ -132,27 +132,28 @@ public interface EventContext<T extends Event> {
             .flatMap(entry -> {
                 entry.setLoaded();
                 entry.updateResponse(response);
-                entry.updateLastInteract();
-                return this.discordEditMessage(response);  // Final Edit Message
+                return entry.updateLastInteract().then(this.discordEditMessage(response));  // Final Edit Message
             })
             .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
             .switchIfEmpty(
                 this.discordBuildMessage(response) // Create New Message
                     .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
-                    .doOnNext(message -> {
+                    .flatMap(message -> {
                         if (response.isInteractable()) {
                             // Cache Message
-                            ResponseCache.Entry entry = this.getDiscordBot()
+                            return this.getDiscordBot()
                                 .getResponseCache()
                                 .createAndGet(
                                     message.getChannelId(),
                                     this.getInteractUserId(),
                                     message.getId(),
                                     response
-                                );
-
-                            entry.updateLastInteract();
+                                )
+                                .updateLastInteract()
+                                .thenReturn(message);
                         }
+
+                        return Mono.just(message);
                     })
             )
             .then();

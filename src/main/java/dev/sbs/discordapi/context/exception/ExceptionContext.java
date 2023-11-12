@@ -3,7 +3,7 @@ package dev.sbs.discordapi.context.exception;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.Command;
+import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.response.Response;
@@ -70,16 +70,16 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
 
     @NotNull String getTitle();
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
-        Command command = commandContext.getRelationship().getInstance();
-        String commandPath = command.getCommandPath(commandContext.isSlashCommand());
+    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
+        CommandReference command = commandContext.getCommand();
+        String commandPath = command.getCommandPath();
 
         return of(
-            command.getDiscordBot(),
+            discordBot,
             commandContext,
             throwable,
             "Command Exception",
-            embedBuilder -> embedBuilder.withTitle("Command :: {0}", commandPath)
+            embedBuilder -> embedBuilder.withTitle("Command :: %s", commandPath)
                 .withFields(
                     Field.builder()
                         .withName("Command")
