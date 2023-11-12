@@ -37,13 +37,18 @@ public abstract class DiscordCommand<E extends Event, T extends CommandContext<E
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.discordBot = discordBot;
-        this.uniqueId = getCommandId(this.getClass())
+        this.uniqueId = getCommandUniqueId(this.getClass())
             .map(CommandId::value)
             .map(StringUtil::toUUID)
             .orElseThrow(); // Will Never Throw
     }
 
-    public abstract boolean isEnabled();
+    @Override
+    public final long getId() {
+        return this.getDiscordBot()
+            .getCommandRegistrar()
+            .getApiCommandId(this.getClass());
+    }
 
     protected abstract @NotNull Mono<Void> process(@NotNull T commandContext) throws DiscordException;
 
