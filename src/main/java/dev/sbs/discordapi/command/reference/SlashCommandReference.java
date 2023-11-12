@@ -4,7 +4,6 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import discord4j.core.object.command.ApplicationCommand;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +51,8 @@ public interface SlashCommandReference extends CommandReference {
         return Optional.empty();
     }
 
-    default @NotNull ApplicationCommand.Type getType() {
-        return ApplicationCommand.Type.CHAT_INPUT;
+    default @NotNull Type getType() {
+        return Type.CHAT_INPUT;
     }
 
     interface Parent {

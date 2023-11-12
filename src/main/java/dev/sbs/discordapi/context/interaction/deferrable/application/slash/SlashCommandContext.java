@@ -3,6 +3,7 @@ package dev.sbs.discordapi.context.interaction.deferrable.application.slash;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
+import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
@@ -61,8 +62,8 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     }
 
     @Override
-    default @NotNull Type getType() {
-        return Type.CHAT_INPUT;
+    default @NotNull CommandReference.Type getType() {
+        return CommandReference.Type.CHAT_INPUT;
     }
 
     static @NotNull SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, SlashCommandReference slashCommandReference, ConcurrentList<Argument> arguments) {
