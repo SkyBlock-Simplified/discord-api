@@ -3,21 +3,20 @@ package dev.sbs.discordapi.util.base;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
+import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.reaction.Reaction;
-import discord4j.discordjson.json.ApplicationCommandInteractionData;
-import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
@@ -44,10 +43,10 @@ public abstract class DiscordReference {
     }
 
     public static @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandReference> command) {
-        return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : Optional.empty();
+        return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : java.util.Optional.empty();
     }
 
-    public static @NotNull Optional<CommandId> getCommandId(@NotNull Class<? extends CommandReference> command) {
+    public static @NotNull Optional<CommandId> getCommandUniqueId(@NotNull Class<? extends CommandReference> command) {
         return getAnnotation(CommandId.class, command);
     }
 
@@ -55,9 +54,9 @@ public abstract class DiscordReference {
         return this.getDiscordBot().getGateway().getGuildById(guildId);
     }
 
-    // TODO: This cannot exist as-is
+    // TODO: Emoji handling
     public static @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
-        return Optional.empty();
+        return java.util.Optional.empty();
         //return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).flatMap(Emoji::of);
     }
 
@@ -71,53 +70,31 @@ public abstract class DiscordReference {
 
     // --- Command Searching ---
 
-    private @NotNull ConcurrentList<String> getCommandTree(@NotNull ApplicationCommandInteractionData commandInteractionData) {
-        ConcurrentList<String> commandTree = Concurrent.newList(commandInteractionData.name().toOptional().orElseThrow()); // Should never be NULL
-
-        if (!commandInteractionData.type().isAbsent()) {
-            if (!commandInteractionData.options().isAbsent() && !commandInteractionData.options().get().isEmpty()) {
-                List<ApplicationCommandInteractionOptionData> optionDataList = commandInteractionData.options().get();
-                ApplicationCommandInteractionOptionData optionData = optionDataList.get(0);
-
-                if (optionData.type() <= 2) { // Sub Command / Group
-                    commandTree.add(optionData.name());
-
-                    if (!optionData.options().isAbsent() && !optionData.options().get().isEmpty())
-                        commandTree.add(optionData.options().get().get(0).name());
-                }
-            }
-        }
-
-        return commandTree;
-    }
-
-    protected final <T extends CommandReference> @NotNull Optional<T> getMatchingCommand(@NotNull Class<T> type, @NotNull ApplicationCommandInteractionData commandInteractionData) {
+    protected final @NotNull Optional<CommandReference> getCommandById(long commandId) {
         return this.getDiscordBot()
             .getCommandRegistrar()
             .getLoadedCommands()
+            .values()
             .stream()
-            .filter(commandEntry -> type.isAssignableFrom(commandEntry.getKey()))
-            .map(Map.Entry::getValue)
-            .map(type::cast)
-            .filter(command -> command.doesMatch(this.getCommandTree(commandInteractionData)))
+            .filter(command -> command.getId() == commandId)
             .findFirst();
     }
 
-    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOptionData> getCommandOptionData(@NotNull ApplicationCommandInteractionData interactionOptionData) {
-        ConcurrentList<ApplicationCommandInteractionOptionData> optionData = Concurrent.newList(interactionOptionData.options().toOptional().orElse(Concurrent.newUnmodifiableList()));
-        ConcurrentList<String> commandTree = this.getCommandTree(interactionOptionData);
+    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getCommandOptionData(@NotNull SlashCommandReference slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
+        ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
+        ConcurrentList<String> commandTree = Concurrent.newList(slashCommand.getCommandTree());
         commandTree.removeFirst();
 
-        while (ListUtil.notEmpty(commandTree)) {
-            for (ApplicationCommandInteractionOptionData option : optionData) {
-                if (option.name().equals(commandTree.get(0))) {
+        while (commandTree.notEmpty()) {
+            for (ApplicationCommandInteractionOption option : options) {
+                if (option.getName().equals(commandTree.get(0))) {
                     commandTree.removeFirst();
-                    optionData = Concurrent.newList(option.options().toOptional().orElseThrow());
+                    options = Concurrent.newList(option.getOptions());
                 }
             }
         }
 
-        return optionData;
+        return options;
     }
 
     // --- Permissions ---
