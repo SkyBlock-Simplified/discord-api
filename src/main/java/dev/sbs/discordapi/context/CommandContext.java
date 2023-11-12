@@ -3,12 +3,11 @@ package dev.sbs.discordapi.context;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.command.reference.CommandReference;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public interface CommandContext<T extends Event> extends EventContext<T> {
+public interface CommandContext<T extends Event> extends TypingContext<T> {
 
     /**
      * Finds the argument for a known {@link Parameter}.
@@ -20,9 +19,5 @@ public interface CommandContext<T extends Event> extends EventContext<T> {
     }
 
     @NotNull ConcurrentList<Argument> getArguments();
-
-    @NotNull CommandReference getCommand();
-
-    @NotNull CommandReference.Type getType();
 
 }
