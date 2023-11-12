@@ -5,6 +5,9 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import discord4j.core.object.command.ApplicationCommand;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -21,6 +24,10 @@ public interface SlashCommandReference extends CommandReference {
                 this.getName().equals(commandTree.get(1));
             default -> this.getName().equals(commandTree.get(0));
         };
+    }
+
+    default @NotNull Optional<Category> getCategory() {
+        return Optional.empty();
     }
 
     default @NotNull Optional<Group> getGroup() {
@@ -47,6 +54,63 @@ public interface SlashCommandReference extends CommandReference {
 
     default @NotNull ApplicationCommand.Type getType() {
         return ApplicationCommand.Type.CHAT_INPUT;
+    }
+
+    interface Parent {
+
+        @NotNull String getDescription();
+
+        @NotNull String getName();
+
+        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
+            return new Impl(name, description);
+        }
+        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+        class Impl implements Parent {
+
+            @Getter private final @NotNull String name;
+            @Getter private final @NotNull String description;
+
+        }
+
+    }
+
+    interface Group {
+
+        @NotNull String getDescription();
+
+        @NotNull String getName();
+
+        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
+            return new Impl(name, description);
+        }
+        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+        class Impl implements Group {
+
+            @Getter private final @NotNull String name;
+            @Getter private final @NotNull String description;
+
+        }
+
+    }
+
+    interface Category {
+
+        @NotNull String getDescription();
+
+        @NotNull String getName();
+
+        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
+            return new Impl(name, description);
+        }
+        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+        class Impl implements Category {
+
+            @Getter private final @NotNull String name;
+            @Getter private final @NotNull String description;
+
+        }
+
     }
 
 }
