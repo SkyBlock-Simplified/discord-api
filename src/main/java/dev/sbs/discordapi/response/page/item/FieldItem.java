@@ -6,7 +6,6 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.atomic.AtomicCollection;
 import dev.sbs.api.util.data.tuple.Pair;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StreamUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
@@ -68,7 +67,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
     public Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
-            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse(getNullEmoji().asFormat()))
+            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse("*null*"/*getNullEmoji().asFormat()*/)) // TODO
             .isInline()
             .build();
     }
@@ -155,7 +154,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
                     .withMessage("Column cannot be UNKNOWN!")
                     .build();
 
-            this.data.get(column).add(FormatUtil.format(value, objects));
+            this.data.get(column).add(String.format(value, objects));
             return this;
         }
 
@@ -174,7 +173,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
 
         @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+            return this.withDescription(StringUtil.formatNullable(description, objects));
         }
 
         @Override

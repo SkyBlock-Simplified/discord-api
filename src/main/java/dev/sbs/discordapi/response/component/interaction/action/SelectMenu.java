@@ -5,8 +5,8 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.OptionContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
@@ -299,7 +299,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          * @param objects The objects used to format the identifier.
          */
         public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = FormatUtil.format(identifier, objects);
+            this.identifier = String.format(identifier, objects);
             return this;
         }
 
@@ -320,7 +320,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         public Builder withOptions(@NotNull Iterable<Option> options) {
             if (this.options.size() == Option.MAX_ALLOWED)
                 throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("Number of options cannot exceed {0}!", Option.MAX_ALLOWED)
+                    .withMessage("Number of options cannot exceed %s.", Option.MAX_ALLOWED)
                     .build();
 
             List<Option> optionList = List.class.isAssignableFrom(options.getClass()) ? (List<Option>) options : StreamSupport.stream(options.spliterator(), false).toList();
@@ -551,7 +551,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @param objects The objects used to format the description.
              */
             public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-                return this.withDescription(FormatUtil.formatNullable(description, objects));
+                return this.withDescription(StringUtil.formatNullable(description, objects));
             }
 
             /**
@@ -589,7 +589,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @param label The label of the option.
              */
             public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-                this.label = Optional.of(FormatUtil.format(label, objects));
+                this.label = Optional.of(String.format(label, objects));
                 return this;
             }
 
@@ -599,7 +599,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @param value The option value.
              */
             public Builder withValue(@NotNull String value, @NotNull Object... objects) {
-                this.value = Optional.of(FormatUtil.format(value, objects));
+                this.value = Optional.of(String.format(value, objects));
                 return this;
             }
 

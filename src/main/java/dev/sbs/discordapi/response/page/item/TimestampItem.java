@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.page.item;
 
 import dev.sbs.api.util.date.RealDate;
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.Field;
@@ -32,7 +32,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
                 this.getValue()
                     .map(RealDate::new)
                     .map(RealDate::toString)
-                    .orElse(getNullEmoji().asFormat())
+                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
             )
             .isInline()
             .build();
@@ -63,7 +63,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
 
         @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+            return this.withDescription(StringUtil.formatNullable(description, objects));
         }
 
         @Override

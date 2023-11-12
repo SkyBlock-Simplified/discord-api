@@ -3,8 +3,8 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
@@ -140,7 +140,7 @@ public final class TextInput extends ActionComponent {
          * @param objects Objects used to format the identifier.
          */
         public TextInputBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = FormatUtil.format(identifier, objects);
+            this.identifier = String.format(identifier, objects);
             return this;
         }
 
@@ -151,7 +151,7 @@ public final class TextInput extends ActionComponent {
          * @param objects The objects used to format the label.
          */
         public TextInputBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
-            this.withLabel(FormatUtil.formatNullable(label, objects));
+            this.withLabel(StringUtil.formatNullable(label, objects));
             return this;
         }
 
@@ -192,7 +192,7 @@ public final class TextInput extends ActionComponent {
          * @param objects The objects used to format the placeholder.
          */
         public TextInputBuilder withPlaceholder(@Nullable String placeholder, @NotNull Object... objects) {
-            return this.withPlaceholder(FormatUtil.formatNullable(placeholder, objects));
+            return this.withPlaceholder(StringUtil.formatNullable(placeholder, objects));
         }
 
         /**
@@ -222,7 +222,7 @@ public final class TextInput extends ActionComponent {
          * @param objects The objects used to format the value.
          */
         public TextInputBuilder withValue(@Nullable String value, @NotNull Object... objects) {
-            return this.withValue(FormatUtil.formatNullable(value, objects));
+            return this.withValue(StringUtil.formatNullable(value, objects));
         }
 
         /**

@@ -4,7 +4,6 @@ import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.data.tuple.Triple;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.spec.EmbedCreateFields;
@@ -58,8 +57,8 @@ public final class Field {
 
     public EmbedCreateFields.Field getD4jField() {
         return EmbedCreateFields.Field.of(
-            FormatUtil.format(
-                "{0}{1}",
+            String.format(
+                "%s%s",
                 this.getEmoji().map(Emoji::asSpacedFormat).orElse(""),
                 this.getName().orElse(" ")
             ),
@@ -145,7 +144,7 @@ public final class Field {
          * @param objects Objects used to format the name.
          */
         public FieldBuilder withName(@NotNull String name, @NotNull Object... objects) {
-            return this.withName(FormatUtil.format(name, objects));
+            return this.withName(String.format(name, objects));
         }
 
         /**
@@ -175,7 +174,7 @@ public final class Field {
          * @param objects Objects used to format the value.
          */
         public FieldBuilder withValue(@NotNull String value, @NotNull Object... objects) {
-            return this.withValue(FormatUtil.format(value, objects));
+            return this.withValue(String.format(value, objects));
         }
 
         /**

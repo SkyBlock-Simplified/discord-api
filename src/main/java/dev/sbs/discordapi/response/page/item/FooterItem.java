@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.page.item;
 
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import lombok.AccessLevel;
@@ -54,7 +54,7 @@ public final class FooterItem extends Item {
 
         @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+            return this.withDescription(StringUtil.formatNullable(description, objects));
         }
 
         @Override
@@ -81,7 +81,7 @@ public final class FooterItem extends Item {
          * @param objects The objects used to format the icon url.
          */
         public Builder withIconUrl(@Nullable String iconUrl, @NotNull Object... objects) {
-            return this.withIconUrl(FormatUtil.formatNullable(iconUrl, objects));
+            return this.withIconUrl(StringUtil.formatNullable(iconUrl, objects));
         }
 
         /**
@@ -113,7 +113,7 @@ public final class FooterItem extends Item {
          * @param objects The objects used to format the name.
          */
         public Builder withName(@Nullable String name, @NotNull Object... objects) {
-            return this.withName(FormatUtil.formatNullable(name, objects));
+            return this.withName(StringUtil.formatNullable(name, objects));
         }
 
         /**

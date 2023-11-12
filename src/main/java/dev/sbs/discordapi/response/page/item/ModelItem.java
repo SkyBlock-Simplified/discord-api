@@ -4,7 +4,7 @@ import dev.sbs.api.data.model.Model;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.Field;
@@ -59,7 +59,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
             .withValue(
                 this.getValue()
                     .map(this.getValueFunction())
-                    .orElse(getNullEmoji().asFormat())
+                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
             )
             .isInline()
             .build();
@@ -97,7 +97,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
 
         @Override
         public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+            return this.withDescription(StringUtil.formatNullable(description, objects));
         }
 
         @Override

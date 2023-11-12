@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.page.item;
 
-import dev.sbs.api.util.helper.FormatUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import lombok.AccessLevel;
@@ -48,7 +48,7 @@ public final class ThumbnailUrlItem extends SingletonItem<String> {
 
         @Override
         public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(FormatUtil.formatNullable(description, objects));
+            return this.withDescription(StringUtil.formatNullable(description, objects));
         }
 
         @Override
