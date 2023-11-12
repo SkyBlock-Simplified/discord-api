@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.util.date.RealDate;
-import dev.sbs.api.util.helper.FormatUtil;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -93,7 +92,7 @@ public class DiscordDate extends RealDate {
         }
 
         public String asFormat(long milliseconds) {
-            return this.getFormat().map(format -> FormatUtil.format("<t:{0,number,#}:{1}>", milliseconds, format)).orElse(String.valueOf(milliseconds));
+            return this.getFormat().map(format -> String.format("<t:%s:%s>", milliseconds, format)).orElse(String.valueOf(milliseconds));
         }
 
     }
