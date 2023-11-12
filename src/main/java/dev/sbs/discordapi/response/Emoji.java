@@ -6,7 +6,6 @@ import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.discordapi.context.message.reaction.ReactionContext;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -25,31 +24,31 @@ import java.util.function.Function;
 public abstract class Emoji {
 
     private static final Function<ReactionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-    @Getter private final Snowflake id;
-    @Getter private final String name;
+    @Getter private final @NotNull Snowflake id;
+    @Getter private final @NotNull String name;
     @Getter private final boolean animated;
-    @Getter private final Optional<String> raw;
+    @Getter private final @NotNull Optional<String> raw;
     private final Optional<Function<ReactionContext, Mono<Void>>> interaction;
 
-    public abstract String asFormat();
+    public abstract @NotNull String asFormat();
 
-    public final String asPreSpacedFormat() {
+    public final @NotNull String asPreSpacedFormat() {
         return " " + this.asFormat();
     }
 
-    public final String asSpacedFormat() {
+    public final @NotNull String asSpacedFormat() {
         return this.asFormat() + " ";
     }
 
-    public final ReactionEmoji getD4jReaction() {
+    public final @NotNull ReactionEmoji getD4jReaction() {
         return this.getRaw().isPresent() ? ReactionEmoji.unicode(this.getRaw().get()) : ReactionEmoji.of(this.getId().asLong(), this.getName(), this.isAnimated());
     }
 
-    public final Function<ReactionContext, Mono<Void>> getInteraction() {
+    public final @NotNull Function<ReactionContext, Mono<Void>> getInteraction() {
         return this.interaction.orElse(NOOP_HANDLER);
     }
 
-    public abstract String getUrl();
+    public abstract @NotNull String getUrl();
 
     @Override
     public boolean equals(Object o) {
@@ -80,63 +79,63 @@ public abstract class Emoji {
         return this.raw.isPresent();
     }
 
-    public static Optional<Emoji> of(@NotNull ProfileModel profileModel) {
+    public static @NotNull Optional<Emoji> of(@NotNull ProfileModel profileModel) {
         return of(profileModel.getEmoji());
     }
 
-    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel) {
+    public static @NotNull Optional<Emoji> of(@Nullable EmojiModel emojiModel) {
         return of(Optional.ofNullable(emojiModel), null);
     }
 
-    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel) {
+    public static @NotNull Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel) {
         return of(emojiModel, null);
     }
 
-    public static Optional<Emoji> of(@Nullable EmojiModel emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
+    public static @NotNull Optional<Emoji> of(@Nullable EmojiModel emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
         return of(Optional.ofNullable(emojiModel), interaction);
     }
 
-    public static Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
+    public static @NotNull Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
         return emojiModel.map(emoji -> new Custom(Snowflake.of(emoji.getEmojiId()), emoji.getKey(), emoji.isAnimated(), interaction));
     }
 
-    public static Emoji of(@NotNull SkyBlockEmojisResponse.Emoji emoji) {
+    public static @NotNull Emoji of(@NotNull SkyBlockEmojisResponse.Emoji emoji) {
         return of(emoji.getId(), emoji.getName(), emoji.isAnimated());
     }
 
-    public static Emoji of(@NotNull ReactionEmoji emoji) {
+    public static @NotNull Emoji of(@NotNull ReactionEmoji emoji) {
         return emoji instanceof ReactionEmoji.Custom ? new Custom((ReactionEmoji.Custom) emoji) : new Unicode((ReactionEmoji.Unicode) emoji);
     }
 
-    public static Emoji of(long id, @NotNull String name) {
+    public static @NotNull Emoji of(long id, @NotNull String name) {
         return of(Snowflake.of(id), name);
     }
 
-    public static Emoji of(@NotNull Snowflake id, @NotNull String name) {
+    public static @NotNull Emoji of(@NotNull Snowflake id, @NotNull String name) {
         return of(id, name, false);
     }
 
-    public static Emoji of(long id, @NotNull String name, boolean animated) {
+    public static @NotNull Emoji of(long id, @NotNull String name, boolean animated) {
         return of(Snowflake.of(id), name, animated);
     }
 
-    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated) {
+    public static @NotNull Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated) {
         return of(id, name, animated, null);
     }
 
-    public static Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated, Function<ReactionContext, Mono<Void>> interaction) {
+    public static @NotNull Emoji of(@NotNull Snowflake id, @NotNull String name, boolean animated, Function<ReactionContext, Mono<Void>> interaction) {
         return new Custom(id, name, animated, interaction);
     }
 
-    public static Emoji of(@NotNull String raw) {
+    public static @NotNull Emoji of(@NotNull String raw) {
         return of(raw, null);
     }
 
-    public static Emoji of(@NotNull String raw, Function<ReactionContext, Mono<Void>> interaction) {
+    public static @NotNull Emoji of(@NotNull String raw, Function<ReactionContext, Mono<Void>> interaction) {
         return new Unicode(raw, interaction);
     }
 
-    public static Emoji of(@NotNull Emoji reaction, Function<ReactionContext, Mono<Void>> interaction) {
+    public static @NotNull Emoji of(@NotNull Emoji reaction, Function<ReactionContext, Mono<Void>> interaction) {
         return reaction.isUnicode() ? new Unicode(reaction.getRaw(), interaction) : of(reaction.getId(), reaction.getName(), reaction.isAnimated(), interaction);
     }
 
@@ -151,13 +150,13 @@ public abstract class Emoji {
         }
 
         @Override
-        public String asFormat() {
-            return FormatUtil.format("<{0}:{1}:{2}>", (this.isAnimated() ? "a" : ""), this.getName(), this.getId().asString());
+        public @NotNull String asFormat() {
+            return String.format("<%s:%s:%s>", (this.isAnimated() ? "a" : ""), this.getName(), this.getId().asString());
         }
 
         @Override
-        public String getUrl() {
-            return FormatUtil.format("https://cdn.discordapp.com/emojis/{0,number,#}.webp", this.getId().asLong());
+        public @NotNull String getUrl() {
+            return String.format("https://cdn.discordapp.com/emojis/%s.webp", this.getId().asLong());
         }
 
     }
@@ -173,16 +172,16 @@ public abstract class Emoji {
         }
 
         Unicode(Optional<String> raw, Function<ReactionContext, Mono<Void>> interaction) {
-            super(Snowflake.of(-1), null, false, raw, Optional.ofNullable(interaction));
+            super(Snowflake.of(-1), "", false, raw, Optional.ofNullable(interaction));
         }
 
         @Override
-        public String asFormat() {
+        public @NotNull String asFormat() {
             return this.getRaw().orElse("");
         }
 
         @Override
-        public String getUrl() {
+        public @NotNull String getUrl() {
             throw SimplifiedException.of(DiscordException.class)
                 .withMessage("Unicode emojis have no url!")
                 .build();
