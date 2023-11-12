@@ -19,8 +19,6 @@ public interface CommandReference {
         return Concurrent.newUnmodifiableSet();
     }
 
-    @NotNull String getCommandPath();
-
     @NotNull String getDescription();
 
     long getGuildId();
@@ -41,6 +39,10 @@ public interface CommandReference {
     @NotNull Type getType();
 
     default boolean isAvailableInPrivateChannels() {
+        return true;
+    }
+
+    default boolean isEnabled() {
         return true;
     }
 

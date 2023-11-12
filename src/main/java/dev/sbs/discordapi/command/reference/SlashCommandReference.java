@@ -3,6 +3,7 @@ package dev.sbs.discordapi.command.reference;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,6 +28,25 @@ public interface SlashCommandReference extends CommandReference {
 
     default @NotNull Optional<Category> getCategory() {
         return Optional.empty();
+    }
+
+    default @NotNull ConcurrentList<String> getCommandTree() {
+        ConcurrentList<String> commandTree = Concurrent.newList(this.getName().toLowerCase());
+
+        if (this.getGroup().isPresent())
+            commandTree.add(this.getGroup().get().getName().toLowerCase());
+
+        if (this.getParent().isPresent())
+            commandTree.add(this.getParent().get().getName().toLowerCase());
+
+        return commandTree.inverse().toUnmodifiableList();
+    }
+
+    default @NotNull String getCommandPath() {
+        return String.format(
+            "/%s",
+            StringUtil.join(this.getCommandTree(), " ")
+        );
     }
 
     default @NotNull Optional<Group> getGroup() {
@@ -64,6 +84,7 @@ public interface SlashCommandReference extends CommandReference {
         static @NotNull Impl of(@NotNull String name, @NotNull String description) {
             return new Impl(name, description);
         }
+
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         class Impl implements Parent {
 
