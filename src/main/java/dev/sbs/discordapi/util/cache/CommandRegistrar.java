@@ -20,6 +20,7 @@ import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
+import discord4j.rest.util.Permission;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -161,16 +162,23 @@ public class CommandRegistrar extends DiscordHelper {
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull SlashCommandReference.Parent parent) {
         return ApplicationCommandRequest.builder()
+            .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
             .name(parent.getName())
-            .description(parent.getDescription())
-            .type(ApplicationCommand.Type.CHAT_INPUT.getValue());
+            .description(parent.getDescription());
     }
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference command) {
         return ApplicationCommandRequest.builder()
+            .type(command.getType().getValue())
             .name(command.getName())
             .description(command.getDescription())
-            .type(command.getType().getValue());
+            .dmPermission(command.isAvailableInPrivateChannels())
+            .defaultMemberPermissions(String.valueOf(
+                command.getDefaultPermissions()
+                    .stream()
+                    .mapToLong(Permission::getValue)
+                    .reduce(0, (a, b) -> a | b)
+            ));
     }
 
     private @NotNull ApplicationCommandOptionData buildSubCommand(@NotNull SlashCommandReference command) {
