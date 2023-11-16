@@ -4,7 +4,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
-import dev.sbs.discordapi.context.TypingContext;
+import dev.sbs.discordapi.context.interaction.TypingContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.object.entity.Guild;
@@ -16,6 +16,8 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 
 public interface AutoCompleteContext extends TypingContext<ChatInputAutoCompleteEvent> {
+
+    @NotNull Argument getArgument();
 
     @Override
     default Mono<MessageChannel> getChannel() {
@@ -57,8 +59,8 @@ public interface AutoCompleteContext extends TypingContext<ChatInputAutoComplete
         return CommandReference.Type.CHAT_INPUT;
     }
 
-    static @NotNull AutoCompleteContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputAutoCompleteEvent event, @NotNull SlashCommandReference slashCommandReference, @NotNull Argument argument) {
-        return new AutoCompleteContextImpl(discordBot, event, slashCommandReference, argument);
+    static @NotNull AutoCompleteContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputAutoCompleteEvent event, @NotNull SlashCommandReference slashCommand, @NotNull Argument argument) {
+        return new AutoCompleteContextImpl(discordBot, event, slashCommand, argument);
     }
 
 }
