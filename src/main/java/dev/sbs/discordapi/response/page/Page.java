@@ -28,17 +28,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Getter
+@RequiredArgsConstructor
 public class Page implements Paging<Page> {
 
-    @Getter private final @NotNull SelectMenu.Option option;
-    @Getter private final @NotNull Optional<String> content;
-    @Getter private final @NotNull ConcurrentList<Page> pages;
-    @Getter private final @NotNull ConcurrentList<Embed> embeds;
-    @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
-    @Getter private final @NotNull ConcurrentList<Emoji> reactions;
-    @Getter private final @NotNull ItemHandler<?> itemHandler;
-    @Getter private final @NotNull HistoryHandler<PageItem, String> historyHandler;
+    private final @NotNull SelectMenu.Option option;
+    private final @NotNull Optional<String> content;
+    private final @NotNull ConcurrentList<Page> pages;
+    private final @NotNull ConcurrentList<Embed> embeds;
+    private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
+    private final @NotNull ConcurrentList<Emoji> reactions;
+    private final @NotNull ItemHandler<?> itemHandler;
+    private final @NotNull HistoryHandler<PageItem, String> historyHandler;
 
     public static Builder builder() {
         return new Builder();
@@ -75,9 +76,9 @@ public class Page implements Paging<Page> {
     /**
      * Finds an existing {@link ActionComponent}.
      *
-     * @param tClass The component type to match.
+     * @param tClass   The component type to match.
      * @param function The method reference to match with.
-     * @param value The value to match with.
+     * @param value    The value to match with.
      * @return The matching component, if it exists.
      */
     public <S, T extends ActionComponent> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
@@ -165,7 +166,7 @@ public class Page implements Paging<Page> {
         /**
          * Clear all components from {@link Page}.
          *
-         * @param recursive True to recursively clear components.
+         * @param recursive       True to recursively clear components.
          * @param enforcePreserve True to leave preservable components.
          */
         public Builder clearComponents(boolean recursive, boolean enforcePreserve) {
@@ -230,7 +231,7 @@ public class Page implements Paging<Page> {
         /**
          * Edits an existing {@link Embed}.
          *
-         * @param identifier The identifier of the embed to search for.
+         * @param identifier   The identifier of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
         public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
@@ -261,7 +262,7 @@ public class Page implements Paging<Page> {
         /**
          * Edits an existing {@link Page} at the given index.
          *
-         * @param index The page index to edit.
+         * @param index       The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
         public Builder editPage(int index, @NotNull Function<Builder, Builder> pageBuilder) {
@@ -300,9 +301,9 @@ public class Page implements Paging<Page> {
         /**
          * Finds an existing {@link ActionComponent}.
          *
-         * @param tClass The component type to match.
+         * @param tClass   The component type to match.
          * @param function The method reference to match with.
-         * @param value The value to match with.
+         * @param value    The value to match with.
          * @return The matching component, if it exists.
          */
         public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
