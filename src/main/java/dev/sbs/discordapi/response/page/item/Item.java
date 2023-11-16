@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.response.page.item;
 
-import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -13,7 +11,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.Page;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -23,16 +20,17 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+@RequiredArgsConstructor
 public abstract class Item {
 
-    @Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel.class)
+    /*@Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel.class)
         .findFirst(EmojiModel::getKey, "TEXT_NULL")
         .flatMap(Emoji::of)
-        .orElseThrow();
-    @Getter private final @NotNull SelectMenu.Option option;
-    @Getter private final @NotNull Type type;
-    @Getter private final boolean editable;
+        .orElseThrow();*/
+    private final @NotNull SelectMenu.Option option;
+    private final @NotNull Type type;
+    private final boolean editable;
 
     @Override
     public boolean equals(Object o) {

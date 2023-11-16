@@ -6,9 +6,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+@Getter
 abstract class SingletonItem<T> extends Item {
 
-    @Getter private final @NotNull Optional<T> value;
+    private final @NotNull Optional<T> value;
 
     protected SingletonItem(
         @NotNull SelectMenu.Option option,

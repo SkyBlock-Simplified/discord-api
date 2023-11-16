@@ -12,11 +12,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+@Getter
 public final class AuthorItem extends Item {
 
-    @Getter private final @NotNull Optional<String> name;
-    @Getter private final @NotNull Optional<String> iconUrl;
-    @Getter private final @NotNull Optional<String> url;
+    private final @NotNull Optional<String> name;
+    private final @NotNull Optional<String> iconUrl;
+    private final @NotNull Optional<String> url;
 
     private AuthorItem(
         @NotNull SelectMenu.Option option,

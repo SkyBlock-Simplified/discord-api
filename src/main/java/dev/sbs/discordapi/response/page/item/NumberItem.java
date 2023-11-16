@@ -16,10 +16,11 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
+@Getter
 public final class NumberItem<T extends Number> extends SingletonItem<T> implements SingletonFieldItem {
 
-    @Getter private final @NotNull Class<T> numberClass;
-    @Getter private final @NotNull ConcurrentList<T> options;
+    private final @NotNull Class<T> numberClass;
+    private final @NotNull ConcurrentList<T> options;
 
     private NumberItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<T> value, @NotNull Class<T> numberClass, @NotNull ConcurrentList<T> options) {
         super(option, Type.FIELD, editable, value);
@@ -32,7 +33,7 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
             .withValue(

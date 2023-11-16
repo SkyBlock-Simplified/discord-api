@@ -12,10 +12,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+@Getter
 public final class FooterItem extends Item {
 
-    @Getter private final @NotNull Optional<String> name;
-    @Getter private final @NotNull Optional<String> iconUrl;
+    private final @NotNull Optional<String> name;
+    private final @NotNull Optional<String> iconUrl;
 
     private FooterItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<String> name, @NotNull Optional<String> iconUrl) {
         super(option, Type.FOOTER, editable);

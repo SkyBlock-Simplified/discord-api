@@ -21,12 +21,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
+@Getter
 public final class ModelItem<T extends Model> extends SingletonItem<T> implements SingletonFieldItem {
 
-    @Getter private final @NotNull Class<T> modelClass;
-    @Getter private final @NotNull ConcurrentList<T> options;
-    @Getter private final @NotNull Optional<Function<T, String>> nameFunction;
-    @Getter private final @NotNull Function<T, String> valueFunction;
+    private final @NotNull Class<T> modelClass;
+    private final @NotNull ConcurrentList<T> options;
+    private final @NotNull Optional<Function<T, String>> nameFunction;
+    private final @NotNull Function<T, String> valueFunction;
 
     private ModelItem(
         @NotNull SelectMenu.Option option,
@@ -49,7 +50,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(
                 this.getValue()

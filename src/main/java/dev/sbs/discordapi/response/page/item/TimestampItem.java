@@ -25,7 +25,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
             .withValue(

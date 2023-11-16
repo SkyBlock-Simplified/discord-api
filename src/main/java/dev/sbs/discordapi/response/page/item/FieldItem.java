@@ -23,9 +23,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+@Getter
 public class FieldItem extends Item implements SingletonFieldItem {
 
-    @Getter private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
+    private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
 
     private FieldItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
         super(option, Type.FIELD, editable);
@@ -64,7 +65,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
             .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse("*null*"/*getNullEmoji().asFormat()*/)) // TODO

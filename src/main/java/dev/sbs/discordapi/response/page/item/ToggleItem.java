@@ -23,7 +23,7 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
             .withValue(

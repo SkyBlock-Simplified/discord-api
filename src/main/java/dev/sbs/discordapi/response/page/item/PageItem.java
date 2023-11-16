@@ -17,9 +17,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
+@Getter
 public final class PageItem extends Item implements SingletonFieldItem, Paging<PageItem> {
 
-    @Getter private final @NotNull ItemHandler<?> itemHandler;
+    private final @NotNull ItemHandler<?> itemHandler;
 
     private PageItem(
         @NotNull SelectMenu.Option option,
@@ -46,7 +47,7 @@ public final class PageItem extends Item implements SingletonFieldItem, Paging<P
     }
 
     @Override
-    public Field getRenderField() {
+    public @NotNull Field getRenderField() {
         return Field.builder()
             .withName(this.getOption().getLabel())
             .withValue("Goto page.")
