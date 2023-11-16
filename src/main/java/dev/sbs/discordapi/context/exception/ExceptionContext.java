@@ -3,6 +3,7 @@ package dev.sbs.discordapi.context.exception;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.EventContext;
@@ -90,8 +91,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
                         .withValue(StringUtil.join(
                             commandContext.getArguments()
                                 .stream()
-                                .filter(argument -> argument.getValue().isPresent())
-                                .map(argument -> argument.getValue().get())
+                                .map(Argument::value)
                                 .collect(Concurrent.toList()),
                             " "
                         ))

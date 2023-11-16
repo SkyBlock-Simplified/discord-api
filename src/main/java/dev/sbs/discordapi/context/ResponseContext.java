@@ -45,11 +45,12 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Response Edit Exception"
                 )
             ))
-            .flatMap(message -> this.getDiscordBot()
-                .handleReactions(response, message)
-                .then()
-                //.then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
-            );
+            .flatMap(message -> this.getResponseCacheEntry()
+                .updateResponse(response)
+                .updateAttachments(message)
+                .updateReactions(message)
+            )
+            .then();
     }
 
     default Mono<Void> editFollowup() {
@@ -71,11 +72,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Followup Edit Exception"
                 )
             ))
-            .flatMap(message -> this.getDiscordBot()
-                .handleReactions(response, message)
-                .then()
-                //.then(this.withResponseCacheEntry(ResponseCache.Entry::updateLastInteract))
-            );
+            .then();
     }
 
     default Mono<Void> deleteFollowup() {
@@ -102,7 +99,6 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
 
     default Mono<Void> followup(@NotNull String identifier, @NotNull Response response) {
         return this.discordBuildFollowup(response)
-            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),

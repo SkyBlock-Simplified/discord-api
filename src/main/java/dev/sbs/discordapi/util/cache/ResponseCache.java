@@ -6,10 +6,13 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.common.util.Snowflake;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.object.reaction.Reaction;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -137,12 +140,18 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         /**
          * Sets this response as loaded, preventing it from being edited through {@link EventContext#reply}}.
          */
-        public void setLoaded() {
+        public Entry setLoaded() {
             this.loading = false;
+            return this;
         }
 
         public void setActiveModal(@NotNull Modal modal) {
             this.activeModal = Optional.of(modal);
+        }
+
+        public Entry updateAttachments(@NotNull Message message) {
+            this.getResponse().updateAttachments(message);
+            return this;
         }
 
         /**
@@ -155,6 +164,39 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
                 this.busy = false;
                 this.deferred = false;
             });
+        }
+
+        public Mono<Message> updateReactions(@NotNull Message message) {
+            return Mono.just(message)
+                .checkpoint("DiscordReference#handleReactions Processing")
+                .flatMap(msg -> {
+                    // Update Reactions
+                    ConcurrentList<Emoji> newReactions = this.getResponse()
+                        .getHistoryHandler()
+                        .getCurrentPage()
+                        .getReactions();
+
+                    // Current Reactions
+                    ConcurrentList<Emoji> currentReactions = msg.getReactions()
+                        .stream()
+                        .filter(Reaction::selfReacted)
+                        .map(Reaction::getEmoji)
+                        .map(Emoji::of)
+                        .collect(Concurrent.toList());
+
+                    Mono<Void> mono = Mono.empty();
+
+                    // Remove Existing Reactions
+                    if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
+                        mono = msg.removeAllReactions();
+
+                    return mono.then(Mono.when(
+                        newReactions.stream()
+                            .map(emoji -> msg.addReaction(emoji.getD4jReaction()))
+                            .collect(Concurrent.toList())
+                    ));
+                })
+                .thenReturn(message);
         }
 
         public Entry updateResponse(@NotNull Response response) {
@@ -213,7 +255,8 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         @Getter private final @NotNull Snowflake userId;
         @Getter private final @NotNull Snowflake messageId;
         @Getter private @NotNull Response response;
-        @Getter private @NotNull Response currentResponse;
+        @Getter(AccessLevel.PRIVATE)
+        private @NotNull Response currentResponse;
 
         @Override
         public boolean equals(Object o) {

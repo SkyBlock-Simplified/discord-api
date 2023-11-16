@@ -2,12 +2,14 @@ package dev.sbs.discordapi.debug.command;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.util.data.tuple.Pair;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.ResponseContext;
 import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
+import dev.sbs.discordapi.response.Attachment;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -21,6 +23,7 @@ import dev.sbs.discordapi.util.exception.DiscordException;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
 import java.util.function.Function;
 
 @CommandId("75f1762a-4672-48db-83d8-86d953645d08")
@@ -68,11 +71,13 @@ public class DebugCommand extends SlashCommand {
     @Override
     public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
         return Concurrent.newUnmodifiableList(
-            Parameter.builder("test1", "test parameter", Parameter.Type.WORD)
+            Parameter.builder("test1", "test parameter", Parameter.Type.ATTACHMENT)
                 //.withAutoComplete(value -> Mono.empty())
                 .build(),
             Parameter.builder("test2", "test parameter", Parameter.Type.WORD)
-                .withAutoComplete(value -> Mono.empty())
+                .withAutoComplete(context -> Concurrent.newMap(
+                    Pair.of("abc", "def")
+                ))
                 .build()
         );
     }
@@ -83,6 +88,12 @@ public class DebugCommand extends SlashCommand {
             Response.builder()
                 .replyMention()
                 .withTimeToLive(30)
+                .withAttachments(
+                    Attachment.of(
+                        "test.txt",
+                        new ByteArrayInputStream("file upload test".getBytes())
+                    )
+                )
                 .withPages(
                     Page.builder()
                         .withContent("test command")
@@ -174,9 +185,20 @@ public class DebugCommand extends SlashCommand {
                                 Button.builder()
                                     .withStyle(Button.Style.PRIMARY)
                                     .withEmoji(Emoji.of("\uD83C\uDF85"))
-                                    .withLabel("Santa")
+                                    .withLabel("Santa upload")
                                     .withDeferEdit()
-                                    .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("santa!")))
+                                    .onInteract(context -> context.edit(
+                                        context.getResponse()
+                                            .mutate()
+                                            .withAttachments(
+                                                Attachment.of(
+                                                    "test2.txt",
+                                                    new ByteArrayInputStream("santa test".getBytes())
+                                                )
+                                            )
+                                            .editPage(pageBuilder -> pageBuilder.withContent("santa!"))
+                                            .build()
+                                    ))
                                     .build(),
                                 Button.builder()
                                     .withStyle(Button.Style.SECONDARY)

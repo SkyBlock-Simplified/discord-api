@@ -80,9 +80,13 @@ public interface EventContext<T extends Event> {
                 )
             ))
             .flatMap(entry -> this.discordEditMessage(response)
-                .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
-                .then(Mono.fromRunnable(() -> entry.updateResponse(response)))
-            );
+                .flatMap(message -> entry.updateResponse(response)
+                    .updateAttachments(message)
+                    .updateReactions(message)
+                    .then(entry.updateLastInteract())
+                )
+            )
+            .then();
     }
 
     Mono<MessageChannel> getChannel();
@@ -129,15 +133,15 @@ public interface EventContext<T extends Event> {
             .filter(entry -> entry.getResponse().getUniqueId().equals(this.getResponseId())) // Search For Loader
             .filter(ResponseCache.Entry::isLoading)
             .singleOrEmpty()
-            .flatMap(entry -> {
-                entry.setLoaded();
-                entry.updateResponse(response);
-                return entry.updateLastInteract().then(this.discordEditMessage(response));  // Final Edit Message
-            })
-            .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
+            .flatMap(entry -> entry.setLoaded() // Final Edit Message
+                .updateResponse(response)
+                .updateLastInteract()
+                .then(this.discordEditMessage(response))
+                .doOnNext(entry::updateAttachments)
+                .flatMap(entry::updateReactions)
+            )
             .switchIfEmpty(
                 this.discordBuildMessage(response) // Create New Message
-                    .flatMap(message -> this.getDiscordBot().handleReactions(response, message))
                     .flatMap(message -> {
                         if (response.isInteractable()) {
                             // Cache Message
@@ -150,6 +154,8 @@ public interface EventContext<T extends Event> {
                                     response
                                 )
                                 .updateLastInteract()
+                                .doOnNext(entry -> entry.updateAttachments(message))
+                                .flatMap(entry -> entry.updateReactions(message))
                                 .thenReturn(message);
                         }
 

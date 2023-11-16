@@ -1,20 +1,17 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
-import dev.sbs.api.util.helper.FormatUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.context.message.text.TextCommandContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -28,6 +25,7 @@ import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
@@ -69,7 +67,6 @@ public class Response implements Paging<Page> {
 
     @Getter private final long buildTime = System.currentTimeMillis();
     @Getter private final @NotNull UUID uniqueId;
-    @Getter private final @NotNull ConcurrentList<Attachment> attachments;
     @Getter private final @NotNull Optional<Snowflake> referenceId;
     @Getter private final @NotNull Scheduler reactorScheduler;
     @Getter private final boolean replyMention;
@@ -78,6 +75,7 @@ public class Response implements Paging<Page> {
     @Getter private final boolean renderingPagingComponents;
     @Getter private final boolean ephemeral;
     @Getter private final @NotNull HistoryHandler<Page, String> historyHandler;
+    @Getter private final @NotNull ConcurrentList<Attachment> attachments;
     private ConcurrentList<LayoutComponent<ActionComponent>> cachedPageComponents = Concurrent.newUnmodifiableList();
 
     public static @NotNull Builder builder() {
@@ -114,6 +112,7 @@ public class Response implements Paging<Page> {
             .append(this.isReplyMention(), response.isReplyMention())
             .append(this.getTimeToLive(), response.getTimeToLive())
             .append(this.isInteractable(), response.isInteractable())
+            .append(this.getAttachments(), response.getAttachments())
             .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
             .append(this.isEphemeral(), response.isEphemeral())
             .append(this.getUniqueId(), response.getUniqueId())
@@ -145,25 +144,24 @@ public class Response implements Paging<Page> {
     }
 
     public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
-        return loader(context, ephemeral, FormatUtil.formatNullable(content, objects));
+        return loader(context, ephemeral, StringUtil.formatNullable(content, objects));
     }
 
     public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @NotNull Optional<String> content) {
         return builder()
             .isInteractable()
             .isEphemeral(ephemeral)
-            .withReference(context)
             .withUniqueId(context.getResponseId())
             .withPages(
                 Page.builder()
                     .withContent(
-                        content.orElse(FormatUtil.format(
-                            "{0}{1} is working...",
-                            SimplifiedApi.getRepositoryOf(EmojiModel.class)
+                        content.orElse(String.format(
+                            "%s is working...",
+                            /*SimplifiedApi.getRepositoryOf(EmojiModel.class)
                                 .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
                                 .flatMap(Emoji::of)
                                 .map(Emoji::asSpacedFormat)
-                                .orElse(""),
+                                .orElse(""),*/
                             context.getDiscordBot().getSelf().getUsername()
                         ))
                     )
@@ -278,6 +276,19 @@ public class Response implements Paging<Page> {
         return this.getHistoryHandler().getPages();
     }
 
+    public void updateAttachments(@NotNull Message message) {
+        if (this.attachments.contains(Attachment::notUploaded, true)) {
+            message.getAttachments().forEach(d4jAttachment -> this.attachments.stream()
+                .filter(Attachment::notUploaded)
+                .filter(attachment -> attachment.getName().equals(d4jAttachment.getFilename()))
+                .findFirst()
+                .ifPresent(attachment -> this.attachments.set(
+                    this.attachments.indexOf(attachment),
+                    Attachment.of(d4jAttachment)
+                )));
+        }
+    }
+
     private void updatePagingComponents() {
         // Enabled
         this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
@@ -292,8 +303,8 @@ public class Response implements Paging<Page> {
         this.editPageButton(
             Button::getPageType,
             Button.PageType.INDEX,
-            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "{0} / {1}",
+            buttonBuilder -> buttonBuilder.withLabel(String.format(
+                "%s / %s",
                 this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
@@ -308,8 +319,9 @@ public class Response implements Paging<Page> {
         this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
-            buttonBuilder -> buttonBuilder.withLabel(FormatUtil.format(
-                "Sort: {0}", this.getHistoryHandler()
+            buttonBuilder -> buttonBuilder.withLabel(String.format(
+                "Sort: %s",
+                this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
                     .getCurrentSorter()
@@ -322,8 +334,8 @@ public class Response implements Paging<Page> {
             Button::getPageType,
             Button.PageType.ORDER,
             buttonBuilder -> buttonBuilder
-                .withLabel(FormatUtil.format("Order: {0}", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal"))
-                .withEmoji(DiscordHelper.getEmoji(FormatUtil.format("SORT_{0}", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
+                .withLabel(String.format("Order: %s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal"))
+                .withEmoji(DiscordHelper.getEmoji(String.format("SORT_%s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
         );
     }
 
@@ -332,7 +344,7 @@ public class Response implements Paging<Page> {
             .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .allowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
-            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .build();
@@ -343,7 +355,7 @@ public class Response implements Paging<Page> {
             .withContent(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .withAllowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
-            .withFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .withFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .withComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .withEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()));
     }
@@ -351,7 +363,7 @@ public class Response implements Paging<Page> {
     public MessageEditSpec getD4jEditSpec() {
         return MessageEditSpec.builder()
             .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .addAllFiles(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .addAllFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .addAllEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .build();
@@ -362,7 +374,7 @@ public class Response implements Paging<Page> {
             .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .build();
@@ -373,7 +385,7 @@ public class Response implements Paging<Page> {
             .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .username("Test")
@@ -384,7 +396,7 @@ public class Response implements Paging<Page> {
         return InteractionReplyEditSpec.builder()
             .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .allowedMentionsOrNull(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .componentsOrNull(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .build();
@@ -590,7 +602,7 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Adds a {@link Attachment} to the {@link Response}.
+         * Adds an {@link Attachment} to the {@link Response}.
          *
          * @param name The name of the attachment.
          * @param inputStream The stream of attachment data.
@@ -600,7 +612,7 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Adds a {@link Attachment} to the {@link Response}.
+         * Adds an {@link Attachment} to the {@link Response}.
          *
          * @param name The name of the attachment.
          * @param inputStream The stream of attachment data.
@@ -616,7 +628,11 @@ public class Response implements Paging<Page> {
          * @param attachments Variable number of attachments to add.
          */
         public Builder withAttachments(@NotNull Attachment... attachments) {
-            return this.withAttachments(Arrays.asList(attachments));
+            Arrays.stream(attachments)
+                .filter(attachment -> !this.attachments.contains(Attachment::getName, attachment.getName()))
+                .forEach(this.attachments::add);
+
+            return this;
         }
 
         /**
@@ -625,7 +641,11 @@ public class Response implements Paging<Page> {
          * @param attachments Collection of attachments to add.
          */
         public Builder withAttachments(@NotNull Iterable<Attachment> attachments) {
-            attachments.forEach(this.attachments::add);
+            attachments.forEach(attachment -> {
+                if (!this.attachments.contains(Attachment::getName, attachment.getName()))
+                    this.attachments.add(attachment);
+            });
+
             return this;
         }
 
@@ -636,7 +656,7 @@ public class Response implements Paging<Page> {
          */
         public Builder withException(@NotNull Throwable throwable) {
             this.attachments.add(Attachment.of(
-                FormatUtil.format("stacktrace-{0}.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now())),
+                String.format("stacktrace-%s.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now())),
                 new ByteArrayInputStream(ExceptionUtil.getStackTrace(throwable).getBytes(StandardCharsets.UTF_8)))
             );
 
@@ -687,7 +707,7 @@ public class Response implements Paging<Page> {
                         throw SimplifiedException.wrapNative(fnfex).build();
                     }
                 })
-                .forEach(this.attachments::add);
+                .forEach(this::withAttachments);
 
             return this;
         }
@@ -719,15 +739,6 @@ public class Response implements Paging<Page> {
         public Builder withReactorScheduler(@NotNull ExecutorService executorService) {
             this.reactorScheduler = Schedulers.fromExecutorService(executorService);
             return this;
-        }
-
-        /**
-         * Sets the message the {@link Response} should reply to.
-         *
-         * @param eventContext The message to reference.
-         */
-        public Builder withReference(@NotNull EventContext<?> eventContext) {
-            return this.withReference(eventContext instanceof TextCommandContext ? ((TextCommandContext) eventContext).getMessageId() : null);
         }
 
         /**
@@ -805,7 +816,6 @@ public class Response implements Paging<Page> {
 
             Response response = new Response(
                 this.uniqueId,
-                this.attachments.toUnmodifiableList(),
                 this.referenceId,
                 this.reactorScheduler,
                 this.replyMention,
@@ -817,7 +827,8 @@ public class Response implements Paging<Page> {
                     .withPages(this.pages.toUnmodifiableList())
                     .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withHistoryTransformer(page -> page.getOption().getValue())
-                    .build()
+                    .build(),
+                this.attachments
             );
 
             // First Page
