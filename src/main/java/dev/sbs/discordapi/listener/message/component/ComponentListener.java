@@ -20,7 +20,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
 
     private final Class<T> componentClass;
 
-    protected ComponentListener(DiscordBot discordBot) {
+    protected ComponentListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.componentClass = Reflection.getSuperClass(this, 2);
     }

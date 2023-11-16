@@ -1,65 +1,123 @@
 package dev.sbs.discordapi.command.parameter;
 
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
+import dev.sbs.discordapi.response.Attachment;
+import discord4j.common.util.Snowflake;
+import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.command.Interaction;
+import discord4j.core.object.entity.Role;
+import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.Channel;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
+import java.util.Arrays;
+import java.util.function.Function;
 
-public class Argument {
+public record Argument(
+    @Getter @NotNull Interaction interaction,
+    @Getter @NotNull Parameter parameter,
+    @Getter @NotNull ApplicationCommandInteractionOptionValue value
+) {
 
-    @Getter private final @NotNull Parameter parameter;
-    @Getter private final @NotNull ConcurrentList<Data> data;
-
-    public Argument(@NotNull Parameter parameter, @NotNull Data data) {
-        this(parameter, Concurrent.newList(data));
+    public @NotNull Attachment asAttachment() {
+        return this.getValueAs(
+            "attachment",
+            value -> Attachment.of(this.value().asAttachment()),
+            Parameter.Type.ATTACHMENT
+        );
     }
 
-    public Argument(@NotNull Parameter parameter, @NotNull ConcurrentList<Data> data) {
-        this.parameter = parameter;
-        this.data = Concurrent.newUnmodifiableList(data);
+    public boolean asBoolean() {
+        return getValueAs("boolean", Boolean::parseBoolean, Parameter.Type.BOOLEAN);
     }
 
-    public Optional<String> getValue() {
-        return this.getData(0).getValue();
+    public @NotNull Mono<Channel> asChannel() {
+        return this.getValueAs(
+            "channel",
+            value -> this.interaction()
+                .getClient()
+                .getChannelById(this.asSnowflake()),
+            Parameter.Type.CHANNEL
+        );
     }
 
-    public Data getData(int index) {
-        return this.data.get(index);
+    public int asInteger() {
+        return this.getValueAs("integer", Integer::parseInt, Parameter.Type.INTEGER);
     }
 
-    public boolean hasValue() {
-        return this.getValue().isPresent();
+    public long asLong() {
+        return this.getValueAs("long", Long::parseLong, Parameter.Type.LONG);
     }
 
-    public static class Data {
+    public double asDouble() {
+        return this.getValueAs("double", Double::parseDouble, Parameter.Type.DOUBLE);
+    }
 
-        @Getter private final @NotNull Optional<String> value;
-        @Getter private final @NotNull ConcurrentList<String> options;
+    public @NotNull String asMentionable() {
+        return this.getValueAs(
+            "mentionable",
+            value -> String.format(
+                "<%s%s%s>",
+                (this.parameter().getType() == Parameter.Type.CHANNEL ? "#" : "@"),
+                (this.parameter().getType() == Parameter.Type.ROLE ? "&" : ""),
+                this.value()
+            ),
+            Parameter.Type.USER,
+            Parameter.Type.ROLE,
+            Parameter.Type.CHANNEL,
+            Parameter.Type.MENTIONABLE
+        );
+    }
 
-        public Data() {
-            this(Optional.empty());
+    public @NotNull Mono<Role> asRole() {
+        return this.getValueAs(
+            "role",
+            value -> this.interaction()
+                .getClient()
+                .getRoleById(
+                    this.interaction().getGuildId().orElseThrow(),
+                    this.asSnowflake()
+                ),
+            Parameter.Type.ROLE
+        );
+    }
+
+    public @NotNull Snowflake asSnowflake() {
+        return this.getValueAs(
+            "snowflake",
+            Snowflake::of,
+            Parameter.Type.USER,
+            Parameter.Type.ROLE,
+            Parameter.Type.CHANNEL,
+            Parameter.Type.MENTIONABLE
+        );
+    }
+
+    public @NotNull String asString() {
+        return getValueAs("string", Function.identity(), Parameter.Type.TEXT, Parameter.Type.WORD);
+    }
+
+    public @NotNull Mono<User> asUser() {
+        return getValueAs(
+            "user",
+            value -> this.interaction()
+                .getClient()
+                .getUserById(this.asSnowflake()),
+            Parameter.Type.USER
+        );
+    }
+
+    private <T> @NotNull T getValueAs(@NotNull String parsedTypeName, @NotNull Function<String, T> transformer, @NotNull Parameter.Type... allowedTypes) {
+        if (!Arrays.asList(allowedTypes).contains(this.parameter().getType())) {
+            throw SimplifiedException.of(InvalidParameterException.class)
+                .withMessage(String.format("Option value cannot be converted to %s.", parsedTypeName))
+                .build();
         }
 
-        public Data(@Nullable String value) {
-            this(Optional.ofNullable(value));
-        }
-
-        public Data(@NotNull Optional<String> value) {
-            this(value, Concurrent.newList());
-        }
-
-        public Data(@Nullable String value, @NotNull ConcurrentList<String> options) {
-            this(Optional.ofNullable(value), options);
-        }
-
-        public Data(@NotNull Optional<String> value, @NotNull ConcurrentList<String> options) {
-            this.value = value;
-            this.options = Concurrent.newUnmodifiableList(options);
-        }
-
+        return transformer.apply(this.value().getRaw());
     }
 
 }
