@@ -2,6 +2,7 @@ package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.data.Range;
@@ -9,6 +10,7 @@ import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.context.CommandContext;
+import dev.sbs.discordapi.context.interaction.autocomplete.AutoCompleteContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -22,7 +24,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -32,29 +33,30 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Parameter {
 
     private static final BiFunction<String, CommandContext<?>, Boolean> NOOP_HANDLER = (s_, c_) -> true;
-    private static final Function<String, Mono<Void>> NOOP_COMPLETE = v_ -> Mono.empty();
+    private static final Function<AutoCompleteContext, ConcurrentMap<String, Object>> NOOP_COMPLETE = c_ -> Concurrent.newUnmodifiableMap();
     private static final Pattern MENTIONABLE_PATTERN = Pattern.compile("<(?:@!?&?|#)[\\d]+>");
     private static final Pattern MENTIONABLE_USER_PATTERN = Pattern.compile("<@!?[\\d]+>");
     private static final Pattern MENTIONABLE_ROLE_PATTERN = Pattern.compile("<@!?&[\\d]+>");
     private static final Pattern MENTIONABLE_CHANNEL_PATTERN = Pattern.compile("<#[\\d]+>");
     private static final Pattern EMOJI_PATTERN = Pattern.compile("<:[\\w]+:[\\d]+>");
 
-    @Getter private final @NotNull UUID uniqueId;
-    @Getter private final @NotNull String name;
-    @Getter private final @NotNull String description;
-    @Getter private final @NotNull Type type;
-    @Getter private final boolean required;
-    @Getter private final @NotNull Optional<Emoji> emoji;
-    @Getter private final @NotNull ConcurrentSet<Channel.Type> channelTypes;
-    @Getter private final @NotNull Range<Double> sizeLimit;
-    @Getter private final @NotNull Range<Integer> lengthLimit;
-    @Getter private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
-    @Getter private final @NotNull Function<String, Mono<Void>> autoComplete;
-    @Getter private final @NotNull ConcurrentLinkedMap<String, Object> choices;
+    private final @NotNull UUID uniqueId;
+    private final @NotNull String name;
+    private final @NotNull String description;
+    private final @NotNull Type type;
+    private final boolean required;
+    private final @NotNull Optional<Emoji> emoji;
+    private final @NotNull ConcurrentSet<Channel.Type> channelTypes;
+    private final @NotNull Range<Double> sizeLimit;
+    private final @NotNull Range<Integer> lengthLimit;
+    private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
+    private final @NotNull Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete;
+    private final @NotNull ConcurrentLinkedMap<String, Object> choices;
 
     public static @NotNull Builder builder(@NotNull String name, @NotNull String description, @NotNull Type type) {
         if (StringUtil.isEmpty(name))
@@ -102,20 +104,21 @@ public final class Parameter {
     @Getter
     public enum Type {
 
+        UNKNOWN(-1, ApplicationCommandOption.Type.UNKNOWN, String.class, argument -> false),
         TEXT(3, ApplicationCommandOption.Type.STRING, String.class, argument -> true),
         WORD(3, ApplicationCommandOption.Type.STRING, String.class, "Only Letters, Numbers and Underscores are allowed!", argument -> !argument.matches("\\w")),
-        INTEGER(4, ApplicationCommandOption.Type.INTEGER, Integer.class, "Only Integers are allowed!", argument -> {
+        INTEGER(4, ApplicationCommandOption.Type.INTEGER, Integer.class, String.format("Only numbers between %s and %s are allowed!", Integer.MIN_VALUE, Integer.MAX_VALUE), argument -> {
             if (NumberUtil.isCreatable(argument) && !argument.contains(".")) {
                 double value = NumberUtil.createBigDecimal(argument).doubleValue();
-                return value <= Double.MAX_VALUE && value >= Double.MIN_VALUE;
+                return value <= Integer.MAX_VALUE && value >= Integer.MIN_VALUE;
             }
 
             return false;
         }),
-        LONG(4, ApplicationCommandOption.Type.INTEGER, Double.class, "Only Doubles are allowed!", argument -> {
+        LONG(4, ApplicationCommandOption.Type.INTEGER, Long.class, String.format("Only numbers between %s and %s are allowed!", Long.MIN_VALUE, Long.MAX_VALUE), argument -> {
             if (NumberUtil.isCreatable(argument) && !argument.contains(".")) {
                 double value = NumberUtil.createBigDecimal(argument).doubleValue();
-                return value <= Double.MAX_VALUE && value >= Double.MIN_VALUE;
+                return value <= Long.MAX_VALUE && value >= Long.MIN_VALUE;
             }
 
             return false;
@@ -126,7 +129,7 @@ public final class Parameter {
         ROLE(8, ApplicationCommandOption.Type.ROLE, Role.class, "Only Role Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_ROLE_PATTERN.matcher(argument).matches()),
         MENTIONABLE(9, ApplicationCommandOption.Type.MENTIONABLE, String.class, "Only Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_PATTERN.matcher(argument).matches()),
         EMOJI(9, ApplicationCommandOption.Type.MENTIONABLE, ReactionEmoji.class, "Only Emojis are allowed!", argument -> EMOJI_PATTERN.matcher(argument).matches()),
-        DOUBLE(10, ApplicationCommandOption.Type.NUMBER, Double.class, String.format("Only Numbers between %s and %s are allowed!", Double.MIN_VALUE, Double.MAX_VALUE), NumberUtil::isCreatable),
+        DOUBLE(10, ApplicationCommandOption.Type.NUMBER, Double.class, String.format("Only numbers between %s and %s are allowed!", Double.MIN_VALUE, Double.MAX_VALUE), NumberUtil::isCreatable),
         ATTACHMENT(11, ApplicationCommandOption.Type.ATTACHMENT, Attachment.class, "Only Attachments are allowed!", argument -> true);
 
         private final int value;
@@ -159,6 +162,13 @@ public final class Parameter {
             return this.getValidator().apply(StringUtil.defaultIfEmpty(argument, ""));
         }
 
+        public static @NotNull Type of(int value) {
+            return Arrays.stream(values())
+                .filter(parameter -> parameter.getValue() == value)
+                .findFirst()
+                .orElse(UNKNOWN);
+        }
+
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -174,7 +184,7 @@ public final class Parameter {
         private Range<Integer> lengthLimit = Range.between(0, 6000);
         private final ConcurrentSet<Channel.Type> channelTypes = Concurrent.newSet();
         private BiFunction<String, CommandContext<?>, Boolean> validator = NOOP_HANDLER;
-        private Function<String, Mono<Void>> autoComplete = NOOP_COMPLETE;
+        private Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete = NOOP_COMPLETE;
         private final ConcurrentLinkedMap<String, Object> choices = Concurrent.newLinkedMap();
 
         /**
@@ -209,7 +219,7 @@ public final class Parameter {
          *
          * @param autoComplete The autocomplete callback method.
          */
-        public Builder withAutoComplete(@NotNull Function<String, Mono<Void>> autoComplete) {
+        public Builder withAutoComplete(@NotNull Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete) {
             this.autoComplete = autoComplete;
             return this;
         }
