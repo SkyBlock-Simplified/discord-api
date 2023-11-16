@@ -8,8 +8,6 @@ import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
-import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -24,50 +22,37 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMap(commandData -> Mono.justOrEmpty(this.getMatchingCommand(SlashCommandReference.class, commandData))
-                .flatMap(slashCommandReference -> {
-                    ConcurrentList<ApplicationCommandInteractionOptionData> parameterData = this.getCommandOptionData(commandData);
+            .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
+            .cast(SlashCommandReference.class)
+            .flatMap(slashCommand -> {
+                // Build Arguments
+                ConcurrentList<Argument> arguments = this.getCommandOptionData(
+                        slashCommand,
+                        event.getOptions()
+                    )
+                    .stream()
+                    .flatMap(commandOption -> slashCommand.getParameters()
+                                 .stream()
+                        .filter(parameter -> parameter.getName().equals(commandOption.getName()))
+                        .map(parameter -> new Argument(event.getInteraction(), parameter, commandOption.getValue().orElseThrow()))
+                    )
+                    .collect(Concurrent.toList());
 
-                    // Build Arguments
-                    ConcurrentList<Argument> arguments = slashCommandReference.getParameters()
-                        .stream()
-                        .map(parameter -> parameterData.stream()
-                            .filter(optionData -> optionData.name().equals(parameter.getName()))
-                            .findFirst()
-                            .map(optionData -> new Argument(parameter, this.getArgumentData(optionData)))
-                            .orElse(new Argument(parameter, new Argument.Data()))
-                        )
-                        .collect(Concurrent.toList());
+                // Build Context
+                SlashCommandContext slashCommandContext = SlashCommandContext.of(
+                    this.getDiscordBot(),
+                    event,
+                    slashCommand,
+                    arguments
+                );
 
-                    // Build Context
-                    SlashCommandContext slashCommandContext = SlashCommandContext.of(
-                        this.getDiscordBot(),
-                        event,
-                        slashCommandReference,
-                        arguments
-                    );
-
-                    // Apply Command
-                    return this.getDiscordBot()
-                        .getCommandRegistrar()
-                        .getSlashCommands()
-                        .get(slashCommandReference.getClass())
-                        .apply(slashCommandContext);
-                })
-            );
-    }
-
-    private @NotNull Argument.Data getArgumentData(@NotNull ApplicationCommandInteractionOptionData interactionOptionData) {
-        return new Argument.Data(
-            interactionOptionData.value().toOptional(),
-            interactionOptionData.options()
-                .toOptional()
-                .orElse(Concurrent.newList())
-                .stream()
-                .filter(optionData -> !optionData.value().isAbsent())
-                .map(optionData -> optionData.value().get())
-                .collect(Concurrent.toList())
-        );
+                // Apply Command
+                return this.getDiscordBot()
+                    .getCommandRegistrar()
+                    .getSlashCommands()
+                    .get(slashCommand.getClass())
+                    .apply(slashCommandContext);
+            });
     }
 
 }
