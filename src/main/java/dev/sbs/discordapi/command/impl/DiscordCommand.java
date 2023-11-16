@@ -8,11 +8,8 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
-import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
-import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
-import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
@@ -50,6 +47,8 @@ public abstract class DiscordCommand<E extends Event, T extends CommandContext<E
             .getApiCommandId(this.getClass());
     }
 
+    protected void handleAdditionalChecks(@NotNull T commandContext) { }
+
     protected abstract @NotNull Mono<Void> process(@NotNull T commandContext) throws DiscordException;
 
     @Override
@@ -78,28 +77,8 @@ public abstract class DiscordCommand<E extends Event, T extends CommandContext<E
                             .build();
                 }
 
-                // Validate Arguments
-                for (Argument argument : commandContext.getArguments()) {
-                    if (argument.getValue().isEmpty()) {
-                        if (argument.getParameter().isRequired())
-                            throw SimplifiedException.of(MissingParameterException.class)
-                                .addData("ARGUMENT", argument)
-                                .addData("MISSING", true)
-                                .build();
-                    } else {
-                        if (!argument.getParameter().getType().isValid(argument.getValue()))
-                            throw SimplifiedException.of(InvalidParameterException.class)
-                                .addData("ARGUMENT", argument)
-                                .addData("MISSING", false)
-                                .build();
-
-                        if (!argument.getParameter().isValid(argument.getValue(), commandContext))
-                            throw SimplifiedException.of(InvalidParameterException.class)
-                                .addData("ARGUMENT", argument)
-                                .addData("MISSING", false)
-                                .build();
-                    }
-                }
+                // Process Additional Checks
+                this.handleAdditionalChecks(commandContext);
 
                 // Process Command
                 return this.process(commandContext);

@@ -1,11 +1,15 @@
 package dev.sbs.discordapi.command.impl;
 
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
+import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
@@ -30,6 +34,38 @@ public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEv
 
     public @NotNull ConcurrentUnmodifiableList<String> getExampleArguments() {
         return NO_EXAMPLES;
+    }
+
+    @Override
+    protected void handleAdditionalChecks(@NotNull SlashCommandContext commandContext) {
+        // Validate Arguments
+        for (Parameter parameter : this.getParameters()) {
+            Optional<Argument> argument = commandContext.getArgument(parameter.getName());
+
+            if (argument.isEmpty()) {
+                if (parameter.isRequired())
+                    throw SimplifiedException.of(MissingParameterException.class)
+                        .addData("PARAMETER", parameter)
+                        .addData("MISSING", true)
+                        .build();
+            } else {
+                String value = argument.map(Argument::asString).get();
+
+                if (!parameter.getType().isValid(value))
+                    throw SimplifiedException.of(InvalidParameterException.class)
+                        .addData("PARAMETER", parameter)
+                        .addData("VALUE", value)
+                        .addData("MISSING", false)
+                        .build();
+
+                if (!parameter.isValid(value, commandContext))
+                    throw SimplifiedException.of(InvalidParameterException.class)
+                        .addData("PARAMETER", parameter)
+                        .addData("VALUE", value)
+                        .addData("MISSING", false)
+                        .build();
+            }
+        }
     }
 
     public Embed createHelpEmbed() {

@@ -66,8 +66,8 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return CommandReference.Type.CHAT_INPUT;
     }
 
-    static @NotNull SlashCommandContext of(DiscordBot discordBot, ChatInputInteractionEvent event, SlashCommandReference slashCommandReference, ConcurrentList<Argument> arguments) {
-        return new SlashCommandContextImpl(discordBot, event, slashCommandReference, arguments);
+    static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull SlashCommandReference slashCommand, @NotNull ConcurrentList<Argument> arguments) {
+        return new SlashCommandContextImpl(discordBot, event, slashCommand, arguments);
     }
 
     @Override
