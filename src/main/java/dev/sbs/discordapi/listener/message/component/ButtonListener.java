@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public final class ButtonListener extends ComponentListener<ButtonInteractionEvent, ButtonContext, Button> {
 
-    public ButtonListener(DiscordBot discordBot) {
+    public ButtonListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
