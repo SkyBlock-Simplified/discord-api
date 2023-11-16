@@ -14,7 +14,6 @@ import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.user.UserInputException;
 import dev.sbs.discordapi.command.exception.user.UserVerificationException;
-import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
@@ -116,8 +115,8 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     .build()
             );
         } else if (exceptionContext.getException() instanceof ParameterException parameterException) {
-            Argument argument = (Argument) parameterException.getData().get("ARGUMENT");
-            Parameter parameter = argument.getParameter();
+            Parameter parameter = (Parameter) parameterException.getData().get("PARAMETER");
+            String value = (String) parameterException.getData().get("VALUE");
             boolean missing = (boolean) parameterException.getData().get("MISSING");
             String missingDescription = "You did not provide a required parameter.";
             String invalidDescription = "The provided argument does not validate against the expected parameter.";
@@ -150,11 +149,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     parameter.getDescription()
                 );
 
-            if (!missing)
+            if (!missing) {
                 embedBuilder.withField(
                     "Argument",
-                    argument.getValue().orElse(getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("*<null>*"))
+                    value
                 );
+            }
 
             responseBuilder = Optional.of(embedBuilder.build());
         } else if (exceptionContext.getException() instanceof PermissionException permissionException) {
@@ -329,10 +329,9 @@ public abstract class DiscordErrorObject extends DiscordReference {
         // Modify Command Errors
         if (exceptionContext.getException() instanceof CommandException) {
             CommandContext<?> commandContext = (CommandContext<?>) exceptionContext.getEventContext();
-            String commandPath = commandContext.getCommand().getCommandPath();
 
             userError = userError.mutate()
-                .withTitle("Command :: %s", commandPath)
+                .withTitle("Command :: %s", commandContext.getCommand().getName())
                 .build();
         }
 
