@@ -18,8 +18,7 @@ public class SqlToJsonDumpTest {
 
     static {
         try {
-            File currentDir = new File(SimplifiedApi.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            testConfig = new TestConfig(currentDir.getParentFile(), "testsql");
+            testConfig = new TestConfig();
         } catch (Exception exception) {
             throw new IllegalArgumentException("Unable to retrieve current directory", exception); // Should never get here
         }
