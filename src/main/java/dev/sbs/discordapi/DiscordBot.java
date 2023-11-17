@@ -1,17 +1,13 @@
 package dev.sbs.discordapi;
 
-import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.model.discord.command_data.command_parents.CommandParentModel;
-import dev.sbs.api.data.sql.SqlConfig;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.util.helper.FormatUtil;
-import dev.sbs.discordapi.command.Command;
-import dev.sbs.discordapi.command.relationship.Relationship;
+import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.listener.AutoCompleteListener;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
@@ -34,6 +30,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
@@ -55,8 +52,9 @@ import discord4j.rest.route.Routes;
 import discord4j.rest.util.AllowedMentions;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -64,7 +62,6 @@ import reactor.util.retry.Retry;
 
 import java.net.SocketException;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,9 +70,9 @@ import java.util.concurrent.TimeUnit;
  * @see <a href="https://github.com/Discord4J/Discord4J">Discord4J</a>
  */
 @Getter
+@Log4j2
 public abstract class DiscordBot extends DiscordErrorObject {
 
-    private final @NotNull Logger log;
     private final @NotNull DiscordConfig config;
     private final @NotNull DiscordClient client;
     private final @NotNull GatewayDiscordClient gateway;
@@ -86,10 +83,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig discordConfig) {
-        this.log = LogManager.getLogger(this);
         this.config = discordConfig;
+        Configurator.setLevel(log, Level.INFO);
 
-        this.getLog().info("Creating Discord Client");
+        log.info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(
                 this.getConfig()
                     .getDiscordToken()
@@ -108,7 +105,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
             )
             .build();
 
-        this.getLog().info("Connecting to Discord Gateway");
+        log.info("Connecting to Discord Gateway");
         this.gateway = this.getClient()
             .gateway()
             .setDisabledIntents(this.getDisabledIntents())
@@ -117,20 +114,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
             .withEventDispatcher(eventDispatcher -> eventDispatcher.on(ConnectEvent.class)
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
-                    this.getLog().info("Gateway Connected");
+                    log.info("Gateway Connected");
                     this.onGatewayConnected(gatewayDiscordClient);
 
-                    // TODO: Somehow move this to override method / constructor
-                    this.getLog().info("Creating Database Session");
-                    SimplifiedApi.getSessionManager().connectSql((SqlConfig) this.getConfig().getDataConfig());
-                    this.getLog().info(
-                        "Database Connected in {0}ms",
-                        SimplifiedApi.getSessionManager().getSession().getInitializationTime() +
-                            SimplifiedApi.getSessionManager().getSession().getStartupTime()
-                    );
-                    this.onDatabaseConnected();
-
-                    this.getLog().info("Scheduling Cache Cleaner");
+                    log.info("Scheduling Cache Cleaner");
                     this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
                         if (!entry.isActive()) {
                             // Clear Cached Message
@@ -184,21 +171,19 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         }
                     }), 0, 1, TimeUnit.SECONDS);
 
-                    this.getLog().info("Building Commands");
-                    this.commandRegistrar = CommandRegistrar.builder(this)
-                        .withPrefix(this.getPrefix())
-                        .withCommands(this.getCommands())
-                        .build();
-
-                    this.getLog().info("Registering Event Listeners");
+                    log.info("Registering Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
+                        eventDispatcher.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
                         eventDispatcher.on(ModalSubmitInteractionEvent.class, new ModalListener(this)),
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
-                        eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(this::onGatewayDisconnected))
+                        eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
+                            this.onGatewayDisconnected();
+                            this.getScheduler().shutdownNow();
+                        }))
                     );
 
                     this.getListeners().forEach(listenerClass -> {
@@ -206,13 +191,14 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
 
-                    this.getLog().info("Registering Commands");
-                    Mono<Void> slashCommands = this.getDiscordBot()
-                        .getCommandRegistrar()
-                        .updateSlashCommands();
+                    log.info("Registering Commands");
+                    Mono<Void> commands = (this.commandRegistrar = CommandRegistrar.builder(this)
+                        .withCommands(this.getCommands())
+                        .build())
+                        .updateApplicationCommands();
 
-                    this.getLog().info(FormatUtil.format("Logged in as {0}", this.getSelf().getUsername()));
-                    return Mono.when(eventListeners).and(slashCommands);
+                    log.info("Logged in as {}", this.getSelf().getUsername());
+                    return Mono.when(eventListeners).and(commands);
                 })
             )
             .login()
@@ -226,6 +212,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
+    public final <T extends DiscordConfig> @NotNull T getConfig(@NotNull Class<T> configType) {
+        return configType.cast(this.getConfig());
+    }
+
     protected @NotNull ConcurrentList<Class<? extends DiscordListener<? extends Event>>> getListeners() {
         return Concurrent.newUnmodifiableList();
     }
@@ -234,7 +224,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
         return this.getGateway().getSelfId();
     }
 
-    protected abstract @NotNull ConcurrentSet<Class<? extends Command>> getCommands();
+    protected abstract @NotNull ConcurrentSet<Class<? extends CommandReference>> getCommands();
 
     protected abstract @NotNull AllowedMentions getDefaultAllowedMentions();
 
@@ -261,14 +251,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
     protected @NotNull MemberRequestFilter getMemberRequestFilter() {
         return MemberRequestFilter.withLargeGuilds();
-    }
-
-    protected @NotNull Optional<CommandParentModel> getPrefix() {
-        return Optional.empty();
-    }
-
-    public final @NotNull Relationship.Root getRootCommandRelationship() {
-        return this.getCommandRegistrar().getRootCommandRelationship();
     }
 
     public final @NotNull User getSelf() {

@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.SimplifiedApi;
-import dev.sbs.api.data.DataConfig;
 import dev.sbs.api.data.yaml.YamlConfig;
+import dev.sbs.api.data.yaml.annotation.Secure;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.ResourceUtil;
 import dev.sbs.api.util.helper.StringUtil;
@@ -17,18 +17,18 @@ import java.util.Optional;
 @Getter
 public abstract class DiscordConfig extends YamlConfig {
 
+    @Secure
     @Setter private @NotNull Optional<String> discordToken = ResourceUtil.getEnv("DISCORD_TOKEN");
     @Setter private long mainGuildId = ResourceUtil.getEnv("DISCORD_MAIN_GUILD_ID").map(NumberUtil::tryParseLong).orElse(-1L);
     @Setter private @NotNull String defaultUnicodeEmoji = ResourceUtil.getEnv("DEFAULT_UNICODE_EMOJI").orElse(StringUtil.unescapeUnicode("\\u2699"));
-    @Setter private DataConfig<?> dataConfig;
+    @Setter private long debugChannelId = ResourceUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong).orElse(0L);
 
-    public DiscordConfig(@NotNull DataConfig<?> dataConfig, @NotNull String fileName, @NotNull String... header) {
-        this(dataConfig, SimplifiedApi.getCurrentDirectory(), fileName, header);
+    public DiscordConfig(@NotNull String fileName, @NotNull String... header) {
+        this(fileName, SimplifiedApi.getCurrentDirectory(), header);
     }
 
-    public DiscordConfig(@NotNull DataConfig<?> dataConfig, @NotNull File configDir, @NotNull String fileName, @NotNull String... header) {
-        super(configDir, fileName, header);
-        this.dataConfig = dataConfig;
+    public DiscordConfig(@NotNull String fileName, @NotNull File configDir, @NotNull String... header) {
+        super(fileName, configDir, header);
     }
 
     public final ReactionEmoji getDefaultCommandEmoji() {
