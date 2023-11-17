@@ -14,8 +14,12 @@ public class DebugConfig extends DiscordConfig {
 
     private final Optional<UUID> hypixelApiKey = ResourceUtil.getEnv("HYPIXEL_API_KEY").map(StringUtil::toUUID);
 
-    public DebugConfig(@NotNull File configDir, @NotNull String fileName, String... header) {
-        super(null, configDir, fileName, header);
+    public DebugConfig(@NotNull String fileName, String... header) {
+        this(fileName, SimplifiedApi.getCurrentDirectory(), header);
+    }
+
+    public DebugConfig(@NotNull String fileName, @NotNull File configDir, String... header) {
+        super(fileName, configDir, header);
         this.hypixelApiKey.ifPresent(value -> SimplifiedApi.getKeyManager().add("HYPIXEL_API_KEY", value));
     }
 

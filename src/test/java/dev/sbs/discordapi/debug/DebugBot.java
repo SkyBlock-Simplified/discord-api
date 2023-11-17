@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.debug;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
@@ -17,10 +16,7 @@ import org.jetbrains.annotations.NotNull;
 public final class DebugBot extends DiscordBot {
 
     private DebugBot() {
-        super(new DebugConfig(
-            SimplifiedApi.getCurrentDirectory(),
-            "debug"
-        ));
+        super(new DebugConfig("debug"));
     }
 
     public static void main(final String[] args) {
