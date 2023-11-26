@@ -1,13 +1,12 @@
 package dev.sbs.discordapi.util;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public enum Locale {
+@RequiredArgsConstructor
+public enum DiscordLocale {
 
     INDONESIAN("id", "Bahasa Indonesia"),
     DANISH("da", "Dansk"),
