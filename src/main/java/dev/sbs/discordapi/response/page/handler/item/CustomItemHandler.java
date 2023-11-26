@@ -186,7 +186,7 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         }
 
         @Override
-        public CustomItemHandler<T> build() {
+        public @NotNull CustomItemHandler<T> build() {
             CustomItemHandler<T> itemHandler = new CustomItemHandler<>(
                 this.type,
                 this.items.toUnmodifiableList(),

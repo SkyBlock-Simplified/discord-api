@@ -113,7 +113,7 @@ public record Argument(
     private <T> @NotNull T getValueAs(@NotNull String parsedTypeName, @NotNull Function<String, T> transformer, @NotNull Parameter.Type... allowedTypes) {
         if (!Arrays.asList(allowedTypes).contains(this.parameter().getType())) {
             throw SimplifiedException.of(InvalidParameterException.class)
-                .withMessage(String.format("Option value cannot be converted to %s.", parsedTypeName))
+                .withMessage("Option value cannot be converted to %s.", parsedTypeName)
                 .build();
         }
 

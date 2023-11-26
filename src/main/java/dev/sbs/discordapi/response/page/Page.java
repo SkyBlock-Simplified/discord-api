@@ -461,7 +461,7 @@ public class Page implements Paging<Page> {
          * @return A built {@link Page}.
          */
         @Override
-        public Page build() {
+        public @NotNull Page build() {
             return new Page(
                 this.optionBuilder.build(),
                 this.content,
