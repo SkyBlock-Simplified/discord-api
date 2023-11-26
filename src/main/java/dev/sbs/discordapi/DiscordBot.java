@@ -1,12 +1,11 @@
 package dev.sbs.discordapi;
 
+import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
-import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.listener.AutoCompleteListener;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
@@ -41,19 +40,12 @@ import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.object.presence.ClientPresence;
-import discord4j.core.shard.MemberRequestFilter;
-import discord4j.gateway.ShardInfo;
-import discord4j.gateway.intent.Intent;
-import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
-import discord4j.rest.util.AllowedMentions;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -84,18 +76,11 @@ public abstract class DiscordBot extends DiscordErrorObject {
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig discordConfig) {
         this.config = discordConfig;
-        Configurator.setLevel(log, Level.INFO);
+        Configurator.setRootLevel(this.getConfig().getLogLevel());
 
         log.info("Creating Discord Client");
-        this.client = DiscordClientBuilder.create(
-                this.getConfig()
-                    .getDiscordToken()
-                    .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                        .withMessage("No discord token found in environment variables or config!")
-                        .build()
-                    )
-            )
-            .setDefaultAllowedMentions(this.getDefaultAllowedMentions())
+        this.client = DiscordClientBuilder.create(this.getConfig().getToken())
+            .setDefaultAllowedMentions(this.getConfig().getAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Suppress (Reaction Add) 400 Bad Request
             .onClientResponse(ResponseFunction.retryWhen( // Retry Network Exceptions
@@ -108,14 +93,28 @@ public abstract class DiscordBot extends DiscordErrorObject {
         log.info("Connecting to Discord Gateway");
         this.gateway = this.getClient()
             .gateway()
-            .setDisabledIntents(this.getDisabledIntents())
-            .setInitialPresence(this::getInitialPresence)
-            .setMemberRequestFilter(this.getMemberRequestFilter())
+            .setEnabledIntents(this.getConfig().getIntents())
+            .setInitialPresence(this.getConfig()::getClientPresence)
+            .setMemberRequestFilter(this.getConfig().getMemberRequestFilter())
             .withEventDispatcher(eventDispatcher -> eventDispatcher.on(ConnectEvent.class)
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
                     log.info("Gateway Connected");
                     this.onGatewayConnected(gatewayDiscordClient);
+
+                    this.getConfig()
+                        .getDataConfig()
+                        .ifPresent(dataConfig -> {
+                            log.info("Creating Database Session");
+                            SimplifiedApi.getSessionManager().connect(dataConfig);
+
+                            log.info(
+                                "Database Connected. (Initialized in {}ms, Started in {}ms",
+                                SimplifiedApi.getSessionManager().getSession().getInitializationTime(),
+                                SimplifiedApi.getSessionManager().getSession().getStartupTime()
+                            );
+                            this.onDatabaseConnected();
+                        });
 
                     log.info("Scheduling Cache Cleaner");
                     this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
@@ -186,14 +185,14 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         }))
                     );
 
-                    this.getListeners().forEach(listenerClass -> {
+                    this.getConfig().getListeners().forEach(listenerClass -> {
                         DiscordListener<? super Event> discordListener = (DiscordListener<? super Event>) Reflection.of(listenerClass).newInstance(this);
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
 
                     log.info("Registering Commands");
                     Mono<Void> commands = (this.commandRegistrar = CommandRegistrar.builder(this)
-                        .withCommands(this.getCommands())
+                        .withCommands(this.getConfig().getCommands())
                         .build())
                         .updateApplicationCommands();
 
@@ -212,32 +211,14 @@ public abstract class DiscordBot extends DiscordErrorObject {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
-    public final <T extends DiscordConfig> @NotNull T getConfig(@NotNull Class<T> configType) {
-        return configType.cast(this.getConfig());
-    }
-
-    protected @NotNull ConcurrentList<Class<? extends DiscordListener<? extends Event>>> getListeners() {
-        return Concurrent.newUnmodifiableList();
-    }
-
     public final @NotNull Snowflake getClientId() {
         return this.getGateway().getSelfId();
-    }
-
-    protected abstract @NotNull ConcurrentSet<Class<? extends CommandReference>> getCommands();
-
-    protected abstract @NotNull AllowedMentions getDefaultAllowedMentions();
-
-    public @NotNull IntentSet getDisabledIntents() {
-        return IntentSet.of(Intent.GUILD_PRESENCES, Intent.GUILD_MEMBERS);
     }
 
     @Override
     protected final @NotNull DiscordBot getDiscordBot() {
         return this;
     }
-
-    protected abstract @NotNull ClientPresence getInitialPresence(ShardInfo shardInfo);
 
     public final @NotNull Guild getMainGuild() {
         return this.getGateway()
@@ -247,10 +228,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
                 .withMessage("Unable to locate self in Main Guild!")
                 .build()
             );
-    }
-
-    protected @NotNull MemberRequestFilter getMemberRequestFilter() {
-        return MemberRequestFilter.withLargeGuilds();
     }
 
     public final @NotNull User getSelf() {

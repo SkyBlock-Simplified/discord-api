@@ -2,6 +2,7 @@ package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.Model;
+import dev.sbs.api.data.sql.SqlConfig;
 import dev.sbs.api.util.data.tuple.Pair;
 import dev.sbs.api.util.helper.DataUtil;
 import org.junit.jupiter.api.Test;
@@ -13,16 +14,6 @@ import java.io.IOException;
 
 public class SqlToJsonDumpTest {
 
-    private static final TestConfig testConfig;
-
-    static {
-        try {
-            testConfig = new TestConfig();
-        } catch (Exception exception) {
-            throw new IllegalArgumentException("Unable to retrieve current directory", exception); // Should never get here
-        }
-    }
-
     @Test
     public void dumpDatabaseToJson_ok() {
         File currentDir = SimplifiedApi.getCurrentDirectory();
@@ -32,7 +23,7 @@ public class SqlToJsonDumpTest {
             dbDir.mkdirs();
 
         System.out.println("Connecting to database...");
-        SimplifiedApi.getSessionManager().connectSql(testConfig);
+        SimplifiedApi.getSessionManager().connect(SqlConfig.defaultSql());
 
         SimplifiedApi.getSessionManager()
             .getSession()
