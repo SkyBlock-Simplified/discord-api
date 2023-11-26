@@ -130,7 +130,7 @@ public final class PageItem extends Item implements SingletonFieldItem, Paging<P
         }
 
         @Override
-        public PageItem build() {
+        public @NotNull PageItem build() {
             return new PageItem(
                 super.optionBuilder.build(),
                 super.editable,

@@ -326,7 +326,7 @@ public final class Parameter {
         }
 
         @Override
-        public Parameter build() {
+        public @NotNull Parameter build() {
             return new Parameter(
                 this.uniqueId,
                 this.name,
