@@ -199,7 +199,7 @@ public final class Field {
 
 
         @Override
-        public Field build() {
+        public @NotNull Field build() {
             return new Field(
                 this.emoji,
                 this.name,
