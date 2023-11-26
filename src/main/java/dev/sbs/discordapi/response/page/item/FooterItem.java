@@ -135,7 +135,7 @@ public final class FooterItem extends Item {
         }
 
         @Override
-        public FooterItem build() {
+        public @NotNull FooterItem build() {
             return new FooterItem(
                 super.optionBuilder.build(),
                 super.editable,

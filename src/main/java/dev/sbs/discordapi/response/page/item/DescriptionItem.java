@@ -107,7 +107,7 @@ public final class DescriptionItem extends SingletonItem<String> {
         }
 
         @Override
-        public DescriptionItem build() {
+        public @NotNull DescriptionItem build() {
             return new DescriptionItem(
                 super.optionBuilder.build(),
                 super.editable,

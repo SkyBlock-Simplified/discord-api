@@ -106,7 +106,7 @@ public final class ImageUrlItem extends SingletonItem<String> {
         }
 
         @Override
-        public ImageUrlItem build() {
+        public @NotNull ImageUrlItem build() {
             return new ImageUrlItem(
                 super.optionBuilder.build(),
                 super.editable,

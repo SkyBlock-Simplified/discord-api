@@ -158,7 +158,7 @@ public final class AuthorItem extends Item {
         }
 
         @Override
-        public AuthorItem build() {
+        public @NotNull AuthorItem build() {
             return new AuthorItem(
                 super.optionBuilder.build(),
                 super.editable,

@@ -107,7 +107,7 @@ public final class TitleItem extends SingletonItem<String> {
         }
 
         @Override
-        public TitleItem build() {
+        public @NotNull TitleItem build() {
             return new TitleItem(
                 super.optionBuilder.build(),
                 super.editable,

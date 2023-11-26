@@ -312,7 +312,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          * @return A built {@link SelectMenu} component.
          */
         @Override
-        public Button build() {
+        public @NotNull Button build() {
             return new Button(
                 this.identifier,
                 this.style,

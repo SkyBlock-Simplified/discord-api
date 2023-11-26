@@ -122,7 +122,7 @@ public final class TimestampItem extends SingletonItem<Instant> implements Singl
         }
 
         @Override
-        public TimestampItem build() {
+        public @NotNull TimestampItem build() {
             return new TimestampItem(
                 super.optionBuilder.build(),
                 super.editable,

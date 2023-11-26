@@ -134,7 +134,7 @@ public final class ToggleItem extends SingletonItem<Boolean> implements Singleto
         }
 
         @Override
-        public ToggleItem build() {
+        public @NotNull ToggleItem build() {
             return new ToggleItem(
                 super.optionBuilder.build(),
                 super.editable,

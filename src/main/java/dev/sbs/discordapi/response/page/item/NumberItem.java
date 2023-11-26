@@ -153,7 +153,7 @@ public final class NumberItem<T extends Number> extends SingletonItem<T> impleme
         }
 
         @Override
-        public NumberItem<T> build() {
+        public @NotNull NumberItem<T> build() {
             return new NumberItem<>(
                 super.optionBuilder.build(),
                 super.editable,

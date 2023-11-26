@@ -6,8 +6,8 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.atomic.AtomicCollection;
 import dev.sbs.api.util.data.tuple.Pair;
-import dev.sbs.api.util.helper.StreamUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.helper.stream.StreamUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.Field;
@@ -214,7 +214,7 @@ public class FieldItem extends Item implements SingletonFieldItem {
         }
 
         @Override
-        public FieldItem build() {
+        public @NotNull FieldItem build() {
             return new FieldItem(
                 super.optionBuilder.build(),
                 super.editable,

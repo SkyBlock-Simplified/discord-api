@@ -563,7 +563,7 @@ public class Embed implements IdentifiableComponent {
          * @return A built {@link SelectMenu} component.
          */
         @Override
-        public Embed build() {
+        public @NotNull Embed build() {
             return new Embed(
                 this.identifier,
                 this.title,

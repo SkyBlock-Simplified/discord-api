@@ -241,7 +241,7 @@ public final class TextInput extends ActionComponent {
          * @return A built {@link SelectMenu} component.
          */
         @Override
-        public TextInput build() {
+        public @NotNull TextInput build() {
             return new TextInput(
                 this.identifier,
                 this.style,
@@ -256,6 +256,7 @@ public final class TextInput extends ActionComponent {
 
     }
 
+    @Getter
     @RequiredArgsConstructor
     public enum Style {
 
@@ -266,7 +267,7 @@ public final class TextInput extends ActionComponent {
         /**
          * The Discord TextInput Integer value for this style.
          */
-        @Getter private final int value;
+        private final int value;
 
         public static Style of(int value) {
             return Arrays.stream(values()).filter(style -> style.getValue() == value).findFirst().orElse(UNKNOWN);

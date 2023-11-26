@@ -271,7 +271,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
         }
 
         @Override
-        public Modal build() {
+        public @NotNull Modal build() {
             return new Modal(
                 this.identifier,
                 this.title,

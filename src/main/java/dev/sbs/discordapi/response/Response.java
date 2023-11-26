@@ -808,7 +808,7 @@ public class Response implements Paging<Page> {
          * @return A built {@link Response}.
          */
         @Override
-        public Response build() {
+        public @NotNull Response build() {
             if (ListUtil.isEmpty(this.pages))
                 throw SimplifiedException.of(DiscordException.class)
                     .withMessage("A response must have at least one page!")

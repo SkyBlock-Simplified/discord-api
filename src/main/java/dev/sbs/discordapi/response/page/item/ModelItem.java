@@ -206,7 +206,7 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
         }
 
         @Override
-        public ModelItem<T> build() {
+        public @NotNull ModelItem<T> build() {
             if (Objects.isNull(this.valueFunction))
                 throw SimplifiedException.of(DiscordException.class)
                     .withMessage("The value function must be specified.")

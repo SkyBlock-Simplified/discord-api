@@ -107,7 +107,7 @@ public final class ThumbnailUrlItem extends SingletonItem<String> {
         }
 
         @Override
-        public ThumbnailUrlItem build() {
+        public @NotNull ThumbnailUrlItem build() {
             return new ThumbnailUrlItem(
                 super.optionBuilder.build(),
                 super.editable,

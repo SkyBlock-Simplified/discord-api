@@ -4,7 +4,6 @@ import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.util.data.tuple.Pair;
 import dev.sbs.api.util.helper.DataUtil;
-import dev.sbs.api.util.helper.SystemUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.Table;
@@ -26,7 +25,7 @@ public class SqlToJsonDumpTest {
 
     @Test
     public void dumpDatabaseToJson_ok() {
-        File currentDir = SystemUtil.getUserDir();
+        File currentDir = SimplifiedApi.getCurrentDirectory();
         File dbDir = new File(currentDir, "build/db");
 
         if (!dbDir.exists())

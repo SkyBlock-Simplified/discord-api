@@ -243,7 +243,7 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         }
 
         @Override
-        public CollectionItemHandler<T> build() {
+        public @NotNull CollectionItemHandler<T> build() {
             CollectionItemHandler<T> itemHandler = new CollectionItemHandler<>(
                 this.type,
                 this.items.toUnmodifiableList(),

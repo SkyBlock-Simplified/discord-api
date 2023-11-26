@@ -609,7 +609,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * @return A built {@link SelectMenu} component.
              */
             @Override
-            public Option build() {
+            public @NotNull Option build() {
                 return new Option(
                     this.uniqueId,
                     this.label.orElse(this.uniqueId.toString()),

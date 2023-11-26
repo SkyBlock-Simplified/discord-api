@@ -401,7 +401,7 @@ public abstract class ItemHandler<T> implements CacheHandler {
             }
 
             @Override
-            public Sorter<T> build() {
+            public @NotNull Sorter<T> build() {
                 if (ListUtil.isEmpty(this.comparators))
                     throw SimplifiedException.of(DiscordException.class)
                         .withMessage("Comparators cannot be empty!")

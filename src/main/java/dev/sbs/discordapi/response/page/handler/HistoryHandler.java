@@ -213,7 +213,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
         }
 
         @Override
-        public HistoryHandler<P, I> build() {
+        public @NotNull HistoryHandler<P, I> build() {
             return new HistoryHandler<>(
                 this.pages.toUnmodifiableList(),
                 this.historyMatcher,
