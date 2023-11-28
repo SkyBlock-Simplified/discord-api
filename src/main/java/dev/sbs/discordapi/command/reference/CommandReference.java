@@ -60,6 +60,7 @@ public interface CommandReference {
 
     @NotNull UUID getUniqueId();
 
+    @Getter
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     enum Type {
 
@@ -71,7 +72,6 @@ public interface CommandReference {
         /**
          * The underlying value as represented by Discord.
          */
-        @Getter
         private final int value;
 
         /**

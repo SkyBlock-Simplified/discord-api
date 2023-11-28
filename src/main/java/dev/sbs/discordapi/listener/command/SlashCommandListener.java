@@ -50,8 +50,9 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                 return this.getDiscordBot()
                     .getCommandRegistrar()
                     .getSlashCommands()
-                    .get(slashCommand.getClass())
-                    .apply(slashCommandContext);
+                    .findFirst(SlashCommandReference::getUniqueId, slashCommand.getUniqueId())
+                    .map(command -> command.apply(slashCommandContext))
+                    .orElse(Mono.empty());
             });
     }
 

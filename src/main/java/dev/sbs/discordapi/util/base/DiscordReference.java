@@ -71,7 +71,6 @@ public abstract class DiscordReference {
         return this.getDiscordBot()
             .getCommandRegistrar()
             .getLoadedCommands()
-            .values()
             .stream()
             .filter(command -> command.getId() == commandId)
             .findFirst();

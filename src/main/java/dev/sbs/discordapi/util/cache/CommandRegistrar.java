@@ -5,8 +5,8 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.util.data.tuple.Pair;
-import dev.sbs.api.util.helper.StreamUtil;
+import dev.sbs.api.util.data.tuple.pair.Pair;
+import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.impl.DiscordCommand;
 import dev.sbs.discordapi.command.impl.SlashCommand;
@@ -42,8 +42,8 @@ public class CommandRegistrar extends DiscordHelper {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
-    @Getter private final @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> loadedCommands;
-    @Getter private final @NotNull ConcurrentMap<Class<? extends SlashCommandReference>, SlashCommand> slashCommands;
+    @Getter private final @NotNull ConcurrentList<CommandReference> loadedCommands;
+    @Getter private final @NotNull ConcurrentList<SlashCommand> slashCommands;
 
     CommandRegistrar(
         @NotNull DiscordBot discordBot,
@@ -59,17 +59,15 @@ public class CommandRegistrar extends DiscordHelper {
             SlashCommand.class,
             initializedCommands,
             (commandEntry, compareEntry) -> Objects.equals(
-                commandEntry.getValue().getParent(),
-                compareEntry.getValue().getParent()
-            ) && commandEntry.getValue()
-                .getName()
-                .equalsIgnoreCase(compareEntry.getValue().getName())
+                commandEntry.getParent(),
+                compareEntry.getParent()
+            ) && commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
         this.getLog().info("Building Command Tree");
-        ConcurrentMap<Class<? extends CommandReference>, CommandReference> commandTree = Concurrent.newMap();
-        commandTree.putAll(this.slashCommands);
-        this.loadedCommands = Concurrent.newUnmodifiableMap(commandTree);
+        ConcurrentList<CommandReference> commandTree = Concurrent.newList();
+        commandTree.addAll(this.slashCommands);
+        this.loadedCommands = commandTree.toUnmodifiableList();
 
         /* // Create Missing Command Config
         if (commandConfigModel.isEmpty()) {
@@ -94,7 +92,6 @@ public class CommandRegistrar extends DiscordHelper {
                 // Handle Parent Commands
                 this.getSlashCommands()
                     .stream()
-                    .map(Map.Entry::getValue)
                     .flatMap(command -> command.getParent().stream())
                     .distinct()
                     .map(parent -> this.buildCommand(parent)
@@ -102,7 +99,6 @@ public class CommandRegistrar extends DiscordHelper {
                         .addAllOptions(
                             this.getSlashCommands()
                                 .stream()
-                                .map(Map.Entry::getValue)
                                 .filter(command -> command.getParent().map(compare -> parent.getName().equals(compare.getName())).orElse(false))
                                 .flatMap(command -> command.getGroup().stream())
                                 .distinct()
@@ -113,7 +109,6 @@ public class CommandRegistrar extends DiscordHelper {
                                     .addAllOptions(
                                         this.getSlashCommands()
                                             .stream()
-                                            .map(Map.Entry::getValue)
                                             .filter(command -> command.getParent().isPresent())
                                             .filter(command -> parent.getName().equals(command.getParent().get().getName()))
                                             .filter(command -> command.getGroup().isPresent())
@@ -130,7 +125,6 @@ public class CommandRegistrar extends DiscordHelper {
                         .addAllOptions(
                             this.getSlashCommands()
                                 .stream()
-                                .map(Map.Entry::getValue)
                                 .filter(command -> command.getParent().isPresent())
                                 .filter(command -> parent.getName().equals(command.getParent().get().getName()))
                                 .filter(command -> command.getGroup().isEmpty())
@@ -144,7 +138,6 @@ public class CommandRegistrar extends DiscordHelper {
                 // Handle Top-Level Commands
                 this.getSlashCommands()
                     .stream()
-                    .map(Map.Entry::getValue)
                     .filter(command -> command.getParent().isEmpty())
                     .filter(command -> command.getGuildId() == guildId)
                     .map(command -> this.buildCommand(command)
@@ -244,15 +237,15 @@ public class CommandRegistrar extends DiscordHelper {
             })
             .thenMany(
                 Flux.fromIterable(this.getLoadedCommands())
-                    .filter(commandEntry -> commandEntry.getValue().getGuildId() > 0)
+                    .filter(command -> command.getGuildId() > 0)
                     .flatMap(entry -> this.getDiscordBot()
                         .getGateway()
                         .getRestClient()
                         .getApplicationService()
                         .bulkOverwriteGuildApplicationCommand(
                             this.getDiscordBot().getClientId().asLong(),
-                            entry.getValue().getGuildId(),
-                            this.buildCommandRequests(entry.getValue().getGuildId())
+                            entry.getGuildId(),
+                            this.buildCommandRequests(entry.getGuildId())
                         )
                         .doOnNext(commandData -> {
                             ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
@@ -292,40 +285,38 @@ public class CommandRegistrar extends DiscordHelper {
 
     private @NotNull Optional<CommandReference> getCommandReference(@NotNull ConcurrentList<String> commandTree) {
         return this.getLoadedCommands()
-            .values()
             .stream()
             .filter(command -> command.doesMatch(commandTree))
             .findFirst();
     }
 
-    private <T extends CommandReference, I extends DiscordCommand<?, ?>> @NotNull ConcurrentMap<Class<? extends T>, I> retrieveTypedCommands(
+    private <T extends CommandReference, I extends DiscordCommand<?, ?>> @NotNull ConcurrentList<I> retrieveTypedCommands(
         @NotNull Class<T> referenceType,
         @NotNull Class<I> instanceType,
         @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> commands,
-        @NotNull BiFunction<Map.Entry<Class<T>, I>, Map.Entry<Class<T>, I>, Boolean> filter
+        @NotNull BiFunction<T, T, Boolean> filter
     ) {
-        ConcurrentMap<Class<T>, I> typedCommands = commands.stream()
-            .filter(commandEntry -> referenceType.isAssignableFrom(commandEntry.getKey()))
-            .map(commandEntry -> Pair.of(commandEntry.getKey(), instanceType.cast(commandEntry.getValue())))
+        ConcurrentMap<T, I> typedCommands = commands.stream()
+            .filter(entry -> referenceType.isAssignableFrom(entry.getKey()))
+            .map(entry -> Pair.of(referenceType.cast(entry.getValue()), instanceType.cast(entry.getValue())))
             .collect(Concurrent.toMap());
 
-        return Concurrent.newUnmodifiableMap(
-            typedCommands.stream()
-                .filter(commandEntry -> {
-                    Optional<Map.Entry<Class<T>, I>> commandOverlap = typedCommands.stream()
-                        .filter(compareEntry -> !commandEntry.getKey().equals(compareEntry.getKey()))
-                        .filter(compareEntry -> filter.apply(commandEntry, compareEntry)) // Compare Commands
-                        .findAny();
+        return typedCommands.stream()
+            .filter(commandEntry -> {
+                Optional<Map.Entry<T, I>> commandOverlap = typedCommands.stream()
+                    .filter(compareEntry -> !commandEntry.getKey().equals(compareEntry.getKey()))
+                    .filter(compareEntry -> filter.apply(commandEntry.getKey(), compareEntry.getKey())) // Compare Commands
+                    .findAny();
 
-                    if (commandOverlap.isPresent()) {
-                        this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getValue().getName(), commandOverlap.get().getValue().getName());
-                        return false;
-                    }
+                if (commandOverlap.isPresent()) {
+                    this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getKey().getName(), commandOverlap.get().getKey().getName());
+                    return false;
+                }
 
-                    return true;
-                })
-                .collect(Concurrent.toMap())
-        );
+                return true;
+            })
+            .map(Map.Entry::getValue)
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     private @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<? extends CommandReference>> commands) {
@@ -355,7 +346,7 @@ public class CommandRegistrar extends DiscordHelper {
 
                 return true;
             })
-            .collect(Concurrent.toMap());
+            .collect(Concurrent.toMap(Pair::getKey, Pair::getValue));
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -375,7 +366,7 @@ public class CommandRegistrar extends DiscordHelper {
         }
 
         @Override
-        public CommandRegistrar build() {
+        public @NotNull CommandRegistrar build() {
             return new CommandRegistrar(
                 this.discordBot,
                 this.commands
