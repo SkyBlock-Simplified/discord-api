@@ -9,7 +9,7 @@ import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.embed.structure.Field;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
@@ -33,7 +33,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         return this.getEventContext().getChannelId();
     }
 
-    Optional<Consumer<Embed.EmbedBuilder>> getEmbedBuilderConsumer();
+    Optional<Consumer<Embed.Builder>> getEmbedBuilderConsumer();
 
     @Override
     default @NotNull T getEvent() {
@@ -105,11 +105,11 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         return of(discordBot, eventContext, throwable, title, Optional.empty());
     }
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, @Nullable Consumer<Embed.EmbedBuilder> embedBuilderConsumer) {
+    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, @Nullable Consumer<Embed.Builder> embedBuilderConsumer) {
         return of(discordBot, eventContext, throwable, title, Optional.ofNullable(embedBuilderConsumer));
     }
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, Optional<Consumer<Embed.EmbedBuilder>> embedBuilderConsumer) {
+    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, Optional<Consumer<Embed.Builder>> embedBuilderConsumer) {
         return new ExceptionContextImpl<>(discordBot, eventContext, throwable, title, embedBuilderConsumer);
     }
 

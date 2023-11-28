@@ -18,7 +18,7 @@ public final class Attachment {
     // File Upload
     private final @NotNull String name;
     private final boolean spoiler;
-    private Optional<InputStream> uploadStream;
+    private @NotNull Optional<InputStream> uploadStream;
 
     // Uploaded File
     private long id;

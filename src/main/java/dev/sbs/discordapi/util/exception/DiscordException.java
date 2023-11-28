@@ -3,7 +3,7 @@ package dev.sbs.discordapi.util.exception;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.data.tuple.Triple;
+import dev.sbs.api.util.data.tuple.triple.Triple;
 
 /**
  * {@link DiscordException DiscordExceptions} are thrown when something is unable to progress.
