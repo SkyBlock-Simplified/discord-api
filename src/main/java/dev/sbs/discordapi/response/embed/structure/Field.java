@@ -167,7 +167,7 @@ public final class Field {
          * @param name The name of the field.
          */
         public Builder withName(@NotNull Optional<String> name) {
-            this.name = Optional.ofNullable(StringUtil.trimToNull(value.orElse("")));
+            this.name = Optional.ofNullable(StringUtil.trimToNull(name.orElse("")));
             return this;
         }
 
