@@ -20,14 +20,16 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 import java.util.function.Function;
 
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class Emoji {
 
     private static final Function<ReactionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-    @Getter private final @NotNull Snowflake id;
-    @Getter private final @NotNull String name;
-    @Getter private final boolean animated;
-    @Getter private final @NotNull Optional<String> raw;
+    private final @NotNull Snowflake id;
+    private final @NotNull String name;
+    private final boolean animated;
+    private final @NotNull Optional<String> raw;
+    @Getter(AccessLevel.NONE)
     private final Optional<Function<ReactionContext, Mono<Void>>> interaction;
 
     public abstract @NotNull String asFormat();
@@ -58,9 +60,9 @@ public abstract class Emoji {
         Emoji emoji = (Emoji) o;
 
         return new EqualsBuilder()
-            .append(this.isAnimated(), emoji.isAnimated())
             .append(this.getId(), emoji.getId())
             .append(this.getName(), emoji.getName())
+            .append(this.isAnimated(), emoji.isAnimated())
             .append(this.getRaw(), emoji.getRaw())
             .build();
     }

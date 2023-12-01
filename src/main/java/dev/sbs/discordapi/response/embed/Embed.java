@@ -2,7 +2,7 @@ package dev.sbs.discordapi.response.embed;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.SimplifiedException;
-import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -11,12 +11,16 @@ import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
+import dev.sbs.discordapi.response.embed.structure.Author;
+import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,25 +33,23 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Getter
+@AllArgsConstructor
 public class Embed implements IdentifiableComponent {
 
-    @Getter private final String identifier;
-    @LengthLimit(256)
-    @Getter private final Optional<String> title;
-    @LengthLimit(4096)
-    @Getter private final Optional<String> description;
-    @Getter private final Optional<String> url;
-    @Getter private final Optional<Instant> timestamp;
-    @Getter private final Optional<Color> color;
-    @Getter private final Optional<String> imageUrl;
-    @Getter private final Optional<String> thumbnailUrl;
-    @Getter private final Optional<Footer> footer;
-    @Getter private final Optional<Author> author;
-    @Getter private final ConcurrentList<Field> fields;
+    private final @NotNull String identifier;
+    private final @NotNull Optional<Color> color;
+    private final @NotNull Optional<Author> author;
+    private final @NotNull Optional<String> title;
+    private final @NotNull Optional<String> url;
+    private final @NotNull Optional<String> thumbnailUrl;
+    private final @NotNull Optional<String> description;
+    private final @NotNull Optional<String> imageUrl;
+    private final @NotNull Optional<Footer> footer;
+    private final @NotNull ConcurrentList<Field> fields;
 
-    public static EmbedBuilder builder() {
-        return new EmbedBuilder().withIdentifier(UUID.randomUUID().toString());
+    public static @NotNull Embed.Builder builder() {
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -58,43 +60,47 @@ public class Embed implements IdentifiableComponent {
         Embed embed = (Embed) o;
 
         return new EqualsBuilder()
-            .append(this.getTitle(), embed.getTitle())
-            .append(this.getDescription(), embed.getDescription())
-            .append(this.getUrl(), embed.getUrl())
-            .append(this.getTimestamp(), embed.getTimestamp())
+            .append(this.getIdentifier(), embed.getIdentifier())
             .append(this.getColor(), embed.getColor())
-            .append(this.getImageUrl(), embed.getImageUrl())
-            .append(this.getThumbnailUrl(), embed.getThumbnailUrl())
-            .append(this.getFooter(), embed.getFooter())
             .append(this.getAuthor(), embed.getAuthor())
+            .append(this.getTitle(), embed.getTitle())
+            .append(this.getUrl(), embed.getUrl())
+            .append(this.getThumbnailUrl(), embed.getThumbnailUrl())
+            .append(this.getDescription(), embed.getDescription())
+            .append(this.getImageUrl(), embed.getImageUrl())
+            .append(this.getFooter(), embed.getFooter())
             .append(this.getFields(), embed.getFields())
             .build();
     }
 
-    public static EmbedBuilder from(Embed embed) {
-        return new EmbedBuilder()
+    public static @NotNull Builder from(@NotNull Embed embed) {
+        return new Builder()
             .withIdentifier(embed.getIdentifier())
-            .withTitle(embed.getTitle())
-            .withDescription(embed.getDescription())
-            .withUrl(embed.getUrl())
-            .withTimestamp(embed.getTimestamp())
             .withColor(embed.getColor())
+            .withAuthor(embed.getAuthor())
+            .withTitle(embed.getTitle())
+            .withUrl(embed.getUrl())
+            .withThumbnailUrl(embed.getThumbnailUrl())
+            .withDescription(embed.getDescription())
             .withImageUrl(embed.getImageUrl())
             .withFooter(embed.getFooter())
-            .withAuthor(embed.getAuthor())
             .withFields(embed.getFields());
     }
 
-    public static EmbedBuilder from(@NotNull Throwable throwable) {
-        return new EmbedBuilder()
+    public static @NotNull Builder from(@NotNull Throwable throwable) {
+        return new Builder()
             .withIdentifier(UUID.randomUUID().toString())
             .withColor(Color.RED)
             .withTitle("An exception has occurred!")
             .withDescription(ExceptionUtil.getRootCauseMessage(throwable))
-            .withTimestamp(Instant.now());
+            .withFooter(
+                Footer.builder()
+                    .withTimestamp(Instant.now())
+                    .build()
+            );
     }
 
-    public EmbedCreateSpec getD4jEmbed() {
+    public @NotNull EmbedCreateSpec getD4jEmbed() {
         EmbedCreateSpec.Builder builder = EmbedCreateSpec.builder()
             .title(this.getTitle().orElse(""))
             .description(this.getDescription().orElse(""))
@@ -102,12 +108,16 @@ public class Embed implements IdentifiableComponent {
             .color(discord4j.rest.util.Color.of(this.getColor().orElse(Color.WHITE).getRGB()))
             .image(this.getImageUrl().orElse(""))
             .thumbnail(this.getThumbnailUrl().orElse(""))
-            .title(this.getTitle().orElse(""));
+            .title(this.getTitle().orElse(""))
+            .fields(this.getFields().stream().map(Field::getD4jField).collect(Concurrent.toList()));
 
-        this.getTimestamp().ifPresent(builder::timestamp);
-        this.getFooter().ifPresent(footer -> builder.footer(footer.getD4jFooter()));
         this.getAuthor().ifPresent(author -> builder.author(author.getD4jAuthor()));
-        this.getFields().forEach(field -> builder.addField(field.getD4jField()));
+
+        this.getFooter().ifPresent(footer -> {
+            builder.footer(footer.getD4jFooter());
+            footer.getTimestamp().ifPresent(builder::timestamp);
+        });
+
         return builder.build();
     }
 
@@ -115,42 +125,44 @@ public class Embed implements IdentifiableComponent {
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getIdentifier())
-            .append(this.getTitle())
-            .append(this.getDescription())
-            .append(this.getUrl())
-            .append(this.getTimestamp())
             .append(this.getColor())
-            .append(this.getImageUrl())
-            .append(this.getThumbnailUrl())
-            .append(this.getFooter())
             .append(this.getAuthor())
+            .append(this.getTitle())
+            .append(this.getUrl())
+            .append(this.getThumbnailUrl())
+            .append(this.getDescription())
+            .append(this.getImageUrl())
+            .append(this.getFooter())
             .append(this.getFields())
             .build();
     }
 
-    public EmbedBuilder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class EmbedBuilder implements Builder<Embed> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<Embed> {
 
+        @BuildFlag(required = true)
         private String identifier;
+        @BuildFlag(limit = 256)
         private Optional<String> title = Optional.empty();
+        @BuildFlag(limit = 4096)
         private Optional<String> description = Optional.empty();
         private Optional<String> url = Optional.empty();
-        private Optional<Instant> timestamp = Optional.empty();
         private Optional<Color> color = Optional.empty();
         private Optional<String> imageUrl = Optional.empty();
         private Optional<String> thumbnailUrl = Optional.empty();
         private Optional<Footer> footer = Optional.empty();
         private Optional<Author> author = Optional.empty();
-        private final ConcurrentList<Field> fields = Concurrent.newList();
+        @BuildFlag(limit = Field.MAX_ALLOWED)
+        private ConcurrentList<Field> fields = Concurrent.newList();
 
         /**
          * Clears all existing {@link Field Fields}.
          */
-        public EmbedBuilder clearFields() {
+        public Builder clearFields() {
             this.fields.clear();
             return this;
         }
@@ -158,82 +170,9 @@ public class Embed implements IdentifiableComponent {
         /**
          * Sets the {@link Author} of the {@link Embed}.
          *
-         * @param name The name of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name) {
-            return this.withAuthor(name, Optional.empty());
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @Nullable String iconUrl) {
-            return this.withAuthor(name, Optional.ofNullable(iconUrl));
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @NotNull Optional<String> iconUrl) {
-            return this.withAuthor(name, iconUrl, Optional.empty());
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         * @param url The url of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @Nullable String iconUrl, @Nullable String url) {
-            return this.withAuthor(name, Optional.ofNullable(iconUrl), url);
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         * @param url The url of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @Nullable String iconUrl, @NotNull Optional<String> url) {
-            return this.withAuthor(name, Optional.ofNullable(iconUrl), url);
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         * @param url The url of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @NotNull Optional<String> iconUrl, @Nullable String url) {
-            return this.withAuthor(name, iconUrl, Optional.ofNullable(url));
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
-         * @param name The name of the author.
-         * @param iconUrl The image icon of the author.
-         * @param url The url of the author.
-         */
-        public EmbedBuilder withAuthor(@NotNull String name, @NotNull Optional<String> iconUrl, @NotNull Optional<String> url) {
-            return this.withAuthor(Author.of(name, iconUrl, url));
-        }
-
-        /**
-         * Sets the {@link Author} of the {@link Embed}.
-         *
          * @param author The author of the embed.
          */
-        public EmbedBuilder withAuthor(@Nullable Author author) {
+        public Builder withAuthor(@Nullable Author author) {
             return this.withAuthor(Optional.ofNullable(author));
         }
 
@@ -242,7 +181,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param author The author of the embed.
          */
-        public EmbedBuilder withAuthor(Optional<Author> author) {
+        public Builder withAuthor(@NotNull Optional<Author> author) {
             this.author = author;
             return this;
         }
@@ -252,7 +191,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param color The color of the embed.
          */
-        public EmbedBuilder withColor(@Nullable Color color) {
+        public Builder withColor(@Nullable Color color) {
             return this.withColor(Optional.ofNullable(color));
         }
 
@@ -261,7 +200,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param color The color of the embed.
          */
-        public EmbedBuilder withColor(Optional<Color> color) {
+        public Builder withColor(@NotNull Optional<Color> color) {
             this.color = color;
             return this;
         }
@@ -271,8 +210,17 @@ public class Embed implements IdentifiableComponent {
          *
          * @param description The description of the embed.
          */
-        public EmbedBuilder withDescription(@Nullable String description) {
+        public Builder withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
+        }
+
+        /**
+         * Formats the description of the {@link Embed} with the given objects.
+         *
+         * @param description The description of the embed.
+         */
+        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
         /**
@@ -280,8 +228,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param description The description of the embed.
          */
-        public EmbedBuilder withDescription(@NotNull Optional<String> description) {
-            description.ifPresent(value -> validateLength(Embed.class, "description", value));
+        public Builder withDescription(@NotNull Optional<String> description) {
             this.description = description;
             return this;
         }
@@ -289,7 +236,7 @@ public class Embed implements IdentifiableComponent {
         /**
          * Adds an empty {@link Field} to the {@link Embed}.
          */
-        public EmbedBuilder withEmptyField() {
+        public Builder withEmptyField() {
             return this.withEmptyField(false);
         }
 
@@ -298,7 +245,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param inline True if field should render inline.
          */
-        public EmbedBuilder withEmptyField(boolean inline) {
+        public Builder withEmptyField(boolean inline) {
             return this.withField(null, null, inline);
         }
 
@@ -308,7 +255,7 @@ public class Embed implements IdentifiableComponent {
          * @param name The name of the field.
          * @param value The value of the field.
          */
-        public EmbedBuilder withField(@Nullable String name, @Nullable String value) {
+        public Builder withField(@Nullable String name, @Nullable String value) {
             return this.withField(name, value, false);
         }
 
@@ -319,7 +266,7 @@ public class Embed implements IdentifiableComponent {
          * @param value The value of the field.
          * @param inline True if field should render inline.
          */
-        public EmbedBuilder withField(@Nullable String name, @Nullable String value, boolean inline) {
+        public Builder withField(@Nullable String name, @Nullable String value, boolean inline) {
             return this.withFields(
                 Field.builder()
                     .withName(name)
@@ -334,22 +281,8 @@ public class Embed implements IdentifiableComponent {
          *
          * @param fields Variable number of fields to add.
          */
-        public EmbedBuilder withFields(@NotNull Field... fields) {
+        public Builder withFields(@NotNull Field... fields) {
             return this.withFields(Arrays.asList(fields));
-        }
-
-        /**
-         * Adds the fields of a {@link SimplifiedException} to the fields of the {@link Embed}.
-         *
-         * @param simplifiedException The exception with fields to add.
-         */
-        public EmbedBuilder withFields(@NotNull SimplifiedException simplifiedException) {
-            return this.withFields(
-                simplifiedException.getFields()
-                    .stream()
-                    .map(Field::of)
-                    .collect(Concurrent.toList())
-            );
         }
 
         /**
@@ -357,7 +290,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param fields Collection of fields to add.
          */
-        public EmbedBuilder withFields(@NotNull Iterable<Field> fields) {
+        public Builder withFields(@NotNull Iterable<Field> fields) {
             if (this.fields.size() == Field.MAX_ALLOWED)
                 throw SimplifiedException.of(DiscordException.class)
                     .withMessage("Number of fields cannot exceed %s.", Field.MAX_ALLOWED)
@@ -369,12 +302,27 @@ public class Embed implements IdentifiableComponent {
         }
 
         /**
+         * Adds the fields of a {@link SimplifiedException} to the fields of the {@link Embed}.
+         *
+         * @param simplifiedException The exception with fields to add.
+         */
+        public Builder withFields(@NotNull SimplifiedException simplifiedException) {
+            return this.withFields(
+                simplifiedException.getFields()
+                    .stream()
+                    .map(Field::from)
+                    .map(Field.Builder::build)
+                    .collect(Concurrent.toList())
+            );
+        }
+
+        /**
          * Overrides the default identifier of the {@link Embed}.
          *
          * @param identifier The identifier to use.
          * @param objects The objects used to format the identifier.
          */
-        public EmbedBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
+        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
             this.identifier = String.format(identifier, objects);
             return this;
         }
@@ -382,38 +330,9 @@ public class Embed implements IdentifiableComponent {
         /**
          * Sets the {@link Footer} of the {@link Embed}.
          *
-         * @param text The text of the footer.
-         */
-        public EmbedBuilder withFooter(@NotNull String text) {
-            return this.withFooter(text, Optional.empty());
-        }
-
-        /**
-         * Sets the {@link Footer} of the {@link Embed}.
-         *
-         * @param text The text of the footer.
-         * @param iconUrl The image icon of the footer.
-         */
-        public EmbedBuilder withFooter(@NotNull String text, @Nullable String iconUrl) {
-            return this.withFooter(text, Optional.ofNullable(iconUrl));
-        }
-
-        /**
-         * Sets the {@link Footer} of the {@link Embed}.
-         *
-         * @param text The text of the footer.
-         * @param iconUrl The image icon of the footer.
-         */
-        public EmbedBuilder withFooter(@NotNull String text, @NotNull Optional<String> iconUrl) {
-            return this.withFooter(Footer.of(text, iconUrl));
-        }
-
-        /**
-         * Sets the {@link Footer} of the {@link Embed}.
-         *
          * @param footer The footer of the embed.
          */
-        public EmbedBuilder withFooter(@Nullable Footer footer) {
+        public Builder withFooter(@Nullable Footer footer) {
             return this.withFooter(Optional.ofNullable(footer));
         }
 
@@ -422,19 +341,28 @@ public class Embed implements IdentifiableComponent {
          *
          * @param footer The footer of the embed.
          */
-        public EmbedBuilder withFooter(@NotNull Optional<Footer> footer) {
+        public Builder withFooter(@NotNull Optional<Footer> footer) {
             this.footer = footer;
             return this;
+        }
+
+        /**
+         * Sets the image url used in the {@link Embed}.
+         *
+         * @param imageUrl The url of the embed image.
+         */
+        public Builder withImageUrl(@Nullable String imageUrl) {
+            return this.withImageUrl(Optional.ofNullable(imageUrl));
         }
 
         /**
          * Formats the image url used in the {@link Embed} with the given objects.
          *
          * @param imageUrl The url of the embed image.
-         * @param objects Objects used to format the image url.
+         * @param args Objects used to format the image url.
          */
-        public EmbedBuilder withImageUrl(@NotNull String imageUrl, @NotNull Object... objects) {
-            return this.withImageUrl(String.format(imageUrl, objects));
+        public Builder withImageUrl(@PrintFormat @Nullable String imageUrl, @NotNull Object... args) {
+            return this.withImageUrl(StringUtil.formatNullable(imageUrl, args));
         }
 
         /**
@@ -442,28 +370,28 @@ public class Embed implements IdentifiableComponent {
          *
          * @param imageUrl The url of the embed image.
          */
-        public EmbedBuilder withImageUrl(@Nullable String imageUrl) {
-            return this.withImageUrl(Optional.ofNullable(imageUrl));
-        }
-
-        /**
-         * Sets the image url used in the {@link Embed}.
-         *
-         * @param imageUrl The url of the embed image.
-         */
-        public EmbedBuilder withImageUrl(Optional<String> imageUrl) {
+        public Builder withImageUrl(@NotNull Optional<String> imageUrl) {
             this.imageUrl = imageUrl;
             return this;
+        }
+
+        /**
+         * Sets the thumbnail image url used in the {@link Embed}.
+         *
+         * @param thumbnailUrl The url of the embed thumbnail image.
+         */
+        public Builder withThumbnailUrl(@Nullable String thumbnailUrl) {
+            return this.withThumbnailUrl(Optional.ofNullable(thumbnailUrl));
         }
 
         /**
          * Formats the thumbnail image url used in the {@link Embed} with the given objects.
          *
          * @param thumbnailUrl The url of the embed thumbnail image.
-         * @param objects Objects used to format the thumbnail image url.
+         * @param args Objects used to format the thumbnail image url.
          */
-        public EmbedBuilder withThumbnailUrl(@NotNull String thumbnailUrl, @NotNull Object... objects) {
-            return this.withThumbnailUrl(String.format(thumbnailUrl, objects));
+        public Builder withThumbnailUrl(@PrintFormat @Nullable String thumbnailUrl, @NotNull Object... args) {
+            return this.withThumbnailUrl(StringUtil.formatNullable(thumbnailUrl, args));
         }
 
         /**
@@ -471,28 +399,28 @@ public class Embed implements IdentifiableComponent {
          *
          * @param thumbnailUrl The url of the embed thumbnail image.
          */
-        public EmbedBuilder withThumbnailUrl(@Nullable String thumbnailUrl) {
-            return this.withThumbnailUrl(Optional.ofNullable(thumbnailUrl));
-        }
-
-        /**
-         * Sets the thumbnail image url used in the {@link Embed}.
-         *
-         * @param thumbnailUrl The url of the embed thumbnail image.
-         */
-        public EmbedBuilder withThumbnailUrl(Optional<String> thumbnailUrl) {
+        public Builder withThumbnailUrl(@NotNull Optional<String> thumbnailUrl) {
             this.thumbnailUrl = thumbnailUrl;
             return this;
+        }
+
+        /**
+         * Sets the title text of the {@link Embed}.
+         *
+         * @param title Title of the embed.
+         */
+        public Builder withTitle(@Nullable String title) {
+            return this.withTitle(Optional.ofNullable(title));
         }
 
         /**
          * Formats the title text of the {@link Embed} with given objects.
          *
          * @param title Title of the embed.
-         * @param objects Objects used to format the title.
+         * @param args Objects used to format the title.
          */
-        public EmbedBuilder withTitle(@NotNull String title, @NotNull Object... objects) {
-            return this.withTitle(String.format(title, objects));
+        public Builder withTitle(@PrintFormat @Nullable String title, @NotNull Object... args) {
+            return this.withTitle(StringUtil.formatNullable(title, args));
         }
 
         /**
@@ -500,37 +428,8 @@ public class Embed implements IdentifiableComponent {
          *
          * @param title Title of the embed.
          */
-        public EmbedBuilder withTitle(@Nullable String title) {
-            return this.withTitle(Optional.ofNullable(title));
-        }
-
-        /**
-         * Sets the title text of the {@link Embed}.
-         *
-         * @param title Title of the embed.
-         */
-        public EmbedBuilder withTitle(Optional<String> title) {
-            title.ifPresent(value -> validateLength(Embed.class, "title", value));
+        public Builder withTitle(@NotNull Optional<String> title) {
             this.title = title;
-            return this;
-        }
-
-        /**
-         * Sets the timestamp to be shown in the {@link Footer} of the {@link Embed}.
-         *
-         * @param timestamp Timestamp of the embed.
-         */
-        public EmbedBuilder withTimestamp(@Nullable Instant timestamp) {
-            return this.withTimestamp(Optional.ofNullable(timestamp));
-        }
-
-        /**
-         * Sets the timestamp to be shown in the {@link Footer} of the {@link Embed}.
-         *
-         * @param timestamp Timestamp of the embed.
-         */
-        public EmbedBuilder withTimestamp(Optional<Instant> timestamp) {
-            this.timestamp = timestamp;
             return this;
         }
 
@@ -541,8 +440,20 @@ public class Embed implements IdentifiableComponent {
          *
          * @param url The url of the embed title.
          */
-        public EmbedBuilder withUrl(@Nullable String url) {
+        public Builder withUrl(@Nullable String url) {
             return this.withUrl(Optional.ofNullable(url));
+        }
+
+        /**
+         * Sets the url used in the {@link Embed}'s title.
+         * <br><br>
+         * See {@link #getTitle()}.
+         *
+         * @param url The url of the embed title.
+         * @param args Objects used to format the url.
+         */
+        public Builder withUrl(@PrintFormat @Nullable String url, @NotNull Object... args) {
+            return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
         /**
@@ -552,7 +463,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param url The url of the embed title.
          */
-        public EmbedBuilder withUrl(Optional<String> url) {
+        public Builder withUrl(@NotNull Optional<String> url) {
             this.url = url;
             return this;
         }
@@ -564,33 +475,20 @@ public class Embed implements IdentifiableComponent {
          */
         @Override
         public @NotNull Embed build() {
+            Reflection.validateFlags(this);
+
             return new Embed(
                 this.identifier,
-                this.title,
-                this.description,
-                this.url,
-                this.timestamp,
                 this.color,
-                this.imageUrl,
-                this.thumbnailUrl,
-                this.footer,
                 this.author,
-                Concurrent.newUnmodifiableList(this.fields)
+                this.title,
+                this.url,
+                this.thumbnailUrl,
+                this.description,
+                this.imageUrl,
+                this.footer,
+                this.fields.toUnmodifiableList()
             );
-        }
-
-        static void validateLength(Class<?> tClass, String fieldName, String value) {
-            if (StringUtil.isNotEmpty(value)) {
-                Reflection.of(tClass)
-                    .getField(fieldName)
-                    .getAnnotation(LengthLimit.class)
-                    .ifPresent(lengthLimit -> {
-                        if (StringUtil.trim(value).length() > lengthLimit.value())
-                            throw SimplifiedException.of(DiscordException.class)
-                                .withMessage("The maximum allowed length of %s '%s' is %s characters.", tClass.getSimpleName(), fieldName, lengthLimit.value())
-                                .build();
-                    });
-            }
         }
 
     }

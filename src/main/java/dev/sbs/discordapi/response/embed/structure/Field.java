@@ -1,9 +1,10 @@
-package dev.sbs.discordapi.response.embed;
+package dev.sbs.discordapi.response.embed.structure;
 
-import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.data.tuple.Triple;
+import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.spec.EmbedCreateFields;
@@ -11,32 +12,31 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Getter
+@RequiredArgsConstructor
 public final class Field {
 
     public static final int MAX_ALLOWED = 25;
+    private final @NotNull Optional<String> name;
+    private final @NotNull Optional<String> value;
+    private final boolean inline;
+    private final @NotNull Optional<Emoji> emoji;
 
-    @Getter private final Optional<Emoji> emoji;
-    @LengthLimit(256)
-    @Getter private final Optional<String> name;
-    @LengthLimit(1024)
-    @Getter private final Optional<String> value;
-    @Getter private final boolean inline;
-
-    public static FieldBuilder builder() {
-        return new FieldBuilder();
+    public static @NotNull Builder builder() {
+        return new Builder();
     }
 
-    public static Field empty() {
+    public static @NotNull Field empty() {
         return empty(false);
     }
 
-    public static Field empty(boolean inline) {
+    public static @NotNull Field empty(boolean inline) {
         return builder().isInline(inline).build();
     }
 
@@ -48,14 +48,29 @@ public final class Field {
         Field field = (Field) o;
 
         return new EqualsBuilder()
-            .append(this.isInline(), field.isInline())
-            .append(this.getEmoji(), field.getEmoji())
             .append(this.getName(), field.getName())
             .append(this.getValue(), field.getValue())
+            .append(this.isInline(), field.isInline())
+            .append(this.getEmoji(), field.getEmoji())
             .build();
     }
 
-    public EmbedCreateFields.Field getD4jField() {
+    public static @NotNull Builder from(@NotNull Field field) {
+        return builder()
+            .withName(field.getName())
+            .withValue(field.getValue())
+            .isInline(field.isInline())
+            .withEmoji(field.getEmoji());
+    }
+
+    public static @NotNull Builder from(@NotNull Triple<String, String, Boolean> triple) {
+        return builder()
+            .withName(triple.getLeft())
+            .withValue(triple.getMiddle())
+            .isInline(triple.getRight());
+    }
+
+    public @NotNull EmbedCreateFields.Field getD4jField() {
         return EmbedCreateFields.Field.of(
             String.format(
                 "%s%s",
@@ -70,41 +85,31 @@ public final class Field {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getEmoji())
             .append(this.getName())
             .append(this.getValue())
             .append(this.isInline())
+            .append(this.getEmoji())
             .build();
     }
 
-    public FieldBuilder mutate() {
-        return new FieldBuilder()
-            .withEmoji(this.getEmoji())
-            .withName(this.getName())
-            .withValue(this.getValue())
-            .isInline(this.isInline());
-    }
-
-    public static Field of(@NotNull Triple<String, String, Boolean> triple) {
-        return builder()
-            .withName(triple.getLeft())
-            .withValue(triple.getMiddle())
-            .isInline(triple.getRight())
-            .build();
+    public @NotNull Builder mutate() {
+        return from(this);
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class FieldBuilder implements Builder<Field> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<Field> {
 
         private Optional<Emoji> emoji = Optional.empty();
+        @BuildFlag(limit = 256)
         private Optional<String> name = Optional.empty();
+        @BuildFlag(limit = 1024)
         private Optional<String> value = Optional.empty();
         private boolean inline = false;
 
         /**
          * Sets the {@link Field} to render inline.
          */
-        public FieldBuilder isInline() {
+        public Builder isInline() {
             return this.isInline(true);
         }
 
@@ -113,7 +118,7 @@ public final class Field {
          *
          * @param inline True to render field inline.
          */
-        public FieldBuilder isInline(boolean inline) {
+        public Builder isInline(boolean inline) {
             this.inline = inline;
             return this;
         }
@@ -123,7 +128,7 @@ public final class Field {
          *
          * @param emoji The emoji of the field.
          */
-        public FieldBuilder withEmoji(@Nullable Emoji emoji) {
+        public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
@@ -132,19 +137,28 @@ public final class Field {
          *
          * @param emoji The emoji of the field.
          */
-        public FieldBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.emoji = emoji;
             return this;
+        }
+
+        /**
+         * Sets the name of the {@link Field}.
+         *
+         * @param name The name of the field.
+         */
+        public Builder withName(@Nullable String name) {
+            return this.withName(Optional.ofNullable(name));
         }
 
         /**
          * Formats the name of the {@link Field} with the given objects.
          *
          * @param name The name of the field.
-         * @param objects Objects used to format the name.
+         * @param args Objects used to format the name.
          */
-        public FieldBuilder withName(@NotNull String name, @NotNull Object... objects) {
-            return this.withName(String.format(name, objects));
+        public Builder withName(@PrintFormat @Nullable String name, @NotNull Object... args) {
+            return this.withName(StringUtil.formatNullable(name, args));
         }
 
         /**
@@ -152,29 +166,28 @@ public final class Field {
          *
          * @param name The name of the field.
          */
-        public FieldBuilder withName(@Nullable String name) {
-            return this.withName(Optional.ofNullable(name));
-        }
-
-        /**
-         * Sets the name of the {@link Field}.
-         *
-         * @param name The name of the field.
-         */
-        public FieldBuilder withName(@NotNull Optional<String> name) {
-            name.ifPresent(nameValue -> Embed.EmbedBuilder.validateLength(Field.class, "name", nameValue));
-            this.name = Optional.ofNullable(StringUtil.defaultIfEmpty(name.orElse("").trim(), null));
+        public Builder withName(@NotNull Optional<String> name) {
+            this.name = Optional.ofNullable(StringUtil.trimToNull(value.orElse("")));
             return this;
+        }
+
+        /**
+         * Sets the value of the {@link Field}.
+         *
+         * @param value The value of the field.
+         */
+        public Builder withValue(@Nullable String value) {
+            return this.withValue(Optional.ofNullable(value));
         }
 
         /**
          * Formats the value of the {@link Field} with the given objects.
          *
          * @param value The value of the field.
-         * @param objects Objects used to format the value.
+         * @param args Objects used to format the value.
          */
-        public FieldBuilder withValue(@NotNull String value, @NotNull Object... objects) {
-            return this.withValue(String.format(value, objects));
+        public Builder withValue(@PrintFormat @Nullable String value, @NotNull Object... args) {
+            return this.withValue(StringUtil.formatNullable(value, args));
         }
 
         /**
@@ -182,29 +195,20 @@ public final class Field {
          *
          * @param value The value of the field.
          */
-        public FieldBuilder withValue(@Nullable String value) {
-            return this.withValue(Optional.ofNullable(value));
-        }
-
-        /**
-         * Sets the value of the {@link Field}.
-         *
-         * @param value The value of the field.
-         */
-        public FieldBuilder withValue(@NotNull Optional<String> value) {
-            value.ifPresent(valueValue -> Embed.EmbedBuilder.validateLength(Field.class, "value", valueValue));
-            this.value = Optional.ofNullable(StringUtil.defaultIfEmpty(value.orElse("").trim(), null));
+        public Builder withValue(@NotNull Optional<String> value) {
+            this.value = Optional.ofNullable(StringUtil.trimToNull(value.orElse("")));
             return this;
         }
 
-
         @Override
         public @NotNull Field build() {
+            Reflection.validateFlags(this);
+
             return new Field(
-                this.emoji,
                 this.name,
                 this.value,
-                this.inline
+                this.inline,
+                this.emoji
             );
         }
 
