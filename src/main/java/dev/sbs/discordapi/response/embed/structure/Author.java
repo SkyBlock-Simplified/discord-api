@@ -78,7 +78,7 @@ public final class Author {
          * @param iconUrl The icon url of the author.
          * @param args The objects to format with.
          */
-        public Builder withIconUrl(@Nullable String iconUrl, @NotNull Object... args) {
+        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @NotNull Object... args) {
             return this.withIconUrl(StringUtil.formatNullable(iconUrl, args));
         }
 
@@ -128,7 +128,7 @@ public final class Author {
          * @param url The url of the author.
          * @param args The objects to format with.
          */
-        public Builder withUrl(@Nullable String url, @NotNull Object... args) {
+        public Builder withUrl(@PrintFormat @Nullable String url, @NotNull Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
