@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,20 +34,21 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class ItemHandler<T> implements CacheHandler {
 
-    @Getter private final @NotNull Class<T> type;
-    @Getter private final @NotNull ConcurrentList<T> items;
-    @Getter private final @NotNull ConcurrentList<Sorter<T>> sorters;
-    @Getter private final @NotNull Item.Style style;
-    @Getter private final @NotNull Optional<Triple<String, String, String>> columnNames;
-    @Getter private final int amountPerPage;
-    @Getter private final boolean viewerEnabled;
-    @Getter private int currentSorterIndex = -1;
-    @Getter private boolean reversed = false;
-    @Getter private int currentItemPage = 1;
-    @Getter @Setter private boolean cacheUpdateRequired;
+    private final @NotNull Class<T> type;
+    private final @NotNull ConcurrentList<T> items;
+    private final @NotNull ConcurrentList<Sorter<T>> sorters;
+    private final @NotNull Item.Style style;
+    private final @NotNull Optional<Triple<String, String, String>> columnNames;
+    private final int amountPerPage;
+    private final boolean viewerEnabled;
+    private int currentSorterIndex = -1;
+    private boolean reversed = false;
+    private int currentItemPage = 1;
+    @Setter private boolean cacheUpdateRequired;
     private ConcurrentList<Item> cachedItems = Concurrent.newUnmodifiableList();
 
     @Override
@@ -165,13 +167,14 @@ public abstract class ItemHandler<T> implements CacheHandler {
         this.reversed = value;
     }
 
+    @Getter
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>> {
 
-        @Getter private final @NotNull SelectMenu.Option option;
-        @Getter private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
-        @Getter private final @NotNull SortOrder order;
+        private final @NotNull SelectMenu.Option option;
+        private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
+        private final @NotNull SortOrder order;
 
         @Override
         public ConcurrentList<T> apply(ConcurrentList<T> list, Boolean reversed) {
@@ -291,10 +294,19 @@ public abstract class ItemHandler<T> implements CacheHandler {
              * Sets the description of the {@link Sorter}.
              *
              * @param description The description to use.
-             * @param objects The objects used to format the description.
              */
-            public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
-                return this.withDescription(StringUtil.formatNullable(description, objects));
+            public Builder<T> withDescription(@Nullable String description) {
+                return this.withDescription(Optional.ofNullable(description));
+            }
+
+            /**
+             * Sets the description of the {@link Sorter}.
+             *
+             * @param description The description to use.
+             * @param args The objects used to format the description.
+             */
+            public Builder<T> withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+                return this.withDescription(StringUtil.formatNullable(description, args));
             }
 
             /**
@@ -375,10 +387,22 @@ public abstract class ItemHandler<T> implements CacheHandler {
              * This is used for the {@link Button}.
              *
              * @param label The label of the field item.
-             * @param objects The objects used to format the label.
              */
-            public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-                this.optionBuilder.withLabel(label, objects);
+            public Builder withLabel(@NotNull String label) {
+                this.optionBuilder.withLabel(label);
+                return this;
+            }
+
+            /**
+             * Sets the label of the {@link Sorter}.
+             * <br><br>
+             * This is used for the {@link Button}.
+             *
+             * @param label The label of the field item.
+             * @param args The objects used to format the label.
+             */
+            public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+                this.optionBuilder.withLabel(label, args);
                 return this;
             }
 
