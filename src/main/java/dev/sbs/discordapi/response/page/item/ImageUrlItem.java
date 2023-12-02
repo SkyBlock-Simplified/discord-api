@@ -30,7 +30,6 @@ public final class ImageUrlItem implements SingletonItem<String> {
 
     public static @NotNull Builder from(@NotNull ImageUrlItem item) {
         return builder()
-            .withIdentifier(item.getIdentifier())
             .withOption(item.getOption())
             .isEditable(item.isEditable())
             .withValue(item.getValue());
@@ -48,8 +47,8 @@ public final class ImageUrlItem implements SingletonItem<String> {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<ImageUrlItem> {
 
-        protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
-        protected boolean editable;
+        private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        private boolean editable;
         private Optional<String> value = Optional.empty();
 
         /**
@@ -86,7 +85,7 @@ public final class ImageUrlItem implements SingletonItem<String> {
          * @param args The objects used to format the description.
          * @see SelectMenu.Option#getDescription()
          */
-        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
@@ -142,7 +141,7 @@ public final class ImageUrlItem implements SingletonItem<String> {
          * @param args The objects used to format the value.
          * @see SelectMenu.Option#getValue()
          */
-        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @NotNull Object... args) {
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
             this.optionBuilder.withValue(identifier, args);
             return this;
         }
@@ -162,11 +161,11 @@ public final class ImageUrlItem implements SingletonItem<String> {
          * Sets the label of the {@link SelectMenu.Option}.
          *
          * @param label The label of the field item.
-         * @param objects The objects used to format the label.
+         * @param args The objects used to format the label.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@PrintFormat @NotNull String label, @NotNull Object... objects) {
-            this.optionBuilder.withLabel(label, objects);
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -192,7 +191,7 @@ public final class ImageUrlItem implements SingletonItem<String> {
          * @param value The selected value of the menu item.
          * @param args The objects used to format the value.
          */
-        public Builder withValue(@PrintFormat @Nullable String value, @NotNull Object... args) {
+        public Builder withValue(@PrintFormat @Nullable String value, @Nullable Object... args) {
             return this.withValue(StringUtil.formatNullable(value, args));
         }
 

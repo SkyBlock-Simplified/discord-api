@@ -1,10 +1,14 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.response.page.item.type.SingletonItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,55 +16,67 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class FooterItem implements Item {
+public final class NumberItem<T extends Number> implements SingletonItem<T>, RenderItem {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final @NotNull Optional<String> text;
-    private final @NotNull Optional<String> iconUrl;
-    private final @NotNull Optional<Instant> timestamp;
+    private final @NotNull Optional<T> value;
+    private final @NotNull Class<T> numberClass;
+    private final @NotNull ConcurrentList<T> options;
 
-    public static @NotNull Builder builder() {
-        return new Builder().withIdentifier(UUID.randomUUID().toString());
+    public static <T extends Number> @NotNull Builder<T> builder(@NotNull Class<T> numberClass) {
+        return new Builder<>(numberClass).withIdentifier(UUID.randomUUID().toString());
     }
 
-    public static @NotNull Builder from(@NotNull FooterItem item) {
-        return builder()
+    public static <T extends Number> @NotNull Builder<T> from(@NotNull NumberItem<T> item) {
+        return builder(item.getNumberClass())
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .withText(item.getText())
-            .withIconUrl(item.getIconUrl())
-            .withTimestamp(item.getTimestamp());
+            .withValue(item.getValue())
+            .withOptions(item.getOptions());
+    }
+
+    @Override
+    public @NotNull Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().getLabel())
+            .withValue(
+                this.getValue()
+                    .map(T::toString)
+                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
+            )
+            .isInline()
+            .build();
     }
 
     @Override
     public @NotNull Type getType() {
-        return Type.FOOTER;
+        return Type.FIELD;
     }
 
-    public @NotNull Builder mutate() {
+    public @NotNull Builder<T> mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<FooterItem> {
+    public static class Builder<T extends Number> implements dev.sbs.api.util.builder.Builder<NumberItem<T>> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
-        private Optional<String> text = Optional.empty();
-        private Optional<String> iconUrl = Optional.empty();
-        private Optional<Instant> timestamp = Optional.empty();
+        private final Class<T> modelClass;
+        private final ConcurrentList<T> options = Concurrent.newList();
+        private Optional<T> value = Optional.empty();
 
         /**
          * Sets the {@link Item} as editable.
          */
-        public Builder isEditable() {
+        public Builder<T> isEditable() {
             return this.isEditable(true);
         }
 
@@ -69,7 +85,7 @@ public final class FooterItem implements Item {
          *
          * @param editable The value of the author item.
          */
-        public Builder isEditable(boolean editable) {
+        public Builder<T> isEditable(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -80,7 +96,7 @@ public final class FooterItem implements Item {
          * @param description The description to use.
          * @see SelectMenu.Option#getDescription()
          */
-        public Builder withDescription(@Nullable String description) {
+        public Builder<T> withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
         }
 
@@ -91,7 +107,7 @@ public final class FooterItem implements Item {
          * @param args The objects used to format the description.
          * @see SelectMenu.Option#getDescription()
          */
-        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+        public Builder<T> withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
@@ -101,7 +117,7 @@ public final class FooterItem implements Item {
          * @param description The description to use.
          * @see SelectMenu.Option#getDescription()
          */
-        public Builder withDescription(@NotNull Optional<String> description) {
+        public Builder<T> withDescription(@NotNull Optional<String> description) {
             this.optionBuilder.withDescription(description);
             return this;
         }
@@ -113,7 +129,7 @@ public final class FooterItem implements Item {
          * @see SelectMenu.Option#getEmoji()
          * @see Field#getName()
          */
-        public Builder withEmoji(@Nullable Emoji emoji) {
+        public Builder<T> withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
@@ -124,7 +140,7 @@ public final class FooterItem implements Item {
          * @see SelectMenu.Option#getEmoji()
          * @see Field#getName()
          */
-        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
             this.optionBuilder.withEmoji(emoji);
             return this;
         }
@@ -135,7 +151,7 @@ public final class FooterItem implements Item {
          * @param identifier The identifier to use.
          * @see SelectMenu.Option#getValue()
          */
-        public Builder withIdentifier(@NotNull String identifier) {
+        public Builder<T> withIdentifier(@NotNull String identifier) {
             this.optionBuilder.withValue(identifier);
             return this;
         }
@@ -147,7 +163,7 @@ public final class FooterItem implements Item {
          * @param args The objects used to format the value.
          * @see SelectMenu.Option#getValue()
          */
-        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
+        public Builder<T> withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
             this.optionBuilder.withValue(identifier, args);
             return this;
         }
@@ -158,7 +174,7 @@ public final class FooterItem implements Item {
          * @param label The label of the field item.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@NotNull String label) {
+        public Builder<T> withLabel(@NotNull String label) {
             this.optionBuilder.withLabel(label);
             return this;
         }
@@ -167,15 +183,15 @@ public final class FooterItem implements Item {
          * Sets the label of the {@link SelectMenu.Option}.
          *
          * @param label The label of the field item.
-         * @param objects The objects used to format the label.
+         * @param args The objects used to format the label.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... objects) {
-            this.optionBuilder.withLabel(label, objects);
+        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
-        public Builder withOption(@NotNull SelectMenu.Option option) {
+        public Builder<T> withOption(@NotNull SelectMenu.Option option) {
             return this.withIdentifier(option.getValue())
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
@@ -183,90 +199,52 @@ public final class FooterItem implements Item {
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
+         * The options available for selection {@link NumberItem}.
          *
-         * @param iconUrl The selected value of the menu item.
+         * @param options The options available for selection.
          */
-        public Builder withIconUrl(@Nullable String iconUrl) {
-            return this.withIconUrl(Optional.ofNullable(iconUrl));
+        public Builder<T> withOptions(@NotNull T... options) {
+            return this.withOptions(Arrays.asList(options));
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
+         * The options available for selection {@link NumberItem}.
          *
-         * @param iconUrl The selected value of the menu item.
-         * @param objects The objects used to format the icon url.
+         * @param options The options available for selection.
          */
-        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @Nullable Object... objects) {
-            return this.withIconUrl(StringUtil.formatNullable(iconUrl, objects));
-        }
-
-        /**
-         * Sets the icon url of the {@link FooterItem}.
-         *
-         * @param iconUrl The selected value of the menu item.
-         */
-        public Builder withIconUrl(@NotNull Optional<String> iconUrl) {
-            this.iconUrl = iconUrl;
+        public Builder<T> withOptions(@NotNull Iterable<T> options) {
+            this.options.clear();
+            options.forEach(this.options::add);
             return this;
         }
 
         /**
-         * Sets the text of the {@link FooterItem}.
+         * Sets the selected value of the {@link NumberItem}.
          *
-         * @param text The text of the menu item.
+         * @param selected The selected value of the menu item.
          */
-        public Builder withText(@Nullable String text) {
-            return this.withText(Optional.ofNullable(text));
+        public Builder<T> withValue(@Nullable T selected) {
+            return this.withValue(Optional.ofNullable(selected));
         }
 
         /**
-         * Sets the text of the {@link FooterItem}.
+         * Sets the selected value of the {@link NumberItem}.
          *
-         * @param text The text of the footer item.
-         * @param args The objects used to format the name.
+         * @param selected The selected value of the menu item.
          */
-        public Builder withText(@PrintFormat @Nullable String text, @Nullable Object... args) {
-            return this.withText(StringUtil.formatNullable(text, args));
-        }
-
-        /**
-         * Sets the text of the {@link FooterItem}.
-         *
-         * @param text The text of the menu item.
-         */
-        public Builder withText(@NotNull Optional<String> text) {
-            this.text = text;
-            return this;
-        }
-
-        /**
-         * Sets the timestamp of the {@link FooterItem}.
-         *
-         * @param timestamp The timestamp
-         */
-        public Builder withTimestamp(@Nullable Instant timestamp) {
-            return this.withTimestamp(Optional.ofNullable(timestamp));
-        }
-
-        /**
-         * Sets the timestamp of the {@link FooterItem}.
-         *
-         * @param timestamp The timestamp
-         */
-        public Builder withTimestamp(@NotNull Optional<Instant> timestamp) {
-            this.timestamp = timestamp;
+        public Builder<T> withValue(@NotNull Optional<T> selected) {
+            this.value = selected;
             return this;
         }
 
         @Override
-        public @NotNull FooterItem build() {
-            return new FooterItem(
+        public @NotNull NumberItem<T> build() {
+            return new NumberItem<>(
                 this.optionBuilder.build(),
                 this.editable,
-                this.text,
-                this.iconUrl,
-                this.timestamp
+                this.value,
+                this.modelClass,
+                this.options
             );
         }
 

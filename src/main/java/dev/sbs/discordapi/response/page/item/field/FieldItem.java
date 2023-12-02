@@ -1,10 +1,19 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.collection.concurrent.atomic.AtomicCollection;
+import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,36 +21,78 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Getter
 @RequiredArgsConstructor
-public final class FooterItem implements Item {
+public class FieldItem implements Item, RenderItem {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final @NotNull Optional<String> text;
-    private final @NotNull Optional<String> iconUrl;
-    private final @NotNull Optional<Instant> timestamp;
+    private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    public static @NotNull Builder from(@NotNull FooterItem item) {
+    public static @NotNull Builder from(@NotNull FieldItem item) {
         return builder()
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .withText(item.getText())
-            .withIconUrl(item.getIconUrl())
-            .withTimestamp(item.getTimestamp());
+            .withData(item.getData());
+    }
+
+    public ConcurrentList<String> getAllData() {
+        return Stream.concat(
+                Stream.concat(
+                    this.getData(Column.ONE).stream(),
+                    this.getData(Column.TWO).stream()
+                ),
+                this.getData(Column.THREE).stream()
+            )
+            .collect(Concurrent.toList());
+    }
+
+    public ConcurrentList<String> getData(@NotNull Column column) {
+        if (column == Column.UNKNOWN)
+            throw SimplifiedException.of(DiscordException.class)
+                .withMessage("Column cannot be UNKNOWN!")
+                .build();
+
+        return this.getData().get(column);
+    }
+
+    @Override
+    public @NotNull Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().getLabel())
+            .withValue(Optional.ofNullable(StringUtil.stripToNull(StringUtil.join(this.getAllData(), "\n"))).orElse("*null*"/*getNullEmoji().asFormat()*/)) // TODO
+            .isInline()
+            .build();
+    }
+
+    public String getFieldValue(@NotNull Item.Style itemStyle, @NotNull Column column) {
+        return switch (itemStyle) {
+            case FIELD, FIELD_INLINE -> StringUtil.join(this.getAllData(), "\n");
+            case LIST, LIST_SINGLE, TABLE -> this.getData(column)
+                .stream()
+                .collect(StreamUtil.toStringBuilder(true))
+                .build();
+            case TABLE_DESCRIPTION -> column == Column.ONE ?
+                this.getOption().getDescription().orElse("") :
+                this.getData(column)
+                    .stream()
+                    .collect(StreamUtil.toStringBuilder(true))
+                    .build();
+        };
     }
 
     @Override
     public @NotNull Type getType() {
-        return Type.FOOTER;
+        return Type.FIELD;
     }
 
     public @NotNull Builder mutate() {
@@ -49,13 +100,15 @@ public final class FooterItem implements Item {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<FooterItem> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<FieldItem> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
-        private Optional<String> text = Optional.empty();
-        private Optional<String> iconUrl = Optional.empty();
-        private Optional<Instant> timestamp = Optional.empty();
+        private final ConcurrentMap<Column, ConcurrentList<String>> data = Concurrent.newMap(
+            Pair.of(Column.ONE, Concurrent.newList()),
+            Pair.of(Column.TWO, Concurrent.newList()),
+            Pair.of(Column.THREE, Concurrent.newList())
+        );
 
         /**
          * Sets the {@link Item} as editable.
@@ -167,11 +220,11 @@ public final class FooterItem implements Item {
          * Sets the label of the {@link SelectMenu.Option}.
          *
          * @param label The label of the field item.
-         * @param objects The objects used to format the label.
+         * @param args The objects used to format the label.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... objects) {
-            this.optionBuilder.withLabel(label, objects);
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -183,90 +236,89 @@ public final class FooterItem implements Item {
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
-         *
-         * @param iconUrl The selected value of the menu item.
+         * Clears all data from all columns.
          */
-        public Builder withIconUrl(@Nullable String iconUrl) {
-            return this.withIconUrl(Optional.ofNullable(iconUrl));
+        public Builder clearData() {
+            return this.clearData(Column.values());
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
-         *
-         * @param iconUrl The selected value of the menu item.
-         * @param objects The objects used to format the icon url.
+         * Clears all data from all specified columns.
          */
-        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @Nullable Object... objects) {
-            return this.withIconUrl(StringUtil.formatNullable(iconUrl, objects));
-        }
+        public Builder clearData(@NotNull Column... columns) {
+            Arrays.stream(columns)
+                .filter(this.data::containsKey)
+                .map(this.data::get)
+                .forEach(AtomicCollection::clear);
 
-        /**
-         * Sets the icon url of the {@link FooterItem}.
-         *
-         * @param iconUrl The selected value of the menu item.
-         */
-        public Builder withIconUrl(@NotNull Optional<String> iconUrl) {
-            this.iconUrl = iconUrl;
             return this;
         }
 
         /**
-         * Sets the text of the {@link FooterItem}.
+         * Adds the value to the {@link FieldItem} formatted with the given objects.
          *
-         * @param text The text of the menu item.
+         * @param value The value of the field item.
          */
-        public Builder withText(@Nullable String text) {
-            return this.withText(Optional.ofNullable(text));
+        public Builder withData(@NotNull String value) {
+            return this.withData(Column.ONE, value);
         }
 
         /**
-         * Sets the text of the {@link FooterItem}.
+         * Adds the value to the {@link FieldItem} formatted with the given objects.
          *
-         * @param text The text of the footer item.
-         * @param args The objects used to format the name.
+         * @param value The value of the field item.
          */
-        public Builder withText(@PrintFormat @Nullable String text, @Nullable Object... args) {
-            return this.withText(StringUtil.formatNullable(text, args));
+        @SuppressWarnings("all")
+        public Builder withData(@NotNull Column column, @NotNull String value) {
+            return this.withData(column, value, null);
         }
 
         /**
-         * Sets the text of the {@link FooterItem}.
+         * Adds the value to the {@link FieldItem} formatted with the given objects.
          *
-         * @param text The text of the menu item.
+         * @param value The value of the field item.
+         * @param args Objects used to format the value.
          */
-        public Builder withText(@NotNull Optional<String> text) {
-            this.text = text;
+        public Builder withData(@PrintFormat @NotNull String value, @Nullable Object... args) {
+            return this.withData(Column.ONE, value, args);
+        }
+
+        /**
+         * Adds the value to the {@link FieldItem} formatted with the given objects in the specified column.
+         *
+         * @param column The column of the field item value.
+         * @param value The value of the field item.
+         * @param args The objects used to format the value.
+         */
+        public Builder withData(@NotNull Column column, @PrintFormat @NotNull String value, @Nullable Object... args) {
+            if (column == Column.UNKNOWN)
+                throw SimplifiedException.of(DiscordException.class)
+                    .withMessage("Column cannot be UNKNOWN!")
+                    .build();
+
+            this.data.get(column).add(String.format(value, args));
             return this;
         }
 
         /**
-         * Sets the timestamp of the {@link FooterItem}.
+         * Adds all the data to the {@link FieldItem}.
          *
-         * @param timestamp The timestamp
+         * @param data The data to add.
          */
-        public Builder withTimestamp(@Nullable Instant timestamp) {
-            return this.withTimestamp(Optional.ofNullable(timestamp));
-        }
+        public Builder withData(@NotNull ConcurrentMap<Column, ConcurrentList<String>> data) {
+            data.stream()
+                .filter(entry -> this.data.containsKey(entry.getKey()))
+                .forEach(entry -> this.data.get(entry.getKey()).addAll(entry.getValue()));
 
-        /**
-         * Sets the timestamp of the {@link FooterItem}.
-         *
-         * @param timestamp The timestamp
-         */
-        public Builder withTimestamp(@NotNull Optional<Instant> timestamp) {
-            this.timestamp = timestamp;
             return this;
         }
 
         @Override
-        public @NotNull FooterItem build() {
-            return new FooterItem(
+        public @NotNull FieldItem build() {
+            return new FieldItem(
                 this.optionBuilder.build(),
                 this.editable,
-                this.text,
-                this.iconUrl,
-                this.timestamp
+                this.data
             );
         }
 

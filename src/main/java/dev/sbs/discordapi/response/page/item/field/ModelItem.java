@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.util.SimplifiedException;
@@ -7,11 +7,15 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.response.page.item.type.SingletonItem;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,31 +26,29 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @Getter
-public final class ModelItem<T extends Model> extends SingletonItem<T> implements SingletonFieldItem {
+@RequiredArgsConstructor
+public final class ModelItem<T extends Model> implements SingletonItem<T>, RenderItem {
 
+    private final @NotNull SelectMenu.Option option;
+    private final boolean editable;
+    private final @NotNull Optional<T> value;
     private final @NotNull Class<T> modelClass;
     private final @NotNull ConcurrentList<T> options;
     private final @NotNull Optional<Function<T, String>> nameFunction;
     private final @NotNull Function<T, String> valueFunction;
 
-    private ModelItem(
-        @NotNull SelectMenu.Option option,
-        boolean editable,
-        @NotNull Optional<T> value,
-        @NotNull Class<T> modelClass,
-        @NotNull ConcurrentList<T> options,
-        @NotNull Optional<Function<T, String>> nameFunction,
-        @NotNull Function<T, String> valueFunction
-    ) {
-        super(option, Type.FIELD, editable, value);
-        this.modelClass = modelClass;
-        this.options = options;
-        this.nameFunction = nameFunction;
-        this.valueFunction = valueFunction;
+    public static <T extends Model> @NotNull Builder<T> builder(@NotNull Class<T> modelClass) {
+        return new Builder<>(modelClass).withIdentifier(UUID.randomUUID().toString());
     }
 
-    public static <T extends Model> Builder<T> builder(@NotNull Class<T> modelClass) {
-        return new Builder<>(modelClass).withIdentifier(UUID.randomUUID().toString());
+    public static <T extends Model> @NotNull Builder<T> from(@NotNull ModelItem<T> item) {
+        return builder(item.getModelClass())
+            .withOption(item.getOption())
+            .isEditable(item.isEditable())
+            .withValue(item.getValue())
+            .withOptions(item.getOptions())
+            .withNameFunction(item.getNameFunction())
+            .withValueFunction(item.getValueFunction());
     }
 
     @Override
@@ -66,67 +68,141 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
             .build();
     }
 
-    public Builder<T> mutate() {
-        return new Builder<>(this.getModelClass())
-            .withOptions(this.getOptions())
-            .withValue(this.getValue())
-            .withNameFunction(this.getNameFunction())
-            .withValueFunction(this.getValueFunction())
-            .withOption(this.getOption())
-            .isEditable(this.isEditable());
+    @Override
+    public @NotNull Type getType() {
+        return Type.FIELD;
+    }
+
+    public @NotNull Builder<T> mutate() {
+        return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T extends Model> extends ItemBuilder<ModelItem<T>> {
+    public static class Builder<T extends Model> implements dev.sbs.api.util.builder.Builder<ModelItem<T>> {
 
+        private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        private boolean editable;
         private final Class<T> modelClass;
         private final ConcurrentList<T> options = Concurrent.newList();
         private Optional<T> value = Optional.empty();
         private Optional<Function<T, String>> nameFunction = Optional.empty();
         private Function<T, String> valueFunction;
 
-        @Override
+        /**
+         * Sets the {@link Item} as editable.
+         */
         public Builder<T> isEditable() {
             return this.isEditable(true);
         }
 
-        @Override
-        public Builder<T> isEditable(boolean value) {
-            super.editable = value;
+        /**
+         * Set the editable state of the {@link Item}.
+         *
+         * @param editable The value of the author item.
+         */
+        public Builder<T> isEditable(boolean editable) {
+            this.editable = editable;
             return this;
         }
 
-        @Override
-        public Builder<T> withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(StringUtil.formatNullable(description, objects));
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder<T> withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
         }
 
-        @Override
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @param args The objects used to format the description.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder<T> withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
+        }
+
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
         public Builder<T> withDescription(@NotNull Optional<String> description) {
-            super.optionBuilder.withDescription(description);
+            this.optionBuilder.withDescription(description);
             return this;
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder<T> withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
-            super.optionBuilder.withEmoji(emoji);
+            this.optionBuilder.withEmoji(emoji);
             return this;
         }
 
-        @Override
-        public Builder<T> withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withValue(identifier, objects);
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder<T> withIdentifier(@NotNull String identifier) {
+            this.optionBuilder.withValue(identifier);
             return this;
         }
 
-        @Override
-        public Builder<T> withLabel(@NotNull String label, @NotNull Object... objects) {
-            super.optionBuilder.withLabel(label, objects);
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the value.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder<T> withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
+            this.optionBuilder.withValue(identifier, args);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder<T> withLabel(@NotNull String label) {
+            this.optionBuilder.withLabel(label);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @param args The objects used to format the label.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -213,8 +289,8 @@ public final class ModelItem<T extends Model> extends SingletonItem<T> implement
                     .build();
 
             return new ModelItem<>(
-                super.optionBuilder.build(),
-                super.editable,
+                this.optionBuilder.build(),
+                this.editable,
                 this.value,
                 this.modelClass,
                 this.options,

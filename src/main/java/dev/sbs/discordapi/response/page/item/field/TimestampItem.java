@@ -1,10 +1,13 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.util.date.RealDate;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.response.page.item.type.SingletonItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,30 +21,40 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class FooterItem implements Item {
+public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final @NotNull Optional<String> text;
-    private final @NotNull Optional<String> iconUrl;
-    private final @NotNull Optional<Instant> timestamp;
+    private final @NotNull Optional<Instant> value;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    public static @NotNull Builder from(@NotNull FooterItem item) {
+    public static @NotNull Builder from(@NotNull TimestampItem item) {
         return builder()
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .withText(item.getText())
-            .withIconUrl(item.getIconUrl())
-            .withTimestamp(item.getTimestamp());
+            .withValue(item.getValue());
+    }
+
+    @Override
+    public @NotNull Field getRenderField() {
+        return Field.builder()
+            .withName(this.getOption().getLabel())
+            .withValue(
+                this.getValue()
+                    .map(RealDate::new)
+                    .map(RealDate::toString)
+                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
+            )
+            .isInline()
+            .build();
     }
 
     @Override
     public @NotNull Type getType() {
-        return Type.FOOTER;
+        return Type.FIELD;
     }
 
     public @NotNull Builder mutate() {
@@ -49,13 +62,11 @@ public final class FooterItem implements Item {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<FooterItem> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<TimestampItem> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
-        private Optional<String> text = Optional.empty();
-        private Optional<String> iconUrl = Optional.empty();
-        private Optional<Instant> timestamp = Optional.empty();
+        private Optional<Instant> value = Optional.empty();
 
         /**
          * Sets the {@link Item} as editable.
@@ -167,11 +178,11 @@ public final class FooterItem implements Item {
          * Sets the label of the {@link SelectMenu.Option}.
          *
          * @param label The label of the field item.
-         * @param objects The objects used to format the label.
+         * @param args The objects used to format the label.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... objects) {
-            this.optionBuilder.withLabel(label, objects);
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -183,90 +194,30 @@ public final class FooterItem implements Item {
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
+         * Sets the selected value of the {@link TimestampItem}.
          *
-         * @param iconUrl The selected value of the menu item.
+         * @param timestamp The timestamp of the item.
          */
-        public Builder withIconUrl(@Nullable String iconUrl) {
-            return this.withIconUrl(Optional.ofNullable(iconUrl));
+        public Builder withValue(@Nullable Instant timestamp) {
+            return this.withValue(Optional.ofNullable(timestamp));
         }
 
         /**
-         * Sets the icon url of the {@link FooterItem}.
+         * Sets the selected value of the {@link TimestampItem}.
          *
-         * @param iconUrl The selected value of the menu item.
-         * @param objects The objects used to format the icon url.
+         * @param timestamp The timestamp of the item.
          */
-        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @Nullable Object... objects) {
-            return this.withIconUrl(StringUtil.formatNullable(iconUrl, objects));
-        }
-
-        /**
-         * Sets the icon url of the {@link FooterItem}.
-         *
-         * @param iconUrl The selected value of the menu item.
-         */
-        public Builder withIconUrl(@NotNull Optional<String> iconUrl) {
-            this.iconUrl = iconUrl;
-            return this;
-        }
-
-        /**
-         * Sets the text of the {@link FooterItem}.
-         *
-         * @param text The text of the menu item.
-         */
-        public Builder withText(@Nullable String text) {
-            return this.withText(Optional.ofNullable(text));
-        }
-
-        /**
-         * Sets the text of the {@link FooterItem}.
-         *
-         * @param text The text of the footer item.
-         * @param args The objects used to format the name.
-         */
-        public Builder withText(@PrintFormat @Nullable String text, @Nullable Object... args) {
-            return this.withText(StringUtil.formatNullable(text, args));
-        }
-
-        /**
-         * Sets the text of the {@link FooterItem}.
-         *
-         * @param text The text of the menu item.
-         */
-        public Builder withText(@NotNull Optional<String> text) {
-            this.text = text;
-            return this;
-        }
-
-        /**
-         * Sets the timestamp of the {@link FooterItem}.
-         *
-         * @param timestamp The timestamp
-         */
-        public Builder withTimestamp(@Nullable Instant timestamp) {
-            return this.withTimestamp(Optional.ofNullable(timestamp));
-        }
-
-        /**
-         * Sets the timestamp of the {@link FooterItem}.
-         *
-         * @param timestamp The timestamp
-         */
-        public Builder withTimestamp(@NotNull Optional<Instant> timestamp) {
-            this.timestamp = timestamp;
+        public Builder withValue(@NotNull Optional<Instant> timestamp) {
+            this.value = timestamp;
             return this;
         }
 
         @Override
-        public @NotNull FooterItem build() {
-            return new FooterItem(
+        public @NotNull TimestampItem build() {
+            return new TimestampItem(
                 this.optionBuilder.build(),
                 this.editable,
-                this.text,
-                this.iconUrl,
-                this.timestamp
+                this.value
             );
         }
 

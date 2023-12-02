@@ -30,7 +30,6 @@ public final class TitleItem implements Item {
 
     public static @NotNull Builder from(@NotNull TitleItem item) {
         return builder()
-            .withIdentifier(item.getIdentifier())
             .withOption(item.getOption())
             .isEditable(item.isEditable())
             .withText(item.getText())
@@ -49,8 +48,8 @@ public final class TitleItem implements Item {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<TitleItem> {
 
-        protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
-        protected boolean editable;
+        private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        private boolean editable;
         private Optional<String> text = Optional.empty();
         private Optional<String> url = Optional.empty();
 
@@ -88,7 +87,7 @@ public final class TitleItem implements Item {
          * @param args The objects used to format the description.
          * @see SelectMenu.Option#getDescription()
          */
-        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
@@ -144,7 +143,7 @@ public final class TitleItem implements Item {
          * @param args The objects used to format the value.
          * @see SelectMenu.Option#getValue()
          */
-        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @NotNull Object... args) {
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
             this.optionBuilder.withValue(identifier, args);
             return this;
         }
@@ -167,7 +166,7 @@ public final class TitleItem implements Item {
          * @param args The objects used to format the label.
          * @see SelectMenu.Option#getLabel()
          */
-        public Builder withLabel(@PrintFormat @NotNull String label, @NotNull Object... args) {
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
             this.optionBuilder.withLabel(label, args);
             return this;
         }
@@ -195,7 +194,7 @@ public final class TitleItem implements Item {
          * @param text The text of the title.
          * @param args The objects used to format the text.
          */
-        public Builder withText(@PrintFormat @Nullable String text, @NotNull Object... args) {
+        public Builder withText(@PrintFormat @Nullable String text, @Nullable Object... args) {
             return this.withText(StringUtil.formatNullable(text, args));
         }
 
@@ -225,7 +224,7 @@ public final class TitleItem implements Item {
          * @param url The url of the title.
          * @param args The objects used to format the value.
          */
-        public Builder withUrl(@PrintFormat @Nullable String url, @NotNull Object... args) {
+        public Builder withUrl(@PrintFormat @Nullable String url, @Nullable Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
