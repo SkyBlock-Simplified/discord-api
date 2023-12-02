@@ -90,7 +90,7 @@ public class Footer {
          * @param iconUrl The icon url of the footer.
          * @param args The objects to format with.
          */
-        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @NotNull Object... args) {
+        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @Nullable Object... args) {
             return this.withIconUrl(StringUtil.formatNullable(iconUrl, args));
         }
 
@@ -120,7 +120,7 @@ public class Footer {
          * @param text The text of the footer.
          * @param args The objects to format with.
          */
-        public Builder withText(@PrintFormat @NotNull String text, @NotNull Object... args) {
+        public Builder withText(@PrintFormat @NotNull String text, @Nullable Object... args) {
             this.text = String.format(text, args);
             return this;
         }

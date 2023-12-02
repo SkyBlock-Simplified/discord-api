@@ -20,9 +20,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public final class Author {
 
-    private final String name;
-    private final Optional<String> url;
-    private final Optional<String> iconUrl;
+    private final @NotNull String name;
+    private final @NotNull Optional<String> url;
+    private final @NotNull Optional<String> iconUrl;
 
     public static @NotNull Builder builder() {
         return new Builder();
@@ -78,7 +78,7 @@ public final class Author {
          * @param iconUrl The icon url of the author.
          * @param args The objects to format with.
          */
-        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @NotNull Object... args) {
+        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @Nullable Object... args) {
             return this.withIconUrl(StringUtil.formatNullable(iconUrl, args));
         }
 
@@ -108,7 +108,7 @@ public final class Author {
          * @param name The name of the author.
          * @param args The objects to format with.
          */
-        public Builder withName(@PrintFormat @NotNull String name, @NotNull Object... args) {
+        public Builder withName(@PrintFormat @NotNull String name, @Nullable Object... args) {
             this.name = String.format(name, args);
             return this;
         }
@@ -128,7 +128,7 @@ public final class Author {
          * @param url The url of the author.
          * @param args The objects to format with.
          */
-        public Builder withUrl(@PrintFormat @Nullable String url, @NotNull Object... args) {
+        public Builder withUrl(@PrintFormat @Nullable String url, @Nullable Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 

@@ -157,7 +157,7 @@ public final class Field {
          * @param name The name of the field.
          * @param args Objects used to format the name.
          */
-        public Builder withName(@PrintFormat @Nullable String name, @NotNull Object... args) {
+        public Builder withName(@PrintFormat @Nullable String name, @Nullable Object... args) {
             return this.withName(StringUtil.formatNullable(name, args));
         }
 
@@ -186,7 +186,7 @@ public final class Field {
          * @param value The value of the field.
          * @param args Objects used to format the value.
          */
-        public Builder withValue(@PrintFormat @Nullable String value, @NotNull Object... args) {
+        public Builder withValue(@PrintFormat @Nullable String value, @Nullable Object... args) {
             return this.withValue(StringUtil.formatNullable(value, args));
         }
 

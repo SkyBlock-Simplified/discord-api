@@ -219,7 +219,7 @@ public class Embed implements IdentifiableComponent {
          *
          * @param description The description of the embed.
          */
-        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
@@ -320,10 +320,20 @@ public class Embed implements IdentifiableComponent {
          * Overrides the default identifier of the {@link Embed}.
          *
          * @param identifier The identifier to use.
-         * @param objects The objects used to format the identifier.
          */
-        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = String.format(identifier, objects);
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link Embed}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the identifier.
+         */
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
+            this.identifier = String.format(identifier, args);
             return this;
         }
 
@@ -361,7 +371,7 @@ public class Embed implements IdentifiableComponent {
          * @param imageUrl The url of the embed image.
          * @param args Objects used to format the image url.
          */
-        public Builder withImageUrl(@PrintFormat @Nullable String imageUrl, @NotNull Object... args) {
+        public Builder withImageUrl(@PrintFormat @Nullable String imageUrl, @Nullable Object... args) {
             return this.withImageUrl(StringUtil.formatNullable(imageUrl, args));
         }
 
@@ -390,7 +400,7 @@ public class Embed implements IdentifiableComponent {
          * @param thumbnailUrl The url of the embed thumbnail image.
          * @param args Objects used to format the thumbnail image url.
          */
-        public Builder withThumbnailUrl(@PrintFormat @Nullable String thumbnailUrl, @NotNull Object... args) {
+        public Builder withThumbnailUrl(@PrintFormat @Nullable String thumbnailUrl, @Nullable Object... args) {
             return this.withThumbnailUrl(StringUtil.formatNullable(thumbnailUrl, args));
         }
 
@@ -419,7 +429,7 @@ public class Embed implements IdentifiableComponent {
          * @param title Title of the embed.
          * @param args Objects used to format the title.
          */
-        public Builder withTitle(@PrintFormat @Nullable String title, @NotNull Object... args) {
+        public Builder withTitle(@PrintFormat @Nullable String title, @Nullable Object... args) {
             return this.withTitle(StringUtil.formatNullable(title, args));
         }
 
@@ -452,7 +462,7 @@ public class Embed implements IdentifiableComponent {
          * @param url The url of the embed title.
          * @param args Objects used to format the url.
          */
-        public Builder withUrl(@PrintFormat @Nullable String url, @NotNull Object... args) {
+        public Builder withUrl(@PrintFormat @Nullable String url, @Nullable Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
