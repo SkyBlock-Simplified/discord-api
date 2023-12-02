@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -13,7 +12,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.response.exception.InvalidComponentException;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
@@ -135,7 +133,9 @@ public final class Button extends ActionComponent implements InteractableCompone
         @BuildFlag(required = true)
         private PageType pageType = PageType.NONE;
         private Optional<Function<ButtonContext, Mono<Void>>> interaction = Optional.empty();
+        @BuildFlag(required = true, requireGroup = "face")
         private Optional<Emoji> emoji = Optional.empty();
+        @BuildFlag(required = true, requireGroup = "face")
         private Optional<String> label = Optional.empty();
         private Optional<String> url = Optional.empty();
 
@@ -351,12 +351,6 @@ public final class Button extends ActionComponent implements InteractableCompone
         @Override
         public @NotNull Button build() {
             Reflection.validateFlags(this);
-
-            if (this.label.isEmpty() && this.emoji.isEmpty()) {
-                throw SimplifiedException.of(InvalidComponentException.class)
-                    .withMessage("Both label and emoji cannot be NULL!")
-                    .build();
-            }
 
             return new Button(
                 this.identifier,
