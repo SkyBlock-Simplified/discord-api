@@ -1,15 +1,19 @@
 package dev.sbs.discordapi.response.page.handler.item;
 
+import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.data.tuple.Triple;
+import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.api.util.stream.triple.TriFunction;
+import dev.sbs.api.util.stream.triple.TriPredicate;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
+import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +22,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
+@Getter
 public class CollectionItemHandler<T> extends ItemHandler<T> {
 
-    @Getter private final @NotNull Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer;
+    private final @NotNull TriPredicate<T, Long, Long> NOOP_FILTER = (__, index, size) -> true;
+    private final @NotNull ConcurrentList<TriPredicate<T, Long, Long>> filters;
+    private final @NotNull TriFunction<T, Long, Long, RenderItem> transformer;
 
     private CollectionItemHandler(
         @NotNull Class<T> type,
@@ -33,8 +38,10 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         @NotNull Optional<Triple<String, String, String>> columnNames,
         int amountPerPage,
         boolean viewerEnabled,
-        @NotNull Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer) {
+        @NotNull ConcurrentList<TriPredicate<T, Long, Long>> filters,
+        @NotNull TriFunction<T, Long, Long, RenderItem> transformer) {
         super(type, items, sorters, style, columnNames, amountPerPage, viewerEnabled);
+        this.filters = filters;
         this.transformer = transformer;
     }
 
@@ -68,15 +75,16 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
 
     @Override
     public final @NotNull ConcurrentList<Item> getFieldItems(int startIndex, int endIndex) {
-        return this.getTransformer()
-            .stream()
-            .flatMap(transformer -> transformer.apply(
-                this.getCurrentSorter()
-                    .map(sorter -> sorter.apply(this.getItems(), this.isReversed()))
-                    .orElse(this.getItems())
-                    .subList(startIndex, endIndex)
-                    .stream()
-            ))
+        return this.getCurrentSorter()
+            .map(sorter -> sorter.apply(this.getItems(), this.isReversed()))
+            .orElse(this.getItems())
+            .subList(startIndex, endIndex)
+            .indexedStream()
+            .filter((t, index, size) -> this.getFilters()
+                .stream()
+                .allMatch(predicate -> predicate.test(t, index, size))
+            )
+            .map(this.getTransformer())
             .filter(Item.class::isInstance)
             .map(Item.class::cast)
             .collect(Concurrent.toList());
@@ -99,12 +107,15 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
 
         private final Class<T> type;
         private final ConcurrentList<T> items = Concurrent.newList();
+        private final ConcurrentList<TriPredicate<T, Long, Long>> filters = Concurrent.newList();
         private final ConcurrentList<Sorter<T>> sorters = Concurrent.newList();
+        @BuildFlag(required = true)
+        private Optional<TriFunction<T, Long, Long, RenderItem>> transformer = Optional.empty();
+        @BuildFlag(required = true)
         private Item.Style style = Item.Style.FIELD_INLINE;
         private Optional<Triple<String, String, String>> columnNames = Optional.empty();
         private int amountPerPage = 12;
         private boolean viewerEnabled = false;
-        private Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer = Optional.empty();
 
         /**
          * Clear all items from the {@link ItemHandler} list.
@@ -176,7 +187,26 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         }
 
         /**
-         * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+         * Adds filters used to render {@link RenderItem RenderItems}.
+         *
+         * @param filters Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withFilters(@NotNull TriPredicate<T, Long, Long>... filters) {
+            return this.withFilters(Arrays.asList(filters));
+        }
+
+        /**
+         * Adds filters used to render {@link RenderItem RenderItems}.
+         *
+         * @param filters Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withFilters(@NotNull Iterable<TriPredicate<T, Long, Long>> filters) {
+            filters.forEach(this.filters::add);
+            return this;
+        }
+
+        /**
+         * Add {@link RenderItem FieldItems} to the {@link Page} item list.
          *
          * @param fieldItems Variable number of field items to add.
          */
@@ -185,7 +215,7 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         }
 
         /**
-         * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+         * Add {@link RenderItem FieldItems} to the {@link Page} item list.
          *
          * @param fieldItems Collection of field items to add.
          */
@@ -214,20 +244,20 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         }
 
         /**
-         * Sets the transformer used to render the {@link SingletonFieldItem SingletonFieldItems}.
+         * Sets the transformer used to render {@link RenderItem RenderItems}.
          *
          * @param transformer How to render {@link T}.
          */
-        public Builder<T> withTransformer(@Nullable Function<Stream<T>, Stream<? extends SingletonFieldItem>> transformer) {
+        public Builder<T> withTransformer(@Nullable TriFunction<T, Long, Long, RenderItem> transformer) {
             return this.withTransformer(Optional.ofNullable(transformer));
         }
 
         /**
-         * Sets the transformer used to render the {@link SingletonFieldItem SingletonFieldItems}.
+         * Sets the transformer used to render {@link RenderItem RenderItems}.
          *
          * @param transformer How to render {@link T}.
          */
-        public Builder<T> withTransformer(@NotNull Optional<Function<Stream<T>, Stream<? extends SingletonFieldItem>>> transformer) {
+        public Builder<T> withTransformer(@Nullable Optional<TriFunction<T, Long, Long, RenderItem>> transformer) {
             this.transformer = transformer;
             return this;
         }
@@ -244,6 +274,8 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
 
         @Override
         public @NotNull CollectionItemHandler<T> build() {
+            Reflection.validateFlags(this);
+
             CollectionItemHandler<T> itemHandler = new CollectionItemHandler<>(
                 this.type,
                 this.items.toUnmodifiableList(),
@@ -252,7 +284,8 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
                 this.columnNames,
                 this.amountPerPage,
                 this.viewerEnabled,
-                this.transformer
+                this.filters,
+                this.transformer.orElseThrow()
             );
 
             if (ListUtil.notEmpty(this.sorters))
