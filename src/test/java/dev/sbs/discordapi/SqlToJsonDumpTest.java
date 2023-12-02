@@ -15,6 +15,7 @@ import java.io.IOException;
 public class SqlToJsonDumpTest {
 
     @Test
+    @SuppressWarnings("all")
     public void dumpDatabaseToJson_ok() {
         File currentDir = SimplifiedApi.getCurrentDirectory();
         File dbDir = new File(currentDir, "build/db");
