@@ -5,7 +5,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
-import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
+import dev.sbs.discordapi.context.interaction.deferrable.application.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.reactivestreams.Publisher;
