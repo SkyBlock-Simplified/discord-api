@@ -24,12 +24,13 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 import java.util.function.Function;
 
+@Getter
 public abstract class DiscordCommand<E extends Event, T extends CommandContext<E>> extends DiscordHelper implements CommandReference, Function<T, Mono<Void>> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected static final ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
-    @Getter protected final @NotNull DiscordBot discordBot;
-    @Getter protected final @NotNull UUID uniqueId;
+    protected final @NotNull DiscordBot discordBot;
+    protected final @NotNull UUID uniqueId;
 
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
