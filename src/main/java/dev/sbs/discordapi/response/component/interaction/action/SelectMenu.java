@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -8,18 +10,19 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.OptionContext;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu.SelectMenuContext;
+import dev.sbs.discordapi.context.interaction.deferrable.component.action.OptionContext;
+import dev.sbs.discordapi.context.interaction.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -33,23 +36,26 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
+@Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SelectMenu extends ActionComponent implements InteractableComponent<SelectMenuContext>, PreservableComponent {
 
-    @Getter private final @NotNull String identifier;
-    @Getter private final boolean disabled;
-    @Getter private final @NotNull Optional<String> placeholder;
-    @Getter private final @NotNull Optional<Integer> minValue;
-    @Getter private final @NotNull Optional<Integer> maxValue;
-    @Getter private final boolean placeholderUsingSelectedOption;
-    @Getter private final @NotNull ConcurrentList<Option> options;
-    @Getter private final boolean preserved;
-    @Getter private final boolean deferEdit;
-    @Getter private final @NotNull PageType pageType;
+    private final @NotNull String identifier;
+    private final boolean disabled;
+    private final @NotNull Optional<String> placeholder;
+    private final @NotNull Optional<Integer> minValue;
+    private final @NotNull Optional<Integer> maxValue;
+    private final boolean placeholderUsingSelectedOption;
+    private final @NotNull ConcurrentList<Option> options;
+    private final boolean preserved;
+    private final boolean deferEdit;
+    private final @NotNull PageType pageType;
+    @Getter(AccessLevel.NONE)
     private final @NotNull ConcurrentList<Option> selected = Concurrent.newList();
+    @Getter(AccessLevel.NONE)
     private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction;
 
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
@@ -89,7 +95,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
             .findFirst();
     }
 
-    public static Builder from(@NotNull SelectMenu selectMenu) {
+    public static @NotNull Builder from(@NotNull SelectMenu selectMenu) {
         return new Builder()
             .withIdentifier(selectMenu.getIdentifier())
             .setDisabled(selectMenu.isDisabled())
@@ -180,6 +186,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<SelectMenu> {
 
+        @BuildFlag(required = true)
         private String identifier;
         private boolean disabled;
         private Optional<String> placeholder = Optional.empty();
@@ -189,6 +196,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean preserved;
         private boolean deferEdit;
+        @BuildFlag(required = true)
         private PageType pageType = PageType.NONE;
         private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
 
@@ -296,10 +304,20 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          * Overrides the default identifier of the {@link SelectMenu}.
          *
          * @param identifier The identifier to use.
-         * @param objects The objects used to format the identifier.
          */
-        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = String.format(identifier, objects);
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link SelectMenu}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the identifier.
+         */
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
+            this.identifier = String.format(identifier, args);
             return this;
         }
 
@@ -418,7 +436,9 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
          * @return A built {@link SelectMenu} component.
          */
         @Override
-        public SelectMenu build() {
+        public @NotNull SelectMenu build() {
+            Reflection.validateFlags(this);
+
             return new SelectMenu(
                 this.identifier,
                 this.disabled,
@@ -511,7 +531,9 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         public static final class Builder implements dev.sbs.api.util.builder.Builder<Option> {
 
             private final UUID uniqueId;
+            @BuildFlag(required = true)
             private Optional<String> label = Optional.empty();
+            @BuildFlag(required = true)
             private Optional<String> value = Optional.empty();
             private Optional<String> description = Optional.empty();
             private Optional<Emoji> emoji = Optional.empty();
@@ -548,10 +570,19 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              * Sets the description of the {@link Option} shown under the label.
              *
              * @param description The description of the option.
-             * @param objects The objects used to format the description.
              */
-            public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-                return this.withDescription(StringUtil.formatNullable(description, objects));
+            public Builder withDescription(@Nullable String description) {
+                return this.withDescription(Optional.ofNullable(description));
+            }
+
+            /**
+             * Sets the description of the {@link Option} shown under the label.
+             *
+             * @param description The description of the option.
+             * @param args The objects used to format the description.
+             */
+            public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+                return this.withDescription(StringUtil.formatNullable(description, args));
             }
 
             /**
@@ -588,8 +619,18 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param label The label of the option.
              */
-            public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-                this.label = Optional.of(String.format(label, objects));
+            public Builder withLabel(@NotNull String label) {
+                this.label = Optional.of(label);
+                return this;
+            }
+
+            /**
+             * Sets the label text of the {@link Option}.
+             *
+             * @param label The label of the option.
+             */
+            public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+                this.label = Optional.of(String.format(label, args));
                 return this;
             }
 
@@ -598,8 +639,18 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              *
              * @param value The option value.
              */
-            public Builder withValue(@NotNull String value, @NotNull Object... objects) {
-                this.value = Optional.of(String.format(value, objects));
+            public Builder withValue(@NotNull String value) {
+                this.value = Optional.of(value);
+                return this;
+            }
+
+            /**
+             * Sets the value of the {@link Option}.
+             *
+             * @param value The option value.
+             */
+            public Builder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
+                this.value = Optional.of(String.format(value, args));
                 return this;
             }
 
@@ -610,6 +661,8 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              */
             @Override
             public @NotNull Option build() {
+                Reflection.validateFlags(this);
+
                 return new Option(
                     this.uniqueId,
                     this.label.orElse(this.uniqueId.toString()),

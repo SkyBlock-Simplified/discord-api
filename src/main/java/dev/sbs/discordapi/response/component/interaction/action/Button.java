@@ -1,22 +1,26 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.button.ButtonContext;
+import dev.sbs.discordapi.context.interaction.deferrable.component.action.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.exception.InvalidComponentException;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -26,19 +30,21 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
+@Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Button extends ActionComponent implements InteractableComponent<ButtonContext>, PreservableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    @Getter private final @NotNull String identifier;
-    @Getter private final @NotNull Style style;
-    @Getter private final boolean disabled;
-    @Getter private final @NotNull Optional<Emoji> emoji;
-    @Getter private final @NotNull Optional<String> label;
-    @Getter private final @NotNull Optional<String> url;
-    @Getter private final boolean preserved;
-    @Getter private final boolean deferEdit;
-    @Getter private final @NotNull PageType pageType;
+    private final @NotNull String identifier;
+    private final @NotNull Style style;
+    private final boolean disabled;
+    private final @NotNull Optional<Emoji> emoji;
+    private final @NotNull Optional<String> label;
+    private final @NotNull Optional<String> url;
+    private final boolean preserved;
+    private final boolean deferEdit;
+    private final @NotNull PageType pageType;
+    @Getter(AccessLevel.NONE)
     private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction;
 
     @Override
@@ -46,8 +52,8 @@ public final class Button extends ActionComponent implements InteractableCompone
         return this.interaction.orElse(NOOP_HANDLER);
     }
 
-    public static ButtonBuilder builder() {
-        return new ButtonBuilder().withIdentifier(UUID.randomUUID().toString());
+    public static @NotNull Builder builder() {
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -71,8 +77,8 @@ public final class Button extends ActionComponent implements InteractableCompone
             .build();
     }
 
-    public static ButtonBuilder from(@NotNull Button button) {
-        return new ButtonBuilder()
+    public static @NotNull Builder from(@NotNull Button button) {
+        return new Builder()
             .withIdentifier(button.getIdentifier())
             .withStyle(button.getStyle())
             .setDisabled(button.isDisabled())
@@ -101,7 +107,7 @@ public final class Button extends ActionComponent implements InteractableCompone
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
+            .append(this.getIdentifier())
             .append(this.getStyle())
             .append(this.isDisabled())
             .append(this.getEmoji())
@@ -112,18 +118,21 @@ public final class Button extends ActionComponent implements InteractableCompone
             .build();
     }
 
-    public ButtonBuilder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class ButtonBuilder implements Builder<Button> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<Button> {
 
+        @BuildFlag(required = true)
         private String identifier;
+        @BuildFlag(required = true)
         private Style style = Style.UNKNOWN;
         private boolean disabled;
         private boolean preserved;
         private boolean deferEdit;
+        @BuildFlag(required = true)
         private PageType pageType = PageType.NONE;
         private Optional<Function<ButtonContext, Mono<Void>>> interaction = Optional.empty();
         private Optional<Emoji> emoji = Optional.empty();
@@ -133,7 +142,7 @@ public final class Button extends ActionComponent implements InteractableCompone
         /**
          * Sets this {@link Button} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
          */
-        public ButtonBuilder isPreserved() {
+        public Builder isPreserved() {
             return this.isPreserved(true);
         }
 
@@ -142,7 +151,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param preserved True to preserve this button.
          */
-        public ButtonBuilder isPreserved(boolean preserved) {
+        public Builder isPreserved(boolean preserved) {
             this.preserved = preserved;
             return this;
         }
@@ -152,7 +161,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param interaction The interaction function.
          */
-        public ButtonBuilder onInteract(@Nullable Function<ButtonContext, Mono<Void>> interaction) {
+        public Builder onInteract(@Nullable Function<ButtonContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
@@ -161,7 +170,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param interaction The interaction function.
          */
-        public ButtonBuilder onInteract(@NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction) {
+        public Builder onInteract(@NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
             return this;
         }
@@ -169,50 +178,50 @@ public final class Button extends ActionComponent implements InteractableCompone
         /**
          * Sets the {@link Button} as enabled.
          */
-        public ButtonBuilder setEnabled() {
+        public Builder setEnabled() {
             return this.setEnabled(true);
         }
 
         /**
          * Sets if the {@link Button} should be enabled.
          *
-         * @param enabled True to enable the button.
+         * @param value True to enable the button.
          */
-        public ButtonBuilder setEnabled(boolean enabled) {
-            return this.setDisabled(!enabled);
+        public Builder setEnabled(boolean value) {
+            return this.setDisabled(!value);
         }
 
         /**
          * Sets the {@link Button} as disabled.
          */
-        public ButtonBuilder setDisabled() {
+        public Builder setDisabled() {
             return this.setDisabled(true);
         }
 
         /**
          * Sets if the {@link Button} should be disabled.
          *
-         * @param disabled True to disable the button.
+         * @param value True to disable the button.
          */
-        public ButtonBuilder setDisabled(boolean disabled) {
-            this.disabled = disabled;
+        public Builder setDisabled(boolean value) {
+            this.disabled = value;
             return this;
         }
 
         /**
          * Sets this {@link Button} as deferred when interacting.
          */
-        public ButtonBuilder withDeferEdit() {
+        public Builder withDeferEdit() {
             return this.withDeferEdit(true);
         }
 
         /**
          * Sets whether this {@link Button} is deferred when interacting.
          *
-         * @param deferEdit True to defer interaction.
+         * @param value True to defer interaction.
          */
-        public ButtonBuilder withDeferEdit(boolean deferEdit) {
-            this.deferEdit = deferEdit;
+        public Builder withDeferEdit(boolean value) {
+            this.deferEdit = value;
             return this;
         }
 
@@ -220,10 +229,20 @@ public final class Button extends ActionComponent implements InteractableCompone
          * Overrides the default identifier of the {@link Button}.
          *
          * @param identifier The identifier to use.
-         * @param objects The objects used to format the identifier.
          */
-        public ButtonBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = String.format(identifier, objects);
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link Button}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the identifier.
+         */
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
+            this.identifier = String.format(identifier, args);
             return this;
         }
 
@@ -231,10 +250,19 @@ public final class Button extends ActionComponent implements InteractableCompone
          * Sets the label text of the {@link Button}.
          *
          * @param label The label of the button.
-         * @param objects The objects used to format the url.
          */
-        public ButtonBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
-            return this.withLabel(StringUtil.formatNullable(label, objects));
+        public Builder withLabel(@Nullable String label) {
+            return this.withLabel(Optional.ofNullable(label));
+        }
+
+        /**
+         * Sets the label text of the {@link Button}.
+         *
+         * @param label The label of the button.
+         * @param args The objects used to format the url.
+         */
+        public Builder withLabel(@PrintFormat @Nullable String label, @Nullable Object... args) {
+            return this.withLabel(StringUtil.formatNullable(label, args));
         }
 
         /**
@@ -242,7 +270,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param label The label of the button.
          */
-        public ButtonBuilder withLabel(@NotNull Optional<String> label) {
+        public Builder withLabel(@NotNull Optional<String> label) {
             this.label = label;
             return this;
         }
@@ -252,7 +280,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param emoji The emoji of the button.
          */
-        public ButtonBuilder withEmoji(@Nullable Emoji emoji) {
+        public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
@@ -261,7 +289,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param emoji The emoji of the button.
          */
-        public ButtonBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.emoji = emoji;
             return this;
         }
@@ -271,7 +299,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param pageType The page type of the button.
          */
-        public ButtonBuilder withPageType(@NotNull PageType pageType) {
+        public Builder withPageType(@NotNull PageType pageType) {
             this.pageType = pageType;
             return this;
         }
@@ -281,7 +309,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param style The style of the button.
          */
-        public ButtonBuilder withStyle(@NotNull Style style) {
+        public Builder withStyle(@NotNull Style style) {
             this.style = style;
             return this;
         }
@@ -290,10 +318,19 @@ public final class Button extends ActionComponent implements InteractableCompone
          * Sets the {@link Button} url for a given LINK {@link Style}.
          *
          * @param url The url to open.
-         * @param objects The objects used to format the url.
          */
-        public ButtonBuilder withUrl(@Nullable String url, @NotNull Object... objects) {
-            return this.withUrl(StringUtil.formatNullable(url, objects));
+        public Builder withUrl(@Nullable String url) {
+            return this.withUrl(Optional.ofNullable(url));
+        }
+
+        /**
+         * Sets the {@link Button} url for a given LINK {@link Style}.
+         *
+         * @param url The url to open.
+         * @param args The objects used to format the url.
+         */
+        public Builder withUrl(@PrintFormat @Nullable String url, @Nullable Object... args) {
+            return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
         /**
@@ -301,7 +338,7 @@ public final class Button extends ActionComponent implements InteractableCompone
          *
          * @param url The url to open.
          */
-        public ButtonBuilder withUrl(@NotNull Optional<String> url) {
+        public Builder withUrl(@NotNull Optional<String> url) {
             this.url = url;
             return this;
         }
@@ -313,6 +350,14 @@ public final class Button extends ActionComponent implements InteractableCompone
          */
         @Override
         public @NotNull Button build() {
+            Reflection.validateFlags(this);
+
+            if (this.label.isEmpty() && this.emoji.isEmpty()) {
+                throw SimplifiedException.of(InvalidComponentException.class)
+                    .withMessage("Both label and emoji cannot be NULL!")
+                    .build();
+            }
+
             return new Button(
                 this.identifier,
                 this.style,
@@ -329,6 +374,7 @@ public final class Button extends ActionComponent implements InteractableCompone
 
     }
 
+    @Getter
     @RequiredArgsConstructor
     public enum Style {
 
@@ -354,15 +400,19 @@ public final class Button extends ActionComponent implements InteractableCompone
         /**
          * The Discord Button Integer value for this style.
          */
-        @Getter private final int value;
+        private final int value;
 
-        public static Style of(int value) {
-            return Arrays.stream(values()).filter(style -> style.getValue() == value).findFirst().orElse(UNKNOWN);
+        public static @NotNull Style of(int value) {
+            return Arrays.stream(values())
+                .filter(style -> style.getValue() == value)
+                .findFirst()
+                .orElse(UNKNOWN);
         }
 
     }
 
-    @AllArgsConstructor
+    @Getter
+    @RequiredArgsConstructor
     public enum PageType {
 
         NONE("", -1),
@@ -376,15 +426,15 @@ public final class Button extends ActionComponent implements InteractableCompone
         SORT("Sort", 2, DiscordHelper.getEmoji("SORT")),
         ORDER("Order", 2, DiscordHelper.getEmoji("SORT_DESCENDING"));
 
-        @Getter private final @NotNull String label;
-        @Getter private final int row;
-        @Getter private final @NotNull Optional<Emoji> emoji;
+        private final @NotNull String label;
+        private final int row;
+        private final @NotNull Optional<Emoji> emoji;
 
         PageType(@NotNull String label, int row) {
             this(label, row, Optional.empty());
         }
 
-        public Button build() {
+        public @NotNull Button build() {
             return Button.builder()
                 .withStyle(Button.Style.SECONDARY)
                 .withEmoji(this.getEmoji())

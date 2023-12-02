@@ -9,16 +9,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ActionRow extends LayoutComponent<ActionComponent> {
 
-    @Getter private final boolean preserved;
+    private final boolean preserved;
 
     @Override
-    public discord4j.core.object.component.ActionRow getD4jComponent() {
+    public @NotNull discord4j.core.object.component.ActionRow getD4jComponent() {
         return discord4j.core.object.component.ActionRow.of(
-            this.getComponents()
-                .stream()
+            this.components.stream()
                 .map(ActionComponent::getD4jComponent)
                 .collect(Concurrent.toList())
         );
@@ -29,7 +29,7 @@ public final class ActionRow extends LayoutComponent<ActionComponent> {
     }
 
     public static ActionRow of(@NotNull Iterable<ActionComponent> components) {
-        return of(false, components);
+        return of(components, false);
     }
 
     public static ActionRow preserved(@NotNull ActionComponent... components) {
@@ -37,12 +37,12 @@ public final class ActionRow extends LayoutComponent<ActionComponent> {
     }
 
     public static ActionRow preserved(@NotNull Iterable<ActionComponent> components) {
-        return of(true, components);
+        return of(components, true);
     }
 
-    private static ActionRow of(boolean preserved, @NotNull Iterable<ActionComponent> components) {
+    private static ActionRow of(@NotNull Iterable<ActionComponent> components, boolean preserved) {
         ActionRow actionRow = new ActionRow(preserved);
-        components.forEach(component -> actionRow.getComponents().add(component));
+        components.forEach(actionRow.components::add);
         return actionRow;
     }
 }

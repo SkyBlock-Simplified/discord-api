@@ -5,10 +5,12 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
+import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
@@ -30,7 +32,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Modal extends InteractionComponent implements InteractableComponent<ModalContext> {
+public final class Modal extends Component implements IdentifiableComponent, InteractableComponent<ModalContext> {
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     @Getter private final @NotNull String identifier;
@@ -65,7 +67,7 @@ public final class Modal extends InteractionComponent implements InteractableCom
      * @return The matching component, if it exists.
      */
     public <A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, InteractionComponent::getIdentifier, identifier);
+        return this.findComponent(tClass, IdentifiableComponent::getIdentifier, identifier);
     }
 
     public static ModalBuilder from(@NotNull Modal modal) {

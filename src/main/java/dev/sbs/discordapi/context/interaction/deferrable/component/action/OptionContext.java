@@ -1,12 +1,18 @@
-package dev.sbs.discordapi.context.interaction.deferrable.component.action.selectmenu;
+package dev.sbs.discordapi.context.interaction.deferrable.component.action;
 
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.ActionComponentContext;
+import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 public interface OptionContext extends ActionComponentContext {
@@ -31,7 +37,7 @@ public interface OptionContext extends ActionComponentContext {
     }
 
     static OptionContext of(@NotNull SelectMenuContext selectMenuContext, @NotNull Response response, @NotNull SelectMenu.Option option) {
-        return new OptionContextImpl(
+        return new Impl(
             selectMenuContext.getDiscordBot(),
             selectMenuContext.getEvent(),
             response.getUniqueId(),
@@ -39,6 +45,19 @@ public interface OptionContext extends ActionComponentContext {
             option,
             selectMenuContext.getFollowup()
         );
+    }
+
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class Impl implements OptionContext {
+
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull SelectMenuInteractionEvent event;
+        private final @NotNull UUID responseId;
+        private final @NotNull SelectMenu component;
+        private final @NotNull SelectMenu.Option option;
+        private final @NotNull Optional<ResponseCache.Followup> followup;
+
     }
 
 }

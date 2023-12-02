@@ -10,10 +10,14 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface AutoCompleteContext extends TypingContext<ChatInputAutoCompleteEvent> {
 
@@ -60,7 +64,19 @@ public interface AutoCompleteContext extends TypingContext<ChatInputAutoComplete
     }
 
     static @NotNull AutoCompleteContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputAutoCompleteEvent event, @NotNull SlashCommandReference slashCommand, @NotNull Argument argument) {
-        return new AutoCompleteContextImpl(discordBot, event, slashCommand, argument);
+        return new Impl(discordBot, event, slashCommand, argument);
+    }
+
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class Impl implements AutoCompleteContext {
+
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull ChatInputAutoCompleteEvent event;
+        private final @NotNull UUID responseId = UUID.randomUUID();
+        private final @NotNull SlashCommandReference command;
+        private final @NotNull Argument argument;
+
     }
 
 }

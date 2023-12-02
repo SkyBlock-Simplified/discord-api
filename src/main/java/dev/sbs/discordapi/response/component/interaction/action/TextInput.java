@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.util.builder.Builder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.helper.NumberUtil;
@@ -13,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,20 +20,21 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
+@Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TextInput extends ActionComponent {
 
-    @Getter private final @NotNull String identifier;
-    @Getter private final @NotNull Style style;
-    @Getter private final @NotNull Optional<String> label;
-    @Getter private final @NotNull Optional<String> value;
-    @Getter private final @NotNull Optional<String> placeholder;
-    @Getter private final int minLength;
-    @Getter private final int maxLength;
-    @Getter private final boolean required;
+    private final @NotNull String identifier;
+    private final @NotNull Style style;
+    private final @NotNull Optional<String> label;
+    private final @NotNull Optional<String> value;
+    private final @NotNull Optional<String> placeholder;
+    private final int minLength;
+    private final int maxLength;
+    private final boolean required;
 
-    public static TextInputBuilder builder() {
-        return new TextInputBuilder().withIdentifier(UUID.randomUUID().toString());
+    public static @NotNull Builder builder() {
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -45,10 +46,10 @@ public final class TextInput extends ActionComponent {
         TextInput textInput = (TextInput) o;
 
         return new EqualsBuilder()
+            .append(this.getIdentifier(), textInput.getIdentifier())
             .append(this.getMinLength(), textInput.getMinLength())
             .append(this.getMaxLength(), textInput.getMaxLength())
             .append(this.isRequired(), textInput.isRequired())
-            .append(this.getIdentifier(), textInput.getIdentifier())
             .append(this.getStyle(), textInput.getStyle())
             .append(this.getLabel(), textInput.getLabel())
             .append(this.getValue(), textInput.getValue())
@@ -56,8 +57,8 @@ public final class TextInput extends ActionComponent {
             .build();
     }
 
-    public static TextInputBuilder from(@NotNull TextInput textInput) {
-        return new TextInputBuilder()
+    public static @NotNull Builder from(@NotNull TextInput textInput) {
+        return new Builder()
             .withIdentifier(textInput.getIdentifier())
             .withStyle(textInput.getStyle())
             .withLabel(textInput.getLabel())
@@ -88,7 +89,6 @@ public final class TextInput extends ActionComponent {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
             .append(this.getIdentifier())
             .append(this.getStyle())
             .append(this.getLabel())
@@ -100,12 +100,12 @@ public final class TextInput extends ActionComponent {
             .build();
     }
 
-    public TextInputBuilder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class TextInputBuilder implements Builder<TextInput> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<TextInput> {
 
         private String identifier;
         private Style style = Style.UNKNOWN;
@@ -119,7 +119,7 @@ public final class TextInput extends ActionComponent {
         /**
          * Sets this {@link TextInput} as required when submitting a {@link Modal}.
          */
-        public TextInputBuilder isRequired() {
+        public Builder isRequired() {
             return this.isRequired(true);
         }
 
@@ -128,7 +128,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param required True to require this textinput.
          */
-        public TextInputBuilder isRequired(boolean required) {
+        public Builder isRequired(boolean required) {
             this.required = required;
             return this;
         }
@@ -137,11 +137,30 @@ public final class TextInput extends ActionComponent {
          * Overrides the default identifier of the {@link TextInput}.
          *
          * @param identifier The identifier to use.
-         * @param objects Objects used to format the identifier.
          */
-        public TextInputBuilder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            this.identifier = String.format(identifier, objects);
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
             return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link TextInput}.
+         *
+         * @param identifier The identifier to use.
+         * @param args Objects used to format the identifier.
+         */
+        public Builder withIdentifier(@NotNull String identifier, @Nullable Object... args) {
+            this.identifier = String.format(identifier, args);
+            return this;
+        }
+
+        /**
+         * Sets the label text of the {@link TextInput}.
+         *
+         * @param label The label of the field item.
+         */
+        public Builder withLabel(@Nullable String label) {
+            return this.withLabel(Optional.ofNullable(label));
         }
 
         /**
@@ -150,9 +169,8 @@ public final class TextInput extends ActionComponent {
          * @param label The label of the field item.
          * @param objects The objects used to format the label.
          */
-        public TextInputBuilder withLabel(@Nullable String label, @NotNull Object... objects) {
-            this.withLabel(StringUtil.formatNullable(label, objects));
-            return this;
+        public Builder withLabel(@PrintFormat @Nullable String label, @Nullable Object... objects) {
+            return this.withLabel(StringUtil.formatNullable(label, objects));
         }
 
         /**
@@ -160,7 +178,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param label The label of the textinput.
          */
-        public TextInputBuilder withLabel(@NotNull Optional<String> label) {
+        public Builder withLabel(@NotNull Optional<String> label) {
             this.label = label;
             return this;
         }
@@ -170,7 +188,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param minLength The minimum length required.
          */
-        public TextInputBuilder withMinLength(int minLength) {
+        public Builder withMinLength(int minLength) {
             this.minLength = NumberUtil.ensureRange(minLength, 0, 4000);
             return this;
         }
@@ -180,7 +198,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param maxLength The maximum length required.
          */
-        public TextInputBuilder withMaxLength(int maxLength) {
+        public Builder withMaxLength(int maxLength) {
             this.maxLength = NumberUtil.ensureRange(maxLength, 1, 4000);
             return this;
         }
@@ -189,10 +207,19 @@ public final class TextInput extends ActionComponent {
          * Sets the placeholder text of the {@link TextInput}.
          *
          * @param placeholder The placeholder text of the textinput.
-         * @param objects The objects used to format the placeholder.
          */
-        public TextInputBuilder withPlaceholder(@Nullable String placeholder, @NotNull Object... objects) {
-            return this.withPlaceholder(StringUtil.formatNullable(placeholder, objects));
+        public Builder withPlaceholder(@Nullable String placeholder) {
+            return this.withPlaceholder(Optional.ofNullable(placeholder));
+        }
+
+        /**
+         * Sets the placeholder text of the {@link TextInput}.
+         *
+         * @param placeholder The placeholder text of the textinput.
+         * @param args The objects used to format the placeholder.
+         */
+        public Builder withPlaceholder(@PrintFormat @Nullable String placeholder, @Nullable Object... args) {
+            return this.withPlaceholder(StringUtil.formatNullable(placeholder, args));
         }
 
         /**
@@ -200,7 +227,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param placeholder The placeholder text of the textinput.
          */
-        public TextInputBuilder withPlaceholder(@NotNull Optional<String> placeholder) {
+        public Builder withPlaceholder(@NotNull Optional<String> placeholder) {
             this.placeholder = placeholder;
             return this;
         }
@@ -210,7 +237,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param style The style of the textinput.
          */
-        public TextInputBuilder withStyle(@NotNull Style style) {
+        public Builder withStyle(@NotNull Style style) {
             this.style = style;
             return this;
         }
@@ -219,10 +246,19 @@ public final class TextInput extends ActionComponent {
          * Sets the value of the {@link TextInput}.
          *
          * @param value The label of the textinput.
-         * @param objects The objects used to format the value.
          */
-        public TextInputBuilder withValue(@Nullable String value, @NotNull Object... objects) {
-            return this.withValue(StringUtil.formatNullable(value, objects));
+        public Builder withValue(@Nullable String value) {
+            return this.withValue(Optional.ofNullable(value));
+        }
+
+        /**
+         * Sets the value of the {@link TextInput}.
+         *
+         * @param value The label of the textinput.
+         * @param args The objects used to format the value.
+         */
+        public Builder withValue(@PrintFormat @Nullable String value, @Nullable Object... args) {
+            return this.withValue(StringUtil.formatNullable(value, args));
         }
 
         /**
@@ -230,7 +266,7 @@ public final class TextInput extends ActionComponent {
          *
          * @param value The label of the textinput.
          */
-        public TextInputBuilder withValue(@NotNull Optional<String> value) {
+        public Builder withValue(@NotNull Optional<String> value) {
             this.value = value;
             return this;
         }

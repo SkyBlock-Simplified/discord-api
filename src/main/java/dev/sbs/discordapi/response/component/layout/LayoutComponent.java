@@ -4,15 +4,14 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.interaction.InteractionComponent;
 import dev.sbs.discordapi.response.component.type.D4jComponent;
+import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
-public abstract class LayoutComponent<T extends InteractionComponent> extends Component implements PreservableComponent, D4jComponent {
+public abstract class LayoutComponent<T extends IdentifiableComponent> implements PreservableComponent, D4jComponent {
 
-    @Getter private final ConcurrentList<T> components = Concurrent.newList();
+    protected final @NotNull ConcurrentList<T> components = Concurrent.newList();
 
     @Override
     public boolean equals(Object o) {
@@ -22,16 +21,20 @@ public abstract class LayoutComponent<T extends InteractionComponent> extends Co
         LayoutComponent<?> that = (LayoutComponent<?>) o;
 
         return new EqualsBuilder()
-            .append(this.getComponents(), that.getComponents())
+            .append(this.components, that.components)
             .build();
     }
 
-    public abstract discord4j.core.object.component.LayoutComponent getD4jComponent();
+    public final @NotNull ConcurrentList<T> getComponents() {
+        return this.components.toUnmodifiableList();
+    }
+
+    public abstract @NotNull discord4j.core.object.component.LayoutComponent getD4jComponent();
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getComponents())
+            .append(this.components)
             .build();
     }
 

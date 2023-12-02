@@ -15,11 +15,15 @@ import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public interface ExceptionContext<T extends Event> extends EventContext<T> {
@@ -110,7 +114,20 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, Optional<Consumer<Embed.Builder>> embedBuilderConsumer) {
-        return new ExceptionContextImpl<>(discordBot, eventContext, throwable, title, embedBuilderConsumer);
+        return new Impl<>(discordBot, eventContext, throwable, title, embedBuilderConsumer);
+    }
+
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class Impl<T extends Event> implements ExceptionContext<T> {
+
+        private final DiscordBot discordBot;
+        private final EventContext<T> eventContext;
+        private final UUID responseId = UUID.randomUUID();
+        private final Throwable exception;
+        private final String title;
+        private final Optional<Consumer<Embed.Builder>> embedBuilderConsumer;
+
     }
 
 }

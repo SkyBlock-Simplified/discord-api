@@ -6,9 +6,13 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ModalContext extends ComponentContext {
 
@@ -19,7 +23,7 @@ public interface ModalContext extends ComponentContext {
     @NotNull Modal getComponent();
 
     static ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<ResponseCache.Followup> followup) {
-        return new ModalContextImpl(
+        return new Impl(
             discordBot,
             event,
             response.getUniqueId(),
@@ -28,6 +32,18 @@ public interface ModalContext extends ComponentContext {
                 .build(),
             followup
         );
+    }
+
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class Impl implements ModalContext {
+
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull ModalSubmitInteractionEvent event;
+        private final @NotNull UUID responseId;
+        private final @NotNull Modal component;
+        private final @NotNull Optional<ResponseCache.Followup> followup;
+
     }
 
 }

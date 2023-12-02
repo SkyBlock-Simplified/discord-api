@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.context.interaction.deferrable.application.slash;
+package dev.sbs.discordapi.context.interaction.deferrable.application;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
@@ -14,10 +14,14 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface SlashCommandContext extends CommandContext<ChatInputInteractionEvent>, DeferrableInteractionContext<ChatInputInteractionEvent> {
 
@@ -67,7 +71,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     }
 
     static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull SlashCommandReference slashCommand, @NotNull ConcurrentList<Argument> arguments) {
-        return new SlashCommandContextImpl(discordBot, event, slashCommand, arguments);
+        return new Impl(discordBot, event, slashCommand, arguments);
     }
 
     @Override
@@ -75,4 +79,15 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
     }
 
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class Impl implements SlashCommandContext {
+
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull ChatInputInteractionEvent event;
+        private final @NotNull UUID responseId = UUID.randomUUID();
+        private final @NotNull SlashCommandReference command;
+        private final @NotNull ConcurrentList<Argument> arguments;
+
+    }
 }
