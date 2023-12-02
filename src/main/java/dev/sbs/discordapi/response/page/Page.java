@@ -15,11 +15,12 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.handler.item.CustomItemHandler;
 import dev.sbs.discordapi.response.page.handler.item.ItemHandler;
-import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.PageItem;
+import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -234,7 +235,7 @@ public class Page implements Paging<Page> {
          * @param identifier   The identifier of the embed to search for.
          * @param embedBuilder The embed builder to edit with.
          */
-        public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.EmbedBuilder, Embed.EmbedBuilder> embedBuilder) {
+        public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.Builder, Embed.Builder> embedBuilder) {
             this.findEmbed(identifier).ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
 
@@ -355,8 +356,12 @@ public class Page implements Paging<Page> {
             return this;
         }
 
-        public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(StringUtil.formatNullable(description, objects));
+        public Builder withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
+        }
+
+        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
         public Builder withDescription(@NotNull Optional<String> description) {
@@ -402,8 +407,13 @@ public class Page implements Paging<Page> {
             return this;
         }
 
-        public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-            this.optionBuilder.withLabel(label, objects);
+        public Builder withLabel(@NotNull String label) {
+            this.optionBuilder.withLabel(label);
+            return this;
+        }
+
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -450,8 +460,13 @@ public class Page implements Paging<Page> {
             return this;
         }
 
-        public Builder withValue(@NotNull String value, @NotNull Object... objects) {
-            this.optionBuilder.withValue(value, objects);
+        public Builder withValue(@NotNull String value) {
+            this.optionBuilder.withValue(value);
+            return this;
+        }
+
+        public Builder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
+            this.optionBuilder.withValue(value, args);
             return this;
         }
 
