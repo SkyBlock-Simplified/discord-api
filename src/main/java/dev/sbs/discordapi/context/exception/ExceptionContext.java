@@ -95,7 +95,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
                         .withValue(StringUtil.join(
                             commandContext.getArguments()
                                 .stream()
-                                .map(Argument::value)
+                                .map(Argument::getValue)
                                 .collect(Concurrent.toList()),
                             " "
                         ))
