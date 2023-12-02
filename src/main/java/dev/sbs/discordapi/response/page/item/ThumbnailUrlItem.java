@@ -3,80 +3,170 @@ package dev.sbs.discordapi.response.page.item;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.SingletonItem;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.UUID;
 
-public final class ThumbnailUrlItem extends SingletonItem<String> {
+@Getter
+@RequiredArgsConstructor
+public final class ThumbnailUrlItem implements SingletonItem<String> {
 
-    private ThumbnailUrlItem(
-        @NotNull SelectMenu.Option option,
-        boolean editable,
-        @NotNull Optional<String> value) {
-        super(option, Type.DESCRIPTION, editable, value);
-    }
+    private final @NotNull SelectMenu.Option option;
+    private final boolean editable;
+    private final @NotNull Optional<String> value;
 
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    public Builder mutate() {
-        return new Builder()
-            .withValue(this.getValue())
-            .withOption(this.getOption());
+    public static @NotNull Builder from(@NotNull ThumbnailUrlItem item) {
+        return builder()
+            .withIdentifier(item.getIdentifier())
+            .withOption(item.getOption())
+            .isEditable(item.isEditable())
+            .withValue(item.getValue());
+    }
+
+    @Override
+    public @NotNull Type getType() {
+        return Type.THUMBNAIL_URL;
+    }
+
+    public @NotNull Builder mutate() {
+        return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder extends ItemBuilder<ThumbnailUrlItem> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<ThumbnailUrlItem> {
 
+        protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        protected boolean editable;
         private Optional<String> value = Optional.empty();
 
-        @Override
+        /**
+         * Sets the {@link Item} as editable.
+         */
         public Builder isEditable() {
             return this.isEditable(true);
         }
 
-        @Override
-        public Builder isEditable(boolean value) {
-            super.editable = value;
+        /**
+         * Set the editable state of the {@link Item}.
+         *
+         * @param editable The value of the author item.
+         */
+        public Builder isEditable(boolean editable) {
+            this.editable = editable;
             return this;
         }
 
-        @Override
-        public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(StringUtil.formatNullable(description, objects));
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
         }
 
-        @Override
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @param args The objects used to format the description.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
+        }
+
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
         public Builder withDescription(@NotNull Optional<String> description) {
-            super.optionBuilder.withDescription(description);
+            this.optionBuilder.withDescription(description);
             return this;
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
-            super.optionBuilder.withEmoji(emoji);
+            this.optionBuilder.withEmoji(emoji);
             return this;
         }
 
-        @Override
-        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withValue(identifier, objects);
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.optionBuilder.withValue(identifier);
             return this;
         }
 
-        @Override
-        public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-            super.optionBuilder.withLabel(label, objects);
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the value.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @NotNull Object... args) {
+            this.optionBuilder.withValue(identifier, args);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder withLabel(@NotNull String label) {
+            this.optionBuilder.withLabel(label);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @param args The objects used to format the label.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder withLabel(@PrintFormat @NotNull String label, @NotNull Object... args) {
+            this.optionBuilder.withLabel(label, args);
             return this;
         }
 
@@ -90,16 +180,27 @@ public final class ThumbnailUrlItem extends SingletonItem<String> {
         /**
          * Sets the selected value of the {@link ThumbnailUrlItem}.
          *
-         * @param value The selected value of the menu item.
+         * @param value The value of the item.
          */
         public Builder withValue(@Nullable String value) {
             return this.withValue(Optional.ofNullable(value));
         }
 
+
         /**
          * Sets the selected value of the {@link ThumbnailUrlItem}.
          *
-         * @param value The selected value of the menu item.
+         * @param value The value of the item.
+         * @param args The objects used to format the value.
+         */
+        public Builder withValue(@PrintFormat @Nullable String value, @NotNull Object... args) {
+            return this.withValue(StringUtil.formatNullable(value, args));
+        }
+
+        /**
+         * Sets the selected value of the {@link ThumbnailUrlItem}.
+         *
+         * @param value The value of the item.
          */
         public Builder withValue(@NotNull Optional<String> value) {
             this.value = value;
@@ -109,8 +210,8 @@ public final class ThumbnailUrlItem extends SingletonItem<String> {
         @Override
         public @NotNull ThumbnailUrlItem build() {
             return new ThumbnailUrlItem(
-                super.optionBuilder.build(),
-                super.editable,
+                this.optionBuilder.build(),
+                this.editable,
                 this.value
             );
         }

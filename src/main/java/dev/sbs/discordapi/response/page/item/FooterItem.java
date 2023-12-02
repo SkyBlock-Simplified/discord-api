@@ -3,76 +3,193 @@ package dev.sbs.discordapi.response.page.item;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 @Getter
-public final class FooterItem extends Item {
+@RequiredArgsConstructor
+public final class FooterItem implements Item {
 
-    private final @NotNull Optional<String> name;
+    private final @NotNull SelectMenu.Option option;
+    private final boolean editable;
+    private final @NotNull Optional<String> text;
     private final @NotNull Optional<String> iconUrl;
+    private final @NotNull Optional<Instant> timestamp;
 
-    private FooterItem(@NotNull SelectMenu.Option option, boolean editable, @NotNull Optional<String> name, @NotNull Optional<String> iconUrl) {
-        super(option, Type.FOOTER, editable);
-        this.name = name;
-        this.iconUrl = iconUrl;
-    }
-
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    public Builder mutate() {
-        return new Builder()
-            .withIconUrl(this.getIconUrl())
-            .withName(this.getName())
-            .withOption(this.getOption())
-            .isEditable(this.isEditable());
+    public static @NotNull Builder from(@NotNull FooterItem item) {
+        return builder()
+            .withIdentifier(item.getIdentifier())
+            .withOption(item.getOption())
+            .isEditable(item.isEditable())
+            .withText(item.getText())
+            .withIconUrl(item.getIconUrl())
+            .withTimestamp(item.getTimestamp());
+    }
+
+    @Override
+    public @NotNull Type getType() {
+        return Type.FOOTER;
+    }
+
+    public @NotNull Builder mutate() {
+        return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder extends ItemBuilder<FooterItem> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<FooterItem> {
 
-        private Optional<String> name = Optional.empty();
+        protected final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        protected boolean editable;
+        private Optional<String> text = Optional.empty();
         private Optional<String> iconUrl = Optional.empty();
+        private Optional<Instant> timestamp = Optional.empty();
 
-        @Override
+        /**
+         * Sets the {@link Item} as editable.
+         */
         public Builder isEditable() {
             return this.isEditable(true);
         }
 
-        @Override
-        public Builder isEditable(boolean value) {
-            super.editable = value;
+        /**
+         * Set the editable state of the {@link Item}.
+         *
+         * @param editable The value of the author item.
+         */
+        public Builder isEditable(boolean editable) {
+            this.editable = editable;
             return this;
         }
 
-        @Override
-        public Builder withDescription(@Nullable String description, @NotNull Object... objects) {
-            return this.withDescription(StringUtil.formatNullable(description, objects));
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
         }
 
-        @Override
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @param args The objects used to format the description.
+         * @see SelectMenu.Option#getDescription()
+         */
+        public Builder withDescription(@PrintFormat @Nullable String description, @NotNull Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
+        }
+
+        /**
+         * Sets the description of the {@link SelectMenu.Option}.
+         *
+         * @param description The description to use.
+         * @see SelectMenu.Option#getDescription()
+         */
         public Builder withDescription(@NotNull Optional<String> description) {
-            super.optionBuilder.withDescription(description);
+            this.optionBuilder.withDescription(description);
             return this;
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
-        @Override
+        /**
+         * Sets the emoji of the {@link SelectMenu.Option}.
+         *
+         * @param emoji The emoji to use.
+         * @see SelectMenu.Option#getEmoji()
+         * @see Field#getName()
+         */
         public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
-            super.optionBuilder.withEmoji(emoji);
+            this.optionBuilder.withEmoji(emoji);
             return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.optionBuilder.withValue(identifier);
+            return this;
+        }
+
+        /**
+         * Overrides the default identifier of the {@link SelectMenu.Option}.
+         *
+         * @param identifier The identifier to use.
+         * @param args The objects used to format the value.
+         * @see SelectMenu.Option#getValue()
+         */
+        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @NotNull Object... args) {
+            this.optionBuilder.withValue(identifier, args);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder withLabel(@NotNull String label) {
+            this.optionBuilder.withLabel(label);
+            return this;
+        }
+
+        /**
+         * Sets the label of the {@link SelectMenu.Option}.
+         *
+         * @param label The label of the field item.
+         * @param objects The objects used to format the label.
+         * @see SelectMenu.Option#getLabel()
+         */
+        public Builder withLabel(@PrintFormat @NotNull String label, @NotNull Object... objects) {
+            this.optionBuilder.withLabel(label, objects);
+            return this;
+        }
+
+        public Builder withOption(@NotNull SelectMenu.Option option) {
+            return this.withIdentifier(option.getValue())
+                .withDescription(option.getDescription())
+                .withEmoji(option.getEmoji())
+                .withLabel(option.getLabel());
+        }
+
+        /**
+         * Sets the icon url of the {@link FooterItem}.
+         *
+         * @param iconUrl The selected value of the menu item.
+         */
+        public Builder withIconUrl(@Nullable String iconUrl) {
+            return this.withIconUrl(Optional.ofNullable(iconUrl));
         }
 
         /**
@@ -81,7 +198,7 @@ public final class FooterItem extends Item {
          * @param iconUrl The selected value of the menu item.
          * @param objects The objects used to format the icon url.
          */
-        public Builder withIconUrl(@Nullable String iconUrl, @NotNull Object... objects) {
+        public Builder withIconUrl(@PrintFormat @Nullable String iconUrl, @NotNull Object... objects) {
             return this.withIconUrl(StringUtil.formatNullable(iconUrl, objects));
         }
 
@@ -95,52 +212,63 @@ public final class FooterItem extends Item {
             return this;
         }
 
-        @Override
-        public Builder withIdentifier(@NotNull String identifier, @NotNull Object... objects) {
-            super.optionBuilder.withValue(identifier, objects);
-            return this;
+        /**
+         * Sets the text of the {@link FooterItem}.
+         *
+         * @param text The text of the menu item.
+         */
+        public Builder withText(@Nullable String text) {
+            return this.withText(Optional.ofNullable(text));
         }
 
-        @Override
-        public Builder withLabel(@NotNull String label, @NotNull Object... objects) {
-            super.optionBuilder.withLabel(label, objects);
+        /**
+         * Sets the text of the {@link FooterItem}.
+         *
+         * @param text The text of the footer item.
+         * @param args The objects used to format the name.
+         */
+        public Builder withText(@PrintFormat @Nullable String text, @NotNull Object... args) {
+            return this.withText(StringUtil.formatNullable(text, args));
+        }
+
+        /**
+         * Sets the text of the {@link FooterItem}.
+         *
+         * @param text The text of the menu item.
+         */
+        public Builder withText(@NotNull Optional<String> text) {
+            this.text = text;
             return this;
         }
 
         /**
-         * Sets the name of the {@link FooterItem}.
+         * Sets the timestamp of the {@link FooterItem}.
          *
-         * @param name The selected value of the menu item.
-         * @param objects The objects used to format the name.
+         * @param timestamp The timestamp
          */
-        public Builder withName(@Nullable String name, @NotNull Object... objects) {
-            return this.withName(StringUtil.formatNullable(name, objects));
+        public Builder withTimestamp(@Nullable Instant timestamp) {
+            return this.withTimestamp(Optional.ofNullable(timestamp));
         }
+
 
         /**
-         * Sets the name of the {@link FooterItem}.
+         * Sets the timestamp of the {@link FooterItem}.
          *
-         * @param name The selected value of the menu item.
+         * @param timestamp The timestamp
          */
-        public Builder withName(@NotNull Optional<String> name) {
-            this.name = name;
+        public Builder withTimestamp(@NotNull Optional<Instant> timestamp) {
+            this.timestamp = timestamp;
             return this;
-        }
-
-        public Builder withOption(@NotNull SelectMenu.Option option) {
-            return this.withIdentifier(option.getValue())
-                .withDescription(option.getDescription())
-                .withEmoji(option.getEmoji())
-                .withLabel(option.getLabel());
         }
 
         @Override
         public @NotNull FooterItem build() {
             return new FooterItem(
-                super.optionBuilder.build(),
-                super.editable,
-                this.name,
-                this.iconUrl
+                this.optionBuilder.build(),
+                this.editable,
+                this.text,
+                this.iconUrl,
+                this.timestamp
             );
         }
 
