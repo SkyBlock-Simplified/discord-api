@@ -1,5 +1,8 @@
 package dev.sbs.discordapi.command;
 
+import org.intellij.lang.annotations.Pattern;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,6 +17,7 @@ public @interface CommandId {
      *
      * @return The discord command id.
      */
-    String value();
+    @Pattern("[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-[\\dA-Fa-f]{4}-[\\dA-Fa-f]{4}-[\\dA-Fa-f]{12}")
+    @NotNull String value();
 
 }
