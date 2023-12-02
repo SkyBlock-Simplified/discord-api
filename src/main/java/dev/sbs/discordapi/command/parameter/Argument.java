@@ -10,22 +10,25 @@ import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.function.Function;
 
-public record Argument(
-    @Getter @NotNull Interaction interaction,
-    @Getter @NotNull Parameter parameter,
-    @Getter @NotNull ApplicationCommandInteractionOptionValue value
-) {
+@Getter
+@RequiredArgsConstructor
+public class Argument {
+
+    private final @NotNull Interaction interaction;
+    private final @NotNull Parameter parameter;
+    private final @NotNull ApplicationCommandInteractionOptionValue value;
 
     public @NotNull Attachment asAttachment() {
         return this.getValueAs(
             "attachment",
-            value -> Attachment.of(this.value().asAttachment()),
+            value -> Attachment.of(this.getValue().asAttachment()),
             Parameter.Type.ATTACHMENT
         );
     }
@@ -37,7 +40,7 @@ public record Argument(
     public @NotNull Mono<Channel> asChannel() {
         return this.getValueAs(
             "channel",
-            value -> this.interaction()
+            value -> this.getInteraction()
                 .getClient()
                 .getChannelById(this.asSnowflake()),
             Parameter.Type.CHANNEL
@@ -61,9 +64,9 @@ public record Argument(
             "mentionable",
             value -> String.format(
                 "<%s%s%s>",
-                (this.parameter().getType() == Parameter.Type.CHANNEL ? "#" : "@"),
-                (this.parameter().getType() == Parameter.Type.ROLE ? "&" : ""),
-                this.value()
+                (this.getParameter().getType() == Parameter.Type.CHANNEL ? "#" : "@"),
+                (this.getParameter().getType() == Parameter.Type.ROLE ? "&" : ""),
+                this.getValue()
             ),
             Parameter.Type.USER,
             Parameter.Type.ROLE,
@@ -75,10 +78,10 @@ public record Argument(
     public @NotNull Mono<Role> asRole() {
         return this.getValueAs(
             "role",
-            value -> this.interaction()
+            value -> this.getInteraction()
                 .getClient()
                 .getRoleById(
-                    this.interaction().getGuildId().orElseThrow(),
+                    this.getInteraction().getGuildId().orElseThrow(),
                     this.asSnowflake()
                 ),
             Parameter.Type.ROLE
@@ -103,7 +106,7 @@ public record Argument(
     public @NotNull Mono<User> asUser() {
         return getValueAs(
             "user",
-            value -> this.interaction()
+            value -> this.getInteraction()
                 .getClient()
                 .getUserById(this.asSnowflake()),
             Parameter.Type.USER
@@ -111,13 +114,13 @@ public record Argument(
     }
 
     private <T> @NotNull T getValueAs(@NotNull String parsedTypeName, @NotNull Function<String, T> transformer, @NotNull Parameter.Type... allowedTypes) {
-        if (!Arrays.asList(allowedTypes).contains(this.parameter().getType())) {
+        if (!Arrays.asList(allowedTypes).contains(this.getParameter().getType())) {
             throw SimplifiedException.of(InvalidParameterException.class)
                 .withMessage("Option value cannot be converted to %s.", parsedTypeName)
                 .build();
         }
 
-        return transformer.apply(this.value().getRaw());
+        return transformer.apply(this.getValue().getRaw());
     }
 
 }
