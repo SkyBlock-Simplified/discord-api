@@ -2,12 +2,12 @@ package dev.sbs.discordapi.response.page.handler.item;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.data.tuple.Triple;
+import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.SingletonFieldItem;
+import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -138,7 +138,7 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         }
 
         /**
-         * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+         * Add {@link RenderItem FieldItems} to the {@link Page} item list.
          *
          * @param fieldItems Variable number of field items to add.
          */
@@ -147,7 +147,7 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         }
 
         /**
-         * Add {@link SingletonFieldItem FieldItems} to the {@link Page} item list.
+         * Add {@link RenderItem FieldItems} to the {@link Page} item list.
          *
          * @param fieldItems Collection of field items to add.
          */
