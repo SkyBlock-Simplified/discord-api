@@ -12,10 +12,11 @@ import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
-import dev.sbs.discordapi.context.interaction.deferrable.application.slash.SlashCommandContext;
+import dev.sbs.discordapi.context.interaction.deferrable.application.SlashCommandContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.util.base.DiscordHelper;
+import dev.sbs.discordapi.response.embed.structure.Author;
+import dev.sbs.discordapi.response.embed.structure.Footer;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -72,15 +73,24 @@ public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEv
         String commandPath = this.getCommandPath();
         ConcurrentList<Parameter> parameters = this.getParameters();
 
-        Embed.EmbedBuilder embedBuilder = Embed.builder()
-            .withAuthor("Help", DiscordHelper.getEmoji("STATUS_INFO").map(Emoji::getUrl))
+        Embed.Builder builder = Embed.builder()
+            .withAuthor(
+                Author.builder()
+                    .withName("Help")
+                    .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                    .build()
+            )
             .withTitle("Command :: %s", this.getName())
             .withDescription(this.getLongDescription())
-            .withTimestamp(Instant.now())
+            .withFooter(
+                Footer.builder()
+                    .withTimestamp(Instant.now())
+                    .build()
+            )
             .withColor(Color.DARK_GRAY);
 
         if (ListUtil.notEmpty(parameters)) {
-            embedBuilder.withField(
+            builder.withField(
                 "Usage",
                 String.format(
                     """
@@ -100,7 +110,7 @@ public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEv
         }
 
         if (ListUtil.notEmpty(this.getExampleArguments())) {
-            embedBuilder.withField(
+            builder.withField(
                 "Examples",
                 StringUtil.join(
                     this.getExampleArguments()
@@ -112,7 +122,7 @@ public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEv
             );
         }
 
-        return embedBuilder.build();
+        return builder.build();
     }
 
 }
