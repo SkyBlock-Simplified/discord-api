@@ -21,7 +21,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
-import dev.sbs.discordapi.response.page.item.Item;
+import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -38,6 +38,7 @@ import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -62,20 +63,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Response implements Paging<Page> {
 
-    @Getter private final long buildTime = System.currentTimeMillis();
-    @Getter private final @NotNull UUID uniqueId;
-    @Getter private final @NotNull Optional<Snowflake> referenceId;
-    @Getter private final @NotNull Scheduler reactorScheduler;
-    @Getter private final boolean replyMention;
-    @Getter private final int timeToLive;
-    @Getter private final boolean interactable;
-    @Getter private final boolean renderingPagingComponents;
-    @Getter private final boolean ephemeral;
-    @Getter private final @NotNull HistoryHandler<Page, String> historyHandler;
-    @Getter private final @NotNull ConcurrentList<Attachment> attachments;
+    private final long buildTime = System.currentTimeMillis();
+    private final @NotNull UUID uniqueId;
+    private final @NotNull Optional<Snowflake> referenceId;
+    private final @NotNull Scheduler reactorScheduler;
+    private final boolean replyMention;
+    private final int timeToLive;
+    private final boolean interactable;
+    private final boolean renderingPagingComponents;
+    private final boolean ephemeral;
+    private final @NotNull HistoryHandler<Page, String> historyHandler;
+    private final @NotNull ConcurrentList<Attachment> attachments;
+    @Getter(AccessLevel.NONE)
     private ConcurrentList<LayoutComponent<ActionComponent>> cachedPageComponents = Concurrent.newUnmodifiableList();
 
     public static @NotNull Builder builder() {
@@ -87,7 +90,7 @@ public class Response implements Paging<Page> {
      *
      * @param buttonBuilder The button to edit.
      */
-    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.ButtonBuilder, Button.ButtonBuilder> buttonBuilder) {
+    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.Builder, Button.Builder> buttonBuilder) {
         this.cachedPageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
             .stream()
             .filter(Button.class::isInstance)
@@ -143,8 +146,12 @@ public class Response implements Paging<Page> {
             this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
     }
 
-    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
-        return loader(context, ephemeral, StringUtil.formatNullable(content, objects));
+    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content) {
+        return loader(context, ephemeral, Optional.ofNullable(content));
+    }
+
+    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @PrintFormat @Nullable String content, @Nullable Object... args) {
+        return loader(context, ephemeral, StringUtil.formatNullable(content, args));
     }
 
     public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @NotNull Optional<String> content) {
@@ -291,19 +298,19 @@ public class Response implements Paging<Page> {
 
     private void updatePagingComponents() {
         // Enabled
-        this.editPageButton(Button::getPageType, Button.PageType.FIRST, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.NEXT, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.LAST, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.BACK, buttonBuilder -> buttonBuilder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, buttonBuilder -> buttonBuilder.setEnabled(ListUtil.sizeOf(this.getHistoryHandler().getCurrentPage().getItemHandler().getSorters()) > 1));
-        this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.ButtonBuilder::setEnabled);
+        this.editPageButton(Button::getPageType, Button.PageType.FIRST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.NEXT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
+        this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
+        this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(ListUtil.sizeOf(this.getHistoryHandler().getCurrentPage().getItemHandler().getSorters()) > 1));
+        this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
 
         // Labels
         this.editPageButton(
             Button::getPageType,
             Button.PageType.INDEX,
-            buttonBuilder -> buttonBuilder.withLabel(String.format(
+            builder -> builder.withLabel(
                 "%s / %s",
                 this.getHistoryHandler()
                     .getCurrentPage()
@@ -313,13 +320,13 @@ public class Response implements Paging<Page> {
                     .getCurrentPage()
                     .getItemHandler()
                     .getTotalItemPages()
-            ))
+            )
         );
 
         this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
-            buttonBuilder -> buttonBuilder.withLabel(String.format(
+            builder -> builder.withLabel(
                 "Sort: %s",
                 this.getHistoryHandler()
                     .getCurrentPage()
@@ -327,14 +334,14 @@ public class Response implements Paging<Page> {
                     .getCurrentSorter()
                     .map(sorter -> sorter.getOption().getLabel())
                     .orElse("N/A")
-            ))
+            )
         );
 
         this.editPageButton(
             Button::getPageType,
             Button.PageType.ORDER,
-            buttonBuilder -> buttonBuilder
-                .withLabel(String.format("Order: %s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal"))
+            builder -> builder
+                .withLabel("Order: %s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal")
                 .withEmoji(DiscordHelper.getEmoji(String.format("SORT_%s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
         );
     }
