@@ -477,6 +477,9 @@ public class Page implements Paging<Page> {
          */
         @Override
         public @NotNull Page build() {
+            // Prevent Empty Rows
+            this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
+
             return new Page(
                 this.optionBuilder.build(),
                 this.content,

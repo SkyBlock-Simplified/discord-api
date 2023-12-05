@@ -15,8 +15,6 @@ import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.base.DiscordErrorObject;
 import dev.sbs.discordapi.util.cache.CommandRegistrar;
@@ -140,21 +138,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                         Response editedResponse = response.mutate()
                                             .clearAllComponents()
                                             .isRenderingPagingComponents(false)
-                                            .editPage(
-                                                response.getHistoryHandler()
-                                                    .getCurrentPage()
-                                                    .mutate()
-                                                    .withComponents(
-                                                        ActionRow.of(
-                                                            Button.builder()
-                                                                .withStyle(Button.Style.DANGER)
-                                                                .setDisabled()
-                                                                .withLabel("TIMED OUT")
-                                                                .build()
-                                                        )
-                                                    )
-                                                    .build()
-                                            )
                                             .build();
 
                                         // Traverse Page History
