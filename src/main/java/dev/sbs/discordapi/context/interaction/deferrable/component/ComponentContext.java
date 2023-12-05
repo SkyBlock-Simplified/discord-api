@@ -22,9 +22,11 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
 
     @Override
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
-        return this.getEvent()
-            .createFollowup(response.getD4jInteractionFollowupCreateSpec())
-            .publishOn(response.getReactorScheduler());
+        return this.deferReply().then(
+            this.getEvent()
+                .createFollowup(response.getD4jInteractionFollowupCreateSpec())
+                .publishOn(response.getReactorScheduler())
+        );
     }
 
     @Override
@@ -110,7 +112,7 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
         return Mono.justOrEmpty(this.getResponseCacheEntry())
-            .doOnNext(entry -> entry.setActiveModal(modal))
+            .doOnNext(entry -> entry.setUserModal(this.getInteractUser(), modal))
             .flatMap(entry -> this.getEvent().presentModal(modal.getD4jPresentSpec()));
     }
 
