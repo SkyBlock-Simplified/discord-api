@@ -17,7 +17,7 @@ public interface CommandContext<T extends Event> extends TypingContext<T> {
      * @param name The name of the parameter.
      */
     default @NotNull Optional<Argument> getArgument(@NotNull String name) {
-        return this.getArguments().findFirst(argument -> argument.parameter().getName(), name);
+        return this.getArguments().findFirst(argument -> argument.getParameter().getName(), name);
     }
 
     @NotNull ConcurrentList<Argument> getArguments();
