@@ -27,9 +27,9 @@ public final class DebugBot extends DiscordBot {
     public static void main(final String[] args) {
         new DebugBot(
             DiscordConfig.builder()
-                .withFileName("simplified-bot")
+                .withFileName("config-debug")
                 .withToken(ResourceUtil.getEnv("DISCORD_TOKEN"))
-                .withMainGuildId(ResourceUtil.getEnv("DISCORD_MAIN_GUILD_ID").map(NumberUtil::tryParseLong))
+                .withMainGuildId(652148034448261150L)
                 .withDebugChannelId(ResourceUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
                 .withCommands(
                     Reflection.getResources()
