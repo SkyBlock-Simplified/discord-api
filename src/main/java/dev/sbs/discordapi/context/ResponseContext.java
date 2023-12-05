@@ -135,9 +135,9 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
     }
 
-    default Mono<Void> withResponseConsumer(@NotNull Consumer<ResponseCache.Entry> entry) {
+    default Mono<Void> withResponseConsumer(@NotNull Consumer<ResponseCache.Entry> consumer) {
         return Mono.just(this.getResponseCacheEntry())
-            .doOnNext(entry)
+            .doOnNext(consumer)
             .then();
     }
 
