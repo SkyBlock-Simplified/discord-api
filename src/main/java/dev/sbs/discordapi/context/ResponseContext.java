@@ -45,10 +45,11 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Response Edit Exception"
                 )
             ))
-            .flatMap(message -> this.getResponseCacheEntry()
-                .updateResponse(response)
-                .updateAttachments(message)
-                .updateReactions(message)
+            .flatMap(message -> Mono.just(this.getResponseCacheEntry())
+                .flatMap(entry -> entry.updateResponse(response)
+                    .updateAttachments(message)
+                    .updateReactions(message)
+                    .then(entry.updateLastInteract()))
             )
             .then();
     }

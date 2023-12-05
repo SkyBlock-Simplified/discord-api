@@ -531,9 +531,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         public static final class Builder implements dev.sbs.api.util.builder.Builder<Option> {
 
             private final UUID uniqueId;
-            @BuildFlag(required = true)
             private Optional<String> label = Optional.empty();
-            @BuildFlag(required = true)
             private Optional<String> value = Optional.empty();
             private Optional<String> description = Optional.empty();
             private Optional<Emoji> emoji = Optional.empty();
@@ -661,8 +659,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
              */
             @Override
             public @NotNull Option build() {
-                Reflection.validateFlags(this);
-
                 return new Option(
                     this.uniqueId,
                     this.label.orElse(this.uniqueId.toString()),

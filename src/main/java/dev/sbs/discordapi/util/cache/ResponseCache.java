@@ -206,9 +206,10 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
 
     }
 
+    @Getter
     public static class Followup extends BaseEntry {
 
-        @Getter private final @NotNull String identifier;
+        private final @NotNull String identifier;
 
         private Followup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
             super(channelId, userId, messageId, response, response);

@@ -501,28 +501,6 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Edits an existing {@link Page} at the given index.
-         *
-         * @param pageBuilder The page builder to edit with.
-         */
-        public Builder editPage(@NotNull Function<Page.Builder, Page.Builder> pageBuilder) {
-            return this.editPage(0, pageBuilder);
-        }
-
-        /**
-         * Edits an existing {@link Page} at the given index.
-         *
-         * @param index The page index to edit.
-         * @param pageBuilder The page builder to edit with.
-         */
-        public Builder editPage(int index, @NotNull Function<Page.Builder, Page.Builder> pageBuilder) {
-            if (index < this.pages.size())
-                this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
-
-            return this;
-        }
-
-        /**
          * Updates an existing {@link Page}.
          *
          * @param page The page to edit.
