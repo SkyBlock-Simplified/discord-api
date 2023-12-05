@@ -5,7 +5,7 @@ import dev.sbs.api.client.sbs.exception.SbsApiException;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.data.tuple.Pair;
+import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
@@ -21,7 +21,9 @@ import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.embed.structure.Author;
+import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
@@ -47,7 +49,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
         if (exceptionContext.getException() instanceof SbsApiException sbsApiException) {
             responseBuilder = Optional.of(
                 Embed.builder()
-                    .withAuthor("Mojang Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
+                    .withAuthor(
+                        Author.builder()
+                            .withName("Mojang Api Error")
+                            .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
+                            .build()
+                    )
                     .withDescription(sbsApiException.getErrorResponse().getReason())
                     .withFields(
                         Field.builder()
@@ -71,7 +78,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
         } else if (exceptionContext.getException() instanceof HypixelApiException hypixelApiException) {
             responseBuilder = Optional.of(
                 Embed.builder()
-                    .withAuthor("Hypixel Api Error", getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
+                    .withAuthor(
+                        Author.builder()
+                            .withName("Hypixel Api Error")
+                            .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
+                            .build()
+                    )
                     .withDescription(hypixelApiException.getErrorResponse().getReason())
                     .withFields(
                         Field.builder()
@@ -95,7 +107,11 @@ public abstract class DiscordErrorObject extends DiscordReference {
         } else if (exceptionContext.getException() instanceof UserInputException) {
             responseBuilder = Optional.of(
                 Embed.builder()
-                    .withAuthor("User Input Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                    .withAuthor(
+                        Author.builder()
+                            .withName("User Input Error")
+                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                            .build())
                     .withDescription(exceptionContext.getException().getMessage())
                     .withFields((UserInputException) exceptionContext.getException())
                     .build()
@@ -109,7 +125,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
 
             responseBuilder = Optional.of(
                 Embed.builder()
-                    .withAuthor("User Verification Error", getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                    .withAuthor(
+                        Author.builder()
+                            .withName("User Verification Error")
+                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                            .build()
+                    )
                     .withDescription(useExceptionMessage ? exceptionMessage : (useCommandMessage ? commandMessage : defaultMessage))
                     .withFields(userVerificationException)
                     .build()
@@ -121,10 +142,12 @@ public abstract class DiscordErrorObject extends DiscordReference {
             String missingDescription = "You did not provide a required parameter.";
             String invalidDescription = "The provided argument does not validate against the expected parameter.";
 
-            Embed.EmbedBuilder embedBuilder = Embed.builder()
+            Embed.Builder builder = Embed.builder()
                 .withAuthor(
-                    String.format("%s Parameter", (missing ? "Missing" : "Invalid")),
-                    getEmoji("STATUS_INFO").map(Emoji::getUrl)
+                    Author.builder()
+                        .withName("%s Parameter", (missing ? "Missing" : "Invalid"))
+                        .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                        .build()
                 )
                 .withDescription(missing ? missingDescription : invalidDescription)
                 .withFields(
@@ -150,18 +173,23 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 );
 
             if (!missing) {
-                embedBuilder.withField(
+                builder.withField(
                     "Argument",
                     value
                 );
             }
 
-            responseBuilder = Optional.of(embedBuilder.build());
+            responseBuilder = Optional.of(builder.build());
         } else if (exceptionContext.getException() instanceof PermissionException permissionException) {
             boolean botPermissions = (permissionException instanceof BotPermissionException);
 
-            Embed.EmbedBuilder embedBuilder = Embed.builder()
-                .withAuthor(String.format("Missing %s Permissions", (botPermissions ? "Bot" : "User")), getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
+            Embed.Builder builder = Embed.builder()
+                .withAuthor(
+                    Author.builder()
+                        .withName("Missing %s Permissions", (botPermissions ? "Bot" : "User"))
+                        .withIconUrl(getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
+                        .build()
+                )
                 .withDescription(permissionException.getMessage());
 
             if (botPermissions) {
@@ -169,7 +197,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
                 Permission[] permissions = (Permission[]) permissionException.getData().get("PERMISSIONS");
                 ConcurrentLinkedMap<Permission, Boolean> permissionMap = this.getChannelPermissionMap(snowflake, exceptionContext.getChannel().ofType(GuildChannel.class), permissions);
 
-                embedBuilder.withField(
+                builder.withField(
                         "Required Permissions",
                         StringUtil.join(
                             permissionMap.stream()
@@ -196,11 +224,16 @@ public abstract class DiscordErrorObject extends DiscordReference {
                     .withEmptyField(true);
             }
 
-            responseBuilder = Optional.of(embedBuilder.build());
+            responseBuilder = Optional.of(builder.build());
         } else if (exceptionContext.getException() instanceof DisabledCommandException) {
             responseBuilder = Optional.of(
                 Embed.builder()
-                    .withAuthor("Disabled Command", DiscordHelper.getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
+                    .withAuthor(
+                        Author.builder()
+                            .withName("Disabled Command")
+                            .withIconUrl(getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
+                            .build()
+                    )
                     .withDescription("This command is currently disabled.")
                     .build()
             );
@@ -243,7 +276,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
         }
 
         // Build Log Channel Embed
-        Embed.EmbedBuilder logErrorBuilder = defaultError.getRight()
+        Embed.Builder logErrorBuilder = defaultError.getRight()
             .mutate()
             .clearFields()
             .withField(
@@ -298,19 +331,27 @@ public abstract class DiscordErrorObject extends DiscordReference {
 
         return Pair.of(errorId, Embed.from(exceptionContext.getException())
             .withColor(Color.DARK_GRAY)
-            .withTimestamp(Instant.now())
             .withAuthor(
-                // TODO: Emoji handling
-                "Exception"/*,
+                Author.builder()
+                    .withName(
+                        // TODO: Emoji handling
+                        "Exception"/*,
                 SimplifiedApi.getRepositoryOf(EmojiModel.class)
                     .findFirst(EmojiModel::getKey, "STATUS_HIGH_IMPORTANCE")
                     .flatMap(Emoji::of)
                     .map(Emoji::getUrl)*/
+                    )
+                    .build()
             )
             .withTitle("Error :: %s", exceptionContext.getTitle())
             .withField(
                 "Error ID",
                 errorId
+            )
+            .withFooter(
+                Footer.builder()
+                    .withTimestamp(Instant.now())
+                    .build()
             )
             .build()
         );
@@ -347,7 +388,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
 
         // Build User Error
         Response userErrorResponse = Response.builder()
-            .isInteractable(false)
+            .isNotInteractable()
             .isEphemeral(true)
             .withPages(
                 Page.builder()
@@ -366,6 +407,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
                             this.getDiscordBot()
                                 .getConfig()
                                 .getDebugChannelId()
+                                .orElse(-1L)
                             /*SimplifiedApi.getRepositoryOf(SettingModel.class)
                                 .findFirst(SettingModel::getKey, "DEVELOPER_ERROR_LOG_CHANNEL_ID")
                                 .map(SettingModel::getValue)
@@ -387,7 +429,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
 
                             // Build Exception Response
                             Response logResponse = Response.builder()
-                                .isInteractable(false)
+                                .isNotInteractable()
                                 .withException(exceptionContext.getException())
                                 .withPages(
                                     Page.builder()

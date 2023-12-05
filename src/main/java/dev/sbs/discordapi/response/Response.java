@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -23,9 +25,9 @@ import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.util.base.DiscordHelper;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
@@ -61,6 +63,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
 @Getter
@@ -73,7 +76,8 @@ public class Response implements Paging<Page> {
     private final @NotNull Scheduler reactorScheduler;
     private final boolean replyMention;
     private final int timeToLive;
-    private final boolean interactable;
+    @Getter(AccessLevel.NONE)
+    private final @NotNull Predicate<User> interactable;
     private final boolean renderingPagingComponents;
     private final boolean ephemeral;
     private final @NotNull HistoryHandler<Page, String> historyHandler;
@@ -114,7 +118,7 @@ public class Response implements Paging<Page> {
         return new EqualsBuilder()
             .append(this.isReplyMention(), response.isReplyMention())
             .append(this.getTimeToLive(), response.getTimeToLive())
-            .append(this.isInteractable(), response.isInteractable())
+            .append(this.interactable, response.interactable)
             .append(this.getAttachments(), response.getAttachments())
             .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
             .append(this.isEphemeral(), response.isEphemeral())
@@ -135,7 +139,7 @@ public class Response implements Paging<Page> {
             .withReactorScheduler(response.getReactorScheduler())
             .replyMention(response.isReplyMention())
             .withTimeToLive(response.getTimeToLive())
-            .isInteractable(response.isInteractable())
+            .isInteractable(response.interactable)
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral());
     }
@@ -144,6 +148,10 @@ public class Response implements Paging<Page> {
         return this.getHistoryHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
+    }
+
+    public boolean isInteractable(@NotNull User user) {
+        return this.interactable.test(user);
     }
 
     public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content) {
@@ -457,7 +465,7 @@ public class Response implements Paging<Page> {
             .append(this.getReactorScheduler())
             .append(this.isReplyMention())
             .append(this.getTimeToLive())
-            .append(this.isInteractable())
+            .append(this.interactable)
             .append(this.isRenderingPagingComponents())
             .append(this.isEphemeral())
             .build();
@@ -470,15 +478,19 @@ public class Response implements Paging<Page> {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Response> {
 
+        @BuildFlag(required = true)
         private UUID uniqueId = UUID.randomUUID();
+        @BuildFlag(required = true)
         private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Attachment> attachments = Concurrent.newList();
         private boolean inlineItems;
         private Optional<Snowflake> referenceId = Optional.empty();
+        @BuildFlag(required = true)
         private Scheduler reactorScheduler = Schedulers.boundedElastic();
         private boolean replyMention;
         private int timeToLive = 10;
-        private boolean interactable = true;
+        @BuildFlag(required = true)
+        private Predicate<User> interactable = __ -> true;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
         private Optional<String> defaultPage = Optional.empty();
@@ -536,20 +548,27 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Sets the {@link Response} as cacheable for interaction.
+         * Sets the {@link Response} as user interactable.
          */
         public Builder isInteractable() {
-            return this.isInteractable(true);
+            return this.isInteractable(__ -> true);
         }
 
         /**
-         * Sets if the {@link Response} is cached for interaction.
+         * Sets if the {@link Response} is user interactable.
          *
-         * @param value True if interactable.
+         * @param interactable Return true if interactable.
          */
-        public Builder isInteractable(boolean value) {
-            this.interactable = value;
+        public Builder isInteractable(@NotNull Predicate<User> interactable) {
+            this.interactable = interactable;
             return this;
+        }
+
+        /**
+         * Sets the {@link Response} as not user interactable.
+         */
+        public Builder isNotInteractable() {
+            return this.isInteractable(__ -> false);
         }
 
         /**
@@ -794,10 +813,7 @@ public class Response implements Paging<Page> {
          */
         @Override
         public @NotNull Response build() {
-            if (ListUtil.isEmpty(this.pages))
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("A response must have at least one page!")
-                    .build();
+            Reflection.validateFlags(this);
 
             Response response = new Response(
                 this.uniqueId,
