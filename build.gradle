@@ -36,6 +36,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-M2'
+    // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
+    implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-RC1'
     implementation project(':api')
 }
