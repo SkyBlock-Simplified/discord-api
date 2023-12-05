@@ -7,8 +7,10 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.type.D4jComponent;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
+@Getter
 public abstract class LayoutComponent<T extends IdentifiableComponent> implements PreservableComponent, D4jComponent {
 
     protected final @NotNull ConcurrentList<T> components = Concurrent.newList();
@@ -23,10 +25,6 @@ public abstract class LayoutComponent<T extends IdentifiableComponent> implement
         return new EqualsBuilder()
             .append(this.components, that.components)
             .build();
-    }
-
-    public final @NotNull ConcurrentList<T> getComponents() {
-        return this.components.toUnmodifiableList();
     }
 
     public abstract @NotNull discord4j.core.object.component.LayoutComponent getD4jComponent();
