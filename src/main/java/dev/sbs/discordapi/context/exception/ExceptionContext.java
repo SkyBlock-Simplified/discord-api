@@ -12,6 +12,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -75,7 +76,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
 
     @NotNull String getTitle();
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
+    static <T extends DeferrableInteractionEvent> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
         CommandReference command = commandContext.getCommand();
 
         return of(
