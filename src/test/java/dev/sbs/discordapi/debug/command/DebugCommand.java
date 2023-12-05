@@ -296,7 +296,7 @@ public class DebugCommand extends SlashCommand {
     }
 
     private Mono<Void> editPage(ResponseContext<?> context, Function<Page.Builder, Page.Builder> currentPage) {
-        return context.withResponseCacheEntry(entry -> entry.updateResponse(
+        return context.withResponseFunction(entry -> entry.updateResponse(
             context.getResponse()
                 .mutate()
                 .editPage(

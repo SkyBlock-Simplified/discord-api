@@ -37,14 +37,15 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         return entry;
     }
 
+    @Getter
     public static final class Entry extends BaseEntry {
 
-        @Getter private final @NotNull ConcurrentList<Followup> followups = Concurrent.newList();
-        @Getter private @NotNull Optional<Modal> activeModal = Optional.empty();
-        @Getter private long lastInteract = System.currentTimeMillis();
-        @Getter private boolean loading;
-        @Getter private boolean busy;
-        @Getter private boolean deferred;
+        private final @NotNull ConcurrentList<Followup> followups = Concurrent.newList();
+        private @NotNull Optional<Modal> activeModal = Optional.empty();
+        private long lastInteract = System.currentTimeMillis();
+        private boolean loading;
+        private boolean busy;
+        private boolean deferred;
 
         public Entry(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
             super(channelId, userId, messageId, response, response);
@@ -140,18 +141,17 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         /**
          * Sets this response as loaded, preventing it from being edited through {@link EventContext#reply}}.
          */
-        public Entry setLoaded() {
+        public Mono<Entry> setLoaded() {
             this.loading = false;
-            return this;
+            return Mono.just(this);
         }
 
         public void setActiveModal(@NotNull Modal modal) {
             this.activeModal = Optional.of(modal);
         }
 
-        public Entry updateAttachments(@NotNull Message message) {
-            this.getResponse().updateAttachments(message);
-            return this;
+        public Mono<Entry> updateAttachments(@NotNull Message message) {
+            return Mono.fromRunnable(() -> this.getResponse().updateAttachments(message));
         }
 
         /**
@@ -166,9 +166,9 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             });
         }
 
-        public Mono<Message> updateReactions(@NotNull Message message) {
+        public Mono<Entry> updateReactions(@NotNull Message message) {
             return Mono.just(message)
-                .checkpoint("DiscordReference#handleReactions Processing")
+                .checkpoint("ResponseCache#handleReactions Processing")
                 .flatMap(msg -> {
                     // Update Reactions
                     ConcurrentList<Emoji> newReactions = this.getResponse()
@@ -196,12 +196,11 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
                             .collect(Concurrent.toList())
                     ));
                 })
-                .thenReturn(message);
+                .thenReturn(this);
         }
 
-        public Entry updateResponse(@NotNull Response response) {
-            super.setUpdatedResponse(response);
-            return this;
+        public Mono<Entry> updateResponse(@NotNull Response response) {
+            return Mono.fromRunnable(() -> super.setUpdatedResponse(response));
         }
 
     }
@@ -249,14 +248,15 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
 
     }
 
+    @Getter
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static abstract class BaseEntry {
 
-        @Getter private final @NotNull Snowflake channelId;
-        @Getter private final @NotNull Snowflake userId;
-        @Getter private final @NotNull Snowflake messageId;
-        @Getter private @NotNull Response response;
-        @Getter(AccessLevel.PRIVATE)
+        private final @NotNull Snowflake channelId;
+        private final @NotNull Snowflake userId;
+        private final @NotNull Snowflake messageId;
+        private @NotNull Response response;
+        @Getter(AccessLevel.PROTECTED)
         private @NotNull Response currentResponse;
 
         @Override

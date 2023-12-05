@@ -30,7 +30,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> !event.getInteraction().getUser().isBot()) // Ignore Bots
             .filter(entry -> entry.matchesMessage(entry.getMessageId(), event.getInteraction().getUser().getId())) // Validate Message & User ID
-            // TODO: Support users other than response creator interactions
+            .filter(entry -> entry.getResponse().isInteractable(event.getInteraction().getUser())) // Validate User
             .singleOrEmpty()
             .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
             .doOnNext(ResponseCache.Entry::setBusy)

@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public interface ResponseContext<T extends Event> extends MessageContext<T> {
 
@@ -47,9 +48,10 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             ))
             .flatMap(message -> Mono.just(this.getResponseCacheEntry())
                 .flatMap(entry -> entry.updateResponse(response)
-                    .updateAttachments(message)
-                    .updateReactions(message)
-                    .then(entry.updateLastInteract()))
+                    .then(entry.updateReactions(message))
+                    .then(entry.updateAttachments(message))
+                    .then(entry.updateLastInteract())
+                )
             )
             .then();
     }
@@ -91,7 +93,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Followup Delete Exception"
                 )
             ))
-            .then(this.withResponseCacheEntry(entry -> entry.removeFollowup(identifier)));
+            .then(this.withResponseConsumer(entry -> entry.removeFollowup(identifier)));
     }
 
     default Mono<Void> followup(@NotNull Response response) {
@@ -108,7 +110,7 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
                     "Followup Create Exception"
                 )
             ))
-            .flatMap(message -> this.withResponseCacheEntry(entry -> entry.addFollowup(
+            .flatMap(message -> this.withResponseConsumer(entry -> entry.addFollowup(
                 identifier,
                 message.getChannelId(),
                 this.getInteractUserId(),
@@ -133,9 +135,15 @@ public interface ResponseContext<T extends Event> extends MessageContext<T> {
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
     }
 
-    default Mono<Void> withResponseCacheEntry(@NotNull Consumer<ResponseCache.Entry> entry) {
+    default Mono<Void> withResponseConsumer(@NotNull Consumer<ResponseCache.Entry> entry) {
         return Mono.just(this.getResponseCacheEntry())
             .doOnNext(entry)
+            .then();
+    }
+
+    default Mono<Void> withResponseFunction(@NotNull Function<ResponseCache.Entry, Mono<ResponseCache.Entry>> function) {
+        return Mono.just(this.getResponseCacheEntry())
+            .flatMap(function)
             .then();
     }
 

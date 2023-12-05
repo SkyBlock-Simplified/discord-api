@@ -51,7 +51,7 @@ public interface ReactionContext extends ResponseContext<MessageEvent> {
     default Mono<Void> removeReactions() {
         return this.getMessage()
             .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+            .then(this.withResponseFunction(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
@@ -70,7 +70,7 @@ public interface ReactionContext extends ResponseContext<MessageEvent> {
     default Mono<Void> removeReaction() {
         return this.getMessage()
             .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+            .then(this.withResponseFunction(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
@@ -93,7 +93,7 @@ public interface ReactionContext extends ResponseContext<MessageEvent> {
     default Mono<Void> removeSelfReaction() {
         return this.getMessage()
             .flatMap(message -> message.removeSelfReaction(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseCacheEntry(entry -> entry.updateResponse(
+            .then(this.withResponseFunction(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
