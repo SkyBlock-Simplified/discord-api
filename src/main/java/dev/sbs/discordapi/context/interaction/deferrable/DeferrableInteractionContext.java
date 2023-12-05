@@ -8,8 +8,6 @@ import discord4j.core.spec.InteractionCallbackSpec;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
 public interface DeferrableInteractionContext<T extends DeferrableInteractionEvent> extends InteractionContext<T> {
 
     @Override
@@ -19,11 +17,12 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
             .publishOn(response.getReactorScheduler());
     }
 
-    @Override
-    default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
-        return this.getEvent()
-            .deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build())
-            .then(this.reply(Response.loader(this, ephemeral, content)));
+    default Mono<Void> deferReply() {
+        return this.deferReply(false);
+    }
+
+    default Mono<Void> deferReply(boolean ephemeral) {
+        return this.getEvent().deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build());
     }
 
     @Override
