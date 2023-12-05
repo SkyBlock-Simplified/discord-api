@@ -12,6 +12,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -31,8 +32,8 @@ public interface EventContext<T extends Event> {
         return this.deferReply(ephemeral, Optional.empty());
     }
 
-    default Mono<Void> deferReply(boolean ephemeral, @Nullable String content, @NotNull Object... objects) {
-        return this.deferReply(ephemeral, StringUtil.formatNullable(content, objects));
+    default Mono<Void> deferReply(boolean ephemeral, @PrintFormat @Nullable String content, @Nullable Object... args) {
+        return this.deferReply(ephemeral, StringUtil.formatNullable(content, args));
     }
 
     default Mono<Void> deferReply(boolean ephemeral, @NotNull Optional<String> content) {
@@ -58,8 +59,8 @@ public interface EventContext<T extends Event> {
             .flatMap(message -> message.edit(response.getD4jEditSpec()));
     }
 
-    default Mono<Void> edit(@Nullable String content, @NotNull Object... objects) {
-        return this.edit(StringUtil.formatNullable(content, objects));
+    default Mono<Void> edit(@PrintFormat @Nullable String content, @Nullable Object... args) {
+        return this.edit(StringUtil.formatNullable(content, args));
     }
 
     default Mono<Void> edit(@NotNull Optional<String> content) {
