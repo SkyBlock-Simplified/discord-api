@@ -70,7 +70,7 @@ public class Footer {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Footer> {
 
-        @BuildFlag(required = true, limit = 2046)
+        @BuildFlag(required = true, limit = 2048)
         private String text;
         private Optional<String> iconUrl = Optional.empty();
         private Optional<Instant> timestamp = Optional.empty();
