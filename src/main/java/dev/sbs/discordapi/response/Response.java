@@ -10,9 +10,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
@@ -40,7 +38,6 @@ import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -152,37 +149,6 @@ public class Response implements Paging<Page> {
 
     public boolean isInteractable(@NotNull User user) {
         return this.interactable.test(user);
-    }
-
-    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @Nullable String content) {
-        return loader(context, ephemeral, Optional.ofNullable(content));
-    }
-
-    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @PrintFormat @Nullable String content, @Nullable Object... args) {
-        return loader(context, ephemeral, StringUtil.formatNullable(content, args));
-    }
-
-    public static @NotNull Response loader(@NotNull EventContext<?> context, boolean ephemeral, @NotNull Optional<String> content) {
-        return builder()
-            .isInteractable()
-            .isEphemeral(ephemeral)
-            .withUniqueId(context.getResponseId())
-            .withPages(
-                Page.builder()
-                    .withContent(
-                        content.orElse(String.format(
-                            "%s is working...",
-                            /*SimplifiedApi.getRepositoryOf(EmojiModel.class)
-                                .findFirst(EmojiModel::getKey, "LOADING_RIPPLE")
-                                .flatMap(Emoji::of)
-                                .map(Emoji::asSpacedFormat)
-                                .orElse(""),*/
-                            context.getDiscordBot().getSelf().getUsername()
-                        ))
-                    )
-                    .build()
-            )
-            .build();
     }
 
     public void setNoCacheUpdateRequired() {
@@ -403,7 +369,6 @@ public class Response implements Paging<Page> {
             .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .username("Test")
             .build();
     }
 
