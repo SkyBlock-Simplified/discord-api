@@ -54,7 +54,6 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         }
 
         public Followup addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-            System.out.println("Add followup");
             Followup followup = new Followup(identifier, channelId, userId, messageId, response);
             this.followups.add(followup);
             return followup;
