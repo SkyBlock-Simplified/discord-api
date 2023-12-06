@@ -23,7 +23,7 @@ public interface ButtonContext extends ActionComponentContext {
     @Override
     @NotNull Button getComponent();
 
-    default Mono<Void> modify(Function<Button.Builder, Button.Builder> buttonBuilder) {
+    default Mono<Void> modify(@NotNull Function<Button.Builder, Button.Builder> buttonBuilder) {
         return this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
     }
 

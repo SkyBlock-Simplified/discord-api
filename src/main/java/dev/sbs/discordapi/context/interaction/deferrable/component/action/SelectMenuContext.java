@@ -28,7 +28,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         return this.getComponent().getSelected();
     }
 
-    default Mono<Void> modify(Function<SelectMenu.Builder, SelectMenu.Builder> selectMenuBuilder) {
+    default Mono<Void> modify(@NotNull Function<SelectMenu.Builder, SelectMenu.Builder> selectMenuBuilder) {
         return this.modify(selectMenuBuilder.apply(this.getComponent().mutate()).build());
     }
 

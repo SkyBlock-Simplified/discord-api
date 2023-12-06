@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 
 public interface ActionComponentContext extends ComponentContext {
 
+    @Override
     @NotNull ActionComponent getComponent();
 
     default Mono<Void> modify(@NotNull ActionComponent actionComponent) {

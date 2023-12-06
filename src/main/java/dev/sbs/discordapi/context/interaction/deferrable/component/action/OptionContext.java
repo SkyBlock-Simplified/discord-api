@@ -25,7 +25,7 @@ public interface OptionContext extends ActionComponentContext {
 
     @NotNull SelectMenu.Option getOption();
 
-    default Mono<Void> modify(Function<SelectMenu.Option.Builder, SelectMenu.Option.Builder> optionBuilder) {
+    default Mono<Void> modify(@NotNull Function<SelectMenu.Option.Builder, SelectMenu.Option.Builder> optionBuilder) {
         return this.modify(
             this.getComponent()
                 .mutate()
