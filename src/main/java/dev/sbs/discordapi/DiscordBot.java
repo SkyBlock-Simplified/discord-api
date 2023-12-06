@@ -115,42 +115,40 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         });
 
                     log.info("Scheduling Cache Cleaner");
-                    this.scheduler.scheduleAsync(() -> this.responseCache.forEach(entry -> {
-                        if (!entry.isActive()) {
-                            // Clear Cached Message
-                            this.responseCache.remove(entry);
+                    this.scheduler.scheduleAsync(() -> this.responseCache.matchAll(ResponseCache.Entry::notActive).forEach(entry -> {
+                        // Clear Cached Message
+                        this.responseCache.remove(entry);
 
-                            // Clear Message Components and Reactions
-                            this.getGateway()
-                                .getChannelById(entry.getChannelId())
-                                .ofType(MessageChannel.class)
-                                .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
-                                .flatMap(message -> Mono.just(entry.getResponse())
-                                    .flatMap(response -> {
-                                        // Remove All Reactions
-                                        Mono<?> handle = message.removeAllReactions();
+                        // Clear Message Components and Reactions
+                        this.getGateway()
+                            .getChannelById(entry.getChannelId())
+                            .ofType(MessageChannel.class)
+                            .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
+                            .flatMap(message -> Mono.just(entry.getResponse())
+                                .flatMap(response -> {
+                                    // Remove All Reactions
+                                    Mono<?> handle = message.removeAllReactions();
 
-                                        // Save Page History
-                                        ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
-                                        int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();
+                                    // Save Page History
+                                    ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
+                                    int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();
 
-                                        // Remove Non-Preserved Components
-                                        Response editedResponse = response.mutate()
-                                            .clearAllComponents()
-                                            .isRenderingPagingComponents(false)
-                                            .build();
+                                    // Remove Non-Preserved Components
+                                    Response editedResponse = response.mutate()
+                                        .clearAllComponents()
+                                        .isRenderingPagingComponents(false)
+                                        .build();
 
-                                        // Traverse Page History
-                                        editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
-                                        pageHistory.forEach(identifier -> editedResponse.getHistoryHandler().gotoSubPage(identifier));
-                                        editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);
+                                    // Traverse Page History
+                                    editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
+                                    pageHistory.forEach(identifier -> editedResponse.getHistoryHandler().gotoSubPage(identifier));
+                                    editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);
 
-                                        // Update Message Components
-                                        return handle.then(message.edit(editedResponse.getD4jEditSpec()));
-                                    })
-                                )
-                                .subscribe();
-                        }
+                                    // Update Message Components
+                                    return handle.then(message.edit(editedResponse.getD4jEditSpec()));
+                                })
+                            )
+                            .subscribe();
                     }), 0, 1, TimeUnit.SECONDS);
 
                     log.info("Registering Event Listeners");
@@ -165,6 +163,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
                             this.onGatewayDisconnected();
                             this.getScheduler().shutdownNow();
+                            SimplifiedApi.getSessionManager().disconnect();
                         }))
                     );
 
