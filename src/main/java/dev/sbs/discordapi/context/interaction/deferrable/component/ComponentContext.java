@@ -8,15 +8,12 @@ import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionCallbackSpec;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 public interface ComponentContext extends ResponseContext<ComponentInteractionEvent>, DeferrableInteractionContext<ComponentInteractionEvent> {
 
@@ -64,31 +61,11 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     }
 
     @Override
-    default @NotNull Snowflake getChannelId() {
-        return this.getEvent().getInteraction().getChannelId();
+    default Mono<MessageChannel> getChannel() {
+        return DeferrableInteractionContext.super.getChannel();
     }
 
     @NotNull Component getComponent();
-
-    @Override
-    default Mono<Guild> getGuild() {
-        return this.getEvent().getInteraction().getGuild();
-    }
-
-    @Override
-    default Optional<Snowflake> getGuildId() {
-        return this.getEvent().getInteraction().getGuildId();
-    }
-
-    @Override
-    default @NotNull User getInteractUser() {
-        return this.getEvent().getInteraction().getUser();
-    }
-
-    @Override
-    default @NotNull Snowflake getInteractUserId() {
-        return this.getEvent().getInteraction().getUser().getId();
-    }
 
     @Override
     default Mono<Message> getMessage() {
@@ -98,11 +75,6 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
     @Override
     default Snowflake getMessageId() {
         return this.getEvent().getMessageId();
-    }
-
-    @Override
-    default Mono<Message> getReply() {
-        return this.getEvent().getReply();
     }
 
     @Override

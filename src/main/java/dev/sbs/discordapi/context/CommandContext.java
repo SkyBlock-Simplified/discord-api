@@ -1,26 +1,21 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.command.parameter.Argument;
-import dev.sbs.discordapi.command.parameter.Parameter;
+import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.interaction.TypingContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
+import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Optional;
+public interface CommandContext<T extends ApplicationCommandInteractionEvent> extends DeferrableInteractionContext<T>, TypingContext<T> {
 
-public interface CommandContext<T extends DeferrableInteractionEvent> extends DeferrableInteractionContext<T>, TypingContext<T> {
-
-    /**
-     * Finds the argument for a known {@link Parameter}.
-     *
-     * @param name The name of the parameter.
-     */
-    default @NotNull Optional<Argument> getArgument(@NotNull String name) {
-        return this.getArguments().findFirst(argument -> argument.getParameter().getName(), name);
+    default @NotNull Snowflake getCommandId() {
+        return this.getEvent().getCommandId();
     }
 
-    @NotNull ConcurrentList<Argument> getArguments();
+    @Override
+    default @NotNull CommandReference.Type getType() {
+        return CommandReference.Type.of(this.getEvent().getCommandType().getValue());
+    }
 
 }
