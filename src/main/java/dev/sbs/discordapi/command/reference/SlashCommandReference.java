@@ -26,10 +26,6 @@ public interface SlashCommandReference extends CommandReference {
         };
     }
 
-    default @NotNull Optional<Category> getCategory() {
-        return Optional.empty();
-    }
-
     default @NotNull ConcurrentList<String> getCommandTree() {
         ConcurrentList<String> commandTree = Concurrent.newList(this.getName().toLowerCase());
 
@@ -85,11 +81,12 @@ public interface SlashCommandReference extends CommandReference {
             return new Impl(name, description);
         }
 
+        @Getter
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         class Impl implements Parent {
 
-            @Getter private final @NotNull String name;
-            @Getter private final @NotNull String description;
+            private final @NotNull String name;
+            private final @NotNull String description;
 
         }
 
@@ -104,30 +101,13 @@ public interface SlashCommandReference extends CommandReference {
         static @NotNull Impl of(@NotNull String name, @NotNull String description) {
             return new Impl(name, description);
         }
+
+        @Getter
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
         class Impl implements Group {
 
-            @Getter private final @NotNull String name;
-            @Getter private final @NotNull String description;
-
-        }
-
-    }
-
-    interface Category {
-
-        @NotNull String getDescription();
-
-        @NotNull String getName();
-
-        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
-            return new Impl(name, description);
-        }
-        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-        class Impl implements Category {
-
-            @Getter private final @NotNull String name;
-            @Getter private final @NotNull String description;
+            private final @NotNull String name;
+            private final @NotNull String description;
 
         }
 

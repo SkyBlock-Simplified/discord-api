@@ -4,7 +4,6 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import discord4j.rest.util.Permission;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +60,7 @@ public interface CommandReference {
     @NotNull UUID getUniqueId();
 
     @Getter
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    @RequiredArgsConstructor
     enum Type {
 
         UNKNOWN(-1),
