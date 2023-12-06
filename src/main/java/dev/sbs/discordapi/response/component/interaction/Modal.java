@@ -31,14 +31,15 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
+@Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Modal extends Component implements IdentifiableComponent, InteractableComponent<ModalContext> {
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    @Getter private final @NotNull String identifier;
-    @Getter private final @NotNull Optional<String> title;
-    @Getter private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
-    private final @NotNull Optional<Function<ModalContext, Mono<Void>>> modalInteraction;
+    private final @NotNull String identifier;
+    private final @NotNull Optional<String> title;
+    private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
+    private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     /**
      * Finds an existing {@link ActionComponent}.
@@ -83,11 +84,6 @@ public final class Modal extends Component implements IdentifiableComponent, Int
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
             .components(this.getComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
-    }
-
-    @Override
-    public @NotNull Function<ModalContext, Mono<Void>> getInteraction() {
-        return this.modalInteraction.orElse(NOOP_HANDLER);
     }
 
     @Override
@@ -278,7 +274,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
                 this.identifier,
                 this.title,
                 this.components,
-                this.interaction
+                this.interaction.orElse(NOOP_HANDLER)
             );
         }
 

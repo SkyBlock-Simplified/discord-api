@@ -42,13 +42,7 @@ public final class Button extends ActionComponent implements InteractableCompone
     private final boolean preserved;
     private final boolean deferEdit;
     private final @NotNull PageType pageType;
-    @Getter(AccessLevel.NONE)
-    private final @NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction;
-
-    @Override
-    public @NotNull Function<ButtonContext, Mono<Void>> getInteraction() {
-        return this.interaction.orElse(NOOP_HANDLER);
-    }
+    private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
@@ -362,7 +356,7 @@ public final class Button extends ActionComponent implements InteractableCompone
                 this.preserved,
                 this.deferEdit,
                 this.pageType,
-                this.interaction
+                this.interaction.orElse(NOOP_HANDLER)
             );
         }
 
