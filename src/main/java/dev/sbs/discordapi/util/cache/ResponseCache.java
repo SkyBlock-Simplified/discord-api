@@ -129,6 +129,10 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             return true;
         }
 
+        public boolean notActive() {
+            return !this.isActive();
+        }
+
         /**
          * Sets this response as busy, preventing it from being removed from the {@link DiscordBot#getResponseCache()}.
          */
