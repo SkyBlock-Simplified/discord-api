@@ -1,6 +1,8 @@
 package dev.sbs.discordapi.command.parameter;
 
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
@@ -22,6 +24,7 @@ import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,23 +61,15 @@ public final class Parameter {
     private final @NotNull Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete;
     private final @NotNull ConcurrentLinkedMap<String, Object> choices;
 
-    public static @NotNull Builder builder(@NotNull String name, @NotNull String description, @NotNull Type type) {
-        if (StringUtil.isEmpty(name))
-            throw SimplifiedException.of(DiscordException.class).withMessage("Parameter name cannot be NULL!").build();
-
-        if (StringUtil.isEmpty(description))
-            throw SimplifiedException.of(DiscordException.class).withMessage("Parameter description cannot be NULL!").build();
-
-        return new Builder(
-            UUID.randomUUID(),
-            name,
-            description,
-            type
-        );
+    public static @NotNull Builder builder() {
+        return new Builder(UUID.randomUUID());
     }
 
     public static @NotNull Builder from(@NotNull Parameter parameter) {
-        return new Builder(parameter.getUniqueId(), parameter.getName(), parameter.getDescription(), parameter.getType())
+        return new Builder(parameter.getUniqueId())
+            .withName(parameter.getName())
+            .withDescription(parameter.getDescription())
+            .withType(parameter.getType())
             .isRequired(parameter.isRequired())
             .withEmoji(parameter.getEmoji())
             .withChannelTypes(parameter.getChannelTypes())
@@ -175,15 +170,18 @@ public final class Parameter {
     public static final class Builder implements dev.sbs.api.util.builder.Builder<Parameter> {
 
         private final UUID uniqueId;
-        private final String name;
-        private final String description;
-        private final Type type;
+        @BuildFlag(required = true)
+        private String name;
+        @BuildFlag(required = true)
+        private String description;
+        @BuildFlag(required = true)
+        private Type type;
         private boolean required = false;
         private Optional<Emoji> emoji = Optional.empty();
         private Range<Double> sizeLimit = Range.between(Double.MIN_VALUE, Double.MAX_VALUE);
         private Range<Integer> lengthLimit = Range.between(0, 6000);
         private final ConcurrentSet<Channel.Type> channelTypes = Concurrent.newSet();
-        private BiFunction<String, CommandContext<?>, Boolean> validator = NOOP_HANDLER;
+        private Optional<BiFunction<String, CommandContext<?>, Boolean>> validator = Optional.empty();
         private Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete = NOOP_COMPLETE;
         private final ConcurrentLinkedMap<String, Object> choices = Concurrent.newLinkedMap();
 
@@ -243,12 +241,6 @@ public final class Parameter {
          * @param channelTypes The iterable of channel types to limit this parameter to.
          */
         public Builder withChannelTypes(@NotNull Iterable<Channel.Type> channelTypes) {
-            if (this.type != Type.CHANNEL) {
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("You can only specify channel types for parameters of type Channel!")
-                    .build();
-            }
-
             channelTypes.forEach(this.channelTypes::add);
             return this;
         }
@@ -269,6 +261,27 @@ public final class Parameter {
          */
         public Builder withChoices(@NotNull Iterable<Map.Entry<String, Object>> choices) {
             choices.forEach(this.choices::put);
+            return this;
+        }
+
+        /**
+         * Sets the description of the {@link Parameter}.
+         *
+         * @param description The description to use.
+         */
+        public Builder withDescription(@NotNull String description) {
+            this.description = description;
+            return this;
+        }
+
+        /**
+         * Sets the description of the {@link Parameter}.
+         *
+         * @param description The description to use.
+         * @param args The objects used to format the description.
+         */
+        public Builder withDescription(@PrintFormat @NotNull String description, @Nullable Object... args) {
+            this.description = String.format(description, args);
             return this;
         }
 
@@ -305,6 +318,27 @@ public final class Parameter {
         }
 
         /**
+         * Sets the name of the {@link Parameter}.
+         *
+         * @param name The name to use.
+         */
+        public Builder withName(@NotNull String name) {
+            this.name = name;
+            return this;
+        }
+
+        /**
+         * Sets the name of the {@link Parameter}.
+         *
+         * @param name The name to use.
+         * @param args The objects used to format the description.
+         */
+        public Builder withName(@PrintFormat @NotNull String name, @Nullable Object... args) {
+            this.name = String.format(name, args);
+            return this;
+        }
+
+        /**
          * Set the size limit for INTEGER and DOUBLE {@link Type types}.
          *
          * @param minimum Minimum number, default Double.MIN_VALUE.
@@ -316,17 +350,44 @@ public final class Parameter {
         }
 
         /**
+         * Sets the type of the {@link Parameter}.
+         *
+         * @param type The type to use.
+         */
+        public Builder withType(@NotNull Type type) {
+            this.type = type;
+            return this;
+        }
+
+        /**
          * Sets a custom validator for this {@link Parameter}.
          *
          * @param validator Custom validator.
          */
-        public Builder withValidator(@NotNull BiFunction<String, CommandContext<?>, Boolean> validator) {
+        public Builder withValidator(@Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
+            return this.withValidator(Optional.ofNullable(validator));
+        }
+
+        /**
+         * Sets a custom validator for this {@link Parameter}.
+         *
+         * @param validator Custom validator.
+         */
+        public Builder withValidator(@NotNull Optional<BiFunction<String, CommandContext<?>, Boolean>> validator) {
             this.validator = validator;
             return this;
         }
 
         @Override
         public @NotNull Parameter build() {
+            Reflection.validateFlags(this);
+
+            if (this.choices.notEmpty() && this.type != Type.CHANNEL) {
+                throw SimplifiedException.of(DiscordException.class)
+                    .withMessage("You can only specify channel types for parameters of type Channel!")
+                    .build();
+            }
+
             return new Parameter(
                 this.uniqueId,
                 this.name,
@@ -337,7 +398,7 @@ public final class Parameter {
                 this.channelTypes,
                 this.sizeLimit,
                 this.lengthLimit,
-                this.validator,
+                this.validator.orElse(NOOP_HANDLER),
                 this.autoComplete,
                 this.choices
             );
