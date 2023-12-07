@@ -8,7 +8,9 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.listener.AutoCompleteListener;
 import dev.sbs.discordapi.listener.DiscordListener;
+import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
+import dev.sbs.discordapi.listener.command.UserCommandListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
@@ -29,8 +31,10 @@ import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
@@ -155,6 +159,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)),
+                        eventDispatcher.on(UserInteractionEvent.class, new UserCommandListener(this)),
+                        eventDispatcher.on(MessageInteractionEvent.class, new MessageCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
                         eventDispatcher.on(ModalSubmitInteractionEvent.class, new ModalListener(this)),

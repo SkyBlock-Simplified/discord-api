@@ -11,10 +11,11 @@ import org.reactivestreams.Publisher;
 
 import java.util.function.Function;
 
+@Getter
 public abstract class DiscordListener<T extends Event> extends DiscordHelper implements Function<T, Publisher<Void>> {
 
-    @Getter private final @NotNull Class<T> eventClass;
-    @Getter private final @NotNull String title;
+    private final @NotNull Class<T> eventClass;
+    private final @NotNull String title;
 
     public DiscordListener(@NotNull DiscordBot discordBot) {
         super(discordBot);

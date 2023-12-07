@@ -9,10 +9,14 @@ import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.impl.DiscordCommand;
+import dev.sbs.discordapi.command.impl.MessageCommand;
 import dev.sbs.discordapi.command.impl.SlashCommand;
+import dev.sbs.discordapi.command.impl.UserCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.command.reference.MessageCommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
+import dev.sbs.discordapi.command.reference.UserCommandReference;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -44,6 +48,8 @@ public class CommandRegistrar extends DiscordHelper {
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
     @Getter private final @NotNull ConcurrentList<CommandReference> loadedCommands;
     @Getter private final @NotNull ConcurrentList<SlashCommand> slashCommands;
+    @Getter private final @NotNull ConcurrentList<UserCommand> userCommands;
+    @Getter private final @NotNull ConcurrentList<MessageCommand> messageCommands;
 
     CommandRegistrar(
         @NotNull DiscordBot discordBot,
@@ -64,9 +70,25 @@ public class CommandRegistrar extends DiscordHelper {
             ) && commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
+        this.userCommands = this.retrieveTypedCommands(
+            UserCommandReference.class,
+            UserCommand.class,
+            initializedCommands,
+            (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
+        );
+
+        this.messageCommands = this.retrieveTypedCommands(
+            MessageCommandReference.class,
+            MessageCommand.class,
+            initializedCommands,
+            (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
+        );
+
         this.getLog().info("Building Command Tree");
         ConcurrentList<CommandReference> commandTree = Concurrent.newList();
         commandTree.addAll(this.slashCommands);
+        commandTree.addAll(this.userCommands);
+        commandTree.addAll(this.messageCommands);
         this.loadedCommands = commandTree.toUnmodifiableList();
 
         /* // Create Missing Command Config

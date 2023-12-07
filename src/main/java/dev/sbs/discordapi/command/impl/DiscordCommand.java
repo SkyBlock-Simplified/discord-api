@@ -15,7 +15,7 @@ import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
-import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
+import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @Getter
-public abstract class DiscordCommand<E extends DeferrableInteractionEvent, T extends CommandContext<E>> extends DiscordHelper implements CommandReference, Function<T, Mono<Void>> {
+public abstract class DiscordCommand<E extends ApplicationCommandInteractionEvent, T extends CommandContext<E>> extends DiscordHelper implements CommandReference, Function<T, Mono<Void>> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected static final ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
@@ -56,7 +56,7 @@ public abstract class DiscordCommand<E extends DeferrableInteractionEvent, T ext
     public final @NotNull Mono<Void> apply(@NotNull T commandContext) {
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
             .deferReply()
-            .then(Mono.fromCallable(() -> {
+            .then(Mono.defer(() -> { // Mono.fromCallable
                 // Handle Developer Command
                 if (this.isDeveloperOnly() && !this.isDeveloper(commandContext.getInteractUserId()))
                     throw SimplifiedException.of(UserPermissionException.class)
@@ -84,7 +84,7 @@ public abstract class DiscordCommand<E extends DeferrableInteractionEvent, T ext
                 // Process Command
                 return this.process(commandContext);
             }))
-            .flatMap(Function.identity())
+            //.flatMap(Function.identity())
             .onErrorResume(throwable -> this.getDiscordBot().handleException(ExceptionContext.of(this.getDiscordBot(), commandContext, throwable)))
         )));
     }

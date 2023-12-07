@@ -25,9 +25,10 @@ import java.awt.*;
 import java.time.Instant;
 import java.util.Optional;
 
+@Getter
 public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEvent, SlashCommandContext> implements SlashCommandReference {
 
-    @Getter private @NotNull Optional<Emoji> emoji = Optional.empty();
+    private @NotNull Optional<Emoji> emoji = Optional.empty();
 
     protected SlashCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
