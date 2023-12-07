@@ -8,16 +8,14 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.impl.DiscordCommand;
-import dev.sbs.discordapi.command.impl.MessageCommand;
-import dev.sbs.discordapi.command.impl.SlashCommand;
-import dev.sbs.discordapi.command.impl.UserCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
+import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.util.base.DiscordHelper;
+import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.channel.Channel;
@@ -34,22 +32,23 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+@SuppressWarnings("rawtypes")
 public class CommandRegistrar extends DiscordHelper {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
-    @Getter private final @NotNull ConcurrentList<CommandReference> loadedCommands;
-    @Getter private final @NotNull ConcurrentList<SlashCommand> slashCommands;
-    @Getter private final @NotNull ConcurrentList<UserCommand> userCommands;
-    @Getter private final @NotNull ConcurrentList<MessageCommand> messageCommands;
+    @Getter private final @NotNull ConcurrentList<CommandReference<?>> loadedCommands;
+    @Getter private final @NotNull ConcurrentList<SlashCommandReference> slashCommands;
+    @Getter private final @NotNull ConcurrentList<UserCommandReference> userCommands;
+    @Getter private final @NotNull ConcurrentList<MessageCommandReference> messageCommands;
 
     CommandRegistrar(
         @NotNull DiscordBot discordBot,
@@ -58,11 +57,10 @@ public class CommandRegistrar extends DiscordHelper {
         super(discordBot);
 
         this.getLog().info("Validating Commands");
-        ConcurrentMap<Class<? extends CommandReference>, CommandReference> initializedCommands = this.validateCommands(discordBot, commands);
+        ConcurrentList<CommandReference> initializedCommands = this.validateCommands(discordBot, commands);
 
         this.slashCommands = this.retrieveTypedCommands(
             SlashCommandReference.class,
-            SlashCommand.class,
             initializedCommands,
             (commandEntry, compareEntry) -> Objects.equals(
                 commandEntry.getParent(),
@@ -72,20 +70,18 @@ public class CommandRegistrar extends DiscordHelper {
 
         this.userCommands = this.retrieveTypedCommands(
             UserCommandReference.class,
-            UserCommand.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
         this.messageCommands = this.retrieveTypedCommands(
             MessageCommandReference.class,
-            MessageCommand.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
         this.getLog().info("Building Command Tree");
-        ConcurrentList<CommandReference> commandTree = Concurrent.newList();
+        ConcurrentList<CommandReference<?>> commandTree = Concurrent.newList();
         commandTree.addAll(this.slashCommands);
         commandTree.addAll(this.userCommands);
         commandTree.addAll(this.messageCommands);
@@ -185,7 +181,7 @@ public class CommandRegistrar extends DiscordHelper {
             .description(parent.getDescription());
     }
 
-    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference command) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull CommandReference<?> command) {
         return ApplicationCommandRequest.builder()
             .type(command.getType().getValue())
             .name(command.getName())
@@ -254,7 +250,7 @@ public class CommandRegistrar extends DiscordHelper {
             )
             .doOnNext(commandData -> {
                 ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
-                Optional<CommandReference> possibleCommand = this.getCommandReference(commandTree);
+                Optional<CommandReference<?>> possibleCommand = this.getCommandReference(commandTree, CommandReference.Type.of(commandData.type().toOptional().orElse(-1)));
                 possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
             })
             .thenMany(
@@ -271,7 +267,7 @@ public class CommandRegistrar extends DiscordHelper {
                         )
                         .doOnNext(commandData -> {
                             ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
-                            Optional<CommandReference> possibleCommand = this.getCommandReference(commandTree);
+                            Optional<CommandReference<?>> possibleCommand = this.getCommandReference(commandTree, CommandReference.Type.of(commandData.type().toOptional().orElse(-1)));
                             possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
                         })
                     )
@@ -305,43 +301,46 @@ public class CommandRegistrar extends DiscordHelper {
         return this.commandIds.get(commandClass);
     }
 
-    private @NotNull Optional<CommandReference> getCommandReference(@NotNull ConcurrentList<String> commandTree) {
+    private @NotNull Optional<CommandReference<?>> getCommandReference(@NotNull ConcurrentList<String> commandTree, @NotNull CommandReference.Type type) {
         return this.getLoadedCommands()
             .stream()
+            .filter(command -> command.getType() == type)
             .filter(command -> command.doesMatch(commandTree))
             .findFirst();
     }
 
-    private <T extends CommandReference, I extends DiscordCommand<?, ?>> @NotNull ConcurrentList<I> retrieveTypedCommands(
+    private <
+        A extends ApplicationCommandInteractionEvent,
+        C extends CommandContext<A>,
+        T extends CommandReference<C>
+        > @NotNull ConcurrentList<T> retrieveTypedCommands(
         @NotNull Class<T> referenceType,
-        @NotNull Class<I> instanceType,
-        @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> commands,
-        @NotNull BiFunction<T, T, Boolean> filter
+        @NotNull ConcurrentList<CommandReference> commands,
+        @NotNull BiPredicate<T, T> filter
     ) {
-        ConcurrentMap<T, I> typedCommands = commands.stream()
-            .filter(entry -> referenceType.isAssignableFrom(entry.getKey()))
-            .map(entry -> Pair.of(referenceType.cast(entry.getValue()), instanceType.cast(entry.getValue())))
-            .collect(Concurrent.toMap());
+        ConcurrentList<T> typedCommands = commands.stream()
+            .filter(reference -> referenceType.isAssignableFrom(reference.getClass()))
+            .map(referenceType::cast)
+            .collect(Concurrent.toList());
 
         return typedCommands.stream()
             .filter(commandEntry -> {
-                Optional<Map.Entry<T, I>> commandOverlap = typedCommands.stream()
-                    .filter(compareEntry -> !commandEntry.getKey().equals(compareEntry.getKey()))
-                    .filter(compareEntry -> filter.apply(commandEntry.getKey(), compareEntry.getKey())) // Compare Commands
+                Optional<T> commandOverlap = typedCommands.stream()
+                    .filter(compareEntry -> !commandEntry.equals(compareEntry))
+                    .filter(compareEntry -> filter.test(commandEntry, compareEntry)) // Compare Commands
                     .findAny();
 
                 if (commandOverlap.isPresent()) {
-                    this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getKey().getName(), commandOverlap.get().getKey().getName());
+                    this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getName(), commandOverlap.get().getName());
                     return false;
                 }
 
                 return true;
             })
-            .map(Map.Entry::getValue)
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    private @NotNull ConcurrentMap<Class<? extends CommandReference>, CommandReference> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<? extends CommandReference>> commands) {
+    private @NotNull ConcurrentList<CommandReference> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<? extends CommandReference>> commands) {
         return commands.stream()
             .map(commandClass -> Pair.of(
                 commandClass,
@@ -368,7 +367,8 @@ public class CommandRegistrar extends DiscordHelper {
 
                 return true;
             })
-            .collect(Concurrent.toMap(Pair::getKey, Pair::getValue));
+            .map(Pair::getRight)
+            .collect(Concurrent.toList());
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -377,13 +377,12 @@ public class CommandRegistrar extends DiscordHelper {
         private final DiscordBot discordBot;
         private final ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
 
-        public Builder withCommand(@NotNull Class<? extends CommandReference> command) {
-            this.commands.add(command);
-            return this;
+        public Builder withCommands(@NotNull Class<? extends CommandReference<?>>... commands) {
+            return this.withCommands(Arrays.asList(commands));
         }
 
         public Builder withCommands(@NotNull Iterable<Class<? extends CommandReference>> commands) {
-            commands.forEach(this::withCommand);
+            commands.forEach(this.commands::add);
             return this;
         }
 

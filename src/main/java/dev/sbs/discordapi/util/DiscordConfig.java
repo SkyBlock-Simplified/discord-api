@@ -142,7 +142,7 @@ public final class DiscordConfig extends YamlConfig {
             return this;
         }
 
-        public Builder withCommands(@NotNull Class<CommandReference>... commands) {
+        public Builder withCommands(@NotNull Class<? extends CommandReference<?>>... commands) {
             this.commands.addAll(commands);
             return this;
         }

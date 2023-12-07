@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@SuppressWarnings("rawtypes")
 public abstract class DiscordReference {
 
     protected abstract @NotNull DiscordBot getDiscordBot();
@@ -67,7 +68,7 @@ public abstract class DiscordReference {
 
     // --- Command Searching ---
 
-    protected final @NotNull Optional<CommandReference> getCommandById(long commandId) {
+    protected final @NotNull Optional<CommandReference<?>> getCommandById(long commandId) {
         return this.getDiscordBot()
             .getCommandRegistrar()
             .getLoadedCommands()

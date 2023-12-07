@@ -17,7 +17,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Footer;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +25,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Getter
-public abstract class SlashCommand extends DiscordCommand<ChatInputInteractionEvent, SlashCommandContext> implements SlashCommandReference {
+public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> implements SlashCommandReference {
 
     private @NotNull Optional<Emoji> emoji = Optional.empty();
 

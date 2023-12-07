@@ -22,19 +22,13 @@ public final class MessageCommandListener extends DiscordListener<MessageInterac
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
             .cast(MessageCommandReference.class)
-            .flatMap(command -> this.getDiscordBot()
-                .getCommandRegistrar()
-                .getMessageCommands()
-                .findFirst(MessageCommandReference::getUniqueId, command.getUniqueId())
-                .map(instance -> instance.apply(
-                    MessageCommandContext.of(
-                        this.getDiscordBot(),
-                        event,
-                        command
-                    )
-                ))
-                .orElse(Mono.empty())
-            );
+            .flatMap(command -> command.apply(
+                MessageCommandContext.of(
+                    this.getDiscordBot(),
+                    event,
+                    command
+                )
+            ));
     }
 
 }

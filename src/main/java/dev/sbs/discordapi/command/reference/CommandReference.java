@@ -3,14 +3,17 @@ package dev.sbs.discordapi.command.reference;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
+import dev.sbs.discordapi.context.CommandContext;
 import discord4j.rest.util.Permission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
+import java.util.function.Function;
 
-public interface CommandReference {
+public interface CommandReference<C extends CommandContext<?>> extends Function<C, Mono<Void>> {
 
     boolean doesMatch(@NotNull ConcurrentList<String> commandTree);
 

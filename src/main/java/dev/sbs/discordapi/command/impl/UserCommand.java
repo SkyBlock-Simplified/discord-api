@@ -4,14 +4,13 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
 import dev.sbs.discordapi.context.interaction.deferrable.application.UserCommandContext;
 import dev.sbs.discordapi.response.Emoji;
-import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 @Getter
-public abstract class UserCommand extends DiscordCommand<UserInteractionEvent, UserCommandContext> implements UserCommandReference {
+public abstract class UserCommand extends DiscordCommand<UserCommandContext> implements UserCommandReference {
 
     private @NotNull Optional<Emoji> emoji = Optional.empty();
 

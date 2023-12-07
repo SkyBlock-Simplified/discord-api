@@ -22,19 +22,13 @@ public final class UserCommandListener extends DiscordListener<UserInteractionEv
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
             .cast(UserCommandReference.class)
-            .flatMap(command -> this.getDiscordBot()
-                .getCommandRegistrar()
-                .getUserCommands()
-                .findFirst(UserCommandReference::getUniqueId, command.getUniqueId())
-                .map(instance -> instance.apply(
-                    UserCommandContext.of(
-                        this.getDiscordBot(),
-                        event,
-                        command
-                    )
-                ))
-                .orElse(Mono.empty())
-            );
+            .flatMap(command -> command.apply(
+                UserCommandContext.of(
+                    this.getDiscordBot(),
+                    event,
+                    command
+                )
+            ));
     }
 
 }

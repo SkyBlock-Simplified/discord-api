@@ -15,17 +15,15 @@ import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.util.base.DiscordHelper;
 import dev.sbs.discordapi.util.exception.DiscordException;
-import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
-import java.util.function.Function;
 
 @Getter
-public abstract class DiscordCommand<E extends ApplicationCommandInteractionEvent, T extends CommandContext<E>> extends DiscordHelper implements CommandReference, Function<T, Mono<Void>> {
+public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordHelper implements CommandReference<C> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected static final ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
@@ -48,12 +46,12 @@ public abstract class DiscordCommand<E extends ApplicationCommandInteractionEven
             .getApiCommandId(this.getClass());
     }
 
-    protected void handleAdditionalChecks(@NotNull T commandContext) { }
+    protected void handleAdditionalChecks(@NotNull C commandContext) { }
 
-    protected abstract @NotNull Mono<Void> process(@NotNull T commandContext) throws DiscordException;
+    protected abstract @NotNull Mono<Void> process(@NotNull C commandContext) throws DiscordException;
 
     @Override
-    public final @NotNull Mono<Void> apply(@NotNull T commandContext) {
+    public final @NotNull Mono<Void> apply(@NotNull C commandContext) {
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
             .deferReply()
             .then(Mono.defer(() -> { // Mono.fromCallable
