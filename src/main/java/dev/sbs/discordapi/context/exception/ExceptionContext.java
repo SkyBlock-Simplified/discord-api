@@ -1,18 +1,12 @@
 package dev.sbs.discordapi.context.exception;
 
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.parameter.Argument;
-import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.structure.Field;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
-import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -76,45 +70,25 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
 
     @NotNull String getTitle();
 
-    static <T extends ApplicationCommandInteractionEvent> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<T> commandContext, @NotNull Throwable throwable) {
-        CommandReference command = commandContext.getCommand();
-
+    static @NotNull ExceptionContext<?> of(@NotNull DiscordBot discordBot, @NotNull CommandContext<?> commandContext, @NotNull Throwable throwable) {
         return of(
             discordBot,
             commandContext,
             throwable,
             "Command Exception",
-            embedBuilder -> embedBuilder.withTitle("Command :: %s", command.getName())
-                .withFields(
-                    Field.builder()
-                        .withName("Command")
-                        .withValue(command.getName())
-                        .isInline()
-                        .build(),
-                    Field.builder()
-                        .withName("Arguments")
-                        .withValue(StringUtil.join(
-                            commandContext.getArguments()
-                                .stream()
-                                .map(Argument::getValue)
-                                .collect(Concurrent.toList()),
-                            " "
-                        ))
-                        .isInline()
-                        .build()
-                )
+            embedBuilder -> embedBuilder.withTitle("Command :: %s", commandContext.getCommand().getName())
         );
     }
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title) {
+    static <T extends Event> @NotNull ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title) {
         return of(discordBot, eventContext, throwable, title, Optional.empty());
     }
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, @Nullable Consumer<Embed.Builder> embedBuilderConsumer) {
+    static <T extends Event> @NotNull ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, @Nullable Consumer<Embed.Builder> embedBuilderConsumer) {
         return of(discordBot, eventContext, throwable, title, Optional.ofNullable(embedBuilderConsumer));
     }
 
-    static <T extends Event> ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, Optional<Consumer<Embed.Builder>> embedBuilderConsumer) {
+    static <T extends Event> @NotNull ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull EventContext<T> eventContext, @NotNull Throwable throwable, @NotNull String title, Optional<Consumer<Embed.Builder>> embedBuilderConsumer) {
         return new Impl<>(discordBot, eventContext, throwable, title, embedBuilderConsumer);
     }
 
@@ -122,12 +96,12 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     class Impl<T extends Event> implements ExceptionContext<T> {
 
-        private final DiscordBot discordBot;
-        private final EventContext<T> eventContext;
-        private final UUID responseId = UUID.randomUUID();
-        private final Throwable exception;
-        private final String title;
-        private final Optional<Consumer<Embed.Builder>> embedBuilderConsumer;
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull EventContext<T> eventContext;
+        private final @NotNull UUID responseId = UUID.randomUUID();
+        private final @NotNull Throwable exception;
+        private final @NotNull String title;
+        private final @NotNull Optional<Consumer<Embed.Builder>> embedBuilderConsumer;
 
     }
 

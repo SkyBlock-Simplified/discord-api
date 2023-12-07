@@ -83,7 +83,13 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 return this.process(commandContext);
             }))
             //.flatMap(Function.identity())
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(ExceptionContext.of(this.getDiscordBot(), commandContext, throwable)))
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    commandContext,
+                    throwable
+                )
+            ))
         )));
     }
 
