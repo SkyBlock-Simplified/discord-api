@@ -197,7 +197,8 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
         }
 
         public Mono<Entry> updateResponse(@NotNull Response response) {
-            return Mono.fromRunnable(() -> super.setUpdatedResponse(response));
+            super.setUpdatedResponse(response);
+            return Mono.just(this);
         }
 
     }
