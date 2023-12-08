@@ -408,11 +408,6 @@ public abstract class DiscordErrorObject extends DiscordReference {
                                 .getConfig()
                                 .getDebugChannelId()
                                 .orElse(-1L)
-                            /*SimplifiedApi.getRepositoryOf(SettingModel.class)
-                                .findFirst(SettingModel::getKey, "DEVELOPER_ERROR_LOG_CHANNEL_ID")
-                                .map(SettingModel::getValue)
-                                .map(Long::valueOf)
-                                .orElse(0L)*/
                         )))
                         .ofType(MessageChannel.class)
                         .flatMap(messageChannel -> {
