@@ -73,20 +73,24 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         C context = this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup);
 
         return Mono.just(context)
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    context,
-                    throwable,
-                    String.format("%s Exception", this.getTitle())
+            .then(component.isDeferEdit() ? context.deferEdit() : Mono.empty())
+            .then(Mono.defer(() -> component.getInteraction().apply(context)))
+            .checkpoint("ComponentListener#handleInteraction Processing")
+            .onErrorResume(throwable -> context.deferEdit().then(
+                this.getDiscordBot().handleException(
+                    ExceptionContext.of(
+                        this.getDiscordBot(),
+                        context,
+                        throwable,
+                        String.format("%s Exception", this.getTitle())
+                    )
                 )
             ))
-            .then(component.isDeferEdit() ? context.deferEdit() : Mono.empty())
-            .then(component.getInteraction().apply(context))
             .switchIfEmpty(
                 Mono.just(entry)
                     .filter(ResponseCache.Entry::isModified)
-                    .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
+                    .flatMap(__ -> context.edit())
+                    //.flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 
@@ -94,6 +98,9 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         C context = this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup);
 
         return Mono.just(context)
+            .then(context.deferEdit())
+            .then(Mono.defer(() -> this.handlePaging(context)))
+            .checkpoint("ComponentListener#handlePagingInteraction Processing")
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
@@ -102,12 +109,11 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
                     String.format("%s Paging Exception", this.getTitle())
                 )
             ))
-            .then(context.deferEdit())
-            .then(this.handlePaging(context))
             .switchIfEmpty(
                 Mono.just(entry)
                     .filter(ResponseCache.Entry::isModified)
-                    .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
+                    .flatMap(__ -> context.edit())
+                //.flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 
