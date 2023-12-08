@@ -21,7 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class Footer {
 
-    private final @NotNull String text;
+    private final @NotNull Optional<String> text;
     private final @NotNull Optional<String> iconUrl;
     private final @NotNull Optional<Instant> timestamp;
 
@@ -60,7 +60,7 @@ public class Footer {
     }
 
     public @NotNull EmbedCreateFields.Footer getD4jFooter() {
-        return EmbedCreateFields.Footer.of(this.getText(), this.getIconUrl().orElse(null));
+        return EmbedCreateFields.Footer.of(this.getText().orElse(""), this.getIconUrl().orElse(null));
     }
 
     public @NotNull Builder mutate() {
@@ -71,7 +71,7 @@ public class Footer {
     public static class Builder implements dev.sbs.api.util.builder.Builder<Footer> {
 
         @BuildFlag(required = true, requireGroup = "footer", limit = 2048)
-        private String text;
+        private Optional<String> text = Optional.empty();
         @BuildFlag(required = true, requireGroup = "footer")
         private Optional<String> iconUrl = Optional.empty();
         @BuildFlag(required = true, requireGroup = "footer")
@@ -111,9 +111,8 @@ public class Footer {
          *
          * @param text The text of the footer.
          */
-        public Builder withText(@NotNull String text) {
-            this.text = text;
-            return this;
+        public Builder withText(@Nullable String text) {
+            return this.withText(Optional.ofNullable(text));
         }
 
         /**
@@ -122,8 +121,17 @@ public class Footer {
          * @param text The text of the footer.
          * @param args The objects to format with.
          */
-        public Builder withText(@PrintFormat @NotNull String text, @Nullable Object... args) {
-            this.text = String.format(text, args);
+        public Builder withText(@PrintFormat @Nullable String text, @Nullable Object... args) {
+            return this.withText(StringUtil.formatNullable(text, args));
+        }
+
+        /**
+         * Sets the text of the {@link Footer}.
+         *
+         * @param text The text of the footer.
+         */
+        public Builder withText(@NotNull Optional<String> text) {
+            this.text = text;
             return this;
         }
 
