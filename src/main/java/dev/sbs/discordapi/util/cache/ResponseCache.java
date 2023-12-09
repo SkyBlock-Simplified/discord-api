@@ -53,10 +53,10 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             this.deferred = false;
         }
 
-        public Followup addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+        public Mono<Followup> addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
             Followup followup = new Followup(identifier, channelId, userId, messageId, response);
             this.followups.add(followup);
-            return followup;
+            return Mono.just(followup);
         }
 
         public Optional<Followup> findFollowup(@NotNull String identifier) {
@@ -147,10 +147,6 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             this.activeModals.put(user.getId(), modal);
         }
 
-        public Mono<Entry> updateAttachments(@NotNull Message message) {
-            return Mono.fromRunnable(() -> this.getResponse().updateAttachments(message));
-        }
-
         /**
          * Updates this response as not busy, allowing it to be later removed from the {@link DiscordBot#getResponseCache()}.
          */
@@ -161,39 +157,6 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
                 this.busy = false;
                 this.deferred = false;
             });
-        }
-
-        public Mono<Entry> updateReactions(@NotNull Message message) {
-            return Mono.just(message)
-                .checkpoint("ResponseCache#handleReactions Processing")
-                .flatMap(msg -> {
-                    // Update Reactions
-                    ConcurrentList<Emoji> newReactions = this.getResponse()
-                        .getHistoryHandler()
-                        .getCurrentPage()
-                        .getReactions();
-
-                    // Current Reactions
-                    ConcurrentList<Emoji> currentReactions = msg.getReactions()
-                        .stream()
-                        .filter(Reaction::selfReacted)
-                        .map(Reaction::getEmoji)
-                        .map(Emoji::of)
-                        .collect(Concurrent.toList());
-
-                    Mono<Void> mono = Mono.empty();
-
-                    // Remove Existing Reactions
-                    if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
-                        mono = msg.removeAllReactions();
-
-                    return mono.then(Mono.when(
-                        newReactions.stream()
-                            .map(emoji -> msg.addReaction(emoji.getD4jReaction()))
-                            .collect(Concurrent.toList())
-                    ));
-                })
-                .thenReturn(this);
         }
 
         public Mono<Entry> updateResponse(@NotNull Response response) {
@@ -239,9 +202,9 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
             return true;
         }
 
-        public Followup updateResponse(@NotNull Response response) {
+        public Mono<Followup> updateResponse(@NotNull Response response) {
             super.setUpdatedResponse(response);
-            return this;
+            return Mono.just(this);
         }
 
     }
@@ -297,6 +260,43 @@ public final class ResponseCache extends ConcurrentList<ResponseCache.Entry> {
 
         protected void setUpdatedResponse(@NotNull Response response) {
             this.response = response;
+        }
+
+        public Mono<Entry> updateAttachments(@NotNull Message message) {
+            return Mono.fromRunnable(() -> this.getResponse().updateAttachments(message));
+        }
+
+        public Mono<BaseEntry> updateReactions(@NotNull Message message) {
+            return Mono.just(message)
+                .checkpoint("ResponseCache#updateReactions Processing")
+                .flatMap(msg -> {
+                    // Update Reactions
+                    ConcurrentList<Emoji> newReactions = this.getResponse()
+                        .getHistoryHandler()
+                        .getCurrentPage()
+                        .getReactions();
+
+                    // Current Reactions
+                    ConcurrentList<Emoji> currentReactions = msg.getReactions()
+                        .stream()
+                        .filter(Reaction::selfReacted)
+                        .map(Reaction::getEmoji)
+                        .map(Emoji::of)
+                        .collect(Concurrent.toList());
+
+                    Mono<Void> mono = Mono.empty();
+
+                    // Remove Existing Reactions
+                    if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
+                        mono = msg.removeAllReactions();
+
+                    return mono.then(Mono.when(
+                        newReactions.stream()
+                            .map(emoji -> msg.addReaction(emoji.getD4jReaction()))
+                            .collect(Concurrent.toList())
+                    ));
+                })
+                .thenReturn(this);
         }
 
     }
