@@ -70,7 +70,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     }
 
     protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
-        C context = this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup);
+        C context = this.getContext(event, entry.getResponse(), component, followup);
 
         return Mono.just(context)
             .then(component.isDeferEdit() ? context.deferEdit() : Mono.empty())
@@ -89,13 +89,12 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .switchIfEmpty(
                 Mono.just(entry)
                     .filter(ResponseCache.Entry::isModified)
-                    .flatMap(__ -> context.edit())
-                    //.flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
+                    .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 
     protected final Mono<Void> handlePagingInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
-        C context = this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), component, followup);
+        C context = this.getContext(event, entry.getResponse(), component, followup);
 
         return Mono.just(context)
             .then(context.deferEdit())
@@ -112,8 +111,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .switchIfEmpty(
                 Mono.just(entry)
                     .filter(ResponseCache.Entry::isModified)
-                    .flatMap(__ -> context.edit())
-                //.flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
+                    .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 
