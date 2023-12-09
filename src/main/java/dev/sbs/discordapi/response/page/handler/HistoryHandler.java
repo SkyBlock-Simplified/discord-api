@@ -27,18 +27,27 @@ import java.util.function.Function;
  * @param <P> Page type for history.
  * @param <I> Identifier type for searching.
  */
+@Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandler {
 
-    @Getter private final ConcurrentList<P> pages;
-    @Getter private final Optional<BiFunction<P, I, Boolean>> historyMatcher;
-    @Getter private final Optional<Function<P, I>> historyTransformer;
-    @Getter private final int minimumSize;
-    @Getter @Setter private boolean cacheUpdateRequired;
+    private final ConcurrentList<P> pages;
+    private final Optional<BiFunction<P, I, Boolean>> historyMatcher;
+    private final Optional<Function<P, I>> historyTransformer;
+    private final int minimumSize;
+    @Setter private boolean cacheUpdateRequired;
+    @Getter(AccessLevel.NONE)
     private final ConcurrentList<P> history = Concurrent.newList();
 
     public static <P extends Paging<P>, I> Builder<P, I> builder() {
         return new Builder<>();
+    }
+
+    public @NotNull P editCurrentPage(@NotNull Function<P, P> page) {
+        P newPage = page.apply(this.getCurrentPage());
+        this.history.set(this.history.size() - 1, newPage);
+        this.setCacheUpdateRequired();
+        return newPage;
     }
 
     @Override
@@ -70,7 +79,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
             .findFirst();
     }
 
-    public P getCurrentPage() {
+    public @NotNull P getCurrentPage() {
         return this.history.getLast().orElseThrow(); // Will Always Exist
     }
 
@@ -78,11 +87,11 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
         return Optional.ofNullable(this.history.size() > 1 ? this.history.get(this.history.size() - 2) : null);
     }
 
-    public ConcurrentList<P> getHistory() {
+    public @NotNull ConcurrentList<P> getHistory() {
         return this.history.toUnmodifiableList();
     }
 
-    public ConcurrentList<I> getHistoryIdentifiers() {
+    public @NotNull ConcurrentList<I> getHistoryIdentifiers() {
         return this.history.stream()
             .map(page -> this.getHistoryTransformer().map(transformer -> transformer.apply(page)))
             .flatMap(Optional::stream)
