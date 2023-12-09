@@ -51,7 +51,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
     protected abstract Snowflake getUserId(@NotNull E event);
 
     private Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<ResponseCache.Followup> followup) {
-        return Mono.just(this.getContext(event, followup.map(ResponseCache.BaseEntry::getResponse).orElseGet(entry::getResponse), reaction, followup))
+        return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
             .flatMap(context -> Mono.just(entry)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
                     ExceptionContext.of(
