@@ -28,14 +28,22 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
 
     @Override
     default Mono<Void> discordDeleteFollowup(@NotNull String identifier) {
-        return Mono.justOrEmpty(this.getFollowup(identifier)).flatMap(followup -> this.getEvent().deleteFollowup(followup.getMessageId()));
+        return this.deferEdit().then(
+            Mono.justOrEmpty(this.getFollowup(identifier))
+                .flatMap(followup -> this.getEvent()
+                    .deleteFollowup(followup.getMessageId())
+                    .publishOn(followup.getResponse().getReactorScheduler())
+                )
+        );
     }
 
     @Override
     default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
-        return Mono.justOrEmpty(this.getFollowup(identifier))
+        return this.deferEdit().then(
+            Mono.justOrEmpty(this.getFollowup(identifier))
             .flatMap(followup -> this.getEvent().editFollowup(followup.getMessageId(), response.getD4jInteractionReplyEditSpec()))
-            .publishOn(response.getReactorScheduler());
+            .publishOn(response.getReactorScheduler())
+        );
     }
 
     @Override
@@ -47,7 +55,8 @@ public interface ComponentContext extends ResponseContext<ComponentInteractionEv
                 this.getEvent()
                     .edit(response.getD4jComponentCallbackSpec())
                     .then(Mono.justOrEmpty(this.getEvent().getMessage()))
-            );
+            )
+            .publishOn(response.getReactorScheduler());
     }
 
     default Mono<Void> deferEdit() {
