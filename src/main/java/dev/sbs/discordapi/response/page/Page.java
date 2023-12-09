@@ -236,7 +236,10 @@ public class Page implements Paging<Page> {
          * @param embedBuilder The embed builder to edit with.
          */
         public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.Builder, Embed.Builder> embedBuilder) {
-            this.findEmbed(identifier).ifPresent(embed -> {
+            this.embeds.stream()
+                .filter(embed -> embed.getIdentifier().equals(identifier))
+                .findFirst()
+                .ifPresent(embed -> {
                 Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
 
                 // Locate and Update Existing Embed
@@ -285,18 +288,6 @@ public class Page implements Paging<Page> {
                 .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
 
             return this;
-        }
-
-        /**
-         * Finds an existing {@link Embed}.
-         *
-         * @param identifier The identifier of the embed to search for.
-         * @return The matching embed, if it exists.
-         */
-        public Optional<Embed> findEmbed(@NotNull String identifier) {
-            return this.embeds.stream()
-                .filter(embed -> embed.getIdentifier().equals(identifier))
-                .findFirst();
         }
 
         /**
