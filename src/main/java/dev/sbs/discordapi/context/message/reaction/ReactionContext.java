@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.message.reaction;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.ResponseContext;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.cache.ResponseCache;
@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ReactionContext extends ResponseContext<MessageEvent> {
+public interface ReactionContext extends MessageContext<MessageEvent> {
 
     @Override
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {

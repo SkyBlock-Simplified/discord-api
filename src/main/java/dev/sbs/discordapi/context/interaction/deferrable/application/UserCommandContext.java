@@ -2,7 +2,6 @@ package dev.sbs.discordapi.context.interaction.deferrable.application;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
-import dev.sbs.discordapi.context.CommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.object.entity.User;

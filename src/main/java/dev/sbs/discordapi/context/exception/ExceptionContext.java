@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.context.exception;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.CommandContext;
 import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.interaction.deferrable.application.CommandContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
 import discord4j.common.util.Snowflake;

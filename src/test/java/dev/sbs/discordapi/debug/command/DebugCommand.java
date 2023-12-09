@@ -7,8 +7,8 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.context.ResponseContext;
 import dev.sbs.discordapi.context.interaction.deferrable.application.SlashCommandContext;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Attachment;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -257,7 +257,7 @@ public class DebugCommand extends SlashCommand {
                                                             .withStyle(Button.Style.DANGER)
                                                             .withEmoji(Emoji.of(769266796057985044L, "sip"))
                                                             .withLabel("FDelete")
-                                                            .onInteract(ResponseContext::deleteFollowup)
+                                                            .onInteract(MessageContext::deleteFollowup)
                                                             .build()
                                                     ))
                                                     .build()
@@ -300,7 +300,7 @@ public class DebugCommand extends SlashCommand {
             );
     }
 
-    private Mono<Void> editPage(ResponseContext<?> context, Function<Page.Builder, Page.Builder> currentPage) {
+    private Mono<Void> editPage(MessageContext<?> context, Function<Page.Builder, Page.Builder> currentPage) {
         return context.withResponseFunction(entry -> entry.updateResponse(
             context.getResponse()
                 .mutate()

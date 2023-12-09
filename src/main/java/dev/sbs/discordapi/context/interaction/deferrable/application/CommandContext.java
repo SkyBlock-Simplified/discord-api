@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.interaction.deferrable.application;
 
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.interaction.TypingContext;

@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.interaction.deferrable.component;
 
-import dev.sbs.discordapi.context.ResponseContext;
 import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -15,7 +15,7 @@ import discord4j.core.spec.InteractionCallbackSpec;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-public interface ComponentContext extends ResponseContext<ComponentInteractionEvent>, DeferrableInteractionContext<ComponentInteractionEvent> {
+public interface ComponentContext extends MessageContext<ComponentInteractionEvent>, DeferrableInteractionContext<ComponentInteractionEvent> {
 
     @Override
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
