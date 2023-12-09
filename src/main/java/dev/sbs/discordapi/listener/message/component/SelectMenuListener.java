@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.SelectMenuContext;
+import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.util.cache.ResponseCache;
@@ -27,7 +27,7 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
         return Mono.just(selectMenuContext)
             .doOnNext(context -> context.getComponent().updateSelected(context.getEvent().getValues()))
             .flatMap(context -> Mono.justOrEmpty(context.getResponse())
-                .doOnNext(response -> {
+                .flatMap(response -> {
                     String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
 
                     switch (context.getComponent().getPageType()) {
@@ -52,7 +52,7 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
                         }
                     }
 
-                    context.getResponseCacheEntry().updateResponse(response);
+                    return context.getResponseCacheEntry().updateResponse(response);
                 })
                 .then()
             );

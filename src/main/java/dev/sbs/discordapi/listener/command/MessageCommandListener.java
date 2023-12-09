@@ -2,7 +2,7 @@ package dev.sbs.discordapi.listener.command;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;
-import dev.sbs.discordapi.context.interaction.deferrable.application.MessageCommandContext;
+import dev.sbs.discordapi.context.deferrable.application.MessageCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import org.jetbrains.annotations.NotNull;

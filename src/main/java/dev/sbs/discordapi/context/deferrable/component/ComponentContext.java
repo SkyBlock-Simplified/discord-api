@@ -1,7 +1,7 @@
-package dev.sbs.discordapi.context.interaction.deferrable.component;
+package dev.sbs.discordapi.context.deferrable.component;
 
-import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.MessageContext;
+import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -10,7 +10,6 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionCallbackSpec;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
@@ -86,10 +85,10 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
         return this.getEvent().getMessageId();
     }
 
-    @Override
+    /*@Override
     default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
         return this.getEvent().edit(interactionApplicationCommandCallbackSpec);
-    }
+    }*/
 
     default Mono<Void> presentModal(@NotNull Modal modal) {
         return Mono.justOrEmpty(this.getResponseCacheEntry())

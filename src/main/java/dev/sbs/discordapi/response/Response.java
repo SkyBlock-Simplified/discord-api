@@ -11,7 +11,7 @@ import dev.sbs.api.util.helper.ExceptionUtil;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;

@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.interaction.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.util.cache.ResponseCache;

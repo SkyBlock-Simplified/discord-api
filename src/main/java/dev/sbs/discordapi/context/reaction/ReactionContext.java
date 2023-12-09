@@ -1,7 +1,7 @@
-package dev.sbs.discordapi.context.message.reaction;
+package dev.sbs.discordapi.context.reaction;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.cache.ResponseCache;

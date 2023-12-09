@@ -1,8 +1,8 @@
-package dev.sbs.discordapi.context.interaction.deferrable.application;
+package dev.sbs.discordapi.context.deferrable.application;
 
 import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.context.interaction.TypingContext;
-import dev.sbs.discordapi.context.interaction.deferrable.DeferrableInteractionContext;
+import dev.sbs.discordapi.context.TypingContext;
+import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import org.jetbrains.annotations.NotNull;

@@ -3,7 +3,7 @@ package dev.sbs.discordapi.command.reference;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
-import dev.sbs.discordapi.context.interaction.deferrable.application.CommandContext;
+import dev.sbs.discordapi.context.deferrable.application.CommandContext;
 import discord4j.rest.util.Permission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

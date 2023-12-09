@@ -2,8 +2,8 @@ package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.context.interaction.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;

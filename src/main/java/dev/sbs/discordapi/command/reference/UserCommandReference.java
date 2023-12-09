@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.reference;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.context.interaction.deferrable.application.UserCommandContext;
+import dev.sbs.discordapi.context.deferrable.application.UserCommandContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;

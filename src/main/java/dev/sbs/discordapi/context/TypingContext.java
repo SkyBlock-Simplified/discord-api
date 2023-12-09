@@ -1,7 +1,6 @@
-package dev.sbs.discordapi.context.interaction;
+package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.context.EventContext;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 

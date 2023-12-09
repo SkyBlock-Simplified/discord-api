@@ -5,7 +5,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
-import dev.sbs.discordapi.context.interaction.autocomplete.AutoCompleteContext;
+import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import org.reactivestreams.Publisher;

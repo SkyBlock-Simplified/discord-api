@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.message.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.interaction.deferrable.component.action.ButtonContext;
+import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
@@ -26,7 +26,7 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     @Override
     protected Mono<Void> handlePaging(@NotNull ButtonContext context) {
         return Mono.justOrEmpty(context.getResponse())
-            .doOnNext(response -> {
+            .flatMap(response -> {
                 Page currentPage = response.getHistoryHandler().getCurrentPage();
 
                 switch (context.getComponent().getPageType()) {
@@ -40,7 +40,7 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
                     case ORDER -> currentPage.getItemHandler().invertOrder();
                 }
 
-                context.getResponseCacheEntry().updateResponse(response);
+                return context.getResponseCacheEntry().updateResponse(response);
             })
             .then();
     }

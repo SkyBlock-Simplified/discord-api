@@ -1,15 +1,21 @@
-package dev.sbs.discordapi.context.interaction.deferrable;
+package dev.sbs.discordapi.context.deferrable;
 
-import dev.sbs.discordapi.context.interaction.InteractionContext;
+import dev.sbs.discordapi.context.InteractionContext;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionCallbackSpec;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 public interface DeferrableInteractionContext<T extends DeferrableInteractionEvent> extends InteractionContext<T> {
+
+    /*@Override
+    default Mono<Message> discordBuildMessage(@NotNull Response response) {
+        return this.interactionEdit(response.getD4jComponentCallbackSpec())
+            .publishOn(response.getReactorScheduler())
+            .then(this.getReply());
+    }*/
 
     @Override
     default Mono<Message> discordBuildMessage(@NotNull Response response) {
@@ -30,14 +36,13 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
         return this.getEvent().deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build());
     }
 
-    @Override
     default Mono<Message> getReply() {
         return this.getEvent().getReply();
     }
 
-    @Override
+    /*@Override
     default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
         return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
-    }
+    }*/
 
 }
