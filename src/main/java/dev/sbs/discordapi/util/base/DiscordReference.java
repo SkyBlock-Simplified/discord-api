@@ -113,7 +113,10 @@ public abstract class DiscordReference {
     }
 
     protected final @NotNull ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Iterable<Permission> permissions) {
-        return channel.flatMap(chl -> chl.getEffectivePermissions(userId)).map(permissionSet -> this.getPermissionMap(permissionSet, permissions)).blockOptional().orElse(Concurrent.newLinkedMap());
+        return channel.flatMap(chl -> chl.getEffectivePermissions(userId))
+            .map(permissionSet -> this.getPermissionMap(permissionSet, permissions))
+            .blockOptional()
+            .orElse(Concurrent.newLinkedMap());
     }
 
     private @NotNull ConcurrentLinkedMap<Permission, Boolean> getPermissionMap(@NotNull PermissionSet permissionSet, @NotNull Iterable<Permission> permissions) {

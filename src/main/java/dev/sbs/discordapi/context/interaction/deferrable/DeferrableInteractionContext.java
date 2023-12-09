@@ -18,7 +18,6 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
             .publishOn(response.getReactorScheduler());
     }
 
-    @Override
     default Mono<Message> discordEditMessage(@NotNull Response response) {
         return this.discordBuildMessage(response);
     }
