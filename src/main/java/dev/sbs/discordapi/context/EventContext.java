@@ -11,7 +11,6 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.PrivateChannel;
 import org.jetbrains.annotations.NotNull;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -26,7 +25,7 @@ public interface EventContext<T extends Event> {
             .publishOn(response.getReactorScheduler());
     }
 
-    default Mono<Message> discordEditMessage(@NotNull Response response) {
+    /*default Mono<Message> discordEditMessage(@NotNull Response response) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
             .singleOrEmpty()
@@ -58,7 +57,7 @@ public interface EventContext<T extends Event> {
                 )
             )
             .then();
-    }
+    }*/
 
     Mono<MessageChannel> getChannel();
 
