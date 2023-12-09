@@ -134,8 +134,8 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                     Mono<?> handle = message.removeAllReactions();
 
                                     // Save Page History
-                                    ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
-                                    int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();
+                                    /*ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
+                                    int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();*/
 
                                     // Remove Non-Preserved Components
                                     Response editedResponse = response.mutate()
@@ -144,9 +144,9 @@ public abstract class DiscordBot extends DiscordErrorObject {
                                         .build();
 
                                     // Traverse Page History
-                                    editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
+                                    /*editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
                                     pageHistory.forEach(identifier -> editedResponse.getHistoryHandler().gotoSubPage(identifier));
-                                    editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);
+                                    editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);*/
 
                                     // Update Message Components
                                     return handle.then(message.edit(editedResponse.getD4jEditSpec()));
