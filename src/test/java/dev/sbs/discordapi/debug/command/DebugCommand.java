@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
 import java.util.function.Function;
 
 @CommandId("75f1762a-4672-48db-83d8-86d953645d08")
@@ -72,10 +73,16 @@ public class DebugCommand extends SlashCommand {
     @Override
     public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
         return Concurrent.newUnmodifiableList(
-            Parameter.builder("test1", "test parameter", Parameter.Type.ATTACHMENT)
+            Parameter.builder()
+                .withName("test1")
+                .withDescription("test parameter")
+                .withType(Parameter.Type.ATTACHMENT)
                 //.withAutoComplete(value -> Mono.empty())
                 .build(),
-            Parameter.builder("test2", "test parameter", Parameter.Type.WORD)
+            Parameter.builder()
+                .withName("test2")
+                .withDescription("test parameter")
+                .withType(Parameter.Type.WORD)
                 .withAutoComplete(context -> Concurrent.newMap(
                     Pair.of("abc", "def")
                 ))
@@ -89,18 +96,18 @@ public class DebugCommand extends SlashCommand {
             Response.builder()
                 .replyMention()
                 .withTimeToLive(30)
-                .withAttachments(
+                /*.withAttachments(
                     Attachment.of(
                         "test.txt",
                         new ByteArrayInputStream("file upload test".getBytes())
                     )
-                )
+                )*/
                 .withPages(
                     Page.builder()
                         .withContent("test command")
-                        .withReactions(Emoji.of("\uD83D\uDC80", reactionContext -> reactionContext.removeUserReaction()
+                        /*.withReactions(Emoji.of("\uD83D\uDC80", reactionContext -> reactionContext.removeUserReaction()
                             .then(this.editPage(reactionContext, pageBuilder -> pageBuilder.withContent("reaction: " + reactionContext.getEmoji().asFormat()))))
-                        )
+                        )*/
                         .withEmbeds(
                             Embed.builder()
                                 .withDescription("[Is this google?](https://google.com/)")
@@ -114,7 +121,7 @@ public class DebugCommand extends SlashCommand {
                                     .withLabel("Santa upload")
                                     .withDeferEdit()
                                     .onInteract(context -> context.edit(
-                                        context.getResponse()
+                                        response -> response
                                             .mutate()
                                             .withAttachments(
                                                 Attachment.of(
@@ -122,7 +129,7 @@ public class DebugCommand extends SlashCommand {
                                                     new ByteArrayInputStream("santa test".getBytes())
                                                 )
                                             )
-                                            //.editPage(pageBuilder -> this.editPage(context, pageBuilder -> pageBuilder.withContent("santa!!")))
+                                            .editCurrentPage(builder -> builder.withContent("santa!!"))
                                             .build()
                                     ))
                                     .build(),
@@ -134,7 +141,7 @@ public class DebugCommand extends SlashCommand {
                                     .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("cat!")))
                                     .build(),
                                 Button.builder()
-                                    .withStyle(Button.Style.DANGER)
+                                    .withStyle(Button.Style.SUCCESS)
                                     .withLabel("Open Modal!")
                                     .onInteract(buttonContext -> buttonContext.presentModal(
                                         Modal.builder()
@@ -159,8 +166,8 @@ public class DebugCommand extends SlashCommand {
                                     ))
                                     .build(),
                                 Button.builder()
-                                    .withStyle(Button.Style.SUCCESS)
-                                    .withLabel("Success!")
+                                    .withStyle(Button.Style.DANGER)
+                                    .withLabel("Nothing!")
                                     .build(),
                                 Button.builder()
                                     .withStyle(Button.Style.LINK)
@@ -177,7 +184,7 @@ public class DebugCommand extends SlashCommand {
                                         SelectMenu.Option.builder()
                                             .withLabel("Neigh")
                                             .withValue("value 1")
-                                            .withEmoji(getEmoji("SKYBLOCK_ICON_HORSE"))
+                                            .withEmoji(Emoji.of(943867165990346793L, "SKYBLOCK_ICON_HORSE"))
                                             .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
                                             .build(),
                                         SelectMenu.Option.builder()
@@ -211,12 +218,15 @@ public class DebugCommand extends SlashCommand {
                                         Response.builder()
                                             .withPages(
                                                 Page.builder()
+                                                    .withContent("Followup")
                                                     .withEmbeds(
                                                         Embed.builder()
+                                                            .withIdentifier("embedder")
                                                             .withDescription("Hmm")
                                                             .withFooter(
                                                                 Footer.builder()
-                                                                    .withText("Herro")
+                                                                    //.withText("Herro")
+                                                                    .withTimestamp(Instant.now())
                                                                     .build()
                                                             )
                                                             .build()
@@ -225,66 +235,61 @@ public class DebugCommand extends SlashCommand {
                                                         Button.builder()
                                                             .withStyle(Button.Style.SECONDARY)
                                                             .withEmoji(Emoji.of(769266796057985044L, "sip"))
-                                                            .withLabel("Edit Followup2")
+                                                            .withLabel("FEdit")
                                                             .onInteract(context2 -> context2.editFollowup(
-                                                                Response.builder()
-                                                                    .withPages(
-                                                                        Page.builder()
-                                                                            .withEmbeds(
-                                                                                Embed.builder()
-                                                                                    .withDescription("Hmm")
-                                                                                    .withFooter(
-                                                                                        Footer.builder()
-                                                                                            .withText("Herro edit2")
-                                                                                            .build()
-                                                                                    )
+                                                                followup -> followup.getResponse()
+                                                                    .mutate()
+                                                                    .editCurrentPage(builder -> builder.editEmbed(
+                                                                        "embedder",
+                                                                        ebuilder -> ebuilder
+                                                                            .withDescription("Hmm Edit")
+                                                                            .withFooter(
+                                                                                Footer.builder()
+                                                                                    .withText("Herro edit")
                                                                                     .build()
                                                                             )
-                                                                            .build()
-                                                                    )
+                                                                    ))
                                                                     .build()
-                                                            ))
+                                                                )
+                                                            )
                                                             .build(),
                                                         Button.builder()
                                                             .withStyle(Button.Style.DANGER)
                                                             .withEmoji(Emoji.of(769266796057985044L, "sip"))
-                                                            .withLabel("Delete Followup2")
+                                                            .withLabel("FDelete")
                                                             .onInteract(ResponseContext::deleteFollowup)
                                                             .build()
                                                     ))
                                                     .build()
                                             )
                                             .build()
-                                    ))
+                                    )) // Create Followup ^^
                                     .build(),
                                 Button.builder()
                                     .withStyle(Button.Style.SECONDARY)
                                     .withEmoji(Emoji.of(769266796057985044L, "sip"))
-                                    .withLabel("Edit Followup")
+                                    .withLabel("FEdit 2")
                                     .onInteract(context -> context.editFollowup(
                                         "followuptest",
-                                        Response.builder()
-                                            .withPages(
-                                                Page.builder()
-                                                    .withEmbeds(
-                                                        Embed.builder()
-                                                            .withDescription("Hmm")
-                                                            .withFooter(
-                                                                Footer.builder()
-                                                                    .withText("Herro edit")
-                                                                    .build()
-                                                            )
+                                        followup -> followup.getResponse()
+                                            .mutate()
+                                            .editCurrentPage(builder -> builder.editEmbed(
+                                                "embedder",
+                                                ebuilder -> ebuilder
+                                                    .withDescription("Hmm Edit2")
+                                                    .withFooter(
+                                                        Footer.builder()
+                                                            .withText("Herro edit2")
                                                             .build()
                                                     )
-                                                    .build()
-                                            )
+                                            ))
                                             .build()
                                     ))
                                     .build(),
                                 Button.builder()
                                     .withStyle(Button.Style.DANGER)
                                     .withEmoji(Emoji.of(769266796057985044L, "sip"))
-                                    .withLabel("Delete Followup")
+                                    .withLabel("FDelete")
                                     .onInteract(context -> context.deleteFollowup("followuptest"))
                                     .build()
                             )
