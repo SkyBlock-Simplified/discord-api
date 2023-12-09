@@ -138,7 +138,9 @@ public class Response implements Paging<Page> {
             .withTimeToLive(response.getTimeToLive())
             .isInteractable(response.interactable)
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
-            .isEphemeral(response.isEphemeral());
+            .isEphemeral(response.isEphemeral())
+            .withPageHistory(response.getHistoryHandler().getHistoryIdentifiers())
+            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage());
     }
 
     public boolean isCacheUpdateRequired() {
@@ -460,6 +462,10 @@ public class Response implements Paging<Page> {
         private boolean ephemeral = false;
         private Optional<String> defaultPage = Optional.empty();
 
+        // Current Page/Item History
+        private ConcurrentList<String> pageHistory = Concurrent.newList();
+        private int currentItemPage = 1;
+
         /**
          * Recursively clear all but preservable components from all {@link Page Pages} in {@link Response}.
          */
@@ -475,6 +481,25 @@ public class Response implements Paging<Page> {
         public Builder clearAllComponents(boolean enforcePreserve) {
             this.pages.forEach(page -> this.editPage(page.mutate().clearComponents(true, enforcePreserve).build()));
             return this;
+        }
+
+        /**
+         * Updates the current {@link Page}.
+         *
+         * @param builder The current page builder.
+         */
+        public Builder editCurrentPage(@NotNull Function<Page.Builder, Page.Builder> builder) {
+            if (this.pageHistory.getLast().isEmpty())
+                return this;
+
+            return this.editPage(
+                builder.apply(
+                        this.pages.findFirst(page -> page.getOption().getValue(), this.pageHistory.getLast().get())
+                            .orElseThrow()
+                            .mutate()
+                    )
+                    .build()
+            );
         }
 
         /**
@@ -681,6 +706,16 @@ public class Response implements Paging<Page> {
             return this;
         }
 
+        private Builder withItemPage(int currentItemPage) {
+            this.currentItemPage = currentItemPage;
+            return this;
+        }
+
+        private Builder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
+            this.pageHistory = pageHistory;
+            return this;
+        }
+
         /**
          * Add {@link Page Pages} to the {@link Response}.
          *
@@ -800,8 +835,14 @@ public class Response implements Paging<Page> {
             // First Page
             if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
                 response.getHistoryHandler().gotoPage(this.defaultPage.get());
-            else
-                response.getHistoryHandler().gotoPage(response.getPages().get(0));
+            else {
+                if (!this.pageHistory.isEmpty()) {
+                    response.getHistoryHandler().gotoPage(this.pageHistory.removeFirst());
+                    this.pageHistory.forEach(identifier -> response.getHistoryHandler().gotoSubPage(identifier));
+                    response.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(this.currentItemPage);
+                } else
+                    response.getHistoryHandler().gotoPage(response.getPages().get(0));
+            }
 
             return response;
         }
