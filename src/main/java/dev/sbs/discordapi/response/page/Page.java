@@ -15,7 +15,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.handler.item.CustomItemHandler;
 import dev.sbs.discordapi.response.page.handler.item.ItemHandler;
-import dev.sbs.discordapi.response.page.item.PageItem;
+import dev.sbs.discordapi.response.page.item.field.PageItem;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
