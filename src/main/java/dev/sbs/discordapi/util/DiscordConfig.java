@@ -41,6 +41,7 @@ public final class DiscordConfig extends YamlConfig {
     @Getter
     private static @NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator;
 
+    private @NotNull DiscordEnvironment environment;
     @Flag(secure = true)
     private @NotNull String token;
     private long mainGuildId;
@@ -63,6 +64,7 @@ public final class DiscordConfig extends YamlConfig {
         @NotNull String fileName,
         @NotNull File configDir,
         @NotNull ConcurrentList<String> header,
+        @NotNull DiscordEnvironment environment,
         @NotNull String token,
         long mainGuildId,
         @NotNull Optional<Long> debugChannelId,
@@ -80,6 +82,7 @@ public final class DiscordConfig extends YamlConfig {
         @NotNull Optional<Runnable> gatewayDisconnectedEvent
     ) {
         super(fileName, configDir, header);
+        this.environment = environment;
         this.token = token;
         this.mainGuildId = mainGuildId;
         this.debugChannelId = debugChannelId;
@@ -123,6 +126,8 @@ public final class DiscordConfig extends YamlConfig {
         private ConcurrentList<String> header = Concurrent.newList();
 
         // Settings
+        @BuildFlag(required = true)
+        private DiscordEnvironment environment = DiscordEnvironment.DEVELOPMENT;
         @BuildFlag(required = true)
         private Optional<String> token = Optional.empty();
         @BuildFlag(required = true)
@@ -253,6 +258,11 @@ public final class DiscordConfig extends YamlConfig {
             return this;
         }
 
+        public Builder withEnvironment(@NotNull DiscordEnvironment environment) {
+            this.environment = environment;
+            return this;
+        }
+
         public Builder withFileName(@NotNull String fileName) {
             this.fileName = fileName;
             return this;
@@ -323,6 +333,7 @@ public final class DiscordConfig extends YamlConfig {
                 this.fileName,
                 this.directory,
                 this.header,
+                this.environment,
                 this.token.orElseThrow(),
                 this.mainGuildId.orElseThrow(),
                 this.debugChannelId,
