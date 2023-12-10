@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.page.item;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
@@ -24,6 +25,14 @@ public final class AuthorItem implements Item {
     private final @NotNull Optional<String> name;
     private final @NotNull Optional<String> iconUrl;
     private final @NotNull Optional<String> url;
+
+    public @NotNull Author asAuthor() {
+        return Author.builder()
+            .withName(this.getName())
+            .withUrl(this.getUrl())
+            .withIconUrl(this.getIconUrl())
+            .build();
+    }
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());

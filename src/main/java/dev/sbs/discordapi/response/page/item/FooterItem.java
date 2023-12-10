@@ -4,6 +4,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,6 +26,14 @@ public final class FooterItem implements Item {
     private final @NotNull Optional<String> text;
     private final @NotNull Optional<String> iconUrl;
     private final @NotNull Optional<Instant> timestamp;
+
+    public @NotNull Footer asFooter() {
+        return Footer.builder()
+            .withText(this.getText())
+            .withIconUrl(this.getIconUrl())
+            .withTimestamp(this.getTimestamp())
+            .build();
+    }
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
