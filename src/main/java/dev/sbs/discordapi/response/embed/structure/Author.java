@@ -20,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public final class Author {
 
-    private final @NotNull String name;
+    private final @NotNull Optional<String> name;
     private final @NotNull Optional<String> url;
     private final @NotNull Optional<String> iconUrl;
 
@@ -43,7 +43,7 @@ public final class Author {
     }
 
     public @NotNull EmbedCreateFields.Author getD4jAuthor() {
-        return EmbedCreateFields.Author.of(this.getName(), this.getUrl().orElse(null), this.getIconUrl().orElse(null));
+        return EmbedCreateFields.Author.of(this.getName().orElse(""), this.getUrl().orElse(null), this.getIconUrl().orElse(null));
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class Author {
     public static class Builder implements dev.sbs.api.util.builder.Builder<Author> {
 
         @BuildFlag(required = true, limit = 256)
-        private String name;
+        private Optional<String> name = Optional.empty();
         private Optional<String> url = Optional.empty();
         private Optional<String> iconUrl = Optional.empty();
 
@@ -97,9 +97,8 @@ public final class Author {
          *
          * @param name The name of the author.
          */
-        public Builder withName(@NotNull String name) {
-            this.name = name;
-            return this;
+        public Builder withName(@Nullable String name) {
+            return this.withName(Optional.ofNullable(name));
         }
 
         /**
@@ -108,8 +107,17 @@ public final class Author {
          * @param name The name of the author.
          * @param args The objects to format with.
          */
-        public Builder withName(@PrintFormat @NotNull String name, @Nullable Object... args) {
-            this.name = String.format(name, args);
+        public Builder withName(@PrintFormat @Nullable String name, @Nullable Object... args) {
+            return this.withName(StringUtil.formatNullable(name, args));
+        }
+
+        /**
+         * Sets the name of the {@link Author}.
+         *
+         * @param name The url of the author.
+         */
+        public Builder withName(@NotNull Optional<String> name) {
+            this.name = name;
             return this;
         }
 
