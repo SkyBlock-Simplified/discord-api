@@ -43,12 +43,15 @@ public abstract class ItemHandler<T> implements CacheHandler {
     private final @NotNull ConcurrentList<Sorter<T>> sorters;
     private final @NotNull Item.Style style;
     private final @NotNull Optional<Triple<String, String, String>> columnNames;
+    protected final @NotNull ConcurrentMap<String, Object> variables;
+    private final @NotNull ConcurrentList<Item> customItems;
     private final int amountPerPage;
     private final boolean viewerEnabled;
     private int currentSorterIndex = -1;
     private boolean reversed = false;
     private int currentItemPage = 1;
     @Setter private boolean cacheUpdateRequired;
+    private ConcurrentList<Item> cachedCustomItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<Item> cachedItems = Concurrent.newUnmodifiableList();
 
     @Override
@@ -70,7 +73,18 @@ public abstract class ItemHandler<T> implements CacheHandler {
             .append(this.getStyle(), that.getStyle())
             .append(this.getColumnNames(), that.getColumnNames())
             .append(this.getCachedItems(), that.getCachedItems())
+            .append(this.getVariables(), that.getVariables())
             .build();
+    }
+
+    public @NotNull ConcurrentList<Item> getCachedCustomItems() {
+        if (this.isCacheUpdateRequired()) {
+            this.cachedCustomItems = this.customItems.stream()
+                .map(item -> item.applyVariables(this.getVariables()))
+                .collect(Concurrent.toUnmodifiableList());
+        }
+
+        return this.cachedCustomItems;
     }
 
     public @NotNull ConcurrentList<Item> getCachedItems() {
@@ -83,12 +97,12 @@ public abstract class ItemHandler<T> implements CacheHandler {
         return this.cachedItems;
     }
 
-    public Optional<Sorter<T>> getCurrentSorter() {
+    public @NotNull Optional<Sorter<T>> getCurrentSorter() {
         return Optional.ofNullable(this.getCurrentSorterIndex() > -1 ? this.getSorters().get(this.getCurrentSorterIndex()) : null);
     }
 
     public final @NotNull ConcurrentList<Item> getFieldItems() {
-        return this.getFieldItems(0, ListUtil.sizeOf(this.getItems()));
+        return this.getFieldItems(0, this.getItems().size());
     }
 
     public abstract @NotNull ConcurrentList<Item> getFieldItems(int startIndex, int endIndex);
@@ -143,6 +157,7 @@ public abstract class ItemHandler<T> implements CacheHandler {
             .append(this.isReversed())
             .append(this.getCurrentItemPage())
             .append(this.getCachedItems())
+            .append(this.getVariables())
             .build();
     }
 

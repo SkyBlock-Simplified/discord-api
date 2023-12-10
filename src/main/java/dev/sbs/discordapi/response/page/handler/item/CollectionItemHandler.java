@@ -6,11 +6,14 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.stream.triple.TriFunction;
 import dev.sbs.api.util.stream.triple.TriPredicate;
+import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.response.page.item.type.RenderItem;
@@ -21,6 +24,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -36,16 +41,19 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         @NotNull ConcurrentList<Sorter<T>> sorters,
         @NotNull Item.Style style,
         @NotNull Optional<Triple<String, String, String>> columnNames,
+        @NotNull ConcurrentMap<String, Object> variables,
+        @NotNull ConcurrentList<Item> customItems,
         int amountPerPage,
         boolean viewerEnabled,
         @NotNull ConcurrentList<TriPredicate<T, Long, Long>> filters,
-        @NotNull TriFunction<T, Long, Long, RenderItem> transformer) {
-        super(type, items, sorters, style, columnNames, amountPerPage, viewerEnabled);
+        @NotNull TriFunction<T, Long, Long, RenderItem> transformer
+    ) {
+        super(type, items, sorters, style, columnNames, variables, customItems, amountPerPage, viewerEnabled);
         this.filters = filters;
         this.transformer = transformer;
     }
 
-    public static <T> Builder<T> builder(@NotNull Class<T> type) {
+    public static <T> @NotNull Builder<T> builder(@NotNull Class<T> type) {
         return new Builder<>(type);
     }
 
@@ -62,32 +70,37 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
             .build();
     }
 
-    public static <T> CollectionItemHandler.Builder<T> from(CollectionItemHandler<T> itemHandler) {
+    public static <T> @NotNull Builder<T> from(@NotNull CollectionItemHandler<T> itemHandler) {
         return builder(itemHandler.getType())
             .withItems(itemHandler.getItems())
             .withSorters(itemHandler.getSorters())
             .withStyle(itemHandler.getStyle())
             .withColumnNames(itemHandler.getColumnNames())
             .withAmountPerPage(itemHandler.getAmountPerPage())
+            .withVariables(itemHandler.getVariables())
+            .withCustomItems(itemHandler.getCustomItems())
             .isViewerEnabled(itemHandler.isViewerEnabled())
+            .withFilters(itemHandler.getFilters())
             .withTransformer(itemHandler.getTransformer());
     }
 
     @Override
     public final @NotNull ConcurrentList<Item> getFieldItems(int startIndex, int endIndex) {
-        return this.getCurrentSorter()
+        ConcurrentList<Item> filteredList = this.getCurrentSorter()
             .map(sorter -> sorter.apply(this.getItems(), this.isReversed()))
             .orElse(this.getItems())
-            .subList(startIndex, endIndex)
             .indexedStream()
             .filter((t, index, size) -> this.getFilters()
                 .stream()
                 .allMatch(predicate -> predicate.test(t, index, size))
             )
             .map(this.getTransformer())
-            .filter(Item.class::isInstance)
+            .filter(Objects::nonNull)
             .map(Item.class::cast)
             .collect(Concurrent.toList());
+
+        this.variables.put("FILTERED_SIZE", filteredList.size());
+        return filteredList.subList(startIndex, endIndex);
     }
 
     @Override
@@ -98,7 +111,7 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
             .build();
     }
 
-    public CollectionItemHandler.Builder<T> mutate() {
+    public @NotNull Builder<T> mutate() {
         return from(this);
     }
 
@@ -114,6 +127,8 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
         @BuildFlag(required = true)
         private Item.Style style = Item.Style.FIELD_INLINE;
         private Optional<Triple<String, String, String>> columnNames = Optional.empty();
+        private ConcurrentMap<String, Object> variables = Concurrent.newMap();
+        private ConcurrentList<Item> customItems = Concurrent.newList();
         private int amountPerPage = 12;
         private boolean viewerEnabled = false;
 
@@ -183,6 +198,29 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
          */
         public Builder<T> withColumnNames(@NotNull Optional<Triple<String, String, String>> fieldNames) {
             this.columnNames = fieldNames;
+            return this;
+        }
+
+        /**
+         * Add {@link Item Items} to the {@link Page} item list.
+         *
+         * @param customItems Variable number of non-field items to add.
+         */
+        public Builder<T> withCustomItems(@NotNull Item... customItems) {
+            return this.withCustomItems(Arrays.asList(customItems));
+        }
+
+        /**
+         * Add {@link Item Items} to the {@link Page} item list.
+         *
+         * @param customItems Collection of non-field items to add.
+         */
+        public Builder<T> withCustomItems(@NotNull Iterable<Item> customItems) {
+            customItems.forEach(item -> {
+                if (!item.isSingular() || !this.customItems.contains(item))
+                    this.customItems.add(item);
+            });
+
             return this;
         }
 
@@ -272,9 +310,49 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
             return this;
         }
 
+        /**
+         * Add a variable to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param key The variable name.
+         * @param value The variable value.
+         */
+        public Builder<T> withVariable(@NotNull String key, @NotNull Object value) {
+            return this.withVariables(Pair.of(key, value));
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Pair<String, Object>... variables) {
+            return this.withVariables(Arrays.asList(variables));
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Iterable<Pair<String, Object>> variables) {
+            variables.forEach(this.variables::put);
+            return this;
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Map<String, Object> variables) {
+            this.variables.putAll(variables);
+            return this;
+        }
+
         @Override
         public @NotNull CollectionItemHandler<T> build() {
             Reflection.validateFlags(this);
+            this.variables.put("SIZE", this.items.size());
 
             CollectionItemHandler<T> itemHandler = new CollectionItemHandler<>(
                 this.type,
@@ -282,6 +360,8 @@ public class CollectionItemHandler<T> extends ItemHandler<T> {
                 this.sorters,
                 this.style,
                 this.columnNames,
+                this.variables,
+                this.customItems,
                 this.amountPerPage,
                 this.viewerEnabled,
                 this.filters,

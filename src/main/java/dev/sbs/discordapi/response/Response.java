@@ -430,6 +430,12 @@ public class Response implements Paging<Page> {
                                     .getCachedItems()
                             )
                     )
+                    .withItems(
+                        this.getHistoryHandler()
+                            .getCurrentPage()
+                            .getItemHandler()
+                            .getCachedCustomItems()
+                    )
                     .build()
             );
         }

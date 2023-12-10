@@ -2,9 +2,12 @@ package dev.sbs.discordapi.response.page.handler.item;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
+import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.response.page.item.type.RenderItem;
@@ -14,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
@@ -24,27 +28,34 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         @NotNull ConcurrentList<Sorter<T>> sorters,
         @NotNull Item.Style style,
         @NotNull Optional<Triple<String, String, String>> columnNames,
+        @NotNull ConcurrentMap<String, Object> variables,
+        @NotNull ConcurrentList<Item> customItems,
         int amountPerPage,
-        boolean viewerEnabled) {
-        super(type, items, sorters, style, columnNames, amountPerPage, viewerEnabled);
+        boolean viewerEnabled
+    ) {
+        super(type, items, sorters, style, columnNames, variables, customItems, amountPerPage, viewerEnabled);
     }
 
-    public static <T extends Item> Builder<T> builder(@NotNull Class<T> type) {
+    public static <T extends Item> @NotNull Builder<T> builder(@NotNull Class<T> type) {
         return new Builder<>(type);
     }
 
-    public static <T extends Item> CustomItemHandler.Builder<T> from(CustomItemHandler<T> itemHandler) {
+    public static <T extends Item> @NotNull Builder<T> from(@NotNull CustomItemHandler<T> itemHandler) {
         return builder(itemHandler.getType())
             .withItems(itemHandler.getItems())
             .withSorters(itemHandler.getSorters())
             .withStyle(itemHandler.getStyle())
             .withColumnNames(itemHandler.getColumnNames())
+            .withVariables(itemHandler.getVariables())
+            .withCustomItems(itemHandler.getCustomItems())
             .withAmountPerPage(itemHandler.getAmountPerPage())
             .isViewerEnabled(itemHandler.isViewerEnabled());
     }
 
     @Override
     public final @NotNull ConcurrentList<Item> getFieldItems(int startIndex, int endIndex) {
+        this.variables.put("FILTERED_SIZE", this.getItems().size());
+
         return this.getCurrentSorter()
             .map(sorter -> sorter.apply(this.getItems(), this.isReversed()))
             .orElse(this.getItems())
@@ -53,7 +64,7 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
             .collect(Concurrent.toList());
     }
 
-    public CustomItemHandler.Builder<T> mutate() {
+    public @NotNull Builder<T> mutate() {
         return from(this);
     }
 
@@ -67,6 +78,8 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         private Optional<Triple<String, String, String>> columnNames = Optional.empty();
         private int amountPerPage = 12;
         private boolean viewerEnabled = false;
+        private ConcurrentMap<String, Object> variables = Concurrent.newMap();
+        private ConcurrentList<Item> customItems = Concurrent.newList();
 
         /**
          * Clear all items from the {@link ItemHandler} list.
@@ -138,6 +151,29 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
         }
 
         /**
+         * Add {@link Item Items} to the {@link Page} item list.
+         *
+         * @param customItems Variable number of non-field items to add.
+         */
+        public Builder<T> withCustomItems(@NotNull Item... customItems) {
+            return this.withCustomItems(Arrays.asList(customItems));
+        }
+
+        /**
+         * Add {@link Item Items} to the {@link Page} item list.
+         *
+         * @param customItems Collection of non-field items to add.
+         */
+        public Builder<T> withCustomItems(@NotNull Iterable<Item> customItems) {
+            customItems.forEach(item -> {
+                if (!item.isSingular() || !this.customItems.contains(item))
+                    this.customItems.add(item);
+            });
+
+            return this;
+        }
+
+        /**
          * Add {@link RenderItem FieldItems} to the {@link Page} item list.
          *
          * @param fieldItems Variable number of field items to add.
@@ -185,14 +221,57 @@ public class CustomItemHandler<T extends Item> extends ItemHandler<T> {
             return this;
         }
 
+        /**
+         * Add a variable to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param key The variable name.
+         * @param value The variable value.
+         */
+        public Builder<T> withVariable(@NotNull String key, @NotNull Object value) {
+            return this.withVariables(Pair.of(key, value));
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Pair<String, Object>... variables) {
+            return this.withVariables(Arrays.asList(variables));
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Iterable<Pair<String, Object>> variables) {
+            variables.forEach(this.variables::put);
+            return this;
+        }
+
+        /**
+         * Add variables to be evaluated when building the dynamic {@link Embed}.
+         *
+         * @param variables The variables to be accessible.
+         */
+        public Builder<T> withVariables(@NotNull Map<String, Object> variables) {
+            this.variables.putAll(variables);
+            return this;
+        }
+
         @Override
         public @NotNull CustomItemHandler<T> build() {
+            this.variables.put("SIZE", this.items.size());
+
             CustomItemHandler<T> itemHandler = new CustomItemHandler<>(
                 this.type,
                 this.items.toUnmodifiableList(),
                 this.sorters,
                 this.style,
                 this.columnNames,
+                this.variables,
+                this.customItems,
                 this.amountPerPage,
                 this.viewerEnabled
             );
