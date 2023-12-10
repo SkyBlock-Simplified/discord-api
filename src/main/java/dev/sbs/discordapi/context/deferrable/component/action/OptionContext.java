@@ -3,7 +3,6 @@ package dev.sbs.discordapi.context.deferrable.component.action;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -56,7 +55,7 @@ public interface OptionContext extends ActionComponentContext {
         private final @NotNull UUID responseId;
         private final @NotNull SelectMenu component;
         private final @NotNull SelectMenu.Option option;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
     }
 

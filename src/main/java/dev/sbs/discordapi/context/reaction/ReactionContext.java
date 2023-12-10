@@ -4,7 +4,6 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
@@ -117,7 +116,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
             )));
     }
 
-    static ReactionContext ofAdd(@NotNull DiscordBot discordBot, @NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<ResponseCache.Followup> followup) {
+    static ReactionContext ofAdd(@NotNull DiscordBot discordBot, @NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
         return new AddImpl(
             discordBot,
             event,
@@ -127,7 +126,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
         );
     }
 
-    static ReactionContext ofRemove(@NotNull DiscordBot discordBot, @NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<ResponseCache.Followup> followup) {
+    static ReactionContext ofRemove(@NotNull DiscordBot discordBot, @NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
         return new RemoveImpl(
             discordBot,
             event,
@@ -146,7 +145,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
         private final @NotNull UUID responseId;
         private final @NotNull Emoji emoji;
         private final @NotNull Type type = Type.ADD;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
         @Override
         public @NotNull Snowflake getChannelId() {
@@ -194,7 +193,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
         private final @NotNull UUID responseId;
         private final @NotNull Emoji emoji;
         private final @NotNull Type type = Type.REMOVE;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
         @Override
         public @NotNull Snowflake getChannelId() {

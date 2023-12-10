@@ -5,7 +5,6 @@ import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -48,7 +47,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
     @Override
     default Mono<Message> discordEditMessage(@NotNull Response response) {
         return Mono.just(this.getResponseCacheEntry())
-            .filter(ResponseCache.Entry::isDeferred)
+            .filter(Response.Cache.Entry::isDeferred)
             .flatMap(entry -> this.getEvent().editReply(response.getD4jInteractionReplyEditSpec()))
             .switchIfEmpty(
                 this.getEvent()

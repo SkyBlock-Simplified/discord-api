@@ -4,7 +4,6 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
@@ -18,7 +17,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull ResponseCache.Entry entry, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull Response.Cache.Entry entry, @NotNull Optional<Response.Cache.Followup> followup) {
         return Mono.justOrEmpty(entry.getUserModal(event.getInteraction().getUser())) // Handle User Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
             .doOnNext(modal -> entry.clearModal(event.getInteraction().getUser()))
@@ -28,7 +27,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<Response.Cache.Followup> followup) {
         return ModalContext.of(this.getDiscordBot(), event, response, component, followup);
     }
 

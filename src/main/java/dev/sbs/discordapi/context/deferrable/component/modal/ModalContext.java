@@ -4,7 +4,6 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,7 +21,7 @@ public interface ModalContext extends ComponentContext {
     @Override
     @NotNull Modal getComponent();
 
-    static ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<ResponseCache.Followup> followup) {
+    static ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<Response.Cache.Followup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -42,7 +41,7 @@ public interface ModalContext extends ComponentContext {
         private final @NotNull ModalSubmitInteractionEvent event;
         private final @NotNull UUID responseId;
         private final @NotNull Modal component;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
     }
 

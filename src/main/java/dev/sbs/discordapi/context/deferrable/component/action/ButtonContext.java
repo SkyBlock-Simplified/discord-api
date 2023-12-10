@@ -3,7 +3,6 @@ package dev.sbs.discordapi.context.deferrable.component.action;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,7 +26,7 @@ public interface ButtonContext extends ActionComponentContext {
         return this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
     }
 
-    static ButtonContext of(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button button, @NotNull Optional<ResponseCache.Followup> followup) {
+    static ButtonContext of(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button button, @NotNull Optional<Response.Cache.Followup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -45,7 +44,7 @@ public interface ButtonContext extends ActionComponentContext {
         private final @NotNull ButtonInteractionEvent event;
         private final @NotNull UUID responseId;
         private final @NotNull Button component;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
     }
 

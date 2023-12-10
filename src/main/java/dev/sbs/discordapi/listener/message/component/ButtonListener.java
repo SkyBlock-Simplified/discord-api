@@ -5,7 +5,6 @@ import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
@@ -19,7 +18,7 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     }
 
     @Override
-    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component, @NotNull Optional<Response.Cache.Followup> followup) {
         return ButtonContext.of(this.getDiscordBot(), event, response, component, followup);
     }
 

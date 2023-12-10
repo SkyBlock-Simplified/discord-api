@@ -4,7 +4,6 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,7 +31,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         return this.modify(selectMenuBuilder.apply(this.getComponent().mutate()).build());
     }
 
-    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<ResponseCache.Followup> followup) {
+    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<Response.Cache.Followup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -50,7 +49,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         private final @NotNull SelectMenuInteractionEvent event;
         private final @NotNull UUID responseId;
         private final @NotNull SelectMenu component;
-        private final @NotNull Optional<ResponseCache.Followup> followup;
+        private final @NotNull Optional<Response.Cache.Followup> followup;
 
     }
 

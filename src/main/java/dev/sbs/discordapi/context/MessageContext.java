@@ -2,7 +2,6 @@ package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.entity.Message;
@@ -65,14 +64,14 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     }
 
     default Mono<Void> editFollowup() {
-        return this.editFollowup(ResponseCache.BaseEntry::getResponse);
+        return this.editFollowup(Response.Cache.BaseEntry::getResponse);
     }
 
-    default Mono<Void> editFollowup(@NotNull Function<ResponseCache.Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull Function<Response.Cache.Followup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.editFollowup(followup.getIdentifier(), responseFunction));
     }
 
-    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<ResponseCache.Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<Response.Cache.Followup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup(identifier))
             .flatMap(followup -> {
                 Response editedResponse = responseFunction.apply(followup);
@@ -153,9 +152,9 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getMessage().flatMap(Message::getChannel);
     }
 
-    @NotNull Optional<ResponseCache.Followup> getFollowup();
+    @NotNull Optional<Response.Cache.Followup> getFollowup();
 
-    default @NotNull Optional<ResponseCache.Followup> getFollowup(@NotNull String identifier) {
+    default @NotNull Optional<Response.Cache.Followup> getFollowup(@NotNull String identifier) {
         return this.getResponseCacheEntry().findFollowup(identifier);
     }
 
@@ -167,13 +166,13 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getResponseCacheEntry().getResponse();
     }
 
-    default @NotNull ResponseCache.Entry getResponseCacheEntry() {
+    default @NotNull Response.Cache.Entry getResponseCacheEntry() {
         return this.getDiscordBot()
             .getResponseCache()
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
     }
 
-    default Mono<Void> withResponseFunction(@NotNull Function<ResponseCache.Entry, Mono<ResponseCache.Entry>> function) {
+    default Mono<Void> withResponseFunction(@NotNull Function<Response.Cache.Entry, Mono<Response.Cache.Entry>> function) {
         return Mono.just(this.getResponseCacheEntry())
             .flatMap(function)
             .then();

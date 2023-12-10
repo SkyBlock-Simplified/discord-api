@@ -7,7 +7,6 @@ import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -33,11 +32,11 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .filter(entry -> entry.getResponse().isInteractable(event.getInteraction().getUser())) // Validate User
             .singleOrEmpty()
             .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
-            .doOnNext(ResponseCache.Entry::setBusy)
+            .doOnNext(Response.Cache.Entry::setBusy)
             .flatMap(entry -> this.handleEvent(event, entry, entry.findFollowup(event.getMessageId())));
     }
 
-    protected abstract C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup);
+    protected abstract C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup);
 
     /**
      * Handle paging and component interaction for followups.
@@ -48,7 +47,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * @param entry Matched response cache entry.
      * @param followup Matched followup cache entry.
      */
-    protected Mono<Void> handleEvent(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected Mono<Void> handleEvent(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull Optional<Response.Cache.Followup> followup) {
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents()) // Handle Paging Components
             .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
             .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
@@ -69,7 +68,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .then();
     }
 
-    protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
 
         return Mono.just(context)
@@ -88,12 +87,12 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             ))
             .switchIfEmpty(
                 Mono.just(entry)
-                    .filter(ResponseCache.Entry::isModified)
+                    .filter(Response.Cache.Entry::isModified)
                     .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
 
-    protected final Mono<Void> handlePagingInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull T component, @NotNull Optional<ResponseCache.Followup> followup) {
+    protected final Mono<Void> handlePagingInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
 
         return Mono.just(context)
@@ -110,7 +109,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             ))
             .switchIfEmpty(
                 Mono.just(entry)
-                    .filter(ResponseCache.Entry::isModified)
+                    .filter(Response.Cache.Entry::isModified)
                     .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }

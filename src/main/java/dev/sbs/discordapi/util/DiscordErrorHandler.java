@@ -26,7 +26,6 @@ import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -425,7 +424,7 @@ public final class DiscordErrorHandler extends DiscordReference {
                                 messageId = this.getDiscordBot()
                                     .getResponseCache()
                                     .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
-                                    .map(ResponseCache.Entry::getMessageId);
+                                    .map(Response.Cache.Entry::getMessageId);
 
                             // Build Exception Response
                             Response logResponse = Response.builder()

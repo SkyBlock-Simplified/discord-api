@@ -21,7 +21,6 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.DiscordCommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordErrorHandler;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import dev.sbs.discordapi.util.shard.ShardHandler;
 import discord4j.common.util.Snowflake;
@@ -76,7 +75,7 @@ public final class DiscordBot {
     private final @NotNull GatewayDiscordClient gateway;
     private final @NotNull ShardHandler shardHandler;
     private final @NotNull Scheduler scheduler = new Scheduler();
-    private final @NotNull ResponseCache responseCache = new ResponseCache();
+    private final @NotNull Response.Cache responseCache = new Response.Cache();
     private DiscordCommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
@@ -128,7 +127,7 @@ public final class DiscordBot {
                         });
 
                     log.info("Scheduling Cache Cleaner");
-                    this.scheduler.scheduleAsync(() -> this.responseCache.matchAll(ResponseCache.Entry::notActive).forEach(entry -> {
+                    this.scheduler.scheduleAsync(() -> this.responseCache.matchAll(Response.Cache.Entry::notActive).forEach(entry -> {
                         // Clear Cached Message
                         this.responseCache.remove(entry);
 

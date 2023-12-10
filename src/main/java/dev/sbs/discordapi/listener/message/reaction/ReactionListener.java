@@ -6,7 +6,6 @@ import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.cache.ResponseCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageEvent;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +41,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
             });
     }
 
-    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<ResponseCache.Followup> followup);
+    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup);
 
     protected abstract Snowflake getMessageId(@NotNull E event);
 
@@ -50,7 +49,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
 
     protected abstract Snowflake getUserId(@NotNull E event);
 
-    private Mono<Void> handleInteraction(@NotNull E event, @NotNull ResponseCache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<ResponseCache.Followup> followup) {
+    private Mono<Void> handleInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
             .flatMap(context -> Mono.just(entry)
                 .onErrorResume(throwable -> this.getDiscordBot().handleException(
@@ -61,9 +60,9 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
                         String.format("%s Exception", this.getTitle())
                     )
                 ))
-                .doOnNext(ResponseCache.Entry::setBusy)
+                .doOnNext(Response.Cache.Entry::setBusy)
                 .then(reaction.getInteraction().apply(context).thenReturn(entry))
-                .filter(ResponseCache.Entry::isModified)
+                .filter(Response.Cache.Entry::isModified)
                 .flatMap(__ -> followup.isEmpty() ? context.edit() : context.editFollowup())
             );
     }
