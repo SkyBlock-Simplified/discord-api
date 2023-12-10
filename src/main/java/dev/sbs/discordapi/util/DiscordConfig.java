@@ -10,8 +10,10 @@ import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
+import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.listener.DiscordListener;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.MemberRequestFilter;
@@ -27,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Getter
@@ -48,6 +51,9 @@ public final class DiscordConfig extends YamlConfig {
     private @NotNull Function<ShardInfo, ClientPresence> clientPresence;
     private @NotNull MemberRequestFilter memberRequestFilter;
     private @NotNull Level logLevel;
+    private Optional<Runnable> databaseConnectedEvent = Optional.empty();
+    private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent = Optional.empty();
+    private Optional<Runnable> gatewayDisconnectedEvent = Optional.empty();
 
     private DiscordConfig(
         @NotNull String fileName,
@@ -63,7 +69,10 @@ public final class DiscordConfig extends YamlConfig {
         @NotNull IntentSet intents,
         @NotNull Function<ShardInfo, ClientPresence> clientPresence,
         @NotNull MemberRequestFilter memberRequestFilter,
-        @NotNull Level logLevel
+        @NotNull Level logLevel,
+        @NotNull Optional<Runnable> databaseConnectedEvent,
+        @NotNull Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent,
+        @NotNull Optional<Runnable> gatewayDisconnectedEvent
     ) {
         super(fileName, configDir, header);
         this.token = token;
@@ -77,13 +86,20 @@ public final class DiscordConfig extends YamlConfig {
         this.clientPresence = clientPresence;
         this.memberRequestFilter = memberRequestFilter;
         this.logLevel = logLevel;
+        this.databaseConnectedEvent = databaseConnectedEvent;
+        this.gatewayConnectedEvent = gatewayConnectedEvent;
+        this.gatewayDisconnectedEvent = gatewayDisconnectedEvent;
+    }
+
+    public @NotNull DiscordBot createBot() {
+        return new DiscordBot(this);
     }
 
     public static @NotNull Builder builder() {
         return new Builder();
     }
 
-    public ClientPresence getClientPresence(@NotNull ShardInfo shardInfo) {
+    public @NotNull ClientPresence getClientPresence(@NotNull ShardInfo shardInfo) {
         return this.clientPresence.apply(shardInfo);
     }
 
@@ -118,6 +134,38 @@ public final class DiscordConfig extends YamlConfig {
         private MemberRequestFilter memberRequestFilter = MemberRequestFilter.all();
         @BuildFlag(required = true)
         private Level logLevel = Level.WARN;
+
+        // Events
+        private Optional<Runnable> databaseConnectedEvent = Optional.empty();
+        private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent = Optional.empty();
+        private Optional<Runnable> gatewayDisconnectedEvent = Optional.empty();
+
+        public Builder onDatabaseConnected(@Nullable Runnable databaseConnectedEvent) {
+            return this.onDatabaseConnected(Optional.ofNullable(databaseConnectedEvent));
+        }
+
+        public Builder onDatabaseConnected(@NotNull Optional<Runnable> databaseConnectedEvent) {
+            this.databaseConnectedEvent = databaseConnectedEvent;
+            return this;
+        }
+
+        public Builder onGatewayConnected(@Nullable Consumer<GatewayDiscordClient> gatewayConnectedEvent) {
+            return this.onGatewayConnected(Optional.ofNullable(gatewayConnectedEvent));
+        }
+
+        public Builder onGatewayConnected(@NotNull Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent) {
+            this.gatewayConnectedEvent = gatewayConnectedEvent;
+            return this;
+        }
+
+        public Builder onGatewayDisconnected(@Nullable Runnable gatewayConnectedEvent) {
+            return this.onGatewayDisconnected(Optional.ofNullable(gatewayConnectedEvent));
+        }
+
+        public Builder onGatewayDisconnected(@NotNull Optional<Runnable> gatewayConnectedEvent) {
+            this.gatewayDisconnectedEvent = gatewayConnectedEvent;
+            return this;
+        }
 
         public Builder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
             this.allowedMentions = allowedMentions;
@@ -265,7 +313,10 @@ public final class DiscordConfig extends YamlConfig {
                 this.intents,
                 this.clientPresence,
                 this.memberRequestFilter,
-                this.logLevel
+                this.logLevel,
+                this.databaseConnectedEvent,
+                this.gatewayConnectedEvent,
+                this.gatewayDisconnectedEvent
             );
         }
 
