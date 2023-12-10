@@ -18,9 +18,9 @@ import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.util.DiscordCommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordErrorHandler;
-import dev.sbs.discordapi.util.cache.CommandRegistrar;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import dev.sbs.discordapi.util.shard.ShardHandler;
@@ -77,7 +77,7 @@ public final class DiscordBot {
     private final @NotNull ShardHandler shardHandler;
     private final @NotNull Scheduler scheduler = new Scheduler();
     private final @NotNull ResponseCache responseCache = new ResponseCache();
-    private CommandRegistrar commandRegistrar;
+    private DiscordCommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
     public DiscordBot(@NotNull DiscordConfig discordConfig) {
@@ -191,7 +191,7 @@ public final class DiscordBot {
                     });
 
                     log.info("Registering Commands");
-                    Mono<Void> commands = (this.commandRegistrar = CommandRegistrar.builder(this)
+                    Mono<Void> commands = (this.commandRegistrar = DiscordCommandRegistrar.builder(this)
                         .withCommands(this.getConfig().getCommands())
                         .build())
                         .updateApplicationCommands();

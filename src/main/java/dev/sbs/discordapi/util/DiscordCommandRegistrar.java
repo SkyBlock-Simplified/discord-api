@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.cache;
+package dev.sbs.discordapi.util;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -14,7 +14,6 @@ import dev.sbs.discordapi.command.reference.MessageCommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
 import dev.sbs.discordapi.context.deferrable.application.CommandContext;
-import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -43,7 +42,7 @@ import java.util.stream.Stream;
 
 @Log4j2
 @SuppressWarnings("rawtypes")
-public class CommandRegistrar extends DiscordReference {
+public class DiscordCommandRegistrar extends DiscordReference {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
@@ -52,7 +51,7 @@ public class CommandRegistrar extends DiscordReference {
     @Getter private final @NotNull ConcurrentList<UserCommandReference> userCommands;
     @Getter private final @NotNull ConcurrentList<MessageCommandReference> messageCommands;
 
-    CommandRegistrar(
+    DiscordCommandRegistrar(
         @NotNull DiscordBot discordBot,
         @NotNull ConcurrentSet<Class<? extends CommandReference>> commands
     ) {
@@ -374,7 +373,7 @@ public class CommandRegistrar extends DiscordReference {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<CommandRegistrar> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordCommandRegistrar> {
 
         private final DiscordBot discordBot;
         private final ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
@@ -389,8 +388,8 @@ public class CommandRegistrar extends DiscordReference {
         }
 
         @Override
-        public @NotNull CommandRegistrar build() {
-            return new CommandRegistrar(
+        public @NotNull DiscordCommandRegistrar build() {
+            return new DiscordCommandRegistrar(
                 this.discordBot,
                 this.commands
             );
