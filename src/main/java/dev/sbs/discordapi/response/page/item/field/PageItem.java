@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
@@ -67,6 +67,11 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
 
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    @Override
+    public boolean isSingular() {
+        return false;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

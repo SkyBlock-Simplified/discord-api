@@ -99,6 +99,11 @@ public class FieldItem implements Item, RenderItem {
         return from(this);
     }
 
+    @Override
+    public boolean isSingular() {
+        return false;
+    }
+
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<FieldItem> {
 

@@ -78,6 +78,11 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
         return from(this);
     }
 
+    @Override
+    public boolean isSingular() {
+        return false;
+    }
+
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder<T extends Model> implements dev.sbs.api.util.builder.Builder<ModelItem<T>> {
 

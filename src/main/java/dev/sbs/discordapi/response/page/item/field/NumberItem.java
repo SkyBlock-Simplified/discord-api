@@ -65,6 +65,11 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
         return from(this);
     }
 
+    @Override
+    public boolean isSingular() {
+        return false;
+    }
+
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder<T extends Number> implements dev.sbs.api.util.builder.Builder<NumberItem<T>> {
 

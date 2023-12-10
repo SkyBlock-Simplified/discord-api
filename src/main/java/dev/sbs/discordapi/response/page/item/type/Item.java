@@ -18,6 +18,18 @@ import java.util.Optional;
 
 public interface Item {
 
+    /**
+     * Casts the current {@link Item} to the given type {@link T}.
+     * <br><br>
+     * Throws an error if it's cast incorrectly.
+     *
+     * @param type Class to cast to.
+     * @param <T> Type to cast to.
+     */
+    default <T extends Item> @NotNull T asType(@NotNull Class<T> type) {
+        return type.cast(this);
+    }
+
     default @NotNull String getIdentifier() {
         return this.getOption().getValue();
     }
@@ -27,6 +39,10 @@ public interface Item {
     @NotNull Type getType();
 
     boolean isEditable();
+
+    default boolean isSingular() {
+        return true;
+    }
 
     @Getter
     @RequiredArgsConstructor

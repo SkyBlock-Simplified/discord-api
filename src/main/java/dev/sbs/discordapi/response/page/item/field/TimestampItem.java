@@ -62,6 +62,11 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
         return from(this);
     }
 
+    @Override
+    public boolean isSingular() {
+        return false;
+    }
+
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<TimestampItem> {
 
