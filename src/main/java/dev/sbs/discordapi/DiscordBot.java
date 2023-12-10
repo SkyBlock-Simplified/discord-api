@@ -6,6 +6,7 @@ import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.AutoCompleteListener;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.MessageCommandListener;
@@ -18,7 +19,7 @@ import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.util.DiscordConfig;
-import dev.sbs.discordapi.util.base.DiscordErrorObject;
+import dev.sbs.discordapi.util.DiscordErrorHandler;
 import dev.sbs.discordapi.util.cache.CommandRegistrar;
 import dev.sbs.discordapi.util.cache.ResponseCache;
 import dev.sbs.discordapi.util.exception.DiscordException;
@@ -46,6 +47,7 @@ import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -65,8 +67,10 @@ import java.util.concurrent.TimeUnit;
  */
 @Getter
 @Log4j2
-public abstract class DiscordBot extends DiscordErrorObject {
+public abstract class DiscordBot {
 
+    @Getter(AccessLevel.NONE)
+    private final @NotNull DiscordErrorHandler errorHandler;
     private final @NotNull DiscordConfig config;
     private final @NotNull DiscordClient client;
     private final @NotNull GatewayDiscordClient gateway;
@@ -77,6 +81,7 @@ public abstract class DiscordBot extends DiscordErrorObject {
 
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig discordConfig) {
+        this.errorHandler = new DiscordErrorHandler(this);
         this.config = discordConfig;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
 
@@ -203,11 +208,6 @@ public abstract class DiscordBot extends DiscordErrorObject {
         return this.getGateway().getSelfId();
     }
 
-    @Override
-    protected final @NotNull DiscordBot getDiscordBot() {
-        return this;
-    }
-
     public final @NotNull Guild getMainGuild() {
         return this.getGateway()
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
@@ -226,6 +226,10 @@ public abstract class DiscordBot extends DiscordErrorObject {
                 .withMessage("Unable to locate self in Discord Gateway!")
                 .build()
             );
+    }
+
+    public <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
+        return this.errorHandler.handleException(exceptionContext);
     }
 
     protected void onDatabaseConnected() { }

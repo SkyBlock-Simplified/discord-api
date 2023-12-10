@@ -22,7 +22,7 @@ import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.util.base.DiscordHelper;
+import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
@@ -318,7 +318,7 @@ public class Response implements Paging<Page> {
             Button.PageType.ORDER,
             builder -> builder
                 .withLabel("Order: %s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal")
-                .withEmoji(DiscordHelper.getEmoji(String.format("SORT_%s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
+                .withEmoji(DiscordReference.getEmoji(String.format("SORT_%s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
         );
     }
 

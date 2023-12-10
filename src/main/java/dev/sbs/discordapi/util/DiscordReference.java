@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.base;
+package dev.sbs.discordapi.util;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
@@ -17,6 +17,10 @@ import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
+import lombok.AccessLevel;
+import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -30,7 +34,15 @@ import java.util.Optional;
 @SuppressWarnings("rawtypes")
 public abstract class DiscordReference {
 
-    protected abstract @NotNull DiscordBot getDiscordBot();
+    @Getter(AccessLevel.PROTECTED)
+    private final @NotNull DiscordBot discordBot;
+    @Getter
+    private final @NotNull Logger log;
+
+    protected DiscordReference(@NotNull DiscordBot discordBot) {
+        this.discordBot = discordBot;
+        this.log = LogManager.getLogger(this);
+    }
 
     public static @NotNull String capitalizeEnum(Enum<?> value) {
         return capitalizeFully(value.name());

@@ -13,7 +13,7 @@ import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.deferrable.application.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.util.base.DiscordHelper;
+import dev.sbs.discordapi.util.DiscordReference;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 @Getter
-public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordHelper implements CommandReference<C> {
+public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordReference implements CommandReference<C> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected static final ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");

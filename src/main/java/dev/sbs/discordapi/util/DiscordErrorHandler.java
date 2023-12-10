@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.base;
+package dev.sbs.discordapi.util;
 
 import dev.sbs.api.client.hypixel.exception.HypixelApiException;
 import dev.sbs.api.client.sbs.exception.SbsApiException;
@@ -7,6 +7,7 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
 import dev.sbs.discordapi.command.exception.parameter.ParameterException;
@@ -41,7 +42,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public abstract class DiscordErrorObject extends DiscordReference {
+public final class DiscordErrorHandler extends DiscordReference {
+
+    public DiscordErrorHandler(@NotNull DiscordBot discordBot) {
+        super(discordBot);
+    }
 
     private @NotNull Optional<Embed> buildReactiveUserError(ExceptionContext<?> exceptionContext) {
         Optional<Embed> responseBuilder = Optional.empty();
@@ -215,7 +220,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
                             permissionMap.stream()
                                 .map(Map.Entry::getValue)
                                 .filter(value -> !value)
-                                .map(value -> DiscordHelper.getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
+                                .map(value -> DiscordReference.getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
                                 .collect(Concurrent.toList()),
                             "\n"
                         ),
@@ -357,7 +362,7 @@ public abstract class DiscordErrorObject extends DiscordReference {
         );
     }
 
-    public final <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
+    public <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
         // Build Default Error Embed
         Pair<String, Embed> defaultError = this.buildDefaultError(exceptionContext);
 

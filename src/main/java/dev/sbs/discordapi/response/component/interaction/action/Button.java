@@ -12,7 +12,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.util.base.DiscordHelper;
+import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -404,15 +404,15 @@ public final class Button extends ActionComponent implements InteractableCompone
     public enum PageType {
 
         NONE("", -1),
-        FIRST("First", 1, DiscordHelper.getEmoji("ARROW_SQUARE_FIRST")),
-        PREVIOUS("Previous", 1, DiscordHelper.getEmoji("ARROW_SQUARE_PREVIOUS")),
+        FIRST("First", 1, DiscordReference.getEmoji("ARROW_SQUARE_FIRST")),
+        PREVIOUS("Previous", 1, DiscordReference.getEmoji("ARROW_SQUARE_PREVIOUS")),
         INDEX("Index", 1),
-        NEXT("Next", 1, DiscordHelper.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", 1, DiscordHelper.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", 2, DiscordHelper.getEmoji("ARROW_LEFT")),
-        SEARCH("Search", 2, DiscordHelper.getEmoji("SEARCH")),
-        SORT("Sort", 2, DiscordHelper.getEmoji("SORT")),
-        ORDER("Order", 2, DiscordHelper.getEmoji("SORT_DESCENDING"));
+        NEXT("Next", 1, DiscordReference.getEmoji("ARROW_SQUARE_NEXT")),
+        LAST("Last", 1, DiscordReference.getEmoji("ARROW_SQUARE_LAST")),
+        BACK("Back", 2, DiscordReference.getEmoji("ARROW_LEFT")),
+        SEARCH("Search", 2, DiscordReference.getEmoji("SEARCH")),
+        SORT("Sort", 2, DiscordReference.getEmoji("SORT")),
+        ORDER("Order", 2, DiscordReference.getEmoji("SORT_DESCENDING"));
 
         private final @NotNull String label;
         private final int row;

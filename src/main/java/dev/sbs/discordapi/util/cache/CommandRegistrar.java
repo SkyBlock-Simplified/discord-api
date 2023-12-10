@@ -14,7 +14,7 @@ import dev.sbs.discordapi.command.reference.MessageCommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
 import dev.sbs.discordapi.context.deferrable.application.CommandContext;
-import dev.sbs.discordapi.util.base.DiscordHelper;
+import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -28,6 +28,7 @@ import discord4j.rest.util.Permission;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,8 +41,9 @@ import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+@Log4j2
 @SuppressWarnings("rawtypes")
-public class CommandRegistrar extends DiscordHelper {
+public class CommandRegistrar extends DiscordReference {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
