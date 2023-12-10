@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Getter
 @Log4j2
-public abstract class DiscordBot {
+public final class DiscordBot {
 
     @Getter(AccessLevel.NONE)
     private final @NotNull DiscordErrorHandler errorHandler;
@@ -80,7 +80,7 @@ public abstract class DiscordBot {
     private CommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
-    protected DiscordBot(@NotNull DiscordConfig discordConfig) {
+    public DiscordBot(@NotNull DiscordConfig discordConfig) {
         this.errorHandler = new DiscordErrorHandler(this);
         this.config = discordConfig;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
@@ -107,7 +107,9 @@ public abstract class DiscordBot {
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
                     log.info("Gateway Connected");
-                    this.onGatewayConnected(gatewayDiscordClient);
+                    this.getConfig()
+                        .getGatewayConnectedEvent()
+                        .ifPresent(event -> event.accept(gatewayDiscordClient));
 
                     this.getConfig()
                         .getDataConfig()
@@ -120,7 +122,9 @@ public abstract class DiscordBot {
                                 SimplifiedApi.getSessionManager().getSession().getInitializationTime(),
                                 SimplifiedApi.getSessionManager().getSession().getStartupTime()
                             );
-                            this.onDatabaseConnected();
+                            this.getConfig()
+                                .getDatabaseConnectedEvent()
+                                .ifPresent(Runnable::run);
                         });
 
                     log.info("Scheduling Cache Cleaner");
@@ -172,7 +176,10 @@ public abstract class DiscordBot {
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
-                            this.onGatewayDisconnected();
+                            this.getConfig()
+                                .getGatewayDisconnectedEvent()
+                                .ifPresent(Runnable::run);
+
                             this.getScheduler().shutdownNow();
                             SimplifiedApi.getSessionManager().disconnect();
                         }))
@@ -204,11 +211,11 @@ public abstract class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
-    public final @NotNull Snowflake getClientId() {
+    public @NotNull Snowflake getClientId() {
         return this.getGateway().getSelfId();
     }
 
-    public final @NotNull Guild getMainGuild() {
+    public @NotNull Guild getMainGuild() {
         return this.getGateway()
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
@@ -218,7 +225,7 @@ public abstract class DiscordBot {
             );
     }
 
-    public final @NotNull User getSelf() {
+    public @NotNull User getSelf() {
         return this.getGateway()
             .getSelf()
             .blockOptional()
@@ -231,12 +238,5 @@ public abstract class DiscordBot {
     public <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
         return this.errorHandler.handleException(exceptionContext);
     }
-
-    protected void onDatabaseConnected() { }
-
-    @SuppressWarnings("unused")
-    protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) { }
-
-    protected void onGatewayDisconnected() { }
 
 }
