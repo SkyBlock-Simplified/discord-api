@@ -8,6 +8,7 @@ import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.response.page.item.type.RenderItem;
 import dev.sbs.discordapi.response.page.item.type.SingletonItem;
+import dev.sbs.discordapi.util.DiscordReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
                 this.getValue()
                     .map(RealDate::new)
                     .map(RealDate::toString)
-                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
+                    .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
             )
             .isInline()
             .build();

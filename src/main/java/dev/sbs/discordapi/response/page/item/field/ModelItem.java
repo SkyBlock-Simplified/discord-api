@@ -11,6 +11,7 @@ import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.response.page.item.type.RenderItem;
 import dev.sbs.discordapi.response.page.item.type.SingletonItem;
+import dev.sbs.discordapi.util.DiscordReference;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -62,7 +63,7 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
             .withValue(
                 this.getValue()
                     .map(this.getValueFunction())
-                    .orElse("*null*"/*getNullEmoji().asFormat()*/) // TODO
+                    .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
             )
             .isInline()
             .build();

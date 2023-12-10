@@ -18,11 +18,6 @@ import java.util.Optional;
 
 public interface Item {
 
-    /*@Getter private static final Emoji nullEmoji = SimplifiedApi.getRepositoryOf(EmojiModel.class)
-        .findFirst(EmojiModel::getKey, "TEXT_NULL")
-        .flatMap(Emoji::of)
-        .orElseThrow();*/
-
     default @NotNull String getIdentifier() {
         return this.getOption().getValue();
     }
