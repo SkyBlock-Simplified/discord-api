@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -28,6 +29,11 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
     private final @NotNull ItemHandler<?> itemHandler;
+
+    @Override
+    public @NotNull PageItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this;
+    }
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());

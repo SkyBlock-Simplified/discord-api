@@ -34,6 +34,23 @@ public class FieldItem implements Item, RenderItem {
     private final boolean editable;
     private final ConcurrentMap<Item.Column, ConcurrentList<String>> data;
 
+    @Override
+    public @NotNull FieldItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this.mutate()
+            .withData(
+                this.getData()
+                    .stream()
+                    .map((column, values) -> Pair.of(
+                        column,
+                        values.stream()
+                            .map(value -> StringUtil.format(value, variables))
+                            .collect(Concurrent.toList())
+                    ))
+                    .collect(Concurrent.toMap())
+            )
+            .build();
+    }
+
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }

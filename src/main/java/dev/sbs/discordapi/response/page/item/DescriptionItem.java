@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response.page.item;
 
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -23,6 +24,13 @@ public final class DescriptionItem implements SingletonItem<String> {
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
     private final @NotNull Optional<String> value;
+
+    @Override
+    public @NotNull DescriptionItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this.mutate()
+            .withValue(this.getValue().map(value -> StringUtil.format(value, variables)))
+            .build();
+    }
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());

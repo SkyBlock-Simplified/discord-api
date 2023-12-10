@@ -4,6 +4,7 @@ import dev.sbs.api.data.model.Model;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -37,6 +38,11 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
     private final @NotNull ConcurrentList<T> options;
     private final @NotNull Optional<Function<T, String>> nameFunction;
     private final @NotNull Function<T, String> valueFunction;
+
+    @Override
+    public @NotNull ModelItem<T> applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this;
+    }
 
     public static <T extends Model> @NotNull Builder<T> builder(@NotNull Class<T> modelClass) {
         return new Builder<>(modelClass).withIdentifier(UUID.randomUUID().toString());

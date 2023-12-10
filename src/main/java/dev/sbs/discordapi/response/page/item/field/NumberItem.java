@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -30,6 +31,11 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
     private final @NotNull Optional<T> value;
     private final @NotNull Class<T> numberClass;
     private final @NotNull ConcurrentList<T> options;
+
+    @Override
+    public @NotNull NumberItem<T> applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this;
+    }
 
     public static <T extends Number> @NotNull Builder<T> builder(@NotNull Class<T> numberClass) {
         return new Builder<>(numberClass).withIdentifier(UUID.randomUUID().toString());

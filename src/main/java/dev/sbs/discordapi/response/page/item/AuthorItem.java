@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response.page.item;
 
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -25,6 +26,15 @@ public final class AuthorItem implements Item {
     private final @NotNull Optional<String> name;
     private final @NotNull Optional<String> iconUrl;
     private final @NotNull Optional<String> url;
+
+    @Override
+    public @NotNull AuthorItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this.mutate()
+            .withName(this.getName().map(value -> StringUtil.format(value, variables)))
+            .withIconUrl(this.getIconUrl().map(value -> StringUtil.format(value, variables)))
+            .withUrl(this.getUrl().map(value -> StringUtil.format(value, variables)))
+            .build();
+    }
 
     public @NotNull Author asAuthor() {
         return Author.builder()

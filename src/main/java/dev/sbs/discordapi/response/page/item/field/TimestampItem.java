@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.date.RealDate;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
@@ -27,6 +28,11 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
     private final @NotNull Optional<Instant> value;
+
+    @Override
+    public @NotNull TimestampItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+        return this;
+    }
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());

@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.page.item.type;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.data.tuple.triple.Triple;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -17,6 +18,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public interface Item {
+
+    @NotNull Item applyVariables(@NotNull ConcurrentMap<String, Object> variables);
 
     /**
      * Casts the current {@link Item} to the given type {@link T}.
