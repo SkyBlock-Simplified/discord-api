@@ -33,7 +33,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.discordBot = discordBot;
-        this.uniqueId = getCommandUniqueId(this.getClass())
+        this.uniqueId = super.getAnnotation(CommandId.class, this.getClass())
             .map(CommandId::value)
             .map(StringUtil::toUUID)
             .orElseThrow(); // Will Never Throw

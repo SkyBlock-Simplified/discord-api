@@ -8,6 +8,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.data.tuple.pair.Pair;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;
@@ -345,7 +346,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
         return commands.stream()
             .map(commandClass -> Pair.of(
                 commandClass,
-                getCommandUniqueId(commandClass)
+                getAnnotation(CommandId.class, commandClass)
             ))
             .filter(commandLink -> {
                 if (commandLink.getRight().isEmpty()) {
