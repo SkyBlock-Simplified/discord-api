@@ -13,6 +13,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.listener.DiscordListener;
+import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.presence.ClientPresence;
@@ -37,6 +38,9 @@ import java.util.function.Function;
 @SuppressWarnings("rawtypes")
 public final class DiscordConfig extends YamlConfig {
 
+    @Getter
+    private static @NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator;
+
     @Flag(secure = true)
     private @NotNull String token;
     private long mainGuildId;
@@ -51,9 +55,9 @@ public final class DiscordConfig extends YamlConfig {
     private @NotNull Function<ShardInfo, ClientPresence> clientPresence;
     private @NotNull MemberRequestFilter memberRequestFilter;
     private @NotNull Level logLevel;
-    private Optional<Runnable> databaseConnectedEvent = Optional.empty();
-    private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent = Optional.empty();
-    private Optional<Runnable> gatewayDisconnectedEvent = Optional.empty();
+    private Optional<Runnable> databaseConnectedEvent;
+    private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent;
+    private Optional<Runnable> gatewayDisconnectedEvent;
 
     private DiscordConfig(
         @NotNull String fileName,
@@ -63,6 +67,7 @@ public final class DiscordConfig extends YamlConfig {
         long mainGuildId,
         @NotNull Optional<Long> debugChannelId,
         @NotNull Optional<DataConfig<? extends Model>> dataConfig,
+        @NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator,
         @NotNull ConcurrentSet<Class<? extends DiscordListener>> listeners,
         @NotNull ConcurrentSet<Class<? extends CommandReference>> commands,
         @NotNull AllowedMentions allowedMentions,
@@ -79,6 +84,7 @@ public final class DiscordConfig extends YamlConfig {
         this.mainGuildId = mainGuildId;
         this.debugChannelId = debugChannelId;
         this.dataConfig = dataConfig;
+        DiscordConfig.emojiLocator = emojiLocator;
         this.listeners = listeners.toUnmodifiableSet();
         this.commands = commands.toUnmodifiableSet();
         this.allowedMentions = allowedMentions;
@@ -92,7 +98,11 @@ public final class DiscordConfig extends YamlConfig {
     }
 
     public @NotNull DiscordBot createBot() {
-        return new DiscordBot(this);
+        return this.createBot(DiscordBot::new);
+    }
+
+    public <T extends DiscordBot> @NotNull T createBot(@NotNull Function<DiscordConfig, T> bot) {
+        return bot.apply(this);
     }
 
     public static @NotNull Builder builder() {
@@ -120,6 +130,7 @@ public final class DiscordConfig extends YamlConfig {
         private Optional<Long> debugChannelId = Optional.empty();
         private Optional<Class<? extends Model>> dataModel = Optional.empty();
         private Optional<DataConfig<? extends Model>> dataConfig = Optional.empty();
+        private Optional<Function<String, Optional<Emoji>>> emojiLocator = Optional.empty();
 
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
@@ -228,6 +239,15 @@ public final class DiscordConfig extends YamlConfig {
             return this;
         }
 
+        public Builder withEmojiLocator(@Nullable Function<String, Optional<Emoji>> emojiLocator) {
+            return this.withEmojiLocator(Optional.ofNullable(emojiLocator));
+        }
+
+        public Builder withEmojiLocator(@NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator) {
+            this.emojiLocator = emojiLocator;
+            return this;
+        }
+
         public Builder withEnabledIntents(@NotNull IntentSet enabledIntents) {
             this.intents = enabledIntents;
             return this;
@@ -307,6 +327,7 @@ public final class DiscordConfig extends YamlConfig {
                 this.mainGuildId.orElseThrow(),
                 this.debugChannelId,
                 this.dataConfig,
+                this.emojiLocator,
                 this.listeners,
                 this.commands,
                 this.allowedMentions,

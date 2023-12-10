@@ -219,7 +219,7 @@ public final class DiscordErrorHandler extends DiscordReference {
                             permissionMap.stream()
                                 .map(Map.Entry::getValue)
                                 .filter(value -> !value)
-                                .map(value -> DiscordReference.getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
+                                .map(value -> getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
                                 .collect(Concurrent.toList()),
                             "\n"
                         ),
@@ -337,14 +337,8 @@ public final class DiscordErrorHandler extends DiscordReference {
             .withColor(Color.DARK_GRAY)
             .withAuthor(
                 Author.builder()
-                    .withName(
-                        // TODO: Emoji handling
-                        "Exception"/*,
-                SimplifiedApi.getRepositoryOf(EmojiModel.class)
-                    .findFirst(EmojiModel::getKey, "STATUS_HIGH_IMPORTANCE")
-                    .flatMap(Emoji::of)
-                    .map(Emoji::getUrl)*/
-                    )
+                    .withName("Exception")
+                    .withIconUrl(getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
                     .build()
             )
             .withTitle("Error :: %s", exceptionContext.getTitle())

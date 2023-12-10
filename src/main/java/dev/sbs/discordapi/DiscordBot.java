@@ -66,7 +66,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Getter
 @Log4j2
-public final class DiscordBot {
+public class DiscordBot {
 
     @Getter(AccessLevel.NONE)
     private final @NotNull DiscordErrorHandler errorHandler;
@@ -210,11 +210,11 @@ public final class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
-    public @NotNull Snowflake getClientId() {
+    public final @NotNull Snowflake getClientId() {
         return this.getGateway().getSelfId();
     }
 
-    public @NotNull Guild getMainGuild() {
+    public final @NotNull Guild getMainGuild() {
         return this.getGateway()
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
@@ -224,7 +224,7 @@ public final class DiscordBot {
             );
     }
 
-    public @NotNull User getSelf() {
+    public final @NotNull User getSelf() {
         return this.getGateway()
             .getSelf()
             .blockOptional()
@@ -234,7 +234,7 @@ public final class DiscordBot {
             );
     }
 
-    public <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
+    public final <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
         return this.errorHandler.handleException(exceptionContext);
     }
 

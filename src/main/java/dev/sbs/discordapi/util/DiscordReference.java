@@ -5,7 +5,6 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.response.Emoji;
@@ -36,38 +35,31 @@ public abstract class DiscordReference {
 
     @Getter(AccessLevel.PROTECTED)
     private final @NotNull DiscordBot discordBot;
-    @Getter
-    private final @NotNull Logger log;
+    @Getter private final @NotNull Logger log;
 
     protected DiscordReference(@NotNull DiscordBot discordBot) {
         this.discordBot = discordBot;
         this.log = LogManager.getLogger(this);
     }
 
-    public static @NotNull String capitalizeEnum(Enum<?> value) {
+    public @NotNull String capitalizeEnum(@NotNull Enum<?> value) {
         return capitalizeFully(value.name());
     }
 
-    public static @NotNull String capitalizeFully(String value) {
+    public @NotNull String capitalizeFully(@NotNull String value) {
         return StringUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
     }
 
-    public static @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandReference> command) {
+    protected @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandReference> command) {
         return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : java.util.Optional.empty();
-    }
-
-    public static @NotNull Optional<CommandId> getCommandUniqueId(@NotNull Class<? extends CommandReference> command) {
-        return getAnnotation(CommandId.class, command);
     }
 
     protected final @NotNull Mono<Guild> getGuild(@NotNull Snowflake guildId) {
         return this.getDiscordBot().getGateway().getGuildById(guildId);
     }
 
-    // TODO: Emoji handling
     public static @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
-        return java.util.Optional.empty();
-        //return SimplifiedApi.getRepositoryOf(EmojiModel.class).findFirst(EmojiModel::getKey, key).flatMap(Emoji::of);
+        return DiscordConfig.getEmojiLocator().flatMap(function -> function.apply(key));
     }
 
     public static @NotNull String getEmojiAsFormat(@NotNull String key) {

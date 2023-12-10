@@ -320,8 +320,21 @@ public class Response implements Paging<Page> {
             Button::getPageType,
             Button.PageType.ORDER,
             builder -> builder
-                .withLabel("Order: %s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "Reversed" : "Normal")
-                .withEmoji(DiscordReference.getEmoji(String.format("SORT_%s", this.getHistoryHandler().getCurrentPage().getItemHandler().isReversed() ? "ASCENDING" : "DESCENDING")))
+                .withLabel(
+                    "Order: %s",
+                    this.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .isReversed() ? "Reversed" : "Normal"
+                )
+                .withEmoji(
+                    DiscordReference.getEmoji(
+                        String.format("SORT_%s", this.getHistoryHandler()
+                            .getCurrentPage()
+                            .getItemHandler()
+                            .isReversed() ? "ASCENDING" : "DESCENDING")
+                    )
+                )
         );
     }
 
