@@ -14,6 +14,14 @@ import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
+import dev.sbs.discordapi.response.page.item.AuthorItem;
+import dev.sbs.discordapi.response.page.item.DescriptionItem;
+import dev.sbs.discordapi.response.page.item.FooterItem;
+import dev.sbs.discordapi.response.page.item.ImageUrlItem;
+import dev.sbs.discordapi.response.page.item.ThumbnailUrlItem;
+import dev.sbs.discordapi.response.page.item.TitleItem;
+import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.type.RenderItem;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.AccessLevel;
@@ -334,6 +342,40 @@ public class Embed implements IdentifiableComponent {
          */
         public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
             this.identifier = String.format(identifier, args);
+            return this;
+        }
+
+        /**
+         * Add {@link Item Items} to the {@link Embed}.
+         *
+         * @param items Variable number of items to add.
+         */
+        public Builder withItems(@NotNull Item... items) {
+            return this.withItems(Arrays.asList(items));
+        }
+
+        /**
+         * Add {@link Item Items} to the {@link Embed}.
+         *
+         * @param items Collection of non-page items to add.
+         */
+        public Builder withItems(@NotNull Iterable<Item> items) {
+            items.forEach(item -> {
+                switch (item.getType()) {
+                    case AUTHOR -> this.withAuthor(item.asType(AuthorItem.class).asAuthor());
+                    case DESCRIPTION -> this.withDescription(item.asType(DescriptionItem.class).getValue());
+                    case FOOTER -> this.withFooter(item.asType(FooterItem.class).asFooter());
+                    case IMAGE_URL -> this.withImageUrl(item.asType(ImageUrlItem.class).getValue());
+                    case FIELD -> this.withFields(item.asType(RenderItem.class).getRenderField());
+                    case THUMBNAIL_URL -> this.withThumbnailUrl(item.asType(ThumbnailUrlItem.class).getValue());
+                    case TITLE -> {
+                        TitleItem titleItem = item.asType(TitleItem.class);
+                        this.withTitle(titleItem.getText());
+                        this.withUrl(titleItem.getUrl());
+                    }
+                }
+            });
+
             return this;
         }
 
