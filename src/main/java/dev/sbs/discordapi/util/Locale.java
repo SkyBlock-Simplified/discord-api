@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 @Getter
 @RequiredArgsConstructor
-public enum DiscordLocale {
+public enum Locale {
 
     INDONESIAN("id", "Bahasa Indonesia"),
     DANISH("da", "Dansk"),
