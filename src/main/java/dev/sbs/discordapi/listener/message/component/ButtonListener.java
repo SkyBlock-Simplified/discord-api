@@ -24,7 +24,9 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
 
     @Override
     protected Mono<Void> handlePaging(@NotNull ButtonContext context) {
-        return Mono.justOrEmpty(context.getResponse())
+        return Mono.justOrEmpty(context.getFollowup())
+            .map(Response.Cache.Followup::getResponse)
+            .switchIfEmpty(Mono.justOrEmpty(context.getResponse()))
             .flatMap(response -> {
                 Page currentPage = response.getHistoryHandler().getCurrentPage();
 
