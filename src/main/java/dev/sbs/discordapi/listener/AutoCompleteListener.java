@@ -8,17 +8,18 @@ import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCompleteEvent> {
 
-    public AutoCompleteListener(DiscordBot discordBot) {
+    public AutoCompleteListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
     @Override
-    public Publisher<Void> apply(ChatInputAutoCompleteEvent event) {
+    public Publisher<Void> apply(@NotNull ChatInputAutoCompleteEvent event) {
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))

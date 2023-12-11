@@ -41,13 +41,13 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
             });
     }
 
-    protected abstract ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup);
+    protected abstract @NotNull ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup);
 
-    protected abstract Snowflake getMessageId(@NotNull E event);
+    protected abstract @NotNull Snowflake getMessageId(@NotNull E event);
 
-    protected abstract Emoji getEmoji(@NotNull E event);
+    protected abstract @NotNull Emoji getEmoji(@NotNull E event);
 
-    protected abstract Snowflake getUserId(@NotNull E event);
+    protected abstract @NotNull Snowflake getUserId(@NotNull E event);
 
     private Mono<Void> handleInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))

@@ -17,8 +17,14 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     }
 
     @Override
-    protected SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component, @NotNull Optional<Response.Cache.Followup> followup) {
-        return SelectMenuContext.of(this.getDiscordBot(), event, response, component, followup);
+    protected @NotNull SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component, @NotNull Optional<Response.Cache.Followup> followup) {
+        return SelectMenuContext.of(
+            this.getDiscordBot(),
+            event,
+            response,
+            component,
+            followup
+        );
     }
 
     @Override

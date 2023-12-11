@@ -36,7 +36,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .flatMap(entry -> this.handleEvent(event, entry, entry.findFollowup(event.getMessageId())));
     }
 
-    protected abstract C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup);
+    protected abstract @NotNull C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup);
 
     /**
      * Handle paging and component interaction for followups.

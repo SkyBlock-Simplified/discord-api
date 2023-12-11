@@ -18,8 +18,14 @@ public final class ButtonListener extends ComponentListener<ButtonInteractionEve
     }
 
     @Override
-    protected ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component, @NotNull Optional<Response.Cache.Followup> followup) {
-        return ButtonContext.of(this.getDiscordBot(), event, response, component, followup);
+    protected @NotNull ButtonContext getContext(@NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button component, @NotNull Optional<Response.Cache.Followup> followup) {
+        return ButtonContext.of(
+            this.getDiscordBot(),
+            event,
+            response,
+            component,
+            followup
+        );
     }
 
     @Override

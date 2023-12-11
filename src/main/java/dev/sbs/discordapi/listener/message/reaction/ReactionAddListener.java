@@ -19,22 +19,28 @@ public final class ReactionAddListener extends ReactionListener<ReactionAddEvent
     }
 
     @Override
-    protected ReactionContext getContext(@NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
-        return ReactionContext.ofAdd(this.getDiscordBot(), event, cachedMessage, emoji, followup);
+    protected @NotNull ReactionContext getContext(@NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
+        return ReactionContext.ofAdd(
+            this.getDiscordBot(),
+            event,
+            cachedMessage,
+            emoji,
+            followup
+        );
     }
 
     @Override
-    protected Snowflake getMessageId(@NotNull ReactionAddEvent event) {
+    protected @NotNull Snowflake getMessageId(@NotNull ReactionAddEvent event) {
         return event.getMessageId();
     }
 
     @Override
-    protected Emoji getEmoji(@NotNull ReactionAddEvent event) {
+    protected @NotNull Emoji getEmoji(@NotNull ReactionAddEvent event) {
         return Emoji.of(event.getEmoji());
     }
 
     @Override
-    protected Snowflake getUserId(@NotNull ReactionAddEvent event) {
+    protected @NotNull Snowflake getUserId(@NotNull ReactionAddEvent event) {
         return event.getUserId();
     }
 

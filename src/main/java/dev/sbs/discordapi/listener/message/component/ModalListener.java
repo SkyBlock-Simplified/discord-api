@@ -27,8 +27,14 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<Response.Cache.Followup> followup) {
-        return ModalContext.of(this.getDiscordBot(), event, response, component, followup);
+    protected @NotNull ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<Response.Cache.Followup> followup) {
+        return ModalContext.of(
+            this.getDiscordBot(),
+            event,
+            response,
+            component,
+            followup
+        );
     }
 
     @Override

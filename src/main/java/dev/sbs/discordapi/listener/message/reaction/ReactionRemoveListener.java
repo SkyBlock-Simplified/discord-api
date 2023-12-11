@@ -19,22 +19,28 @@ public final class ReactionRemoveListener extends ReactionListener<ReactionRemov
     }
 
     @Override
-    protected ReactionContext getContext(@NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
-        return ReactionContext.ofRemove(this.getDiscordBot(), event, cachedMessage, emoji, followup);
+    protected @NotNull ReactionContext getContext(@NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
+        return ReactionContext.ofRemove(
+            this.getDiscordBot(),
+            event,
+            cachedMessage,
+            emoji,
+            followup
+        );
     }
 
     @Override
-    protected Snowflake getMessageId(@NotNull ReactionRemoveEvent event) {
+    protected @NotNull Snowflake getMessageId(@NotNull ReactionRemoveEvent event) {
         return event.getMessageId();
     }
 
     @Override
-    protected Emoji getEmoji(@NotNull ReactionRemoveEvent event) {
+    protected @NotNull Emoji getEmoji(@NotNull ReactionRemoveEvent event) {
         return Emoji.of(event.getEmoji());
     }
 
     @Override
-    protected Snowflake getUserId(@NotNull ReactionRemoveEvent event) {
+    protected @NotNull Snowflake getUserId(@NotNull ReactionRemoveEvent event) {
         return event.getUserId();
     }
 
