@@ -211,7 +211,7 @@ public final class DiscordConfig extends YamlConfig {
             return this;
         }
 
-        public Builder withCommands(@NotNull Iterable<Class<CommandReference>> commands) {
+        public Builder withCommands(@NotNull Iterable<Class<? extends CommandReference>> commands) {
             commands.forEach(this.commands::add);
             return this;
         }
