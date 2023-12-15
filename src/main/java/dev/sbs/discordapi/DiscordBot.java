@@ -12,6 +12,7 @@ import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
 import dev.sbs.discordapi.listener.command.UserCommandListener;
+import dev.sbs.discordapi.listener.message.MessageCreateListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
@@ -37,6 +38,7 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
@@ -168,6 +170,7 @@ public class DiscordBot {
                         eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
                         eventDispatcher.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)),
                         eventDispatcher.on(UserInteractionEvent.class, new UserCommandListener(this)),
+                        eventDispatcher.on(MessageCreateEvent.class, new MessageCreateListener(this)),
                         eventDispatcher.on(MessageInteractionEvent.class, new MessageCommandListener(this)),
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
                         eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),

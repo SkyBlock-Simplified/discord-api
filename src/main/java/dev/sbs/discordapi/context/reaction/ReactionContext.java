@@ -58,7 +58,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
     default Mono<Void> removeReactions() {
         return this.getMessage()
             .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseFunction(entry -> entry.updateResponse(
+            .then(this.withResponseEntry(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
@@ -77,7 +77,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
     default Mono<Void> removeReaction() {
         return this.getMessage()
             .flatMap(message -> message.removeReactions(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseFunction(entry -> entry.updateResponse(
+            .then(this.withResponseEntry(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
@@ -100,7 +100,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
     default Mono<Void> removeSelfReaction() {
         return this.getMessage()
             .flatMap(message -> message.removeSelfReaction(this.getEmoji().getD4jReaction()))
-            .then(this.withResponseFunction(entry -> entry.updateResponse(
+            .then(this.withResponseEntry(entry -> entry.updateResponse(
                 entry.getResponse()
                     .mutate()
                     .editPage(
@@ -116,7 +116,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
             )));
     }
 
-    static ReactionContext ofAdd(@NotNull DiscordBot discordBot, @NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
+    static @NotNull ReactionContext ofAdd(@NotNull DiscordBot discordBot, @NotNull ReactionAddEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
         return new AddImpl(
             discordBot,
             event,
@@ -126,7 +126,7 @@ public interface ReactionContext extends MessageContext<MessageEvent> {
         );
     }
 
-    static ReactionContext ofRemove(@NotNull DiscordBot discordBot, @NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
+    static @NotNull ReactionContext ofRemove(@NotNull DiscordBot discordBot, @NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
         return new RemoveImpl(
             discordBot,
             event,

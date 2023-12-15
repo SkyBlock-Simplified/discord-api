@@ -26,6 +26,7 @@ import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.type.Item;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -36,6 +37,7 @@ import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
+import discord4j.discordjson.Id;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
@@ -70,11 +72,11 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Response implements Paging<Page> {
 
+    private static Function<MessageContext<MessageCreateEvent>, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
     private final long buildTime = System.currentTimeMillis();
     private final @NotNull UUID uniqueId;
     private final @NotNull Optional<Snowflake> referenceId;
     private final @NotNull Scheduler reactorScheduler;
-    private final boolean replyMention;
     private final int timeToLive;
     @Getter(AccessLevel.NONE)
     private final @NotNull Predicate<User> interactable;
@@ -82,6 +84,7 @@ public class Response implements Paging<Page> {
     private final boolean ephemeral;
     private final @NotNull HistoryHandler<Page, String> historyHandler;
     private final @NotNull ConcurrentList<Attachment> attachments;
+    private final Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction;
     @Getter(AccessLevel.NONE)
     private ConcurrentList<LayoutComponent<ActionComponent>> cachedPageComponents = Concurrent.newUnmodifiableList();
 
@@ -116,7 +119,6 @@ public class Response implements Paging<Page> {
         Response response = (Response) o;
 
         return new EqualsBuilder()
-            .append(this.isReplyMention(), response.isReplyMention())
             .append(this.getTimeToLive(), response.getTimeToLive())
             .append(this.interactable, response.interactable)
             .append(this.getAttachments(), response.getAttachments())
@@ -137,7 +139,6 @@ public class Response implements Paging<Page> {
             .withAttachments(response.getAttachments())
             .withReference(response.getReferenceId())
             .withReactorScheduler(response.getReactorScheduler())
-            .replyMention(response.isReplyMention())
             .withTimeToLive(response.getTimeToLive())
             .isInteractable(response.interactable)
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
@@ -340,8 +341,9 @@ public class Response implements Paging<Page> {
 
     public MessageCreateSpec getD4jCreateSpec() {
         return MessageCreateSpec.builder()
+            .nonce(this.getUniqueId().toString().substring(0, 25))
             .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .allowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
+            .allowedMentions(AllowedMentions.suppressEveryone())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
@@ -351,8 +353,9 @@ public class Response implements Paging<Page> {
 
     public MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
         return MessageCreateMono.of(channel)
+            .withNonce(this.getUniqueId().toString().substring(0, 25))
             .withContent(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .withAllowedMentions(AllowedMentions.suppressEveryone().mutate().repliedUser(this.isReplyMention()).build())
+            .withAllowedMentions(AllowedMentions.suppressEveryone())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
             .withFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .withComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
@@ -452,7 +455,6 @@ public class Response implements Paging<Page> {
             .append(this.getAttachments())
             .append(this.getReferenceId())
             .append(this.getReactorScheduler())
-            .append(this.isReplyMention())
             .append(this.getTimeToLive())
             .append(this.interactable)
             .append(this.isRenderingPagingComponents())
@@ -476,13 +478,13 @@ public class Response implements Paging<Page> {
         private Optional<Snowflake> referenceId = Optional.empty();
         @BuildFlag(required = true)
         private Scheduler reactorScheduler = Schedulers.boundedElastic();
-        private boolean replyMention;
         private int timeToLive = 10;
         @BuildFlag(required = true)
         private Predicate<User> interactable = __ -> true;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
         private Optional<String> defaultPage = Optional.empty();
+        private Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction = Optional.empty();
 
         // Current Page/Item History
         private ConcurrentList<String> pageHistory = Concurrent.newList();
@@ -601,19 +603,21 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Sets if the {@link Response} should mention the author of the specified {@link #withReference}.
+         * Sets the interaction to execute when the {@link Response} is known to exist.
+         *
+         * @param interaction The interaction function.
          */
-        public Builder replyMention() {
-            return this.replyMention(true);
+        public Builder onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
+            return this.onCreate(Optional.ofNullable(interaction));
         }
 
         /**
-         * Sets if the {@link Response} should mention the author of the specified {@link #withReference}.
+         * Sets the interaction to execute when the {@link Response} is known to exist.
          *
-         * @param mention True to mention the user in the response.
+         * @param interaction The interaction function.
          */
-        public Builder replyMention(boolean mention) {
-            this.replyMention = mention;
+        public Builder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
+            this.interaction = interaction;
             return this;
         }
 
@@ -841,7 +845,6 @@ public class Response implements Paging<Page> {
                 this.uniqueId,
                 this.referenceId,
                 this.reactorScheduler,
-                this.replyMention,
                 this.timeToLive,
                 this.interactable,
                 this.renderingPagingComponents,
@@ -851,7 +854,8 @@ public class Response implements Paging<Page> {
                     .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withHistoryTransformer(page -> page.getOption().getValue())
                     .build(),
-                this.attachments
+                this.attachments,
+                this.interaction.orElse(NOOP_HANDLER)
             );
 
             // First Page
@@ -959,6 +963,10 @@ public class Response implements Paging<Page> {
 
             public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Snowflake userId) {
                 return this.getUserId().equals(userId) && (this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent());
+            }
+
+            public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Id userId) {
+                return this.getUserId().asLong() == userId.asLong() && (this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent());
             }
 
             /**

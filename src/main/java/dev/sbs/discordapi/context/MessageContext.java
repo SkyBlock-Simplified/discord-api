@@ -1,22 +1,40 @@
 package dev.sbs.discordapi.context;
 
+import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 public interface MessageContext<T extends Event> extends EventContext<T> {
 
-    Mono<Message> discordBuildFollowup(@NotNull Response response);
+    default Mono<Message> discordBuildFollowup(@NotNull Response response) {
+        return this.discordBuildMessage(
+            response.mutate()
+                .withReference(this.getMessageId())
+                .build()
+        );
+    }
 
-    Mono<Void> discordDeleteFollowup(@NotNull String identifier);
+    default Mono<Void> discordDeleteFollowup(@NotNull String identifier) {
+        return Mono.justOrEmpty(this.getFollowup(identifier))
+            .flatMap(followup -> this.getChannel().flatMap(channel -> channel.getMessageById(followup.getMessageId())))
+            .flatMap(Message::delete);
+    }
 
     default Mono<Message> discordEditFollowup(@NotNull Response response) {
         return Mono.justOrEmpty(this.getFollowup())
@@ -24,7 +42,16 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             .publishOn(response.getReactorScheduler());
     }
 
-    Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response);
+    default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
+        return Mono.justOrEmpty(this.getFollowup(identifier))
+            .flatMap(followup -> this.discordEditMessage(
+                followup.getMessageId(),
+                response.mutate()
+                    .withReference(this.getMessageId())
+                    .build()
+            ))
+            .publishOn(response.getReactorScheduler());
+    }
 
     default Mono<Message> discordEditMessage(@NotNull Response response) {
         return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
@@ -172,10 +199,61 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
     }
 
-    default Mono<Void> withResponseFunction(@NotNull Function<Response.Cache.Entry, Mono<Response.Cache.Entry>> function) {
+    default Mono<Void> withResponseEntry(@NotNull Function<Response.Cache.Entry, Mono<Response.Cache.Entry>> function) {
         return Mono.just(this.getResponseCacheEntry())
             .flatMap(function)
             .then();
+    }
+
+    static @NotNull Create ofCreate(@NotNull DiscordBot discordBot, @NotNull MessageCreateEvent event, @NotNull Response cachedMessage, @NotNull Optional<Response.Cache.Followup> followup) {
+        return new Create(
+            discordBot,
+            event,
+            cachedMessage.getUniqueId(),
+            followup
+        );
+    }
+
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    class Create implements MessageContext<MessageCreateEvent> {
+
+        private final @NotNull DiscordBot discordBot;
+        private final @NotNull MessageCreateEvent event;
+        private final @NotNull UUID responseId;
+        private final @NotNull User interactUser = new User(this.discordBot.getGateway(), this.event.getMessage().getUserData());
+        private final @NotNull Optional<Response.Cache.Followup> followup;
+
+        @Override
+        public @NotNull Snowflake getChannelId() {
+            return this.getEvent().getMessage().getChannelId();
+        }
+
+        @Override
+        public Mono<Guild> getGuild() {
+            return this.getEvent().getGuild();
+        }
+
+        @Override
+        public Optional<Snowflake> getGuildId() {
+            return this.getEvent().getGuildId();
+        }
+
+        @Override
+        public @NotNull Snowflake getInteractUserId() {
+            return this.getInteractUser().getId();
+        }
+
+        @Override
+        public Mono<Message> getMessage() {
+            return Mono.just(this.getEvent().getMessage());
+        }
+
+        @Override
+        public Snowflake getMessageId() {
+            return this.getEvent().getMessage().getId();
+        }
+
     }
 
 }
