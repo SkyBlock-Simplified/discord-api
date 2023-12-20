@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.client.hypixel.exception.HypixelApiException;
-import dev.sbs.api.client.sbs.exception.SbsApiException;
+import dev.sbs.api.client.impl.hypixel.exception.HypixelApiException;
+import dev.sbs.api.client.impl.sbs.exception.SbsApiException;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;

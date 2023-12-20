@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.client.sbs.response.SkyBlockEmojisResponse;
+import dev.sbs.api.client.impl.sbs.response.SkyBlockEmojisResponse;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.SimplifiedException;
