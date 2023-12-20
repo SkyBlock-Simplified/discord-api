@@ -63,17 +63,17 @@ public final class DiscordErrorHandler extends DiscordReference {
                     .withFields(
                         Field.builder()
                             .withName("State")
-                            .withValue(sbsApiException.getResponse().getStatus().getState().getTitle())
+                            .withValue(sbsApiException.getStatus().getState().getTitle())
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Code")
-                            .withValue(String.valueOf(sbsApiException.getResponse().getStatus().getCode()))
+                            .withValue(String.valueOf(sbsApiException.getStatus().getCode()))
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Message")
-                            .withValue(sbsApiException.getResponse().getStatus().getMessage())
+                            .withValue(sbsApiException.getStatus().getMessage())
                             .isInline()
                             .build()
                     )
@@ -92,17 +92,17 @@ public final class DiscordErrorHandler extends DiscordReference {
                     .withFields(
                         Field.builder()
                             .withName("State")
-                            .withValue(hypixelApiException.getResponse().getStatus().getState().getTitle())
+                            .withValue(hypixelApiException.getStatus().getState().getTitle())
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Code")
-                            .withValue(String.valueOf(hypixelApiException.getResponse().getStatus().getCode()))
+                            .withValue(String.valueOf(hypixelApiException.getStatus().getCode()))
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Message")
-                            .withValue(hypixelApiException.getResponse().getStatus().getMessage())
+                            .withValue(hypixelApiException.getStatus().getMessage())
                             .isInline()
                             .build()
                     )
