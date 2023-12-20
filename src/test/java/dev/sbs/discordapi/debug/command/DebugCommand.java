@@ -38,7 +38,7 @@ public class DebugCommand extends SlashCommand {
     @NotNull
     @Override
     public String getDescription() {
-        return "Discord API Debugging";
+        return "Debug Discord API";
     }
 
     @Override
@@ -94,7 +94,6 @@ public class DebugCommand extends SlashCommand {
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
             Response.builder()
-                .replyMention()
                 .withTimeToLive(30)
                 /*.withAttachments(
                     Attachment.of(
@@ -289,7 +288,7 @@ public class DebugCommand extends SlashCommand {
                                 Button.builder()
                                     .withStyle(Button.Style.DANGER)
                                     .withEmoji(Emoji.of(769266796057985044L, "sip"))
-                                    .withLabel("FDelete")
+                                    .withLabel("FDelete 2")
                                     .onInteract(context -> context.deleteFollowup("followuptest"))
                                     .build()
                             )
@@ -301,7 +300,7 @@ public class DebugCommand extends SlashCommand {
     }
 
     private Mono<Void> editPage(MessageContext<?> context, Function<Page.Builder, Page.Builder> currentPage) {
-        return context.withResponseFunction(entry -> entry.updateResponse(
+        return context.withResponseEntry(entry -> entry.updateResponse(
             context.getResponse()
                 .mutate()
                 .editPage(
