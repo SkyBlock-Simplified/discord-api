@@ -23,34 +23,6 @@ import java.util.UUID;
 
 public interface ReactionContext extends MessageContext<MessageEvent> {
 
-    @Override
-    default Mono<Message> discordBuildFollowup(@NotNull Response response) {
-        return this.discordBuildMessage(
-            response.mutate()
-                .withReference(this.getMessageId())
-                .build()
-        );
-    }
-
-    @Override
-    default Mono<Void> discordDeleteFollowup(@NotNull String identifier) {
-        return Mono.justOrEmpty(this.getFollowup(identifier))
-            .flatMap(followup -> this.getChannel().flatMap(channel -> channel.getMessageById(followup.getMessageId())))
-            .flatMap(Message::delete);
-    }
-
-    @Override
-    default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
-        return Mono.justOrEmpty(this.getFollowup(identifier))
-            .flatMap(followup -> this.discordEditMessage(
-                followup.getMessageId(),
-                response.mutate()
-                    .withReference(this.getMessageId())
-                    .build()
-            ))
-            .publishOn(response.getReactorScheduler());
-    }
-
     @NotNull Emoji getEmoji();
 
     @NotNull Type getType();
