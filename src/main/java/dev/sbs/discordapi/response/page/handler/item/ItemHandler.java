@@ -10,7 +10,7 @@ import dev.sbs.api.util.collection.sort.SortOrder;
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.mutable.tuple.triple.Triple;
+import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;

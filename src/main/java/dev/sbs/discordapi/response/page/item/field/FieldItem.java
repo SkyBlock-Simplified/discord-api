@@ -6,7 +6,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.atomic.AtomicCollection;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.mutable.tuple.pair.Pair;
+import dev.sbs.api.util.mutable.pair.Pair;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;

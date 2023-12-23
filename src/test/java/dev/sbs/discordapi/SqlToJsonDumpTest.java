@@ -4,7 +4,7 @@ import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.data.sql.SqlConfig;
 import dev.sbs.api.util.helper.DataUtil;
-import dev.sbs.api.util.mutable.tuple.pair.Pair;
+import dev.sbs.api.util.mutable.pair.Pair;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.Table;

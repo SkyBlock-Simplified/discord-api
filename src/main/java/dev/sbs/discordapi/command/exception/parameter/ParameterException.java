@@ -2,7 +2,7 @@ package dev.sbs.discordapi.command.exception.parameter;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.mutable.tuple.triple.Triple;
+import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.discordapi.command.exception.CommandException;
 
 /**

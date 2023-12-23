@@ -5,7 +5,7 @@ import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.util.mutable.tuple.pair.Pair;
+import dev.sbs.api.util.mutable.pair.Pair;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
