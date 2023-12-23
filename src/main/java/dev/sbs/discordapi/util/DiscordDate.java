@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.util.date.RealDate;
+import dev.sbs.api.util.SimpleDate;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Optional;
 
-public class DiscordDate extends RealDate {
+public class DiscordDate extends SimpleDate {
 
     public static long DISCORD_EPOCH = 1420070400000L;
 
@@ -24,11 +24,11 @@ public class DiscordDate extends RealDate {
 
     // https://discord.com/developers/docs/reference#snowflakes
     public DiscordDate(@NotNull Snowflake snowflake) {
-        super((snowflake.asLong() >> 22) + DISCORD_EPOCH);
+        super(DISCORD_EPOCH + (snowflake.asLong() >> 22));
     }
 
-    public String asFormat(@NotNull Type type) {
-        return type.asFormat(this.getRealTime());
+    public @NotNull String toFormat(@NotNull Type type) {
+        return type.toFormat(this.getRealTime());
     }
 
     /**
@@ -36,6 +36,7 @@ public class DiscordDate extends RealDate {
      * <br><br>
      * All sample dates show Month before Day.
      */
+    @Getter
     public enum Type {
 
         /**
@@ -71,8 +72,8 @@ public class DiscordDate extends RealDate {
          */
         TIMESTAMP(Optional.empty());
 
-        @Getter private final Optional<String> format;
-        @Getter private final Optional<SimpleDateFormat> dateFormat;
+        private final Optional<String> format;
+        private final Optional<SimpleDateFormat> dateFormat;
 
         Type(@NotNull String format) {
             this(Optional.of(format));
@@ -91,7 +92,7 @@ public class DiscordDate extends RealDate {
             this.dateFormat = dateFormat.map(SimpleDateFormat::new);
         }
 
-        public String asFormat(long milliseconds) {
+        public @NotNull String toFormat(long milliseconds) {
             return this.getFormat().map(format -> String.format("<t:%s:%s>", milliseconds, format)).orElse(String.valueOf(milliseconds));
         }
 
