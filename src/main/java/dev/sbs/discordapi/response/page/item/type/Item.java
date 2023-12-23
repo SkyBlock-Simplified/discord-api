@@ -3,7 +3,7 @@ package dev.sbs.discordapi.response.page.item.type;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.data.tuple.triple.Triple;
+import dev.sbs.api.util.mutable.tuple.triple.Triple;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;

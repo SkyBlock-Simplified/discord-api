@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.util.SimpleDate;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.date.RealDate;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -51,8 +51,8 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
             .withName(this.getOption().getLabel())
             .withValue(
                 this.getValue()
-                    .map(RealDate::new)
-                    .map(RealDate::toString)
+                    .map(SimpleDate::new)
+                    .map(SimpleDate::toString)
                     .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
             )
             .isInline()

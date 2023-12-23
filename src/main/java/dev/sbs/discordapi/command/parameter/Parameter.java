@@ -1,13 +1,13 @@
 package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.Range;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.data.Range;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.impl.SlashCommand;
