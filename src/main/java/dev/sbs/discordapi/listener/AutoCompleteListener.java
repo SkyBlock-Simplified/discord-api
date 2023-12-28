@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.listener;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
@@ -25,38 +24,32 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
             .cast(SlashCommandReference.class)
-            .flatMap(slashCommand -> {
-                // Build Argument
-                Argument argument = slashCommand.getParameters()
+            .flatMap(slashCommand -> event.respondWithSuggestions(
+                slashCommand.getParameters()
                     .stream()
                     .filter(parameter -> parameter.getName().equals(event.getFocusedOption().getName()))
-                    .map(parameter -> new Argument(event.getInteraction(), parameter, event.getFocusedOption().getValue().orElseThrow()))
                     .findFirst()
-                    .orElseThrow();
-
-                // Build Context
-                AutoCompleteContext autoCompleteContext = AutoCompleteContext.of(
-                    this.getDiscordBot(),
-                    event,
-                    slashCommand,
-                    argument
-                );
-
-                // Build Choices
-                ConcurrentList<ApplicationCommandOptionChoiceData> choices = argument.getParameter()
-                    .getAutoComplete()
-                    .apply(autoCompleteContext)
-                    .stream()
-                    .map(entry -> ApplicationCommandOptionChoiceData.builder()
-                        .name(entry.getKey())
-                        .value(entry.getValue())
-                        .build()
-                    )
-                    .collect(Concurrent.toList());
-
-                // Apply AutoComplete
-                return event.respondWithSuggestions(choices);
-            });
+                    .map(parameter -> parameter.getAutoComplete()
+                        .apply(AutoCompleteContext.of(
+                            this.getDiscordBot(),
+                            event,
+                            slashCommand,
+                            new Argument(
+                                event.getInteraction(),
+                                parameter,
+                                event.getFocusedOption().getValue().orElseThrow()
+                            )
+                        ))
+                        .stream()
+                        .map(entry -> ApplicationCommandOptionChoiceData.builder()
+                            .name(entry.getKey())
+                            .value(entry.getValue())
+                            .build()
+                        )
+                        .map(ApplicationCommandOptionChoiceData.class::cast)
+                        .collect(Concurrent.toList()))
+                    .orElse(Concurrent.newList())
+            ));
     }
 
 }
