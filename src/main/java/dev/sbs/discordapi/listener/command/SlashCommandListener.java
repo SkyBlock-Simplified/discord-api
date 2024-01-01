@@ -24,24 +24,19 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
             .cast(SlashCommandReference.class)
-            .flatMap(command -> command.apply(
-                SlashCommandContext.of(
-                    this.getDiscordBot(),
-                    event,
-                    command,
-                    this.getCommandOptionData(
-                            command,
-                            event.getOptions()
-                        )
+            .flatMap(command -> command.apply(SlashCommandContext.of(
+                this.getDiscordBot(),
+                event,
+                command,
+                this.getCommandOptionData(command, event.getOptions())
+                    .stream()
+                    .flatMap(commandOption -> command.getParameters()
                         .stream()
-                        .flatMap(commandOption -> command.getParameters()
-                            .stream()
-                            .filter(parameter -> parameter.getName().equals(commandOption.getName()))
-                            .map(parameter -> new Argument(event.getInteraction(), parameter, commandOption.getValue().orElseThrow()))
-                        )
-                        .collect(Concurrent.toList())
-                )
-            ));
+                        .filter(parameter -> parameter.getName().equals(commandOption.getName()))
+                        .map(parameter -> new Argument(event.getInteraction(), parameter, commandOption.getValue().orElseThrow()))
+                    )
+                    .collect(Concurrent.toList())
+            )));
     }
 
 }
