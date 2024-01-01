@@ -8,10 +8,8 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Paging;
-import dev.sbs.discordapi.response.page.handler.item.CustomItemHandler;
-import dev.sbs.discordapi.response.page.handler.item.ItemHandler;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
+import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +22,12 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class PageItem implements Item, RenderItem, Paging<PageItem> {
+public final class PageItem implements FieldItem<ItemHandler<?>>, Paging<PageItem> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final @NotNull ItemHandler<?> itemHandler;
+    private final boolean inline;
+    private final @NotNull Optional<ItemHandler<?>> value;
 
     @Override
     public @NotNull PageItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
@@ -43,12 +42,13 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
         return builder()
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .withItemHandler(item.getItemHandler());
+            .withItemHandler(item.getValue().orElseThrow());
     }
 
     @Override
     public @NotNull ConcurrentList<PageItem> getPages() {
-        return this.getItemHandler()
+        return this.getValue()
+            .orElseThrow()
             .getItems()
             .stream()
             .filter(PageItem.class::isInstance)
@@ -58,12 +58,8 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
     }
 
     @Override
-    public @NotNull Field getRenderField() {
-        return Field.builder()
-            .withName(this.getOption().getLabel())
-            .withValue("Goto page.")
-            .isInline()
-            .build();
+    public @NotNull String getRenderValue() {
+        return "Goto page.";
     }
 
     @Override
@@ -75,17 +71,13 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
         return from(this);
     }
 
-    @Override
-    public boolean isSingular() {
-        return false;
-    }
-
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<PageItem> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
-        private ItemHandler<?> itemHandler = CustomItemHandler.builder(Item.class).build();
+        private boolean inline;
+        private ItemHandler<?> itemHandler = ItemHandler.builder(Item.class).build();
 
         /**
          * Sets the {@link Item} as editable.
@@ -100,6 +92,23 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
          * @param editable The value of the author item.
          */
         public Builder isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -227,7 +236,8 @@ public final class PageItem implements Item, RenderItem, Paging<PageItem> {
             return new PageItem(
                 this.optionBuilder.build(),
                 this.editable,
-                this.itemHandler
+                this.inline,
+                Optional.of(this.itemHandler)
             );
         }
 

@@ -23,7 +23,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
-import dev.sbs.discordapi.response.page.item.type.Item;
+import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
@@ -66,6 +66,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Getter
@@ -149,8 +150,9 @@ public class Response implements Paging<Page> {
 
     public boolean isCacheUpdateRequired() {
         return this.getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired();
+            this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().isCacheUpdateRequired();
     }
 
     public boolean isInteractable(@NotNull User user) {
@@ -159,8 +161,9 @@ public class Response implements Paging<Page> {
 
     public void setNoCacheUpdateRequired() {
         this.getHistoryHandler().setCacheUpdateRequired(false);
-        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
         this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().setCacheUpdateRequired(false);
     }
 
     public final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> getCachedPageComponents() {
@@ -216,7 +219,7 @@ public class Response implements Paging<Page> {
                 pageComponents.add(ActionRow.of(subPageBuilder.build()));
             }
 
-            if (this.getHistoryHandler().getCurrentPage().doesHaveItems()) {
+            if (this.getHistoryHandler().getCurrentPage().hasItems()) {
                 // Item List
                 if (this.getHistoryHandler().getCurrentPage().getItemHandler().getTotalItemPages() > 1) {
                     for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
@@ -231,18 +234,25 @@ public class Response implements Paging<Page> {
                     }
                 }
 
-                // Viewer/Editor
-                if (this.getHistoryHandler().getCurrentPage().getItemHandler().isViewerEnabled()) {
+                // Editor
+                if (this.getHistoryHandler().getCurrentPage().getItemHandler().isEditorEnabled()) {
                     pageComponents.add(ActionRow.of(
                         SelectMenu.builder()
                             .withPageType(SelectMenu.PageType.ITEM)
-                            .withPlaceholder("Select an item to view.")
+                            .withPlaceholder("Select an item to edit.")
                             .withOptions(
-                                this.getHistoryHandler()
-                                    .getCurrentPage()
-                                    .getItemHandler()
-                                    .getCachedItems()
-                                    .stream()
+                                Stream.concat(
+                                        this.getHistoryHandler()
+                                            .getCurrentPage()
+                                            .getItemHandler()
+                                            .getCachedStaticItems()
+                                            .stream(),
+                                        this.getHistoryHandler()
+                                            .getCurrentPage()
+                                            .getItemHandler()
+                                            .getCachedFieldItems()
+                                            .stream()
+                                    )
                                     .map(Item::getOption)
                                     .collect(Concurrent.toList())
                             )
@@ -283,7 +293,7 @@ public class Response implements Paging<Page> {
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(ListUtil.sizeOf(this.getHistoryHandler().getCurrentPage().getItemHandler().getSorters()) > 1));
+        this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().hasSorters()));
         this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
 
         // Labels
@@ -311,7 +321,8 @@ public class Response implements Paging<Page> {
                 this.getHistoryHandler()
                     .getCurrentPage()
                     .getItemHandler()
-                    .getCurrentSorter()
+                    .getSortHandler()
+                    .getCurrent()
                     .map(sorter -> sorter.getOption().getLabel())
                     .orElse("N/A")
             )
@@ -326,6 +337,7 @@ public class Response implements Paging<Page> {
                     this.getHistoryHandler()
                         .getCurrentPage()
                         .getItemHandler()
+                        .getSortHandler()
                         .isReversed() ? "Reversed" : "Normal"
                 )
                 .withEmoji(
@@ -333,6 +345,7 @@ public class Response implements Paging<Page> {
                         String.format("SORT_%s", this.getHistoryHandler()
                             .getCurrentPage()
                             .getItemHandler()
+                            .getSortHandler()
                             .isReversed() ? "ASCENDING" : "DESCENDING")
                     )
                 )
@@ -414,30 +427,20 @@ public class Response implements Paging<Page> {
         ConcurrentList<Embed> embeds = Concurrent.newList(this.getHistoryHandler().getCurrentPage().getEmbeds());
 
         // Handle Item List
-        if (this.getHistoryHandler().getCurrentPage().doesHaveItems()) {
+        if (this.getHistoryHandler().getCurrentPage().hasItems()) {
             embeds.add(
                 Embed.builder()
-                    .withFields(
-                        this.getHistoryHandler()
-                            .getCurrentPage()
-                            .getItemHandler()
-                            .getStyle()
-                            .getPageItems(
-                                this.getHistoryHandler()
-                                    .getCurrentPage()
-                                    .getItemHandler()
-                                    .getColumnNames(),
-                                this.getHistoryHandler()
-                                    .getCurrentPage()
-                                    .getItemHandler()
-                                    .getCachedItems()
-                            )
-                    )
                     .withItems(
                         this.getHistoryHandler()
                             .getCurrentPage()
                             .getItemHandler()
-                            .getCachedCustomItems()
+                            .getCachedStaticItems()
+                    )
+                    .withFields(
+                        this.getHistoryHandler()
+                            .getCurrentPage()
+                            .getItemHandler()
+                            .getRenderFields()
                     )
                     .build()
             );
@@ -469,17 +472,17 @@ public class Response implements Paging<Page> {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Response> {
 
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private UUID uniqueId = UUID.randomUUID();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Attachment> attachments = Concurrent.newList();
         private boolean inlineItems;
         private Optional<Snowflake> referenceId = Optional.empty();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Scheduler reactorScheduler = Schedulers.boundedElastic();
         private int timeToLive = 10;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Predicate<User> interactable = __ -> true;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
