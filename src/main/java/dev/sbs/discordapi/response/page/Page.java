@@ -4,7 +4,6 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
@@ -13,10 +12,9 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
-import dev.sbs.discordapi.response.page.handler.item.CustomItemHandler;
-import dev.sbs.discordapi.response.page.handler.item.ItemHandler;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
+import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.PageItem;
-import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -66,12 +64,12 @@ public class Page implements Paging<Page> {
             .build();
     }
 
-    public final boolean doesHaveItems() {
-        return ListUtil.notEmpty(this.getItemHandler().getItems());
+    public final boolean hasItems() {
+        return this.getItemHandler().getItems().notEmpty();
     }
 
-    public final boolean doesNotHaveItems() {
-        return !this.doesHaveItems();
+    public final boolean hasNoItems() {
+        return !this.hasItems();
     }
 
     /**
@@ -146,7 +144,7 @@ public class Page implements Paging<Page> {
         private final ConcurrentList<Emoji> reactions = Concurrent.newList();
         private Optional<String> content = Optional.empty();
         private Optional<SelectMenu.Option> option = Optional.empty();
-        private ItemHandler<?> itemHandler = CustomItemHandler.builder(Item.class).build();
+        private ItemHandler<?> itemHandler = ItemHandler.builder(Item.class).build();
 
         /**
          * Clear all but preservable components from {@link Page}.
