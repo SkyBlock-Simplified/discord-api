@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.component.interaction;
 
-import dev.sbs.api.util.builder.Builder;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
@@ -39,7 +39,12 @@ public final class Modal extends Component implements IdentifiableComponent, Int
     private final @NotNull String identifier;
     private final @NotNull Optional<String> title;
     private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
+    private final @NotNull PageType pageType;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
+
+    public static @NotNull Builder builder() {
+        return new Builder(UUID.randomUUID().toString());
+    }
 
     /**
      * Finds an existing {@link ActionComponent}.
@@ -49,7 +54,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
      * @param value The value to match with.
      * @return The matching component, if it exists.
      */
-    public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+    public <S, A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
         return this.getComponents()
             .stream()
             .flatMap(layoutComponent -> layoutComponent.getComponents()
@@ -67,18 +72,19 @@ public final class Modal extends Component implements IdentifiableComponent, Int
      * @param identifier The identifier to search for.
      * @return The matching component, if it exists.
      */
-    public <A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
+    public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
         return this.findComponent(tClass, IdentifiableComponent::getIdentifier, identifier);
     }
 
-    public static ModalBuilder from(@NotNull Modal modal) {
-        return new ModalBuilder(modal.getIdentifier())
+    public static @NotNull Builder from(@NotNull Modal modal) {
+        return new Builder(modal.getIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
+            .withPageType(modal.getPageType())
             .onInteract(modal.getInteraction());
     }
 
-    public InteractionPresentModalSpec getD4jPresentSpec() {
+    public @NotNull InteractionPresentModalSpec getD4jPresentSpec() {
         return InteractionPresentModalSpec.builder()
             .customId(this.getIdentifier())
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
@@ -91,26 +97,24 @@ public final class Modal extends Component implements IdentifiableComponent, Int
         return false;
     }
 
-    public static ModalBuilder builder() {
-        return new ModalBuilder(UUID.randomUUID().toString());
-    }
-
-    public ModalBuilder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class ModalBuilder implements Builder<Modal> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<Modal> {
 
         private final String identifier;
         private Optional<String> title = Optional.empty();
         private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
+        @BuildFlag(nonNull = true)
+        private PageType pageType = PageType.NONE;
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
          * Clear all but preservable components from {@link Modal}.
          */
-        public ModalBuilder clearComponents() {
+        public Builder clearComponents() {
             return this.clearComponents(true);
         }
 
@@ -119,7 +123,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param enforcePreserve True to leave preservable components.
          */
-        public ModalBuilder clearComponents(boolean enforcePreserve) {
+        public Builder clearComponents(boolean enforcePreserve) {
             // Remove Possibly Preserved Components
             this.components.stream()
                 .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
@@ -141,7 +145,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param actionComponent The component to edit.
          */
-        public ModalBuilder editComponent(@NotNull ActionComponent actionComponent) {
+        public Builder editComponent(@NotNull ActionComponent actionComponent) {
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -181,7 +185,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param interaction The interaction function.
          */
-        public ModalBuilder onInteract(@Nullable Function<ModalContext, Mono<Void>> interaction) {
+        public Builder onInteract(@Nullable Function<ModalContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
@@ -190,12 +194,12 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param interaction The interaction function.
          */
-        public ModalBuilder onInteract(@NotNull Optional<Function<ModalContext, Mono<Void>>> interaction) {
+        public Builder onInteract(@NotNull Optional<Function<ModalContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
             return this;
         }
 
-        public ModalBuilder updateComponents(@NotNull ModalSubmitInteractionEvent event) {
+        public Builder updateComponents(@NotNull ModalSubmitInteractionEvent event) {
             event.getComponents()
                 .stream()
                 .filter(discord4j.core.object.component.LayoutComponent.class::isInstance)
@@ -235,7 +239,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          * @param components Variable number of layout components to add.
          */
         @SuppressWarnings("all")
-        public ModalBuilder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
+        public Builder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -244,8 +248,18 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param components Collection of layout components to add.
          */
-        public ModalBuilder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
+        public Builder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
             components.forEach(this.components::add);
+            return this;
+        }
+
+        /**
+         * Sets the page type of the {@link TextInput}.
+         *
+         * @param pageType The page type of the text input.
+         */
+        public Builder withPageType(@NotNull PageType pageType) {
+            this.pageType = pageType;
             return this;
         }
 
@@ -254,7 +268,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param title The title of the modal.
          */
-        public ModalBuilder withTitle(@Nullable String title) {
+        public Builder withTitle(@Nullable String title) {
             return this.withTitle(Optional.ofNullable(title));
         }
 
@@ -263,7 +277,7 @@ public final class Modal extends Component implements IdentifiableComponent, Int
          *
          * @param title The title of the modal.
          */
-        public ModalBuilder withTitle(@NotNull Optional<String> title) {
+        public Builder withTitle(@NotNull Optional<String> title) {
             this.title = title;
             return this;
         }
@@ -274,9 +288,17 @@ public final class Modal extends Component implements IdentifiableComponent, Int
                 this.identifier,
                 this.title,
                 this.components,
+                this.pageType,
                 this.interaction.orElse(NOOP_HANDLER)
             );
         }
+
+    }
+
+    public enum PageType {
+
+        NONE,
+        SEARCH
 
     }
 

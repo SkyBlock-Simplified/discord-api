@@ -21,7 +21,7 @@ public interface ModalContext extends ComponentContext {
     @Override
     @NotNull Modal getComponent();
 
-    static ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<Response.Cache.Followup> followup) {
+    static @NotNull ModalContext of(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal modal, @NotNull Optional<Response.Cache.Followup> followup) {
         return new Impl(
             discordBot,
             event,
