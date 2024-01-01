@@ -170,11 +170,11 @@ public final class Parameter {
     public static final class Builder implements dev.sbs.api.util.builder.Builder<Parameter> {
 
         private final UUID uniqueId;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private String name;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private String description;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Type type;
         private boolean required = false;
         private Optional<Emoji> emoji = Optional.empty();
