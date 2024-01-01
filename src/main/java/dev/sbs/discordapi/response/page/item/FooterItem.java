@@ -6,7 +6,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
-import dev.sbs.discordapi.response.page.item.type.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

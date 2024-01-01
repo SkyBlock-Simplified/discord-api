@@ -58,7 +58,7 @@ public final class Author {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Author> {
 
-        @BuildFlag(required = true, limit = 256)
+        @BuildFlag(nonNull = true, limit = 256)
         private Optional<String> name = Optional.empty();
         private Optional<String> url = Optional.empty();
         private Optional<String> iconUrl = Optional.empty();

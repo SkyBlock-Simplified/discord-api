@@ -117,19 +117,19 @@ public final class Button extends ActionComponent implements InteractableCompone
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<Button> {
 
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private String identifier;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Style style = Style.UNKNOWN;
         private boolean disabled;
         private boolean preserved;
         private boolean deferEdit;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private PageType pageType = PageType.NONE;
         private Optional<Function<ButtonContext, Mono<Void>>> interaction = Optional.empty();
-        @BuildFlag(required = true, requireGroup = "face")
+        @BuildFlag(nonNull = true, group = "face")
         private Optional<Emoji> emoji = Optional.empty();
-        @BuildFlag(required = true, requireGroup = "face")
+        @BuildFlag(nonNull = true, group = "face")
         private Optional<String> label = Optional.empty();
         private Optional<String> url = Optional.empty();
 
