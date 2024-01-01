@@ -119,18 +119,18 @@ public final class DiscordConfig extends YamlConfig {
     public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordConfig> {
 
         // Config File
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private String fileName;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private File directory = SimplifiedApi.getCurrentDirectory();
         private ConcurrentList<String> header = Concurrent.newList();
 
         // Settings
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private DiscordEnvironment environment = DiscordEnvironment.DEVELOPMENT;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Optional<String> token = Optional.empty();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Optional<Long> mainGuildId = Optional.empty();
         private Optional<Long> debugChannelId = Optional.empty();
         private Optional<Class<? extends Model>> dataModel = Optional.empty();
@@ -140,15 +140,15 @@ public final class DiscordConfig extends YamlConfig {
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
         private ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private AllowedMentions allowedMentions = AllowedMentions.builder().build();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private IntentSet intents = IntentSet.nonPrivileged();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Function<ShardInfo, ClientPresence> clientPresence = __ -> ClientPresence.online();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private MemberRequestFilter memberRequestFilter = MemberRequestFilter.all();
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private Level logLevel = Level.WARN;
 
         // Events
