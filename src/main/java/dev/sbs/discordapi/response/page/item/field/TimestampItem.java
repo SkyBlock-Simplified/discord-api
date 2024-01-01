@@ -6,9 +6,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.RenderItem;
-import dev.sbs.discordapi.response.page.item.type.SingletonItem;
+import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.DiscordReference;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,10 +21,11 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
+public final class TimestampItem implements FieldItem<Instant> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
+    private final boolean inline;
     private final @NotNull Optional<Instant> value;
 
     @Override
@@ -46,31 +45,15 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
     }
 
     @Override
-    public @NotNull Field getRenderField() {
-        return Field.builder()
-            .withName(this.getOption().getLabel())
-            .withValue(
-                this.getValue()
-                    .map(SimpleDate::new)
-                    .map(SimpleDate::toString)
-                    .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
-            )
-            .isInline()
-            .build();
-    }
-
-    @Override
-    public @NotNull Type getType() {
-        return Type.FIELD;
+    public @NotNull String getRenderValue() {
+        return this.getValue()
+            .map(SimpleDate::new)
+            .map(SimpleDate::toString)
+            .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder mutate() {
         return from(this);
-    }
-
-    @Override
-    public boolean isSingular() {
-        return false;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -78,6 +61,7 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
+        private boolean inline;
         private Optional<Instant> value = Optional.empty();
 
         /**
@@ -93,6 +77,23 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
          * @param editable The value of the author item.
          */
         public Builder isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -229,6 +230,7 @@ public final class TimestampItem implements SingletonItem<Instant>, RenderItem {
             return new TimestampItem(
                 this.optionBuilder.build(),
                 this.editable,
+                this.inline,
                 this.value
             );
         }

@@ -1,11 +1,12 @@
-package dev.sbs.discordapi.response.page.item;
+package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.page.item.Item;
+import dev.sbs.discordapi.util.DiscordReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,28 +19,17 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class AuthorItem implements Item {
+public class StringItem implements FieldItem<String> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final @NotNull Optional<String> name;
-    private final @NotNull Optional<String> iconUrl;
-    private final @NotNull Optional<String> url;
+    private final boolean inline;
+    private final @NotNull Optional<String> value;
 
     @Override
-    public @NotNull AuthorItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
+    public @NotNull StringItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
         return this.mutate()
-            .withName(this.getName().map(value -> StringUtil.format(value, variables)))
-            .withIconUrl(this.getIconUrl().map(value -> StringUtil.format(value, variables)))
-            .withUrl(this.getUrl().map(value -> StringUtil.format(value, variables)))
-            .build();
-    }
-
-    public @NotNull Author asAuthor() {
-        return Author.builder()
-            .withName(this.getName())
-            .withUrl(this.getUrl())
-            .withIconUrl(this.getIconUrl())
+            .withValue(this.getValue().map(value -> StringUtil.format(value, variables)))
             .build();
     }
 
@@ -47,18 +37,16 @@ public final class AuthorItem implements Item {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    public static @NotNull Builder from(@NotNull AuthorItem item) {
+    public static @NotNull Builder from(@NotNull StringItem item) {
         return builder()
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .withName(item.getName())
-            .withIconUrl(item.getIconUrl())
-            .withUrl(item.getUrl());
+            .withValue(item.getValue());
     }
 
     @Override
-    public @NotNull Type getType() {
-        return Type.AUTHOR;
+    public @NotNull String getRenderValue() {
+        return this.getValue().orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder mutate() {
@@ -66,13 +54,12 @@ public final class AuthorItem implements Item {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<AuthorItem> {
+    public static final class Builder implements dev.sbs.api.util.builder.Builder<StringItem> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
-        private Optional<String> name = Optional.empty();
-        private Optional<String> iconUrl = Optional.empty();
-        private Optional<String> url = Optional.empty();
+        private boolean inline;
+        private Optional<String> value = Optional.empty();
 
         /**
          * Sets the {@link Item} as editable.
@@ -87,6 +74,23 @@ public final class AuthorItem implements Item {
          * @param editable The value of the author item.
          */
         public Builder isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -200,81 +204,41 @@ public final class AuthorItem implements Item {
         }
 
         /**
-         * Sets the icon url of the {@link AuthorItem}.
+         * Sets the selected value of the {@link StringItem}.
          *
-         * @param iconUrl The selected value of the menu item.
+         * @param value The value of the item.
          */
-        public Builder withIconUrl(@Nullable String iconUrl) {
-            return this.withIconUrl(Optional.ofNullable(iconUrl));
+        public Builder withValue(@Nullable String value) {
+            return this.withValue(Optional.ofNullable(value));
         }
 
         /**
-         * Sets the icon url of the {@link AuthorItem}.
+         * Sets the selected value of the {@link StringItem}.
          *
-         * @param iconUrl The selected value of the menu item.
+         * @param value The value of the item.
+         * @param args The objects used to format the value.
          */
-        public Builder withIconUrl(@NotNull Optional<String> iconUrl) {
-            this.iconUrl = iconUrl;
-            return this;
+        public Builder withValue(@PrintFormat @Nullable String value, @Nullable Object... args) {
+            return this.withValue(StringUtil.formatNullable(value, args));
         }
 
         /**
-         * Sets the name of the {@link AuthorItem}.
+         * Sets the selected value of the {@link StringItem}.
          *
-         * @param name The selected value of the menu item.
-         * @param args The objects used to format the label.
+         * @param value The value of the item.
          */
-        public Builder withName(@PrintFormat @Nullable String name, @Nullable Object... args) {
-            return this.withName(StringUtil.formatNullable(name, args));
-        }
-
-
-        /**
-         * Sets the name of the {@link AuthorItem}.
-         *
-         * @param name The selected value of the menu item.
-         */
-        public Builder withName(@Nullable String name) {
-            return this.withName(Optional.ofNullable(name));
-        }
-
-        /**
-         * Sets the name of the {@link AuthorItem}.
-         *
-         * @param name The selected value of the menu item.
-         */
-        public Builder withName(@NotNull Optional<String> name) {
-            this.name = name;
-            return this;
-        }
-
-        /**
-         * Sets the url of the {@link AuthorItem}.
-         *
-         * @param url The selected value of the menu item.
-         */
-        public Builder withUrl(@Nullable String url) {
-            return this.withUrl(Optional.ofNullable(url));
-        }
-
-        /**
-         * Sets the url of the {@link AuthorItem}.
-         *
-         * @param url The selected value of the menu item.
-         */
-        public Builder withUrl(@NotNull Optional<String> url) {
-            this.url = url;
+        public Builder withValue(@NotNull Optional<String> value) {
+            this.value = value;
             return this;
         }
 
         @Override
-        public @NotNull AuthorItem build() {
-            return new AuthorItem(
+        public @NotNull StringItem build() {
+            return new StringItem(
                 this.optionBuilder.build(),
                 this.editable,
-                this.name,
-                this.iconUrl,
-                this.url
+                this.inline,
+                this.value
             );
         }
 

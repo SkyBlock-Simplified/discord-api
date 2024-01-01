@@ -9,9 +9,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.RenderItem;
-import dev.sbs.discordapi.response.page.item.type.SingletonItem;
+import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.DiscordReference;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
@@ -29,10 +27,11 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-public final class ModelItem<T extends Model> implements SingletonItem<T>, RenderItem {
+public final class ModelItem<T extends Model> implements FieldItem<T> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
+    private final boolean inline;
     private final @NotNull Optional<T> value;
     private final @NotNull Class<T> modelClass;
     private final @NotNull ConcurrentList<T> options;
@@ -59,34 +58,21 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
     }
 
     @Override
-    public @NotNull Field getRenderField() {
-        return Field.builder()
-            .withName(
-                this.getValue()
-                    .flatMap(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
-                    .orElse(this.getOption().getLabel())
-            )
-            .withValue(
-                this.getValue()
-                    .map(this.getValueFunction())
-                    .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
-            )
-            .isInline()
-            .build();
+    public @NotNull String getRenderName() {
+        return this.getValue()
+            .flatMap(model -> this.getNameFunction().map(nameFunction -> nameFunction.apply(model)))
+            .orElse(this.getOption().getLabel());
     }
 
     @Override
-    public @NotNull Type getType() {
-        return Type.FIELD;
+    public @NotNull String getRenderValue() {
+        return this.getValue()
+            .map(this.getValueFunction())
+            .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder<T> mutate() {
         return from(this);
-    }
-
-    @Override
-    public boolean isSingular() {
-        return false;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -94,6 +80,7 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
+        private boolean inline;
         private final Class<T> modelClass;
         private final ConcurrentList<T> options = Concurrent.newList();
         private Optional<T> value = Optional.empty();
@@ -113,6 +100,23 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
          * @param editable The value of the author item.
          */
         public Builder<T> isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder<T> isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder<T> isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -303,6 +307,7 @@ public final class ModelItem<T extends Model> implements SingletonItem<T>, Rende
             return new ModelItem<>(
                 this.optionBuilder.build(),
                 this.editable,
+                this.inline,
                 this.value,
                 this.modelClass,
                 this.options,

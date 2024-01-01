@@ -7,9 +7,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.RenderItem;
-import dev.sbs.discordapi.response.page.item.type.SingletonItem;
+import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.util.DiscordReference;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,10 +22,11 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class NumberItem<T extends Number> implements SingletonItem<T>, RenderItem {
+public final class NumberItem<T extends Number> implements FieldItem<T> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
+    private final boolean inline;
     private final @NotNull Optional<T> value;
     private final @NotNull Class<T> numberClass;
     private final @NotNull ConcurrentList<T> options;
@@ -50,30 +49,14 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
     }
 
     @Override
-    public @NotNull Field getRenderField() {
-        return Field.builder()
-            .withName(this.getOption().getLabel())
-            .withValue(
-                this.getValue()
-                    .map(T::toString)
-                    .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
-            )
-            .isInline()
-            .build();
-    }
-
-    @Override
-    public @NotNull Type getType() {
-        return Type.FIELD;
+    public @NotNull String getRenderValue() {
+        return this.getValue()
+            .map(T::toString)
+            .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder<T> mutate() {
         return from(this);
-    }
-
-    @Override
-    public boolean isSingular() {
-        return false;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -81,6 +64,7 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
+        private boolean inline;
         private final Class<T> modelClass;
         private final ConcurrentList<T> options = Concurrent.newList();
         private Optional<T> value = Optional.empty();
@@ -98,6 +82,23 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
          * @param editable The value of the author item.
          */
         public Builder<T> isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder<T> isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder<T> isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -254,6 +255,7 @@ public final class NumberItem<T extends Number> implements SingletonItem<T>, Ren
             return new NumberItem<>(
                 this.optionBuilder.build(),
                 this.editable,
+                this.inline,
                 this.value,
                 this.modelClass,
                 this.options

@@ -5,8 +5,6 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.SingletonItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +17,7 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class ImageUrlItem implements SingletonItem<String> {
+public final class ImageUrlItem implements Item {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;

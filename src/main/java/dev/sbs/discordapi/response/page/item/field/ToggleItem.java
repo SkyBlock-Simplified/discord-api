@@ -5,8 +5,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.item.type.Item;
-import dev.sbs.discordapi.response.page.item.type.RenderItem;
+import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +18,12 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class ToggleItem implements Item, RenderItem {
+public final class ToggleItem implements FieldItem<Boolean> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;
-    private final boolean enabled;
+    private final boolean inline;
+    private final @NotNull Optional<Boolean> value;
 
     @Override
     public @NotNull ToggleItem applyVariables(@NotNull ConcurrentMap<String, Object> variables) {
@@ -38,30 +38,16 @@ public final class ToggleItem implements Item, RenderItem {
         return builder()
             .withOption(item.getOption())
             .isEditable(item.isEditable())
-            .isEnabled(item.isEnabled());
+            .isEnabled(item.getValue().orElse(false));
     }
 
     @Override
-    public @NotNull Field getRenderField() {
-        return Field.builder()
-            .withName(this.getOption().getLabel())
-            .withValue(String.valueOf(this.isEnabled()))
-            .isInline()
-            .build();
-    }
-
-    @Override
-    public @NotNull Type getType() {
-        return Type.FIELD;
+    public @NotNull String getRenderValue() {
+        return String.valueOf(this.getValue().orElse(false));
     }
 
     public @NotNull Builder mutate() {
         return from(this);
-    }
-
-    @Override
-    public boolean isSingular() {
-        return false;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -69,6 +55,7 @@ public final class ToggleItem implements Item, RenderItem {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
+        private boolean inline;
         private boolean enabled;
 
         /**
@@ -81,9 +68,26 @@ public final class ToggleItem implements Item, RenderItem {
         /**
          * Set the editable state of the {@link Item}.
          *
-         * @param editable The value of the author item.
+         * @param editable The editable state of the item.
          */
         public Builder isEditable(boolean editable) {
+            this.editable = editable;
+            return this;
+        }
+
+        /**
+         * Sets the {@link Item} as inline.
+         */
+        public Builder isInline() {
+            return this.isEditable(true);
+        }
+
+        /**
+         * Set the inline state of the {@link Item}.
+         *
+         * @param editable The inline state of the item.
+         */
+        public Builder isInline(boolean editable) {
             this.editable = editable;
             return this;
         }
@@ -235,7 +239,8 @@ public final class ToggleItem implements Item, RenderItem {
             return new ToggleItem(
                 this.optionBuilder.build(),
                 this.editable,
-                this.enabled
+                this.inline,
+                Optional.of(this.enabled)
             );
         }
 
