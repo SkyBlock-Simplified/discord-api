@@ -186,7 +186,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<SelectMenu> {
 
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private String identifier;
         private boolean disabled;
         private Optional<String> placeholder = Optional.empty();
@@ -196,7 +196,7 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean preserved;
         private boolean deferEdit;
-        @BuildFlag(required = true)
+        @BuildFlag(nonNull = true)
         private PageType pageType = PageType.NONE;
         private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
 
@@ -673,7 +673,6 @@ public final class SelectMenu extends ActionComponent implements InteractableCom
         
     }
 
-    @RequiredArgsConstructor
     public enum PageType {
 
         NONE,
