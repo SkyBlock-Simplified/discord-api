@@ -30,7 +30,7 @@ import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button extends ActionComponent implements InteractableComponent<ButtonContext>, PreservableComponent {
+public final class Button implements ActionComponent, InteractableComponent<ButtonContext>, PreservableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String identifier;

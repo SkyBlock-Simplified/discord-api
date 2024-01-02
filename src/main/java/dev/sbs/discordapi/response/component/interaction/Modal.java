@@ -33,7 +33,7 @@ import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Modal extends Component implements IdentifiableComponent, InteractableComponent<ModalContext> {
+public final class Modal implements Component, InteractableComponent<ModalContext> {
 
     private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String identifier;

@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput extends ActionComponent {
+public final class TextInput implements ActionComponent {
 
     private final @NotNull String identifier;
     private final @NotNull Style style;

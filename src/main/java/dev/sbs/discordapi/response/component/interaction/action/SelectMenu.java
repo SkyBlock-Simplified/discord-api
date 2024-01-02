@@ -38,7 +38,7 @@ import java.util.stream.StreamSupport;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu extends ActionComponent implements InteractableComponent<SelectMenuContext>, PreservableComponent {
+public final class SelectMenu implements ActionComponent, InteractableComponent<SelectMenuContext>, PreservableComponent {
 
     private final @NotNull String identifier;
     private final boolean disabled;
