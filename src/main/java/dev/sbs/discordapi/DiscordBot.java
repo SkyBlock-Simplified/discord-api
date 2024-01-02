@@ -120,8 +120,8 @@ public class DiscordBot {
 
                             log.info(
                                 "Database Connected. (Initialized in {}ms, Started in {}ms",
-                                SimplifiedApi.getSessionManager().getSession().getInitializationTime(),
-                                SimplifiedApi.getSessionManager().getSession().getStartupTime()
+                                SimplifiedApi.getSessionManager().getSession().getInitialization(),
+                                SimplifiedApi.getSessionManager().getSession().getStartup()
                             );
                             this.getConfig()
                                 .getDatabaseConnectedEvent()
