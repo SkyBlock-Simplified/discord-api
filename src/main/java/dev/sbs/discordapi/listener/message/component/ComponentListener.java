@@ -28,8 +28,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     public final Publisher<Void> apply(@NotNull E event) {
         return Flux.fromIterable(this.getDiscordBot().getResponseCache())
             .filter(entry -> !event.getInteraction().getUser().isBot()) // Ignore Bots
-            .filter(entry -> entry.matchesMessage(entry.getMessageId(), event.getInteraction().getUser().getId())) // Validate Message & User ID
-            .filter(entry -> entry.getResponse().isInteractable(event.getInteraction().getUser())) // Validate User
+            .filter(entry -> entry.matchesMessage(event.getMessageId(), event.getInteraction().getUser().getId())) // Validate Message & User ID
             .singleOrEmpty()
             .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
             .doOnNext(Response.Cache.Entry::setBusy)
@@ -96,7 +95,6 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         C context = this.getContext(event, entry.getResponse(), component, followup);
 
         return Mono.just(context)
-            .then(context.deferEdit())
             .then(Mono.defer(() -> this.handlePaging(context)))
             .checkpoint("ComponentListener#handlePagingInteraction Processing")
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
