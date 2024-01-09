@@ -139,28 +139,13 @@ public class DiscordBot {
                             .ofType(MessageChannel.class)
                             .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
                             .flatMap(message -> Mono.just(entry.getResponse())
-                                .flatMap(response -> {
-                                    // Remove All Reactions
-                                    Mono<?> handle = message.removeAllReactions();
-
-                                    // Save Page History
-                                    /*ConcurrentList<String> pageHistory = response.getHistoryHandler().getHistoryIdentifiers();
-                                    int currentItemPage = response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage();*/
-
-                                    // Remove Non-Preserved Components
-                                    Response editedResponse = response.mutate()
+                                .flatMap(response -> message.removeAllReactions().then(message.edit(
+                                    response.mutate()
                                         .clearAllComponents()
                                         .isRenderingPagingComponents(false)
-                                        .build();
-
-                                    // Traverse Page History
-                                    /*editedResponse.getHistoryHandler().gotoPage(pageHistory.removeFirst());
-                                    pageHistory.forEach(identifier -> editedResponse.getHistoryHandler().gotoSubPage(identifier));
-                                    editedResponse.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(currentItemPage);*/
-
-                                    // Update Message Components
-                                    return handle.then(message.edit(editedResponse.getD4jEditSpec()));
-                                })
+                                        .build()
+                                        .getD4jEditSpec()
+                                )))
                             )
                             .subscribe();
                     }), 0, 1, TimeUnit.SECONDS);
