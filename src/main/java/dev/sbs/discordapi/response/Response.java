@@ -20,10 +20,12 @@ import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.Item;
+import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
@@ -65,7 +67,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -79,8 +80,6 @@ public class Response implements Paging<Page> {
     private final @NotNull Optional<Snowflake> referenceId;
     private final @NotNull Scheduler reactorScheduler;
     private final int timeToLive;
-    @Getter(AccessLevel.NONE)
-    private final @NotNull Predicate<User> interactable;
     private final boolean renderingPagingComponents;
     private final boolean ephemeral;
     private final @NotNull HistoryHandler<Page, String> historyHandler;
@@ -121,7 +120,6 @@ public class Response implements Paging<Page> {
 
         return new EqualsBuilder()
             .append(this.getTimeToLive(), response.getTimeToLive())
-            .append(this.interactable, response.interactable)
             .append(this.getAttachments(), response.getAttachments())
             .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
             .append(this.isEphemeral(), response.isEphemeral())
@@ -141,7 +139,6 @@ public class Response implements Paging<Page> {
             .withReference(response.getReferenceId())
             .withReactorScheduler(response.getReactorScheduler())
             .withTimeToLive(response.getTimeToLive())
-            .isInteractable(response.interactable)
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral())
             .withPageHistory(response.getHistoryHandler().getHistoryIdentifiers())
@@ -153,10 +150,6 @@ public class Response implements Paging<Page> {
             this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().isCacheUpdateRequired();
-    }
-
-    public boolean isInteractable(@NotNull User user) {
-        return this.interactable.test(user);
     }
 
     public void setNoCacheUpdateRequired() {
@@ -236,6 +229,12 @@ public class Response implements Paging<Page> {
 
                 // Editor
                 if (this.getHistoryHandler().getCurrentPage().getItemHandler().isEditorEnabled()) {
+                    // Must Cache First
+                    ConcurrentList<FieldItem<?>> cachedFieldItems = this.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .getCachedFieldItems();
+
                     pageComponents.add(ActionRow.of(
                         SelectMenu.builder()
                             .withPageType(SelectMenu.PageType.ITEM)
@@ -247,11 +246,7 @@ public class Response implements Paging<Page> {
                                             .getItemHandler()
                                             .getCachedStaticItems()
                                             .stream(),
-                                        this.getHistoryHandler()
-                                            .getCurrentPage()
-                                            .getItemHandler()
-                                            .getCachedFieldItems()
-                                            .stream()
+                                        cachedFieldItems.stream()
                                     )
                                     .map(Item::getOption)
                                     .collect(Concurrent.toList())
@@ -294,44 +289,47 @@ public class Response implements Paging<Page> {
         this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
         this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().hasSorters()));
+        this.editPageButton(Button::getPageType, Button.PageType.SEARCH, Button.Builder::setEnabled);
         this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
 
         // Labels
         this.editPageButton(
             Button::getPageType,
             Button.PageType.INDEX,
-            builder -> builder.withLabel(
-                "%s / %s",
-                this.getHistoryHandler()
-                    .getCurrentPage()
-                    .getItemHandler()
-                    .getCurrentItemPage(),
-                this.getHistoryHandler()
-                    .getCurrentPage()
-                    .getItemHandler()
-                    .getTotalItemPages()
-            )
+            builder -> builder
+                .withLabel(
+                    "%s / %s",
+                    this.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .getCurrentItemPage(),
+                    this.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .getTotalItemPages()
+                )
         );
 
         this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
-            builder -> builder.withLabel(
-                "Sort: %s",
-                this.getHistoryHandler()
-                    .getCurrentPage()
-                    .getItemHandler()
-                    .getSortHandler()
-                    .getCurrent()
-                    .map(sorter -> sorter.getOption().getLabel())
-                    .orElse("N/A")
-            )
+            builder -> builder
+                .withLabel(
+                    "Sort: %s",
+                    this.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .getSortHandler()
+                        .getCurrent()
+                        .map(sorter -> sorter.getOption().getLabel())
+                        .orElse("N/A")
+                )
         );
 
         this.editPageButton(
             Button::getPageType,
             Button.PageType.ORDER,
-            builder -> builder
+            builder -> builder.setEnabled()
                 .withLabel(
                     "Order: %s",
                     this.getHistoryHandler()
@@ -428,6 +426,12 @@ public class Response implements Paging<Page> {
 
         // Handle Item List
         if (this.getHistoryHandler().getCurrentPage().hasItems()) {
+            // Must Cache First
+            ConcurrentList<Field> renderFields = this.getHistoryHandler()
+                .getCurrentPage()
+                .getItemHandler()
+                .getRenderFields();
+
             embeds.add(
                 Embed.builder()
                     .withItems(
@@ -436,12 +440,7 @@ public class Response implements Paging<Page> {
                             .getItemHandler()
                             .getCachedStaticItems()
                     )
-                    .withFields(
-                        this.getHistoryHandler()
-                            .getCurrentPage()
-                            .getItemHandler()
-                            .getRenderFields()
-                    )
+                    .withFields(renderFields)
                     .build()
             );
         }
@@ -459,7 +458,6 @@ public class Response implements Paging<Page> {
             .append(this.getReferenceId())
             .append(this.getReactorScheduler())
             .append(this.getTimeToLive())
-            .append(this.interactable)
             .append(this.isRenderingPagingComponents())
             .append(this.isEphemeral())
             .build();
@@ -482,8 +480,6 @@ public class Response implements Paging<Page> {
         @BuildFlag(nonNull = true)
         private Scheduler reactorScheduler = Schedulers.boundedElastic();
         private int timeToLive = 10;
-        @BuildFlag(nonNull = true)
-        private Predicate<User> interactable = __ -> true;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
         private Optional<String> defaultPage = Optional.empty();
@@ -562,30 +558,6 @@ public class Response implements Paging<Page> {
         public Builder isEphemeral(boolean value) {
             this.ephemeral = value;
             return this;
-        }
-
-        /**
-         * Sets the {@link Response} as user interactable.
-         */
-        public Builder isInteractable() {
-            return this.isInteractable(__ -> true);
-        }
-
-        /**
-         * Sets if the {@link Response} is user interactable.
-         *
-         * @param interactable Return true if interactable.
-         */
-        public Builder isInteractable(@NotNull Predicate<User> interactable) {
-            this.interactable = interactable;
-            return this;
-        }
-
-        /**
-         * Sets the {@link Response} as not user interactable.
-         */
-        public Builder isNotInteractable() {
-            return this.isInteractable(__ -> false);
         }
 
         /**
@@ -849,7 +821,6 @@ public class Response implements Paging<Page> {
                 this.referenceId,
                 this.reactorScheduler,
                 this.timeToLive,
-                this.interactable,
                 this.renderingPagingComponents,
                 this.ephemeral,
                 HistoryHandler.<Page, String>builder()

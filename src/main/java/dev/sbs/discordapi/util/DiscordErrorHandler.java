@@ -386,7 +386,6 @@ public final class DiscordErrorHandler extends DiscordReference {
 
         // Build User Error
         Response userErrorResponse = Response.builder()
-            .isNotInteractable()
             .isEphemeral(true)
             .withPages(
                 Page.builder()
@@ -422,7 +421,6 @@ public final class DiscordErrorHandler extends DiscordReference {
 
                             // Build Exception Response
                             Response logResponse = Response.builder()
-                                .isNotInteractable()
                                 .withException(exceptionContext.getException())
                                 .withPages(
                                     Page.builder()
