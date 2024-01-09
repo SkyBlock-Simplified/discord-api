@@ -7,8 +7,7 @@ import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiabl
 import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
-import dev.sbs.discordapi.command.exception.parameter.MissingParameterException;
+import dev.sbs.discordapi.command.exception.InvalidParameterException;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
@@ -43,28 +42,23 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
         for (Parameter parameter : this.getParameters()) {
             Optional<Argument> argument = commandContext.getArgument(parameter.getName());
 
-            if (argument.isEmpty()) {
-                if (parameter.isRequired())
-                    throw SimplifiedException.of(MissingParameterException.class)
-                        .addData("PARAMETER", parameter)
-                        .addData("MISSING", true)
-                        .build();
-            } else {
-                String value = argument.map(Argument::asString).get();
+            if (argument.isEmpty())
+                continue;
 
-                if (!parameter.getType().isValid(value))
-                    throw SimplifiedException.of(InvalidParameterException.class)
-                        .addData("PARAMETER", parameter)
-                        .addData("VALUE", value)
-                        .addData("MISSING", false)
-                        .build();
+            String value = argument.map(Argument::asString).get();
 
-                if (!parameter.isValid(value, commandContext))
-                    throw SimplifiedException.of(InvalidParameterException.class)
-                        .addData("PARAMETER", parameter)
-                        .addData("VALUE", value)
-                        .addData("MISSING", false)
-                        .build();
+            if (!parameter.getType().isValid(value)) {
+                throw SimplifiedException.of(InvalidParameterException.class)
+                    .addData("PARAMETER", parameter)
+                    .addData("VALUE", value)
+                    .build();
+            }
+
+            if (!parameter.isValid(value, commandContext)) {
+                throw SimplifiedException.of(InvalidParameterException.class)
+                    .addData("PARAMETER", parameter)
+                    .addData("VALUE", value)
+                    .build();
             }
         }
     }
