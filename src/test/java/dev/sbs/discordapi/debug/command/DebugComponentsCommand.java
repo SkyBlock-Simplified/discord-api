@@ -26,19 +26,20 @@ import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.function.Function;
 
 @CommandId("75f1762a-4672-48db-83d8-86d953645d08")
-public class DebugCommand extends SlashCommand {
+public class DebugComponentsCommand extends SlashCommand {
 
-    protected DebugCommand(@NotNull DiscordBot discordBot) {
+    protected DebugComponentsCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
     @NotNull
     @Override
     public String getDescription() {
-        return "Debug Discord API";
+        return "Debug Discord Components";
     }
 
     @Override
@@ -49,26 +50,17 @@ public class DebugCommand extends SlashCommand {
     @NotNull
     @Override
     public String getName() {
-        return "debug";
-    }
-
-    /*@NotNull
-    @Override
-    public Optional<Parent> getParent() {
-        return Optional.of(Parent.of(
-            "dtop",
-            "reee"
-        ));
+        return "components";
     }
 
     @NotNull
     @Override
-    public Optional<Group> getGroup() {
-        return Optional.of(Group.of(
-            "dgroup",
-            "reee"
+    public Optional<Parent> getParent() {
+        return Optional.of(Parent.of(
+            "debug",
+            "Debug Command"
         ));
-    }*/
+    }
 
     @Override
     public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
