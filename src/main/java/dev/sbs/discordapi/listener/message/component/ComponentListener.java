@@ -94,8 +94,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     protected final Mono<Void> handlePagingInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull T component, @NotNull Optional<Response.Cache.Followup> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
 
-        return Mono.just(context)
-            .then(Mono.defer(() -> this.handlePaging(context)))
+        return Mono.defer(() -> this.handlePaging(context))
             .checkpoint("ComponentListener#handlePagingInteraction Processing")
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
