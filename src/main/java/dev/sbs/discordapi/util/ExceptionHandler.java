@@ -1,16 +1,14 @@
 package dev.sbs.discordapi.util;
 
-import dev.sbs.api.client.impl.hypixel.exception.HypixelApiException;
-import dev.sbs.api.client.impl.sbs.exception.SbsApiException;
+import dev.sbs.api.client.exception.ApiException;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.mutable.pair.Pair;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
-import dev.sbs.discordapi.command.exception.parameter.ParameterException;
+import dev.sbs.discordapi.command.exception.InvalidParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
 import dev.sbs.discordapi.command.exception.user.UserInputException;
@@ -50,59 +48,30 @@ public final class ExceptionHandler extends DiscordReference {
     private @NotNull Optional<Embed> buildReactiveUserError(ExceptionContext<?> exceptionContext) {
         Optional<Embed> responseBuilder = Optional.empty();
 
-        if (exceptionContext.getException() instanceof SbsApiException sbsApiException) {
+        if (exceptionContext.getException() instanceof ApiException apiException) {
             responseBuilder = Optional.of(
                 Embed.builder()
                     .withAuthor(
                         Author.builder()
-                            .withName("Mojang Api Error")
+                            .withName("%s Api Error", apiException.getName())
                             .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                             .build()
                     )
-                    .withDescription(sbsApiException.getErrorResponse().getReason())
+                    .withDescription(apiException.getResponse().getReason())
                     .withFields(
                         Field.builder()
                             .withName("State")
-                            .withValue(sbsApiException.getStatus().getState().getTitle())
+                            .withValue(apiException.getStatus().getState().getTitle())
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Code")
-                            .withValue(String.valueOf(sbsApiException.getStatus().getCode()))
+                            .withValue(String.valueOf(apiException.getStatus().getCode()))
                             .isInline()
                             .build(),
                         Field.builder()
                             .withName("Message")
-                            .withValue(sbsApiException.getStatus().getMessage())
-                            .isInline()
-                            .build()
-                    )
-                    .build()
-            );
-        } else if (exceptionContext.getException() instanceof HypixelApiException hypixelApiException) {
-            responseBuilder = Optional.of(
-                Embed.builder()
-                    .withAuthor(
-                        Author.builder()
-                            .withName("Hypixel Api Error")
-                            .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
-                            .build()
-                    )
-                    .withDescription(hypixelApiException.getErrorResponse().getReason())
-                    .withFields(
-                        Field.builder()
-                            .withName("State")
-                            .withValue(hypixelApiException.getStatus().getState().getTitle())
-                            .isInline()
-                            .build(),
-                        Field.builder()
-                            .withName("Code")
-                            .withValue(String.valueOf(hypixelApiException.getStatus().getCode()))
-                            .isInline()
-                            .build(),
-                        Field.builder()
-                            .withName("Message")
-                            .withValue(hypixelApiException.getStatus().getMessage())
+                            .withValue(apiException.getStatus().getMessage())
                             .isInline()
                             .build()
                     )
@@ -139,21 +108,18 @@ public final class ExceptionHandler extends DiscordReference {
                     .withFields(userVerificationException)
                     .build()
             );
-        } else if (exceptionContext.getException() instanceof ParameterException parameterException) {
+        } else if (exceptionContext.getException() instanceof InvalidParameterException parameterException) {
             Parameter parameter = (Parameter) parameterException.getData().get("PARAMETER");
             String value = (String) parameterException.getData().get("VALUE");
-            boolean missing = (boolean) parameterException.getData().get("MISSING");
-            String missingDescription = "You did not provide a required parameter.";
-            String invalidDescription = "The provided argument does not validate against the expected parameter.";
 
             Embed.Builder builder = Embed.builder()
                 .withAuthor(
                     Author.builder()
-                        .withName("%s Parameter", (missing ? "Missing" : "Invalid"))
+                        .withName("Invalid Parameter")
                         .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
                         .build()
                 )
-                .withDescription(missing ? missingDescription : invalidDescription)
+                .withDescription("The provided argument does not validate against the expected parameter.")
                 .withFields(
                     Field.builder()
                         .withName("Parameter")
@@ -174,14 +140,11 @@ public final class ExceptionHandler extends DiscordReference {
                 .withField(
                     "Description",
                     parameter.getDescription()
-                );
-
-            if (!missing) {
-                builder.withField(
+                )
+                .withField(
                     "Argument",
                     value
                 );
-            }
 
             responseBuilder = Optional.of(builder.build());
         } else if (exceptionContext.getException() instanceof PermissionException permissionException) {
@@ -355,27 +318,25 @@ public final class ExceptionHandler extends DiscordReference {
         );
     }
 
-    public <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
+    public <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
         // Build Default Error Embed
         Pair<String, Embed> defaultError = this.buildDefaultError(exceptionContext);
 
-        // Handle Reactive Exceptions
-        Optional<Embed> reactiveError = this.buildReactiveUserError(exceptionContext);
+        // Handle User Only Errors
+        Optional<Embed> userReactiveError = this.buildReactiveUserError(exceptionContext);
 
         // Load User Error
-        Embed userError = reactiveError.orElse(defaultError.getRight());
+        Embed userError = userReactiveError.orElse(defaultError.getRight());
 
         // Modify Command Errors
-        if (exceptionContext.getException() instanceof CommandException) {
-            CommandContext<?> commandContext = (CommandContext<?>) exceptionContext.getEventContext();
-
+        if (exceptionContext.getEventContext() instanceof CommandContext<?> commandContext) {
             userError = userError.mutate()
                 .withTitle("Command :: %s", commandContext.getCommand().getName())
                 .build();
         }
 
         // Handle Notice
-        if (reactiveError.isEmpty()) {
+        if (userReactiveError.isEmpty()) {
             userError = userError.mutate()
                 .withField(
                     "Notice",
@@ -395,51 +356,52 @@ public final class ExceptionHandler extends DiscordReference {
             .build();
 
         // Send User Error Response & Log Exception Error
-        Mono<T> mono = exceptionContext.getEventContext()
-            .reply(userErrorResponse)
-            .then(
-                Mono.justOrEmpty(reactiveError).switchIfEmpty( // Do Not Log User Errors
-                    Mono.just(this.getDiscordBot().getMainGuild())
-                        .flatMap(guild -> guild.getChannelById(Snowflake.of(
-                            this.getDiscordBot()
-                                .getConfig()
-                                .getDebugChannelId()
-                                .orElse(-1L)
-                        )))
-                        .ofType(MessageChannel.class)
-                        .flatMap(messageChannel -> {
-                            // Get Message ID
-                            Optional<Snowflake> messageId;
+        Mono<Void> reply = exceptionContext.getEventContext() instanceof MessageContext ?
+            ((MessageContext<?>) exceptionContext.getEventContext()).followup(userErrorResponse) :
+            exceptionContext.reply(userErrorResponse);
 
-                            if (exceptionContext.getEventContext() instanceof MessageContext)
-                                messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
-                            else
-                                messageId = this.getDiscordBot()
-                                    .getResponseCache()
-                                    .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
-                                    .map(Response.Cache.Entry::getMessageId);
+        Mono<T> mono = reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
+            // Log to debug channel when it's not an expected reactive user error
+            Mono.just(this.getDiscordBot().getMainGuild())
+                .flatMap(guild -> guild.getChannelById(Snowflake.of(
+                    this.getDiscordBot()
+                        .getConfig()
+                        .getDebugChannelId()
+                        .orElse(-1L)
+                )))
+                .ofType(MessageChannel.class)
+                .flatMap(messageChannel -> {
+                    // Get Message ID
+                    Optional<Snowflake> messageId;
 
-                            // Build Exception Response
-                            Response logResponse = Response.builder()
-                                .withException(exceptionContext.getException())
-                                .withPages(
-                                    Page.builder()
-                                        .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
-                                        .build()
-                                )
-                                .build();
+                    if (exceptionContext.getEventContext() instanceof MessageContext)
+                        messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
+                    else
+                        messageId = this.getDiscordBot()
+                            .getResponseCache()
+                            .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
+                            .map(Response.Cache.Entry::getMessageId);
 
-                            return Mono.just(messageChannel)
-                                .publishOn(logResponse.getReactorScheduler())
-                                .flatMap(logResponse::getD4jCreateMono)
-                                .doOnNext(__ -> messageId.ifPresent(id -> this.getDiscordBot()
-                                    .getResponseCache()
-                                    .removeIf(entry -> entry.getMessageId().equals(id))
-                                ))
-                                .then(Mono.empty());
-                        })
-                )
-            )
+                    // Build Exception Response
+                    Response logResponse = Response.builder()
+                        .withException(exceptionContext.getException())
+                        .withPages(
+                            Page.builder()
+                                .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
+                                .build()
+                        )
+                        .build();
+
+                    return Mono.just(messageChannel)
+                        .publishOn(logResponse.getReactorScheduler())
+                        .flatMap(logResponse::getD4jCreateMono)
+                        .doOnNext(__ -> messageId.ifPresent(id -> this.getDiscordBot()
+                            .getResponseCache()
+                            .removeIf(entry -> entry.getMessageId().equals(id))
+                        ))
+                        .then(Mono.empty());
+                })
+            ))
             .then(Mono.empty());
 
         // Handle Uncaught Exception
