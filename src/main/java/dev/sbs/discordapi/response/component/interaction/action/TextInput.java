@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.helper.NumberUtil;
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -29,6 +31,8 @@ public final class TextInput implements ActionComponent {
     private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> value;
     private final @NotNull Optional<String> placeholder;
+    private final @NotNull SearchType searchType;
+    private final @NotNull Optional<Predicate<String>> validator;
     private final int minLength;
     private final int maxLength;
     private final boolean required;
@@ -43,17 +47,19 @@ public final class TextInput implements ActionComponent {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        TextInput textInput = (TextInput) o;
+        TextInput that = (TextInput) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), textInput.getIdentifier())
-            .append(this.getMinLength(), textInput.getMinLength())
-            .append(this.getMaxLength(), textInput.getMaxLength())
-            .append(this.isRequired(), textInput.isRequired())
-            .append(this.getStyle(), textInput.getStyle())
-            .append(this.getLabel(), textInput.getLabel())
-            .append(this.getValue(), textInput.getValue())
-            .append(this.getPlaceholder(), textInput.getPlaceholder())
+            .append(this.getIdentifier(), that.getIdentifier())
+            .append(this.getStyle(), that.getStyle())
+            .append(this.getLabel(), that.getLabel())
+            .append(this.getValue(), that.getValue())
+            .append(this.getPlaceholder(), that.getPlaceholder())
+            .append(this.getSearchType(), that.getSearchType())
+            .append(this.getValidator(), that.getValidator())
+            .append(this.getMinLength(), that.getMinLength())
+            .append(this.getMaxLength(), that.getMaxLength())
+            .append(this.isRequired(), that.isRequired())
             .build();
     }
 
@@ -64,6 +70,8 @@ public final class TextInput implements ActionComponent {
             .withLabel(textInput.getLabel())
             .withValue(textInput.getValue())
             .withPlaceholder(textInput.getPlaceholder())
+            .withSearchType(textInput.getSearchType())
+            .withValidator(textInput.getValidator())
             .withMinLength(textInput.getMinLength())
             .withMaxLength(textInput.getMaxLength())
             .isRequired(textInput.isRequired());
@@ -81,7 +89,7 @@ public final class TextInput implements ActionComponent {
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
                 .minLength(this.getMinLength())
                 .maxLength(this.getMaxLength())
-                .required(false)
+                .required(this.isRequired())
                 .build()
         );
     }
@@ -107,14 +115,23 @@ public final class TextInput implements ActionComponent {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<TextInput> {
 
+        @BuildFlag(nonNull = true, notEmpty = true)
         private String identifier;
-        private Style style = Style.UNKNOWN;
+        @BuildFlag(nonNull = true)
+        private Style style = Style.SHORT;
+        @BuildFlag(nonNull = true, notEmpty = true)
         private Optional<String> label = Optional.empty();
+        @BuildFlag(nonNull = true)
         private Optional<String> value = Optional.empty();
+        @BuildFlag(nonNull = true)
         private Optional<String> placeholder = Optional.empty();
         private int minLength = 0;
         private int maxLength = 4000;
         private boolean required;
+        @BuildFlag(nonNull = true)
+        private TextInput.SearchType searchType = TextInput.SearchType.NONE;
+        @BuildFlag(nonNull = true)
+        private Optional<Predicate<String>> validator = Optional.empty();
 
         /**
          * Sets this {@link TextInput} as required when submitting a {@link Modal}.
@@ -233,12 +250,41 @@ public final class TextInput implements ActionComponent {
         }
 
         /**
+         * Sets the search type of the {@link TextInput}.
+         *
+         * @param searchType The search type of the text input.
+         */
+        public Builder withSearchType(@NotNull SearchType searchType) {
+            this.searchType = searchType;
+            return this;
+        }
+
+        /**
          * Sets the {@link Style} of the {@link TextInput}.
          *
          * @param style The style of the textinput.
          */
         public Builder withStyle(@NotNull Style style) {
             this.style = style;
+            return this;
+        }
+
+        /**
+         * Sets a custom validator for this {@link TextInput}.
+         *
+         * @param validator Custom validator.
+         */
+        public Builder withValidator(@Nullable Predicate<String> validator) {
+            return this.withValidator(Optional.ofNullable(validator));
+        }
+
+        /**
+         * Sets a custom validator for this {@link TextInput}.
+         *
+         * @param validator Custom validator.
+         */
+        public Builder withValidator(@NotNull Optional<Predicate<String>> validator) {
+            this.validator = validator;
             return this;
         }
 
@@ -284,11 +330,22 @@ public final class TextInput implements ActionComponent {
                 this.label,
                 this.value,
                 this.placeholder,
+                this.searchType,
+                this.validator,
                 this.minLength,
                 this.maxLength,
                 this.required
             );
         }
+
+    }
+
+    public enum SearchType {
+
+        NONE,
+        PAGE,
+        INDEX,
+        CUSTOM
 
     }
 
