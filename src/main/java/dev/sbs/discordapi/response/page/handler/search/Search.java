@@ -10,6 +10,7 @@ import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
@@ -20,6 +21,8 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.beans.PropertyEditor;
+import java.beans.PropertyEditorManager;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Optional;
@@ -28,18 +31,18 @@ import java.util.function.BiPredicate;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Search<T, V extends Serializable> implements BiFunction<ConcurrentList<T>, String, Integer> {
+public class Search<T> implements BiFunction<ItemHandler<T>, String, Integer> {
 
     private final @NotNull TextInput textInput;
-    private final @NotNull Class<V> type;
-    private final @NotNull ConcurrentList<BiPredicate<T, V>> predicates;
+    private final @NotNull ConcurrentList<BiPredicate<T, String>> predicates;
 
     @Override
-    public @NotNull Integer apply(@NotNull ConcurrentList<T> items, @NotNull String value) {
-        return items.indexedStream()
+    public @NotNull Integer apply(@NotNull ItemHandler<T> itemHandler, @NotNull String value) {
+        return itemHandler.getItems()
+            .indexedStream()
             .filter((item, index, size) -> this.getPredicates()
                 .stream()
-                .anyMatch(predicate -> predicate.test(item, this.castSafely(value)))
+                .anyMatch(predicate -> predicate.test(item, value))
             )
             .map(Triple::getMiddle)
             .findFirst()
@@ -47,13 +50,16 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
             .intValue();
     }
 
-    public static <T, V extends Serializable> @NotNull Builder<T, V> builder() {
+    public static <T> @NotNull Builder<T> builder() {
         return new Builder<>();
     }
 
-    private @Nullable V castSafely(@NotNull String value) {
+    @SuppressWarnings("unchecked")
+    private static <V> @Nullable V castSafely(@NotNull Class<V> type, @NotNull String value) {
         try {
-            return this.getType().cast(value);
+            PropertyEditor propertyEditor = PropertyEditorManager.findEditor(type);
+            propertyEditor.setAsText(value);
+            return (V) propertyEditor.getValue();
         } catch (Exception ex) {
             return null;
         }
@@ -64,7 +70,7 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Search<?, ?> search = (Search<?, ?>) o;
+        Search<?> search = (Search<?>) o;
 
         return new EqualsBuilder()
             .append(this.getTextInput(), search.getTextInput())
@@ -72,9 +78,10 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
             .build();
     }
 
-    public static <T, V extends Serializable> @NotNull Builder<T, V> from(@NotNull Search<T, V> searcher) {
-        return new Builder<T, V>()
-            .withTextInput(searcher.getTextInput())
+    public static <T> @NotNull Builder<T> from(@NotNull Search<T> searcher) {
+        return new Builder<T>()
+            .withLabel(searcher.getTextInput().getLabel().orElseThrow())
+            .withPlaceholder(searcher.getTextInput().getPlaceholder())
             .withPredicates(searcher.getPredicates());
     }
 
@@ -86,24 +93,24 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
             .build();
     }
 
-    public @NotNull Builder<T, V> mutate() {
+    public @NotNull Builder<T> mutate() {
         return from(this);
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T, V extends Serializable> implements dev.sbs.api.util.builder.Builder<Search<T, V>> {
+    public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Search<T>> {
 
         @BuildFlag(nonNull = true)
-        private TextInput.Builder textInputBuilder = TextInput.builder();
+        private TextInput.Builder textInputBuilder = TextInput.builder().withSearchType(TextInput.SearchType.CUSTOM);
         @BuildFlag(nonNull = true)
-        private final ConcurrentList<BiPredicate<T, V>> predicates = Concurrent.newList();
+        private final ConcurrentList<BiPredicate<T, String>> predicates = Concurrent.newList();
 
         /**
          * Add custom search predicates for the {@link FieldItem FieldItems}.
          *
          * @param predicates A variable amount of predicates.
          */
-        public Builder<T, V> withPredicates(@NotNull BiPredicate<T, V>... predicates) {
+        public Builder<T> withPredicates(@NotNull BiPredicate<T, String>... predicates) {
             return this.withPredicates(Arrays.asList(predicates));
         }
 
@@ -112,8 +119,27 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          *
          * @param predicates A variable amount of predicates.
          */
-        public Builder<T, V> withPredicates(@NotNull Iterable<BiPredicate<T, V>> predicates) {
+        public Builder<T> withPredicates(@NotNull Iterable<BiPredicate<T, String>> predicates) {
             predicates.forEach(this.predicates::add);
+            return this;
+        }
+
+        /**
+         * Add custom search predicates for the {@link FieldItem FieldItems}.
+         *
+         * @param predicates A variable amount of predicates.
+         */
+        public <V extends Serializable> Builder<T> withPredicates(@NotNull Class<V> type, @NotNull BiPredicate<T, V>... predicates) {
+            return this.withPredicates(type, Arrays.asList(predicates));
+        }
+
+        /**
+         * Add custom search predicates for the {@link FieldItem FieldItems}.
+         *
+         * @param predicates A variable amount of predicates.
+         */
+        public <V extends Serializable> Builder<T> withPredicates(@NotNull Class<V> type, @NotNull Iterable<BiPredicate<T, V>> predicates) {
+            predicates.forEach(predicate -> this.predicates.add((t, value) -> predicate.test(t, Search.castSafely(type, value))));
             return this;
         }
 
@@ -122,7 +148,7 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          *
          * @param placeholder The placeholder to use.
          */
-        public Builder<T, V> withPlaceholder(@Nullable String placeholder) {
+        public Builder<T> withPlaceholder(@Nullable String placeholder) {
             return this.withPlaceholder(Optional.ofNullable(placeholder));
         }
 
@@ -132,7 +158,7 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          * @param placeholder The placeholder to use.
          * @param args The objects used to format the placeholder.
          */
-        public Builder<T, V> withPlaceholder(@PrintFormat @Nullable String placeholder, @Nullable Object... args) {
+        public Builder<T> withPlaceholder(@PrintFormat @Nullable String placeholder, @Nullable Object... args) {
             return this.withPlaceholder(StringUtil.formatNullable(placeholder, args));
         }
 
@@ -141,7 +167,7 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          *
          * @param placeholder The placeholder to use.
          */
-        public Builder<T, V> withPlaceholder(@NotNull Optional<String> placeholder) {
+        public Builder<T> withPlaceholder(@NotNull Optional<String> placeholder) {
             this.textInputBuilder.withPlaceholder(placeholder);
             return this;
         }
@@ -153,7 +179,7 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          *
          * @param label The label of the field item.
          */
-        public Builder<T, V> withLabel(@NotNull String label) {
+        public Builder<T> withLabel(@NotNull String label) {
             this.textInputBuilder.withLabel(label);
             return this;
         }
@@ -166,23 +192,17 @@ public class Search<T, V extends Serializable> implements BiFunction<ConcurrentL
          * @param label The label of the field item.
          * @param args The objects used to format the label.
          */
-        public Builder<T, V> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
             this.textInputBuilder.withLabel(label, args);
             return this;
         }
 
-        public Builder<T, V> withTextInput(@NotNull TextInput textInput) {
-            this.textInputBuilder = TextInput.from(textInput);
-            return this;
-        }
-
         @Override
-        public @NotNull Search<T, V> build() {
+        public @NotNull Search<T> build() {
             Reflection.validateFlags(this);
 
             return new Search<>(
                 this.textInputBuilder.withValue(Optional.empty()).build(),
-                Reflection.getSuperClass(this, 1),
                 this.predicates.toUnmodifiableList()
             );
         }
