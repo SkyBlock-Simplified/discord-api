@@ -41,9 +41,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class DiscordErrorHandler extends DiscordReference {
+public final class ExceptionHandler extends DiscordReference {
 
-    public DiscordErrorHandler(@NotNull DiscordBot discordBot) {
+    public ExceptionHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 

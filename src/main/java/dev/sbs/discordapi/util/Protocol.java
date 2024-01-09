@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 @Getter
 @RequiredArgsConstructor
-public enum DiscordProtocol {
+public enum Protocol {
 
     // https://gist.github.com/ghostrider-05/8f1a0bfc27c7c4509b4ea4e8ce718af0
     ROOT("discord://-/"),
@@ -75,7 +75,7 @@ public enum DiscordProtocol {
 
     private final @NotNull String path;
 
-    DiscordProtocol(@NotNull DiscordProtocol protocol, @NotNull String path) {
+    Protocol(@NotNull Protocol protocol, @NotNull String path) {
         this(protocol.getPath() + path);
     }
 
@@ -109,7 +109,7 @@ public enum DiscordProtocol {
     @RequiredArgsConstructor
     public enum Guild {
 
-        ROOT(DiscordProtocol.ROOT, "guilds/%s/"),
+        ROOT(Protocol.ROOT, "guilds/%s/"),
 
         GUILD_SETTINGS(ROOT, "settings/"),
         // General
@@ -144,7 +144,7 @@ public enum DiscordProtocol {
         // Other
         DELETE_SERVER(GUILD_SETTINGS, "delete"),
 
-        GUILD_CHANNELS(DiscordProtocol.ROOT, "channels/%s/"),
+        GUILD_CHANNELS(Protocol.ROOT, "channels/%s/"),
         // Channels
         BROWSE_CHANNELS(GUILD_CHANNELS, "channel-browser"),
         CUSTOMIZE_CHANNELS(GUILD_CHANNELS, "customize-community"),
@@ -152,11 +152,11 @@ public enum DiscordProtocol {
         // Other
         MEMBER_SAFETY(GUILD_CHANNELS, "member-safety"),
         ROLE_SUBSCRIPTIONS(GUILD_CHANNELS, "role-subscriptions"),
-        MEMBERSHIP_SCREENING(DiscordProtocol.ROOT, "member-verification/%s");
+        MEMBERSHIP_SCREENING(Protocol.ROOT, "member-verification/%s");
 
         private final @NotNull String path;
 
-        Guild(@NotNull DiscordProtocol protocol, @NotNull String path) {
+        Guild(@NotNull Protocol protocol, @NotNull String path) {
             this(protocol.getPath() + path);
         }
 
@@ -169,7 +169,7 @@ public enum DiscordProtocol {
         }
 
         public @NotNull String getEventPath(@NotNull Snowflake guildId, @NotNull Snowflake eventId) {
-            return DiscordProtocol.ROOT.getPath() + String.format("events/%s/%s", guildId.asLong(), eventId.asLong());
+            return Protocol.ROOT.getPath() + String.format("events/%s/%s", guildId.asLong(), eventId.asLong());
         }
 
         public @NotNull String getMessagePath(@NotNull Snowflake guildId, @NotNull Snowflake channelId, @NotNull Snowflake messageId) {

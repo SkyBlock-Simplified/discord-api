@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 
 @Log4j2
 @SuppressWarnings("rawtypes")
-public class DiscordCommandRegistrar extends DiscordReference {
+public class CommandRegistrar extends DiscordReference {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends CommandReference>, Long> commandIds = Concurrent.newMap();
@@ -50,7 +50,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
     @Getter private final @NotNull ConcurrentList<UserCommandReference> userCommands;
     @Getter private final @NotNull ConcurrentList<MessageCommandReference> messageCommands;
 
-    DiscordCommandRegistrar(
+    CommandRegistrar(
         @NotNull DiscordBot discordBot,
         @NotNull ConcurrentSet<Class<? extends CommandReference>> commands
     ) {
@@ -358,7 +358,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordCommandRegistrar> {
+    public static class Builder implements dev.sbs.api.util.builder.Builder<CommandRegistrar> {
 
         private final DiscordBot discordBot;
         private final ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
@@ -373,8 +373,8 @@ public class DiscordCommandRegistrar extends DiscordReference {
         }
 
         @Override
-        public @NotNull DiscordCommandRegistrar build() {
-            return new DiscordCommandRegistrar(
+        public @NotNull CommandRegistrar build() {
+            return new CommandRegistrar(
                 this.discordBot,
                 this.commands
             );

@@ -20,9 +20,9 @@ import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.util.DiscordCommandRegistrar;
+import dev.sbs.discordapi.util.CommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
-import dev.sbs.discordapi.util.DiscordErrorHandler;
+import dev.sbs.discordapi.util.ExceptionHandler;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import dev.sbs.discordapi.util.shard.ShardHandler;
 import discord4j.common.util.Snowflake;
@@ -73,18 +73,18 @@ import java.util.concurrent.TimeUnit;
 public class DiscordBot {
 
     @Getter(AccessLevel.NONE)
-    private final @NotNull DiscordErrorHandler errorHandler;
+    private final @NotNull ExceptionHandler errorHandler;
     private final @NotNull DiscordConfig config;
     private final @NotNull DiscordClient client;
     private final @NotNull GatewayDiscordClient gateway;
     private final @NotNull ShardHandler shardHandler;
     private final @NotNull Scheduler scheduler = new Scheduler();
     private final @NotNull Response.Cache responseCache = new Response.Cache();
-    private DiscordCommandRegistrar commandRegistrar;
+    private CommandRegistrar commandRegistrar;
 
     @SuppressWarnings("unchecked")
     public DiscordBot(@NotNull DiscordConfig discordConfig) {
-        this.errorHandler = new DiscordErrorHandler(this);
+        this.errorHandler = new ExceptionHandler(this);
         this.config = discordConfig;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
 
@@ -189,7 +189,7 @@ public class DiscordBot {
                     });
 
                     log.info("Registering Commands");
-                    Mono<Void> commands = (this.commandRegistrar = DiscordCommandRegistrar.builder(this)
+                    Mono<Void> commands = (this.commandRegistrar = CommandRegistrar.builder(this)
                         .withCommands(this.getConfig().getCommands())
                         .build())
                         .updateApplicationCommands();
@@ -218,7 +218,7 @@ public class DiscordBot {
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
             .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate self in Main Guild!")
+                .withMessage("Unable to locate main guild in Discord Gateway!")
                 .build()
             );
     }
@@ -233,7 +233,7 @@ public class DiscordBot {
             );
     }
 
-    public final <T> Mono<T> handleException(ExceptionContext<?> exceptionContext) {
+    public final <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
         return this.errorHandler.handleException(exceptionContext);
     }
 
