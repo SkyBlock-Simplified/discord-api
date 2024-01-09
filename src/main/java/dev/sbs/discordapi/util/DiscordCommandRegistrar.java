@@ -19,7 +19,6 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.channel.Channel;
-import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
@@ -34,7 +33,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -61,6 +59,8 @@ public class DiscordCommandRegistrar extends DiscordReference {
         this.getLog().info("Validating Commands");
         ConcurrentList<CommandReference> initializedCommands = this.validateCommands(discordBot, commands);
 
+        this.getLog().info("Retrieving Commands");
+        this.getLog().debug("Retrieving Slash Commands");
         this.slashCommands = this.retrieveTypedCommands(
             SlashCommandReference.class,
             initializedCommands,
@@ -70,19 +70,20 @@ public class DiscordCommandRegistrar extends DiscordReference {
             ) && commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
+        this.getLog().debug("Retrieving User Commands");
         this.userCommands = this.retrieveTypedCommands(
             UserCommandReference.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
+        this.getLog().debug("Retrieving Message Commands");
         this.messageCommands = this.retrieveTypedCommands(
             MessageCommandReference.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getName().equalsIgnoreCase(compareEntry.getName())
         );
 
-        this.getLog().info("Building Command Tree");
         ConcurrentList<CommandReference<?>> commandTree = Concurrent.newList();
         commandTree.addAll(this.slashCommands);
         commandTree.addAll(this.userCommands);
@@ -113,7 +114,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
                 this.getSlashCommands()
                     .stream()
                     .flatMap(command -> command.getParent().stream())
-                    .distinct()
+                    .filter(StreamUtil.distinctByKey(SlashCommandReference.Parent::getName))
                     .map(parent -> this.buildCommand(parent)
                         // Handle SubCommand Groups
                         .addAllOptions(
@@ -121,7 +122,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
                                 .stream()
                                 .filter(command -> command.getParent().map(compare -> parent.getName().equals(compare.getName())).orElse(false))
                                 .flatMap(command -> command.getGroup().stream())
-                                .distinct()
+                                .filter(StreamUtil.distinctByKey(SlashCommandReference.Group::getName))
                                 .map(group -> ApplicationCommandOptionData.builder()
                                     .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
                                     .name(group.getName().toLowerCase())
@@ -152,8 +153,7 @@ public class DiscordCommandRegistrar extends DiscordReference {
                                 .map(this::buildSubCommand)
                                 .collect(Concurrent.toList())
                         )
-                        .build()
-                    )
+                        .build())
                     .filter(commandRequest -> !commandRequest.options().isAbsent() && !commandRequest.options().get().isEmpty()),
                 // Handle Top-Level Commands
                 this.getSlashCommands()
@@ -250,65 +250,49 @@ public class DiscordCommandRegistrar extends DiscordReference {
                 this.getDiscordBot().getClientId().asLong(),
                 this.buildCommandRequests(-1)
             )
-            .doOnNext(commandData -> {
-                ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
-                Optional<CommandReference<?>> possibleCommand = this.getCommandReference(commandTree, CommandReference.Type.of(commandData.type().toOptional().orElse(-1)));
-                possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
-            })
+            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), CommandReference.Type.of(commandData.type().toOptional().orElse(-1)))
+                .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
+            )
             .thenMany(
                 Flux.fromIterable(this.getLoadedCommands())
-                    .filter(command -> command.getGuildId() > 0)
-                    .flatMap(entry -> this.getDiscordBot()
+                    .map(CommandReference::getGuildId)
+                    .filter(guildId -> guildId > 0)
+                    .distinct()
+                    .flatMap(guildId -> this.getDiscordBot()
                         .getGateway()
                         .getRestClient()
                         .getApplicationService()
                         .bulkOverwriteGuildApplicationCommand(
                             this.getDiscordBot().getClientId().asLong(),
-                            entry.getGuildId(),
-                            this.buildCommandRequests(entry.getGuildId())
+                            guildId,
+                            this.buildCommandRequests(guildId)
                         )
-                        .doOnNext(commandData -> {
-                            ConcurrentList<String> commandTree = this.getApiCommandTree(commandData);
-                            Optional<CommandReference<?>> possibleCommand = this.getCommandReference(commandTree, CommandReference.Type.of(commandData.type().toOptional().orElse(-1)));
-                            possibleCommand.ifPresent(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()));
-                        })
+                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), CommandReference.Type.of(commandData.type().toOptional().orElse(-1)))
+                            .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
+                        )
                     )
             )
             .then();
-    }
-
-    private @NotNull ConcurrentList<String> getApiCommandTree(@NotNull ApplicationCommandData commandData) {
-        ConcurrentList<String> commandTree = Concurrent.newList(commandData.name());
-
-        if (!commandData.type().isAbsent() && commandData.type().get() <= 2) {
-            if (!commandData.options().isAbsent() && !commandData.options().get().isEmpty()) {
-                List<ApplicationCommandOptionData> optionDataList = commandData.options().get();
-                ApplicationCommandOptionData optionData = optionDataList.get(0);
-
-                if (optionData.type() <= 2) { // Sub Command / Group
-                    commandTree.add(optionData.name());
-
-                    if (!optionData.options().isAbsent() && !optionData.options().get().isEmpty()) {
-                        if (optionData.options().get().get(0).type() <= 2)
-                            commandTree.add(optionData.options().get().get(0).name());
-                    }
-                }
-            }
-        }
-
-        return commandTree;
     }
 
     public long getApiCommandId(@NotNull Class<? extends CommandReference> commandClass) {
         return this.commandIds.get(commandClass);
     }
 
-    private @NotNull Optional<CommandReference<?>> getCommandReference(@NotNull ConcurrentList<String> commandTree, @NotNull CommandReference.Type type) {
+    private @NotNull ConcurrentList<CommandReference<?>> getCommandReferences(@NotNull String name, @NotNull CommandReference.Type type) {
         return this.getLoadedCommands()
             .stream()
             .filter(command -> command.getType() == type)
-            .filter(command -> command.doesMatch(commandTree))
-            .findFirst();
+            .filter(command -> {
+                if (command instanceof SlashCommandReference slashCommand) {
+                    return slashCommand.getParent()
+                        .map(SlashCommandReference.Parent::getName)
+                        .orElse(slashCommand.getName())
+                        .equals(name);
+                } else
+                    return command.getName().equals(name);
+            })
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     private <
