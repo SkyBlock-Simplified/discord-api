@@ -1,7 +1,8 @@
 package dev.sbs.discordapi.response.page.handler.sorter;
 
+import dev.sbs.api.util.builder.hash.EqualsBuilder;
+import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.discordapi.response.page.handler.CacheHandler;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +23,21 @@ public class SortHandler<T> implements CacheHandler {
         this.gotoNext();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SortHandler<?> that = (SortHandler<?>) o;
+
+        return new EqualsBuilder()
+            .append(this.getCurrentSorterIndex(), that.getCurrentSorterIndex())
+            .append(this.isReversed(), that.isReversed())
+            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
+            .append(this.getSorters(), that.getSorters())
+            .build();
+    }
+
     public @NotNull Optional<Sorter<T>> getCurrent() {
         return Optional.ofNullable(this.getCurrentSorterIndex() > -1 ? this.getSorters().get(this.getCurrentSorterIndex()) : null);
     }
@@ -30,11 +46,21 @@ public class SortHandler<T> implements CacheHandler {
         if (this.hasSorters()) {
             this.currentSorterIndex++;
 
-            if (this.currentSorterIndex >= ListUtil.sizeOf(this.getSorters()))
+            if (this.currentSorterIndex >= this.getSorters().size())
                 this.currentSorterIndex = 0;
 
             this.setCacheUpdateRequired();
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getSorters())
+            .append(this.getCurrentSorterIndex())
+            .append(this.isReversed())
+            .append(this.isCacheUpdateRequired())
+            .build();
     }
 
     public boolean hasSorters() {
