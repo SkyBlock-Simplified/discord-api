@@ -79,7 +79,7 @@ public final class ToggleItem implements FieldItem<Boolean> {
          * Sets the {@link Item} as inline.
          */
         public Builder isInline() {
-            return this.isEditable(true);
+            return this.isInline(true);
         }
 
         /**
@@ -88,7 +88,7 @@ public final class ToggleItem implements FieldItem<Boolean> {
          * @param editable The inline state of the item.
          */
         public Builder isInline(boolean editable) {
-            this.editable = editable;
+            this.inline = editable;
             return this;
         }
 

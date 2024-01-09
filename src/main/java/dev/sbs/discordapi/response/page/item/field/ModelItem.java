@@ -108,7 +108,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
          * Sets the {@link Item} as inline.
          */
         public Builder<T> isInline() {
-            return this.isEditable(true);
+            return this.isInline(true);
         }
 
         /**
@@ -117,7 +117,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
          * @param editable The inline state of the item.
          */
         public Builder<T> isInline(boolean editable) {
-            this.editable = editable;
+            this.inline = editable;
             return this;
         }
 

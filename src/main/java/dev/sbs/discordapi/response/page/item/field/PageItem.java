@@ -100,7 +100,7 @@ public final class PageItem implements FieldItem<ItemHandler<?>>, Paging<PageIte
          * Sets the {@link Item} as inline.
          */
         public Builder isInline() {
-            return this.isEditable(true);
+            return this.isInline(true);
         }
 
         /**
@@ -109,7 +109,7 @@ public final class PageItem implements FieldItem<ItemHandler<?>>, Paging<PageIte
          * @param editable The inline state of the item.
          */
         public Builder isInline(boolean editable) {
-            this.editable = editable;
+            this.inline = editable;
             return this;
         }
 
