@@ -19,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -94,12 +93,7 @@ public class DebugItemsCommand extends SlashCommand {
                                     Search.<Test>builder()
                                         .withPlaceholder("Input name.")
                                         .withLabel("Name")
-                                        .withPredicates((testItem, index, value) -> testItem.getName().equalsIgnoreCase(value))
-                                        .build(),
-                                    Search.<Test>builder()
-                                        .withPlaceholder("Input index.")
-                                        .withLabel("Index")
-                                        .withPredicates(Long.class, (testItem, index, value) -> Objects.equals(index, value))
+                                        .withPredicates((testItem, value) -> testItem.getName().equalsIgnoreCase(value))
                                         .build()
                                 )
                                 .build()
