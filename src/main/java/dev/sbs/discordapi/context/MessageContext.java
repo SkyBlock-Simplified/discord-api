@@ -210,6 +210,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             discordBot,
             event,
             cachedMessage.getUniqueId(),
+            new User(discordBot.getGateway(), event.getMessage().getUserData()),
             followup
         );
     }
@@ -221,7 +222,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         private final @NotNull DiscordBot discordBot;
         private final @NotNull MessageCreateEvent event;
         private final @NotNull UUID responseId;
-        private final @NotNull User interactUser = new User(this.discordBot.getGateway(), this.event.getMessage().getUserData());
+        private final @NotNull User interactUser;
         private final @NotNull Optional<Response.Cache.Followup> followup;
 
         @Override
