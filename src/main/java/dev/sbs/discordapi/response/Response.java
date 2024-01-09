@@ -886,6 +886,18 @@ public class Response implements Paging<Page> {
                 return Mono.just(followup);
             }
 
+            public boolean containsFollowup(@NotNull String identifier) {
+                return this.getFollowups()
+                    .stream()
+                    .anyMatch(followup -> followup.getIdentifier().equals(identifier));
+            }
+
+            public boolean containsFollowup(@NotNull Snowflake messageId) {
+                return this.getFollowups()
+                    .stream()
+                    .anyMatch(followup -> followup.getMessageId().equals(messageId));
+            }
+
             public Optional<Followup> findFollowup(@NotNull String identifier) {
                 return this.getFollowups().findFirst(Followup::getIdentifier, identifier);
             }
@@ -936,11 +948,11 @@ public class Response implements Paging<Page> {
             }
 
             public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Snowflake userId) {
-                return this.getUserId().equals(userId) && (this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent());
+                return this.getUserId().equals(userId) && (this.getMessageId().equals(messageId) || this.containsFollowup(messageId));
             }
 
             public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Id userId) {
-                return this.getUserId().asLong() == userId.asLong() && (this.getMessageId().equals(messageId) || this.findFollowup(messageId).isPresent());
+                return this.getUserId().asLong() == userId.asLong() && (this.getMessageId().equals(messageId) || this.containsFollowup(messageId));
             }
 
             /**

@@ -13,6 +13,7 @@ import dev.sbs.discordapi.listener.command.MessageCommandListener;
 import dev.sbs.discordapi.listener.command.SlashCommandListener;
 import dev.sbs.discordapi.listener.command.UserCommandListener;
 import dev.sbs.discordapi.listener.message.MessageCreateListener;
+import dev.sbs.discordapi.listener.message.MessageDeleteListener;
 import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
@@ -39,6 +40,7 @@ import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.MessageDeleteEvent;
 import discord4j.core.event.domain.message.ReactionAddEvent;
 import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
@@ -152,16 +154,25 @@ public class DiscordBot {
 
                     log.info("Registering Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
-                        eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
+                        // Commands
                         eventDispatcher.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)),
-                        eventDispatcher.on(UserInteractionEvent.class, new UserCommandListener(this)),
-                        eventDispatcher.on(MessageCreateEvent.class, new MessageCreateListener(this)),
                         eventDispatcher.on(MessageInteractionEvent.class, new MessageCommandListener(this)),
+                        eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
+                        eventDispatcher.on(UserInteractionEvent.class, new UserCommandListener(this)),
+
+                        // Components
                         eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
-                        eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
                         eventDispatcher.on(ModalSubmitInteractionEvent.class, new ModalListener(this)),
+                        eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
+
+                        // Messages
+                        eventDispatcher.on(MessageCreateEvent.class, new MessageCreateListener(this)),
+                        eventDispatcher.on(MessageDeleteEvent.class, new MessageDeleteListener(this)),
+
+                        // Reactions
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
+
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
                             this.getConfig()
                                 .getGatewayDisconnectedEvent()
