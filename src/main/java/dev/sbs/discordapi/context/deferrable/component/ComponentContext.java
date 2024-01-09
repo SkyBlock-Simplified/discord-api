@@ -17,7 +17,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
 
     @Override
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
-        return this.deferReply().then(
+        return this.deferReply(response.isEphemeral()).then(
             this.getEvent()
                 .createFollowup(response.getD4jInteractionFollowupCreateSpec())
                 .publishOn(response.getReactorScheduler())
@@ -37,7 +37,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
 
     @Override
     default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
-        return this.deferEdit().then(
+        return this.deferEdit(response.isEphemeral()).then(
             Mono.justOrEmpty(this.getFollowup(identifier))
             .flatMap(followup -> this.getEvent().editFollowup(followup.getMessageId(), response.getD4jInteractionReplyEditSpec()))
             .publishOn(response.getReactorScheduler())
