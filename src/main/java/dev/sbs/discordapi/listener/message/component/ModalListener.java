@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.listener.message.component;
 
+import dev.sbs.api.util.Range;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
@@ -7,9 +8,10 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
-import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -25,10 +27,10 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
         return Mono.justOrEmpty(entry.getUserModal(event.getInteraction().getUser())) // Handle User Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
             .doOnNext(modal -> entry.clearModal(event.getInteraction().getUser()))
-            .flatMap(modal -> switch (modal.getPageType()) {
-                case NONE -> this.handleInteraction(event, entry, modal, followup);
-                case SEARCH -> this.handlePagingInteraction(event, entry, modal, followup);
-            })
+            .flatMap(modal -> modal.getPageType() == Modal.PageType.NONE ?
+                this.handleInteraction(event, entry, modal, followup) :
+                this.handlePagingInteraction(event, entry, modal, followup)
+            )
             .then(entry.updateLastInteract())
             .then();
     }
@@ -46,28 +48,35 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
 
     @Override
     protected Mono<Void> handlePaging(@NotNull ModalContext context) {
-        return Mono.justOrEmpty(context.getFollowup())
-            .map(Response.Cache.Followup::getResponse)
-            .switchIfEmpty(Mono.justOrEmpty(context.getResponse()))
-            .flatMap(response -> {
-                Page currentPage = response.getHistoryHandler().getCurrentPage();
+        return Flux.fromIterable(context.getComponent().getComponents())
+            .map(LayoutComponent::getComponents)
+            .map(ConcurrentList::getFirst)
+            .flatMap(Mono::justOrEmpty)
+            .map(TextInput.class::cast)
+            .filter(textInput -> textInput.getValue().isPresent())
+            .singleOrEmpty()
+            .switchIfEmpty(context.deferEdit().then(Mono.empty())) // Magic Cancel
+            .flatMap(textInput -> {
+                ItemHandler<?> itemHandler = context.getResponse()
+                    .getHistoryHandler()
+                    .getCurrentPage()
+                    .getItemHandler();
 
-                switch (context.getComponent().getPageType()) {
-                    case SEARCH -> context.getComponent()
-                        .getComponents()
-                        .stream()
-                        .map(LayoutComponent::getComponents)
-                        .map(ConcurrentList::getFirst)
-                        .flatMap(Optional::stream)
-                        .map(TextInput.class::cast)
-                        .filter(textInput -> textInput.getValue().isPresent())
-                        .findFirst()
-                        .ifPresent(textInput -> currentPage.getItemHandler().processSearch(textInput));
+                switch (textInput.getSearchType()) {
+                    case PAGE -> {
+                        Range<Integer> pageRange = Range.between(1, itemHandler.getTotalItemPages());
+                        itemHandler.gotoItemPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
+                    }
+                    case INDEX -> {
+                        Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
+                        int index = indexRange.fit(Integer.parseInt(textInput.getValue().orElseThrow()));
+                        itemHandler.gotoItemPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
+                    }
+                    case CUSTOM -> itemHandler.processSearch(textInput);
                 }
 
-                return context.getResponseCacheEntry().updateResponse(response);
-            })
-            .then();
+                return Mono.empty();
+            });
     }
 
 }
