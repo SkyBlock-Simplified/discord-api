@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Parameter {
 
-    private static final BiFunction<String, CommandContext<?>, Boolean> NOOP_HANDLER = (s_, c_) -> true;
+    private static final BiPredicate<String, CommandContext<?>> NOOP_HANDLER = (s_, c_) -> true;
     private static final Function<AutoCompleteContext, ConcurrentMap<String, Object>> NOOP_COMPLETE = c_ -> Concurrent.newUnmodifiableMap();
     private static final Pattern MENTIONABLE_PATTERN = Pattern.compile("<(?:@!?&?|#)[\\d]+>");
     private static final Pattern MENTIONABLE_USER_PATTERN = Pattern.compile("<@!?[\\d]+>");
@@ -57,7 +57,7 @@ public final class Parameter {
     private final @NotNull ConcurrentSet<Channel.Type> channelTypes;
     private final @NotNull Range<Double> sizeLimit;
     private final @NotNull Range<Integer> lengthLimit;
-    private final @NotNull BiFunction<String, CommandContext<?>, Boolean> validator;
+    private final @NotNull BiPredicate<String, CommandContext<?>> validator;
     private final @NotNull Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete;
     private final @NotNull ConcurrentLinkedMap<String, Object> choices;
 
@@ -89,7 +89,7 @@ public final class Parameter {
     }
 
     public boolean isValid(@Nullable String argument, @NotNull CommandContext<?> commandContext) {
-        return this.getValidator().apply(StringUtil.defaultIfEmpty(argument, ""), commandContext);
+        return this.getValidator().test(StringUtil.defaultIfEmpty(argument, ""), commandContext);
     }
 
     public @NotNull Builder mutate() {
@@ -181,7 +181,7 @@ public final class Parameter {
         private Range<Double> sizeLimit = Range.between(Double.MIN_VALUE, Double.MAX_VALUE);
         private Range<Integer> lengthLimit = Range.between(0, 6000);
         private final ConcurrentSet<Channel.Type> channelTypes = Concurrent.newSet();
-        private Optional<BiFunction<String, CommandContext<?>, Boolean>> validator = Optional.empty();
+        private Optional<BiPredicate<String, CommandContext<?>>> validator = Optional.empty();
         private Function<AutoCompleteContext, ConcurrentMap<String, Object>> autoComplete = NOOP_COMPLETE;
         private final ConcurrentLinkedMap<String, Object> choices = Concurrent.newLinkedMap();
 
@@ -364,7 +364,7 @@ public final class Parameter {
          *
          * @param validator Custom validator.
          */
-        public Builder withValidator(@Nullable BiFunction<String, CommandContext<?>, Boolean> validator) {
+        public Builder withValidator(@Nullable BiPredicate<String, CommandContext<?>> validator) {
             return this.withValidator(Optional.ofNullable(validator));
         }
 
@@ -373,7 +373,7 @@ public final class Parameter {
          *
          * @param validator Custom validator.
          */
-        public Builder withValidator(@NotNull Optional<BiFunction<String, CommandContext<?>, Boolean>> validator) {
+        public Builder withValidator(@NotNull Optional<BiPredicate<String, CommandContext<?>>> validator) {
             this.validator = validator;
             return this;
         }
