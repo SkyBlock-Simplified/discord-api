@@ -7,10 +7,10 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.api.util.mutable.pair.Pair;
+import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.api.util.stream.StreamUtil;
 import dev.sbs.api.util.stream.triple.TriFunction;
 import dev.sbs.api.util.stream.triple.TriPredicate;
@@ -23,6 +23,7 @@ import dev.sbs.discordapi.response.page.handler.sorter.SortHandler;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
+import dev.sbs.discordapi.response.page.item.field.StringItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public final class ItemHandler<T> implements CacheHandler {
     private final @NotNull ConcurrentList<T> items;
     private final @NotNull ConcurrentList<Item> staticItems;
     private final @NotNull SortHandler<T> sortHandler;
-    private final @NotNull ConcurrentList<Search<T, ?>> searchers;
+    private final @NotNull ConcurrentList<Search<T>> searchers;
     private final @NotNull ConcurrentMap<String, Object> variables;
     private final @NotNull FieldStyle fieldStyle;
     private final @NotNull ConcurrentList<TriPredicate<T, Long, Long>> filters;
@@ -56,6 +57,7 @@ public final class ItemHandler<T> implements CacheHandler {
     // Caching
     private int currentItemPage = 1;
     @Setter private boolean cacheUpdateRequired = true;
+    private ConcurrentList<T> cachedFilteredItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<FieldItem<?>> cachedFieldItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<Item> cachedStaticItems = Concurrent.newUnmodifiableList();
 
@@ -82,8 +84,8 @@ public final class ItemHandler<T> implements CacheHandler {
             .append(this.getListTitle(), that.getListTitle())
             .append(this.isEditorEnabled(), that.isEditorEnabled())
             .append(this.getAmountPerPage(), that.getAmountPerPage())
-
             .append(this.getCurrentItemPage(), that.getCurrentItemPage())
+            .append(this.getCachedFilteredItems(), that.getCachedFilteredItems())
             .append(this.getCachedFieldItems(), that.getCachedFieldItems())
             .append(this.getCachedStaticItems(), that.getCachedStaticItems())
             .build();
@@ -104,7 +106,7 @@ public final class ItemHandler<T> implements CacheHandler {
     }
 
     public @NotNull ConcurrentList<Item> getCachedStaticItems() {
-        if (this.isCacheUpdateRequired()) {
+        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
             this.cachedStaticItems = this.staticItems.stream()
                 .map(item -> item.applyVariables(this.getVariables()))
                 .collect(Concurrent.toUnmodifiableList());
@@ -114,8 +116,30 @@ public final class ItemHandler<T> implements CacheHandler {
     }
 
     public @NotNull ConcurrentList<FieldItem<?>> getCachedFieldItems() {
-        if (this.isCacheUpdateRequired()) {
-            ConcurrentList<FieldItem<?>> filteredItems = this.getSortHandler()
+        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
+            ConcurrentList<FieldItem<?>> filteredItems = this.getFilteredItems()
+                .indexedStream()
+                .map(this.getTransformer())
+                .filter(Objects::nonNull)
+                .collect(Concurrent.toUnmodifiableList());
+
+            int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
+            int endIndex = Math.min(startIndex + this.getAmountPerPage(), filteredItems.size());
+            this.cachedFieldItems = filteredItems.subList(startIndex, endIndex);
+
+            // Variables
+            this.variables.put("FILTERED_SIZE", filteredItems.size());
+            this.variables.put("CACHED_SIZE", this.cachedFieldItems.size());
+            this.variables.put("START_INDEX", startIndex);
+            this.variables.put("END_INDEX", endIndex);
+        }
+
+        return this.cachedFieldItems;
+    }
+
+    private @NotNull ConcurrentList<T> getFilteredItems() {
+        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
+            this.cachedFilteredItems = this.getSortHandler()
                 .getCurrent()
                 .map(sorter -> sorter.apply(this.getItems(), this.getSortHandler().isReversed()))
                 .orElse(this.getItems())
@@ -124,17 +148,11 @@ public final class ItemHandler<T> implements CacheHandler {
                     .stream()
                     .allMatch(predicate -> predicate.test(t, index, size))
                 )
-                .map(this.getTransformer())
-                .filter(Objects::nonNull)
+                .map(Triple::getLeft)
                 .collect(Concurrent.toUnmodifiableList());
-
-            this.variables.put("FILTERED_SIZE", filteredItems.size());
-            int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
-            int endIndex = Math.min(startIndex + this.getAmountPerPage(), ListUtil.sizeOf(this.getItems()));
-            this.cachedFieldItems = filteredItems.subList(startIndex, endIndex);
         }
 
-        return this.cachedFieldItems;
+        return this.cachedFilteredItems;
     }
 
     public @NotNull ConcurrentList<Field> getRenderFields() {
@@ -164,12 +182,31 @@ public final class ItemHandler<T> implements CacheHandler {
     }
 
     public int getTotalItemPages() {
-        return NumberUtil.roundUp((double) this.getItems().size() / this.getAmountPerPage(), 1);
+        return NumberUtil.roundUp((double) this.getFilteredItems().size() / this.getAmountPerPage(), 1);
     }
 
     public void gotoItemPage(int index) {
-        this.currentItemPage = NumberUtil.ensureRange(index, 1, this.getItems().size());
+        this.currentItemPage = NumberUtil.ensureRange(index, 1, this.getFilteredItems().size());
         this.setCacheUpdateRequired();
+    }
+
+    public void gotoItemPage(@NotNull TextInput textInput) {
+        this.getSearchers()
+            .stream()
+            .filter(search -> search.getTextInput().getIdentifier().equals(textInput.getIdentifier()))
+            .findFirst()
+            .flatMap(search -> this.getItems()
+                .indexedStream()
+                .filter((item, index, size) -> search.getPredicates()
+                    .stream()
+                    .anyMatch(predicate -> predicate.test(item, textInput.getValue().orElseThrow()))
+                )
+                .map(Triple::getMiddle)
+                .findFirst()
+            )
+            .filter(index -> index > -1)
+            .map(index -> Math.ceil((double) index / this.getAmountPerPage()))
+            .ifPresent(index -> this.gotoItemPage(index.intValue()));
     }
 
     public void gotoFirstItemPage() {
@@ -202,8 +239,8 @@ public final class ItemHandler<T> implements CacheHandler {
             .append(this.getListTitle())
             .append(this.isEditorEnabled())
             .append(this.getAmountPerPage())
-
             .append(this.getCurrentItemPage())
+            .append(this.getCachedFilteredItems())
             .append(this.getCachedFieldItems())
             .append(this.getCachedStaticItems())
             .build();
@@ -221,30 +258,20 @@ public final class ItemHandler<T> implements CacheHandler {
         return from(this);
     }
 
-    public void processSearch(@NotNull TextInput textInput) {
-        this.getSearchers()
-            .stream()
-            .filter(search -> search.getTextInput().getIdentifier().equals(textInput.getIdentifier()))
-            .findFirst()
-            .map(search -> search.apply(this.getItems(), textInput.getValue().orElseThrow()));
-    }
-
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public static class Builder<T> implements dev.sbs.api.util.builder.Builder<ItemHandler<T>> {
 
         private final Class<T> type;
-        @BuildFlag(notEmpty = true, group = "items")
         private final ConcurrentList<T> items = Concurrent.newList();
-        @BuildFlag(notEmpty = true, group = "items")
         private final ConcurrentList<Item> staticItems = Concurrent.newList();
         private final ConcurrentList<Sorter<T>> sorters = Concurrent.newList();
-        private final ConcurrentList<Search<T, ?>> searchers = Concurrent.newList();
+        private final ConcurrentList<Search<T>> searchers = Concurrent.newList();
         private final ConcurrentMap<String, Object> variables = Concurrent.newMap();
         @BuildFlag(nonNull = true)
         private FieldStyle fieldStyle = FieldStyle.DEFAULT;
         private final ConcurrentList<TriPredicate<T, Long, Long>> filters = Concurrent.newList();
         @BuildFlag(nonNull = true)
-        private TriFunction<T, Long, Long, FieldItem<?>> transformer;
+        private TriFunction<T, Long, Long, FieldItem<?>> transformer = (t, index, size) -> StringItem.builder().build();
         private Optional<String> listTitle = Optional.empty();
         private boolean editorEnabled = false;
         private int amountPerPage = 12;
@@ -368,7 +395,7 @@ public final class ItemHandler<T> implements CacheHandler {
          *
          * @param searchers A variable amount of searchers.
          */
-        public Builder<T> withSearch(@NotNull Search<T, ?>... searchers) {
+        public Builder<T> withSearch(@NotNull Search<T>... searchers) {
             return this.withSearch(Arrays.asList(searchers));
         }
 
@@ -377,7 +404,7 @@ public final class ItemHandler<T> implements CacheHandler {
          *
          * @param searchers A variable amount of searchers.
          */
-        public Builder<T> withSearch(@NotNull Iterable<Search<T, ?>> searchers) {
+        public Builder<T> withSearch(@NotNull Iterable<Search<T>> searchers) {
             searchers.forEach(this.searchers::add);
             return this;
         }

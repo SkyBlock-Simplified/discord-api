@@ -72,7 +72,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
                         int index = indexRange.fit(Integer.parseInt(textInput.getValue().orElseThrow()));
                         itemHandler.gotoItemPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
                     }
-                    case CUSTOM -> itemHandler.processSearch(textInput);
+                    case CUSTOM -> itemHandler.gotoItemPage(textInput);
                 }
 
                 return Mono.empty();

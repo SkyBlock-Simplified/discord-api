@@ -7,10 +7,8 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
-import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
@@ -26,29 +24,14 @@ import java.beans.PropertyEditorManager;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Search<T> implements BiFunction<ItemHandler<T>, String, Integer> {
+public class Search<T> {
 
     private final @NotNull TextInput textInput;
     private final @NotNull ConcurrentList<BiPredicate<T, String>> predicates;
-
-    @Override
-    public @NotNull Integer apply(@NotNull ItemHandler<T> itemHandler, @NotNull String value) {
-        return itemHandler.getItems()
-            .indexedStream()
-            .filter((item, index, size) -> this.getPredicates()
-                .stream()
-                .anyMatch(predicate -> predicate.test(item, value))
-            )
-            .map(Triple::getMiddle)
-            .findFirst()
-            .orElse(-1L)
-            .intValue();
-    }
 
     public static <T> @NotNull Builder<T> builder() {
         return new Builder<>();
