@@ -13,6 +13,8 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.GuildChannel;
+import discord4j.discordjson.json.ApplicationCommandInteractionData;
+import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
@@ -72,16 +74,52 @@ public abstract class DiscordReference {
 
     // --- Command Searching ---
 
-    protected final @NotNull Optional<CommandReference<?>> getCommandById(long commandId) {
+    protected final @NotNull ConcurrentList<CommandReference<?>> getCommandsById(long commandId) {
         return this.getDiscordBot()
             .getCommandRegistrar()
             .getLoadedCommands()
             .stream()
             .filter(command -> command.getId() == commandId)
-            .findFirst();
+            .collect(Concurrent.toUnmodifiableList());
     }
 
-    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getCommandOptionData(@NotNull SlashCommandReference slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
+    protected final boolean doesCommandMatch(@NotNull SlashCommandReference slashCommand, @NotNull ApplicationCommandInteractionData commandData) {
+        if (commandData.name().isAbsent())
+            return false;
+
+        String compareName = commandData.name().get();
+
+        if (slashCommand.getParent().isPresent()) {
+            if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
+                return false;
+
+            List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
+            ApplicationCommandInteractionOptionData option = options.get(0);
+
+            if (!compareName.equals(slashCommand.getParent().get().getName()))
+                return false;
+
+            if (options.get(0).type() > 2)
+                return false;
+
+            if (slashCommand.getGroup().isPresent()) {
+                if (!option.name().equals(slashCommand.getGroup().get().getName()))
+                    return false;
+
+                if (option.options().isAbsent() || option.options().get().isEmpty())
+                    return false;
+
+                options = option.options().get();
+                option = options.get(0);
+            }
+
+            compareName = option.name();
+        }
+
+        return compareName.equals(slashCommand.getName());
+    }
+
+    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull SlashCommandReference slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
         ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
         ConcurrentList<String> commandTree = Concurrent.newList(slashCommand.getCommandTree());
         commandTree.removeFirst();

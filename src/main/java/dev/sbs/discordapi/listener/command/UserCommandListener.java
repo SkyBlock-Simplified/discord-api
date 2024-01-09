@@ -7,6 +7,7 @@ import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public final class UserCommandListener extends DiscordListener<UserInteractionEvent> {
@@ -20,7 +21,8 @@ public final class UserCommandListener extends DiscordListener<UserInteractionEv
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
+            .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong())))
+            .single()
             .cast(UserCommandReference.class)
             .flatMap(command -> command.apply(
                 UserCommandContext.of(

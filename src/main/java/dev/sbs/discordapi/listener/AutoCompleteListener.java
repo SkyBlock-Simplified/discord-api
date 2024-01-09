@@ -9,6 +9,7 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCompleteEvent> {
@@ -22,8 +23,11 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
-            .cast(SlashCommandReference.class)
+            .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong()))
+                .cast(SlashCommandReference.class)
+                .filter(command -> this.doesCommandMatch(command, commandData))
+            )
+            .single()
             .flatMap(slashCommand -> event.respondWithSuggestions(
                 slashCommand.getParameters()
                     .stream()

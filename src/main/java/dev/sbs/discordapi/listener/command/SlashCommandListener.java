@@ -9,6 +9,7 @@ import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public final class SlashCommandListener extends DiscordListener<ChatInputInteractionEvent> {
@@ -22,13 +23,16 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMap(commandData -> Mono.justOrEmpty(this.getCommandById(event.getCommandId().asLong())))
-            .cast(SlashCommandReference.class)
+            .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong()))
+                .cast(SlashCommandReference.class)
+                .filter(command -> this.doesCommandMatch(command, commandData))
+            )
+            .single()
             .flatMap(command -> command.apply(SlashCommandContext.of(
                 this.getDiscordBot(),
                 event,
                 command,
-                this.getCommandOptionData(command, event.getOptions())
+                this.getActualOptionData(command, event.getOptions())
                     .stream()
                     .flatMap(commandOption -> command.getParameters()
                         .stream()
