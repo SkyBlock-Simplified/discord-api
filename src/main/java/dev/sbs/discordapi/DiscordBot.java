@@ -6,6 +6,10 @@ import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.discordapi.command.impl.DiscordCommand;
+import dev.sbs.discordapi.command.parameter.Parameter;
+import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.listener.AutoCompleteListener;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -18,8 +22,14 @@ import dev.sbs.discordapi.listener.message.component.ButtonListener;
 import dev.sbs.discordapi.listener.message.component.ModalListener;
 import dev.sbs.discordapi.listener.message.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
+import dev.sbs.discordapi.listener.message.reaction.ReactionListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.Component;
+import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
+import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.util.CommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.ExceptionHandler;
@@ -64,8 +74,25 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Discord Bot Framework.
- *
+ * Discord4J Framework Wrapper for Discord Bots.
+ * <br><br>
+ * Automatically provides support for the following features when using {@link Response}:
+ * <pre>
+ * - Caching ({@link Response.Cache})
+ * - Followups ({@link Response.Cache.Followup})
+ * - Contexts ({@link EventContext})
+ * - Command:
+ *   - Interfaces ({@link CommandReference})
+ *   - Implementation ({@link DiscordCommand})
+ *   - Building ({@link CommandRegistrar})
+ *   - Parameters ({@link Parameter})
+ *   - Processing ({@link SlashCommandListener}, {@link MessageCommandListener}, {@link UserCommandListener})
+ *   - Autocomplete ({@link AutoCompleteListener})
+ * - Component:
+ *   - Interfaces ({@link Component})
+ *   - Implementation ({@link Button}, {@link SelectMenu}, {@link Modal}, {@link TextInput})
+ *   - Processing ({@link ButtonListener}, {@link SelectMenuListener}, {@link ModalListener})
+ * - Reactions {@link ReactionListener}</pre>
  * @see <a href="https://github.com/Discord4J/Discord4J">Discord4J</a>
  */
 @Getter
@@ -73,7 +100,7 @@ import java.util.concurrent.TimeUnit;
 public class DiscordBot {
 
     @Getter(AccessLevel.NONE)
-    private final @NotNull ExceptionHandler errorHandler;
+    private final @NotNull ExceptionHandler exceptionHandler;
     private final @NotNull DiscordConfig config;
     private final @NotNull DiscordClient client;
     private final @NotNull GatewayDiscordClient gateway;
@@ -84,7 +111,7 @@ public class DiscordBot {
 
     @SuppressWarnings("unchecked")
     public DiscordBot(@NotNull DiscordConfig discordConfig) {
-        this.errorHandler = new ExceptionHandler(this);
+        this.exceptionHandler = new ExceptionHandler(this);
         this.config = discordConfig;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
 
@@ -234,7 +261,7 @@ public class DiscordBot {
     }
 
     public final <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
-        return this.errorHandler.handleException(exceptionContext);
+        return this.exceptionHandler.handleException(exceptionContext);
     }
 
 }
