@@ -1,41 +1,43 @@
 plugins {
+    id 'java'
     id 'application'
 }
 
-static def loadEnv() {
-    def env = [:]
-    try {
-        def file = new File('.env')
-        def scanner = new Scanner(file)
-        while (scanner.hasNextLine()) {
-            def line = scanner.nextLine()
-            if (line.contains('=')) {
-                def pair = line.split('=')
-                env.put(pair[0], pair.length == 2 ? pair[1] : '')
-            }
-        }
-    } catch (FileNotFoundException ignored) {
-    }
-    env.putAll(System.getenv())
-    return env
-}
+project.sourceCompatibility = "17"
+project.targetCompatibility = "17"
 
-def env = loadEnv()
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
 
 repositories {
     mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     maven {
-        name = 'GitHubPackages'
-        url = uri('https://maven.pkg.github.com/skyblock-simplified/packages')
-        credentials {
-            username = env.get('GITHUB_USER')
-            password = env.get('GITHUB_PAT')
-        }
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+    maven {
+        name = 'jitpack-repo'
+        url = 'https://jitpack.io'
     }
 }
 
 dependencies {
+    // Annotations
+    implementation group: 'org.jetbrains', name: 'annotations', version: '24.0.1'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Tests
+    testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.9.2'
+    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.9.2'
+
+    // Logging
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.20.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.20.0'
+
     // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
     implementation group: 'com.discord4j', name: 'discord4j-core', version: '3.3.0-RC1'
     implementation project(':api')
