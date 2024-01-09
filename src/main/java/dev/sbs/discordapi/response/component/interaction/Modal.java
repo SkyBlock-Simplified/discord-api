@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.component.interaction;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.Component;
@@ -214,7 +215,12 @@ public final class Modal implements Component, InteractableComponent<ModalContex
                             d4jComponent.getData().customId().get()
                         ).ifPresent(textInput -> this.editComponent(
                             textInput.mutate()
-                                .withValue(d4jComponent.getData().value().toOptional())
+                                .withValue(
+                                    d4jComponent.getData()
+                                        .value()
+                                        .toOptional()
+                                        .map(StringUtil::stripToNull)
+                                )
                                 .build()
                         ));
                         case SELECT_MENU -> this.findComponent(
@@ -298,7 +304,8 @@ public final class Modal implements Component, InteractableComponent<ModalContex
     public enum PageType {
 
         NONE,
-        SEARCH
+        SEARCH,
+        GOTO_PAGE
 
     }
 
