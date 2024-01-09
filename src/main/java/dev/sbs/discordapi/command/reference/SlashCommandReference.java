@@ -15,18 +15,6 @@ import java.util.Optional;
 
 public interface SlashCommandReference extends CommandReference<SlashCommandContext> {
 
-    @Override
-    default boolean doesMatch(@NotNull ConcurrentList<String> commandTree) {
-        return switch (commandTree.size()) {
-            case 3 -> this.getParent().isPresent() && this.getParent().get().getName().equals(commandTree.get(0)) &&
-                this.getGroup().isPresent() && this.getGroup().get().getName().equals(commandTree.get(1)) &&
-                this.getName().equals(commandTree.get(2));
-            case 2 -> this.getParent().isPresent() && this.getParent().get().getName().equals(commandTree.get(0)) &&
-                this.getName().equals(commandTree.get(1));
-            default -> this.getName().equals(commandTree.get(0));
-        };
-    }
-
     default @NotNull ConcurrentList<String> getCommandTree() {
         ConcurrentList<String> commandTree = Concurrent.newList(this.getName().toLowerCase());
 
@@ -78,7 +66,11 @@ public interface SlashCommandReference extends CommandReference<SlashCommandCont
 
         @NotNull String getName();
 
-        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
+        static @NotNull Optional<Parent> op(@NotNull String name, @NotNull String description) {
+            return Optional.of(of(name, description));
+        }
+
+        static @NotNull Parent of(@NotNull String name, @NotNull String description) {
             return new Impl(name, description);
         }
 
@@ -99,7 +91,11 @@ public interface SlashCommandReference extends CommandReference<SlashCommandCont
 
         @NotNull String getName();
 
-        static @NotNull Impl of(@NotNull String name, @NotNull String description) {
+        static @NotNull Optional<Group> op(@NotNull String name, @NotNull String description) {
+            return Optional.of(of(name, description));
+        }
+
+        static @NotNull Group of(@NotNull String name, @NotNull String description) {
             return new Impl(name, description);
         }
 

@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.command.reference;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.discordapi.context.deferrable.application.CommandContext;
 import discord4j.rest.util.Permission;
@@ -14,8 +13,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 public interface CommandReference<C extends CommandContext<?>> extends Function<C, Mono<Void>> {
-
-    boolean doesMatch(@NotNull ConcurrentList<String> commandTree);
 
     default @NotNull ConcurrentSet<Permission> getDefaultPermissions() {
         return Concurrent.newUnmodifiableSet();
