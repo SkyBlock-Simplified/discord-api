@@ -260,7 +260,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
         }
 
         /**
-         * Sets the page type of the {@link TextInput}.
+         * Sets the page type of the {@link Modal}.
          *
          * @param pageType The page type of the text input.
          */
@@ -304,8 +304,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
     public enum PageType {
 
         NONE,
-        SEARCH,
-        GOTO_PAGE
+        SEARCH
 
     }
 
