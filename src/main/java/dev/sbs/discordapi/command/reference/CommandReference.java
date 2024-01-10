@@ -45,6 +45,10 @@ public interface CommandReference<C extends CommandContext<?>> extends Function<
         return true;
     }
 
+    default boolean isEphemeral() {
+        return false;
+    }
+
     default boolean isDeveloperOnly() {
         return false;
     }

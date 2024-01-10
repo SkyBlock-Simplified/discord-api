@@ -53,8 +53,8 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     @Override
     public final @NotNull Mono<Void> apply(@NotNull C commandContext) {
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
-            .deferReply()
-            .then(Mono.defer(() -> { // Mono.fromCallable
+            .deferReply(commandContext.getCommand().isEphemeral())
+            .then(Mono.defer(() -> {
                 // Handle Developer Command
                 if (this.isDeveloperOnly() && !this.isDeveloper(commandContext.getInteractUserId()))
                     throw SimplifiedException.of(UserPermissionException.class)
@@ -82,7 +82,6 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 // Process Command
                 return this.process(commandContext);
             }))
-            //.flatMap(Function.identity())
             .onErrorResume(throwable -> this.getDiscordBot().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
