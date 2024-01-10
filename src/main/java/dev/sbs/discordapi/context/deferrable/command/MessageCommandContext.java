@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.context.deferrable.application;
+package dev.sbs.discordapi.context.deferrable.command;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;

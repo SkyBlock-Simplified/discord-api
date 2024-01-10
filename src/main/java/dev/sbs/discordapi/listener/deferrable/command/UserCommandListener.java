@@ -1,31 +1,31 @@
-package dev.sbs.discordapi.listener.command;
+package dev.sbs.discordapi.listener.deferrable.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.MessageCommandReference;
-import dev.sbs.discordapi.context.deferrable.application.MessageCommandContext;
+import dev.sbs.discordapi.command.reference.UserCommandReference;
+import dev.sbs.discordapi.context.deferrable.command.UserCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
-import discord4j.core.event.domain.interaction.MessageInteractionEvent;
+import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public final class MessageCommandListener extends DiscordListener<MessageInteractionEvent> {
+public final class UserCommandListener extends DiscordListener<UserInteractionEvent> {
 
-    public MessageCommandListener(@NotNull DiscordBot discordBot) {
+    public UserCommandListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
     @Override
-    public Publisher<Void> apply(@NotNull MessageInteractionEvent event) {
+    public Publisher<Void> apply(@NotNull UserInteractionEvent event) {
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong())))
             .single()
-            .cast(MessageCommandReference.class)
+            .cast(UserCommandReference.class)
             .flatMap(command -> command.apply(
-                MessageCommandContext.of(
+                UserCommandContext.of(
                     this.getDiscordBot(),
                     event,
                     command

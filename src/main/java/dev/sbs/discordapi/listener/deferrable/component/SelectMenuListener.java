@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.listener.message.component;
+package dev.sbs.discordapi.listener.deferrable.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;

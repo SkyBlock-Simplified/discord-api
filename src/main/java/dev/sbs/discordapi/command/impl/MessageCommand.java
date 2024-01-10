@@ -2,7 +2,7 @@ package dev.sbs.discordapi.command.impl;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;
-import dev.sbs.discordapi.context.deferrable.application.MessageCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.MessageCommandContext;
 import dev.sbs.discordapi.response.Emoji;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;

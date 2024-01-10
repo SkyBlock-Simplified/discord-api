@@ -14,7 +14,7 @@ import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.command.reference.MessageCommandReference;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.command.reference.UserCommandReference;
-import dev.sbs.discordapi.context.deferrable.application.CommandContext;
+import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommand;
 import discord4j.core.object.command.ApplicationCommandOption;

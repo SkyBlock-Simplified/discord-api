@@ -1,10 +1,11 @@
-package dev.sbs.discordapi.listener;
+package dev.sbs.discordapi.listener.autocomplete;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
+import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import org.jetbrains.annotations.NotNull;

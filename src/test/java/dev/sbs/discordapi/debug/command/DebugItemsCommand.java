@@ -5,7 +5,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.impl.SlashCommand;
-import dev.sbs.discordapi.context.deferrable.application.SlashCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.handler.ItemHandler;

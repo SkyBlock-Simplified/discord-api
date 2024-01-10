@@ -11,7 +11,7 @@ import dev.sbs.discordapi.command.exception.DisabledCommandException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.UserPermissionException;
 import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.context.deferrable.application.CommandContext;
+import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.util.DiscordReference;
 import dev.sbs.discordapi.util.exception.DiscordException;

@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.listener.command;
+package dev.sbs.discordapi.listener.deferrable.command;
 
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
-import dev.sbs.discordapi.context.deferrable.application.SlashCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.jetbrains.annotations.NotNull;

@@ -12,7 +12,7 @@ import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
-import dev.sbs.discordapi.context.deferrable.application.CommandContext;
+import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.command.ApplicationCommandOption;
