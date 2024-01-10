@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.api.util.SimplifiedException;
-import dev.sbs.discordapi.command.exception.parameter.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.InvalidParameterException;
 import dev.sbs.discordapi.response.Attachment;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
