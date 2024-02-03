@@ -1,9 +1,9 @@
 package dev.sbs.discordapi.response.component.layout;
 
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;

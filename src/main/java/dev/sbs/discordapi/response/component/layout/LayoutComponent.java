@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.type.D4jComponent;
 import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;

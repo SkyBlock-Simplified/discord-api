@@ -1,10 +1,10 @@
 package dev.sbs.discordapi.response.page.handler.cache;
 
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;

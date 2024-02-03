@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.page.item;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

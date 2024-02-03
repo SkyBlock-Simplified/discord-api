@@ -1,16 +1,15 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.ExceptionUtil;
+import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.helper.ExceptionUtil;
-import dev.sbs.api.util.helper.ListUtil;
-import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -23,7 +22,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.Paging;
-import dev.sbs.discordapi.response.page.handler.HistoryHandler;
+import dev.sbs.discordapi.response.page.handler.cache.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import dev.sbs.discordapi.util.DiscordReference;
@@ -164,7 +163,7 @@ public class Response implements Paging<Page> {
             ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
 
             // Page List
-            if (ListUtil.sizeOf(this.getPages()) > 1 && !this.getHistoryHandler().hasPageHistory()) {
+            if (this.getPages().size() > 1 && !this.getHistoryHandler().hasPageHistory()) {
                 pageComponents.add(ActionRow.of(
                     SelectMenu.builder()
                         .withPageType(SelectMenu.PageType.PAGE)
@@ -176,29 +175,31 @@ public class Response implements Paging<Page> {
                                 .map(Page::getOption)
                                 .collect(Concurrent.toList())
                         )
+                        .onInteract(SelectMenu.PageType.PAGE.getInteraction())
                         .build()
                         .updateSelected(this.getHistoryHandler().getHistoryIdentifiers().get(0))
                 ));
             }
 
             // SubPage List
-            if (ListUtil.notEmpty(this.getHistoryHandler().getCurrentPage().getPages()) || this.getHistoryHandler().hasPageHistory()) {
+            if (this.getHistoryHandler().getCurrentPage().getPages().notEmpty() || this.getHistoryHandler().hasPageHistory()) {
                 SelectMenu.Builder subPageBuilder = SelectMenu.builder()
                     .withPageType(SelectMenu.PageType.SUBPAGE)
                     .withPlaceholder("Select a subpage.")
-                    .withPlaceholderUsesSelectedOption();
+                    .withPlaceholderUsesSelectedOption()
+                    .onInteract(SelectMenu.PageType.SUBPAGE.getInteraction());
 
                 if (this.getHistoryHandler().hasPageHistory()) {
                     subPageBuilder.withOptions(
                         SelectMenu.Option.builder()
                             .withValue("BACK")
                             .withLabel("Back")
-                            .withEmoji(Button.PageType.BACK.getEmoji())
+                            .withEmoji(DiscordReference.getEmoji("ARROW_LEFT"))
                             .build()
                     );
                 }
 
-                Page subPage = ListUtil.notEmpty(this.getHistoryHandler().getCurrentPage().getPages()) ?
+                Page subPage = this.getHistoryHandler().getCurrentPage().getPages().notEmpty() ?
                     this.getHistoryHandler().getCurrentPage() :
                     this.getHistoryHandler().getPreviousPage().orElse(this.getHistoryHandler().getCurrentPage());
 
@@ -214,18 +215,12 @@ public class Response implements Paging<Page> {
 
             if (this.getHistoryHandler().getCurrentPage().hasItems()) {
                 // Item List
-                if (this.getHistoryHandler().getCurrentPage().getItemHandler().getTotalItemPages() > 1) {
-                    for (int i = 1; i <= Button.PageType.getNumberOfRows(); i++) {
-                        int row = i;
-
-                        pageComponents.add(ActionRow.of(
-                            Arrays.stream(Button.PageType.values())
-                                .filter(pageType -> pageType.getRow() == row)
-                                .map(Button.PageType::build)
-                                .collect(Concurrent.toList())
-                        ));
-                    }
-                }
+                pageComponents.add(ActionRow.of(
+                    Arrays.stream(Button.PageType.values())
+                        .filter(pageType -> pageType != Button.PageType.NONE)
+                        .map(Button.PageType::build)
+                        .collect(Concurrent.toList())
+                ));
 
                 // Editor
                 if (this.getHistoryHandler().getCurrentPage().getItemHandler().isEditorEnabled()) {
@@ -239,6 +234,7 @@ public class Response implements Paging<Page> {
                         SelectMenu.builder()
                             .withPageType(SelectMenu.PageType.ITEM)
                             .withPlaceholder("Select an item to edit.")
+                            .onInteract(SelectMenu.PageType.ITEM.getInteraction())
                             .withOptions(
                                 Stream.concat(
                                         this.getHistoryHandler()
@@ -283,14 +279,14 @@ public class Response implements Paging<Page> {
 
     private void updatePagingComponents() {
         // Enabled
-        this.editPageButton(Button::getPageType, Button.PageType.FIRST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
+        //this.editPageButton(Button::getPageType, Button.PageType.FIRST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
         this.editPageButton(Button::getPageType, Button.PageType.NEXT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
-        this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().hasSorters()));
+        //this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
+        //this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
+        //this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().hasSorters()));
         this.editPageButton(Button::getPageType, Button.PageType.SEARCH, Button.Builder::setEnabled);
-        this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
+        //this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
 
         // Labels
         this.editPageButton(
@@ -310,7 +306,7 @@ public class Response implements Paging<Page> {
                 )
         );
 
-        this.editPageButton(
+        /*this.editPageButton(
             Button::getPageType,
             Button.PageType.SORT,
             builder -> builder
@@ -347,7 +343,7 @@ public class Response implements Paging<Page> {
                             .isReversed() ? "ASCENDING" : "DESCENDING")
                     )
                 )
-        );
+        );*/
     }
 
     public MessageCreateSpec getD4jCreateSpec() {

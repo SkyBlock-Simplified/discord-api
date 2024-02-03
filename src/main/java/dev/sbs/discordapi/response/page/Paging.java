@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.page;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import org.jetbrains.annotations.NotNull;
 
 public interface Paging<T> {

@@ -1,15 +1,15 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.data.DataConfig;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.data.yaml.YamlConfig;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.listener.DiscordListener;

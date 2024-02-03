@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.debug.command;
 
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
-import dev.sbs.api.util.mutable.pair.Pair;
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.CommandId;
 import dev.sbs.discordapi.command.impl.SlashCommand;

@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.command.exception.permission;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.mutable.triple.Triple;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.mutable.triple.Triple;
 
 /**
  * {@link UserPermissionException UserPermissionExceptions} are thrown when the user lacks permissions to continue.

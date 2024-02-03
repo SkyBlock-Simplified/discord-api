@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.listener.autocomplete;
 
-import dev.sbs.api.util.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;

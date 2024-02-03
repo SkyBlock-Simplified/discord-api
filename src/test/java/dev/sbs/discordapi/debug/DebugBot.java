@@ -2,9 +2,9 @@ package dev.sbs.discordapi.debug;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.helper.NumberUtil;
-import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.helper.SystemUtil;
+import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.DiscordEnvironment;

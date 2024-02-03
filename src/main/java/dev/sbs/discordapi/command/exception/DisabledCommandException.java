@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.command.exception;
 
-import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.util.mutable.triple.Triple;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.mutable.triple.Triple;
 
 /**
  * {@link DisabledCommandException DiscordDisabledCommandExceptions} are thrown when the bot lacks permissions to continue.

@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response.embed.structure;
 
+import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.helper.StringUtil;
-import dev.sbs.api.util.mutable.triple.Triple;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;

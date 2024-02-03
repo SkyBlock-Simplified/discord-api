@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
+import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.api.util.collection.concurrent.Concurrent;
-import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
