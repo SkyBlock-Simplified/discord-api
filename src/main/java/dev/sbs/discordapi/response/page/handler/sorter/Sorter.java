@@ -39,10 +39,8 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
     private final @NotNull SortOrder order;
 
     @Override
-    public @NotNull ConcurrentList<T> apply(@NotNull ConcurrentList<T> list, Boolean reversed) {
-        ConcurrentList<T> copy = Concurrent.newList(list);
-
-        copy.sort((o1, o2) -> {
+    public @NotNull ConcurrentList<T> apply(@NotNull ConcurrentList<T> list, @NotNull Boolean reversed) {
+        ConcurrentList<T> copy = Concurrent.newList(list).sorted((o1, o2) -> {
             Iterator<Map.Entry<Comparator<? extends T>, SortOrder>> iterator = this.getComparators().iterator();
             Map.Entry<Comparator<? extends T>, SortOrder> entry = iterator.next();
             Comparator comparator = entry.getKey();
