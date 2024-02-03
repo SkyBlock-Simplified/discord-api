@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler;
+package dev.sbs.discordapi.response.page.handler.cache;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
@@ -173,7 +173,7 @@ public final class ItemHandler<T> implements CacheHandler {
                             .stream()
                             .map(FieldItem::getRenderValue)
                             .collect(StreamUtil.toStringBuilder(true))
-                            .build()
+                            .toString()
                     )
                     .isInline(this.getFieldStyle().isInline())
                     .build()
