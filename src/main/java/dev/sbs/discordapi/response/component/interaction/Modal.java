@@ -1,11 +1,13 @@
 package dev.sbs.discordapi.response.component.interaction;
 
-import dev.sbs.api.util.builder.annotation.BuildFlag;
+import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.discordapi.command.exception.user.UserInputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -23,6 +25,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -36,11 +39,10 @@ import java.util.function.Function;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Modal implements Component, InteractableComponent<ModalContext> {
 
-    private static final Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
+    private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String identifier;
     private final @NotNull Optional<String> title;
     private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
-    private final @NotNull PageType pageType;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
@@ -81,7 +83,6 @@ public final class Modal implements Component, InteractableComponent<ModalContex
         return new Builder(modal.getIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
-            .withPageType(modal.getPageType())
             .onInteract(modal.getInteraction());
     }
 
@@ -91,6 +92,42 @@ public final class Modal implements Component, InteractableComponent<ModalContex
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
             .components(this.getComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
+    }
+
+    @Override
+    public @NotNull Function<ModalContext, Mono<Void>> getInteraction() {
+        return modalContext -> Flux.fromIterable(modalContext.getComponent().getComponents())
+            .map(LayoutComponent::getComponents)
+            .map(ConcurrentList::getFirst)
+            .flatMap(Mono::justOrEmpty)
+            .map(TextInput.class::cast)
+            .filter(textInput -> textInput.getValue().isPresent())
+            .flatMap(textInput -> {
+                boolean validInput = textInput.getValue()
+                    .map(value -> textInput.getValidator().test(value))
+                    .orElse(true);
+
+                if (!validInput) {
+                    return modalContext.getDiscordBot().handleException(
+                        ExceptionContext.of(
+                            modalContext.getDiscordBot(),
+                            modalContext,
+                            SimplifiedException.of(UserInputException.class)
+                                .withMessage("The input you provided is invalid!")
+                                .withField("Input", textInput.getValue().orElse(""))
+                                .build(),
+                            "Modal Interaction Exception"
+                        )
+                    );
+                }
+
+                return Mono.just(textInput);
+            })
+            // Search Checks Top-Most
+            .filter(textInput -> textInput.getSearchType() != TextInput.SearchType.NONE)
+            .next()
+            .switchIfEmpty(this.interaction.apply(modalContext).then(Mono.empty()))
+            .flatMap(textInput -> textInput.getSearchType().getInteraction().apply(modalContext, textInput));
     }
 
     @Override
@@ -108,8 +145,6 @@ public final class Modal implements Component, InteractableComponent<ModalContex
         private final String identifier;
         private Optional<String> title = Optional.empty();
         private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
-        @BuildFlag(nonNull = true)
-        private PageType pageType = PageType.NONE;
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -260,16 +295,6 @@ public final class Modal implements Component, InteractableComponent<ModalContex
         }
 
         /**
-         * Sets the page type of the {@link Modal}.
-         *
-         * @param pageType The page type of the text input.
-         */
-        public Builder withPageType(@NotNull PageType pageType) {
-            this.pageType = pageType;
-            return this;
-        }
-
-        /**
          * Sets the title of the {@link Modal}.
          *
          * @param title The title of the modal.
@@ -294,17 +319,9 @@ public final class Modal implements Component, InteractableComponent<ModalContex
                 this.identifier,
                 this.title,
                 this.components,
-                this.pageType,
                 this.interaction.orElse(NOOP_HANDLER)
             );
         }
-
-    }
-
-    public enum PageType {
-
-        NONE,
-        SEARCH
 
     }
 

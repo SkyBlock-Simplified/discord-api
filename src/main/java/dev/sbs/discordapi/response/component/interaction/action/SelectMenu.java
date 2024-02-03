@@ -7,7 +7,6 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
@@ -104,7 +103,8 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
             .withMaxValue(selectMenu.getMaxValue())
             .withPlaceholderUsesSelectedOption(selectMenu.isPlaceholderUsingSelectedOption())
             .withOptions(selectMenu.getOptions())
-            .isPreserved(selectMenu.isDisabled());
+            .isPreserved(selectMenu.isDisabled())
+            .onInteract(selectMenu.interaction);
     }
 
     @Override
@@ -125,14 +125,13 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
     @Override
     public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
-            .doOnNext(context -> this.updateSelected(context.getEvent().getValues()))
+            //.doOnNext(context -> this.updateSelected(context.getEvent().getValues()))
             .flatMap(context -> Mono.justOrEmpty(this.interaction)
                 .flatMap(interaction -> interaction.apply(context))
                 .thenReturn(context)
             )
-            .filter(context -> ListUtil.sizeOf(context.getEvent().getValues()) == 1)
+            .filter(context -> context.getEvent().getValues().size() == 1)
             .flatMap(context -> Mono.justOrEmpty(this.getSelected().getFirst())
-                .filter(option -> option.interaction.isPresent())
                 .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)))
                 .switchIfEmpty(context.deferEdit())
             );
@@ -456,17 +455,18 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
 
     }
 
+    @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Option {
 
         public static final int MAX_ALLOWED = 25;
         private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-        @Getter private final @NotNull UUID uniqueId;
-        @Getter private final @NotNull String label;
-        @Getter private final @NotNull String value;
-        @Getter private final @NotNull Optional<String> description;
-        @Getter private final @NotNull Optional<Emoji> emoji;
-        private final @NotNull Optional<Function<OptionContext, Mono<Void>>> interaction;
+        private final @NotNull UUID uniqueId;
+        private final @NotNull String label;
+        private final @NotNull String value;
+        private final @NotNull Optional<String> description;
+        private final @NotNull Optional<Emoji> emoji;
+        private final @NotNull Function<OptionContext, Mono<Void>> interaction;
 
         public static Builder builder() {
             return new Builder(UUID.randomUUID());
@@ -517,10 +517,6 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
                 d4jOption = d4jOption.withEmoji(this.getEmoji().get().getD4jReaction());
 
             return d4jOption;
-        }
-
-        public Function<OptionContext, Mono<Void>> getInteraction() {
-            return this.interaction.orElse(NOOP_HANDLER);
         }
 
         public Builder mutate() {
@@ -665,7 +661,7 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
                     this.value.orElse(this.uniqueId.toString()),
                     this.description,
                     this.emoji,
-                    this.interaction
+                    this.interaction.orElse(NOOP_HANDLER)
                 );
             }
 
@@ -673,12 +669,37 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
         
     }
 
+    @Getter
+    @RequiredArgsConstructor
     public enum PageType {
 
-        NONE,
-        PAGE,
-        SUBPAGE,
-        ITEM
+        NONE(__ -> Mono.empty()),
+        PAGE(context -> context.consumeResponse(response -> {
+            String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
+            response.getHistoryHandler().gotoSubPage(selectedValue);
+        })),
+        SUBPAGE(context -> context.consumeResponse(response -> {
+            String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
+
+            if (selectedValue.equals("BACK"))
+                response.getHistoryHandler().gotoPreviousPage();
+            else
+                response.getHistoryHandler().gotoPage(selectedValue);
+        })),
+        ITEM(context -> context.consumeResponse(response -> {
+            /*
+             TODO
+                Build a viewer that converts the item list
+                into something that either lists data about an item
+                or a sub-list from PageItem
+
+             TODO
+                Viewer will need the ability to enable editing
+                and code to do something on save
+             */
+        }));
+
+        private final @NotNull Function<SelectMenuContext, Mono<Void>> interaction;
 
     }
 

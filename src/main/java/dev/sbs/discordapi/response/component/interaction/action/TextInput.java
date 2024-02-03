@@ -1,11 +1,14 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
+import dev.sbs.api.util.Range;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
@@ -16,23 +19,27 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TextInput implements ActionComponent {
 
+    private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
     private final @NotNull String identifier;
     private final @NotNull Style style;
     private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> value;
     private final @NotNull Optional<String> placeholder;
     private final @NotNull SearchType searchType;
-    private final @NotNull Optional<Predicate<String>> validator;
+    private final @NotNull Predicate<String> validator;
     private final int minLength;
     private final int maxLength;
     private final boolean required;
@@ -331,7 +338,7 @@ public final class TextInput implements ActionComponent {
                 this.value,
                 this.placeholder,
                 this.searchType,
-                this.validator,
+                this.validator.orElse(NOOP_HANDLER),
                 this.minLength,
                 this.maxLength,
                 this.required
@@ -340,12 +347,80 @@ public final class TextInput implements ActionComponent {
 
     }
 
+    @Getter
+    @RequiredArgsConstructor
     public enum SearchType {
 
-        NONE,
-        PAGE,
-        INDEX,
-        CUSTOM
+        NONE((c_, t_) -> Mono.empty()),
+        PAGE(
+            "Go to Page",
+            itemHandler -> String.format("Enter a number between 1 and %d.", itemHandler.getTotalItemPages()),
+            itemHandler -> value -> {
+                if (!NumberUtil.isCreatable(value))
+                    return false;
+
+                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalItemPages());
+                int page = NumberUtil.createInteger(value);
+                return pageRange.contains(page);
+            },
+            (context, textInput) -> context.consumeResponse(response -> {
+            ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
+            Range<Integer> pageRange = Range.between(1, itemHandler.getTotalItemPages());
+            itemHandler.gotoItemPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
+        })
+        ),
+        INDEX(
+            "Go to Index",
+            itemHandler -> String.format("Enter a number between 0 and %d.", itemHandler.getCachedFilteredItems().size()),
+            itemHandler -> value -> {
+                if (!NumberUtil.isCreatable(value))
+                    return false;
+
+                Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
+                int index = NumberUtil.createInteger(value);
+                return indexRange.contains(index);
+            },
+            (context, textInput) -> context.consumeResponse(response -> {
+                ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
+                Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
+                int index = indexRange.fit(Integer.parseInt(textInput.getValue().orElseThrow()));
+                itemHandler.gotoItemPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
+            })
+        ),
+        CUSTOM((context, textInput) -> context.consumeResponse(response -> context.getResponse()
+            .getHistoryHandler()
+            .getCurrentPage()
+            .getItemHandler()
+            .gotoItemPage(textInput)
+        ));
+
+        private final @NotNull Optional<String> label;
+        private final @NotNull Function<ItemHandler<?>, String> placeholder;
+        private final @NotNull Function<ItemHandler<?>, Predicate<String>> validator;
+        private final @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction;
+
+        SearchType(@NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction) {
+            this(Optional.empty(), f_ -> "", f_ -> p_ -> true, interaction);
+        }
+
+        SearchType(
+            @NotNull String name,
+            @NotNull Function<ItemHandler<?>, String> placeholder,
+            @NotNull Function<ItemHandler<?>, Predicate<String>> validator,
+            @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction
+        ) {
+            this(Optional.of(name), placeholder, validator, interaction);
+        }
+
+        public @NotNull TextInput build(@NotNull ItemHandler<?> itemHandler) {
+            return TextInput.builder()
+                .withStyle(Style.SHORT)
+                .withSearchType(this)
+                .withLabel(this.getLabel())
+                .withPlaceholder(this.getPlaceholder().apply(itemHandler))
+                .withValidator(this.getValidator().apply(itemHandler))
+                .build();
+        }
 
     }
 
@@ -362,7 +437,7 @@ public final class TextInput implements ActionComponent {
          */
         private final int value;
 
-        public static Style of(int value) {
+        public static @NotNull Style of(int value) {
             return Arrays.stream(values()).filter(style -> style.getValue() == value).findFirst().orElse(UNKNOWN);
         }
 

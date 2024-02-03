@@ -4,14 +4,20 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.handler.search.Search;
+import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
@@ -79,7 +85,8 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
             .withUrl(button.getUrl())
             .isPreserved(button.isPreserved())
             .withDeferEdit(button.isDeferEdit())
-            .withPageType(button.getPageType());
+            .withPageType(button.getPageType())
+            .onInteract(button.getInteraction());
     }
 
     @Override
@@ -403,23 +410,108 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
     @RequiredArgsConstructor
     public enum PageType {
 
-        NONE("", -1),
-        FIRST("First", 1, DiscordReference.getEmoji("ARROW_SQUARE_FIRST")),
-        PREVIOUS("Previous", 1, DiscordReference.getEmoji("ARROW_SQUARE_PREVIOUS")),
-        INDEX("Index", 1),
-        NEXT("Next", 1, DiscordReference.getEmoji("ARROW_SQUARE_NEXT")),
-        LAST("Last", 1, DiscordReference.getEmoji("ARROW_SQUARE_LAST")),
-        BACK("Back", 2, DiscordReference.getEmoji("ARROW_LEFT")),
-        SEARCH("Search", 2, DiscordReference.getEmoji("SEARCH")),
-        SORT("Sort", 2, DiscordReference.getEmoji("SORT")),
-        ORDER("Order", 2, DiscordReference.getEmoji("SORT_DESCENDING"));
+        NONE("", __ -> Mono.empty()),
+        PREVIOUS("Previous", DiscordReference.getEmoji("ARROW_SQUARE_PREVIOUS"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+            .getCurrentPage()
+            .getItemHandler()
+            .gotoPreviousItemPage()
+        )),
+        SEARCH("Search", DiscordReference.getEmoji("SEARCH"), context -> context.withResponse(response -> context.presentModal(
+            Modal.builder()
+                .withComponents(
+                    ActionRow.of(TextInput.SearchType.PAGE.build(response.getHistoryHandler().getCurrentPage().getItemHandler())),
+                    ActionRow.of(TextInput.SearchType.INDEX.build(response.getHistoryHandler().getCurrentPage().getItemHandler()))
+                )
+                .withComponents(
+                    response.getHistoryHandler()
+                        .getCurrentPage()
+                        .getItemHandler()
+                        .getSearchers()
+                        .stream()
+                        .map(Search::getTextInput)
+                        .map(ActionRow::of)
+                        .collect(Concurrent.toList())
+                )
+                .withTitle("Search")
+                .build()
+        ))),
+        INDEX("Index", __ -> Mono.empty()),
+        FILTER("Filter", context -> context.withResponse(response -> context.followup(
+            Response.builder()
+                .withPages(
+                    Page.builder()
+                        .withComponents(
+                            ActionRow.of(
+                                SelectMenu.builder()
+                                    .withOptions(
+                                        SelectMenu.Option.builder()
+                                            .withLabel("None")
+                                            .build()
+                                    )
+                                    .withOptions(
+                                        response.getHistoryHandler()
+                                            .getCurrentPage()
+                                            .getItemHandler()
+                                            .getSortHandler()
+                                            .getSorters()
+                                            .stream()
+                                            .map(Sorter::getOption)
+                                            .collect(Concurrent.toList())
+                                    )
+                                    .withPlaceholderUsesSelectedOption()
+                                    .build(),
+                                SelectMenu.builder()
+                                    .build()
+                            ),
+                            ActionRow.of(
+                                SelectMenu.builder()
+                                    .withOptions(
+                                        SelectMenu.Option.builder()
+                                            .withLabel("None")
+                                            .build()
+                                    )
+                                    .withOptions(
+                                        // TODO: FilterHandler like SortHandler
+                                        //       In the stream, build the select menu and
+                                        //       then their action row and move it to it's own
+                                        //       withComponents method
+                                    )
+                                    .withPlaceholderUsesSelectedOption()
+                                    .build(),
+                                SelectMenu.builder()
+                                    .build()
+                            )
+                        )
+                        .build()
+                )
+                .build()
+        ))),
+        NEXT("Next", DiscordReference.getEmoji("ARROW_SQUARE_NEXT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+            .getCurrentPage()
+            .getItemHandler()
+            .gotoNextItemPage()
+        ));
+        //LAST("Last", 1, DiscordReference.getEmoji("ARROW_SQUARE_LAST")),
+        /*BACK("Back", DiscordReference.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
+        SORT("Sort", DiscordReference.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+            .getCurrentPage()
+            .getItemHandler()
+            .getSortHandler()
+            .gotoNext()
+        )),
+        ORDER("Order", DiscordReference.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+            .getCurrentPage()
+            .getItemHandler()
+            .getSortHandler()
+            .invertOrder()
+        ))*/
 
         private final @NotNull String label;
-        private final int row;
         private final @NotNull Optional<Emoji> emoji;
+        private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
 
-        PageType(@NotNull String label, int row) {
-            this(label, row, Optional.empty());
+        PageType(@NotNull String label, @NotNull Function<ButtonContext, Mono<Void>> interaction) {
+            this(label, Optional.empty(), interaction);
         }
 
         public @NotNull Button build() {
@@ -429,14 +521,8 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
                 .withLabel(this.getLabel())
                 .withPageType(this)
                 .setDisabled(true)
+                .onInteract(this.getInteraction())
                 .build();
-        }
-
-        public static int getNumberOfRows() {
-            return Arrays.stream(values())
-                .mapToInt(PageType::getRow)
-                .max()
-                .orElse(1);
         }
 
     }
