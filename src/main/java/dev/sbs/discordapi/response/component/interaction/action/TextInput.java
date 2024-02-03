@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.util.Range;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.mutable.Range;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;

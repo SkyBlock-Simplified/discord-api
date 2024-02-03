@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.Range;
 import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
@@ -10,6 +9,7 @@ import dev.sbs.api.util.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.util.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.helper.NumberUtil;
 import dev.sbs.api.util.helper.StringUtil;
+import dev.sbs.api.util.mutable.Range;
 import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
