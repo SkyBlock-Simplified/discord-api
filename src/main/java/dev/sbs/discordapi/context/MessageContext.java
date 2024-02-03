@@ -18,9 +18,20 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface MessageContext<T extends Event> extends EventContext<T> {
+
+    default Mono<Void> consumeResponse(@NotNull Consumer<Response> consumer) {
+        return Mono.justOrEmpty(this.getFollowup())
+            .map(Response.Cache.Followup::getResponse)
+            .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
+            .flatMap(response -> {
+                consumer.accept(response);
+                return Mono.empty();
+            });
+    }
 
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
         return this.discordBuildMessage(
@@ -61,6 +72,25 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getChannel()
             .flatMap(channel -> channel.getMessageById(messageId))
             .flatMap(message -> message.edit(response.getD4jEditSpec()));
+    }
+
+    default Mono<Void> deleteFollowup() {
+        return Mono.justOrEmpty(this.getFollowup())
+            .flatMap(followup -> this.deleteFollowup(followup.getIdentifier()));
+    }
+
+    default Mono<Void> deleteFollowup(@NotNull String identifier) {
+        return this.discordDeleteFollowup(identifier)
+            .checkpoint("ResponseContext#deleteFollowup Processing")
+            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    this,
+                    throwable,
+                    "Followup Delete Exception"
+                )
+            ))
+            .then(Mono.fromRunnable(() -> this.getResponseCacheEntry().removeFollowup(identifier)));
     }
 
     default Mono<Void> edit() {
@@ -124,25 +154,6 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             .then();
     }
 
-    default Mono<Void> deleteFollowup() {
-        return Mono.justOrEmpty(this.getFollowup())
-            .flatMap(followup -> this.deleteFollowup(followup.getIdentifier()));
-    }
-
-    default Mono<Void> deleteFollowup(@NotNull String identifier) {
-        return this.discordDeleteFollowup(identifier)
-            .checkpoint("ResponseContext#deleteFollowup Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    this,
-                    throwable,
-                    "Followup Delete Exception"
-                )
-            ))
-            .then(Mono.fromRunnable(() -> this.getResponseCacheEntry().removeFollowup(identifier)));
-    }
-
     default Mono<Void> followup(@NotNull Response response) {
         return this.followup(response.getUniqueId().toString(), response);
     }
@@ -197,6 +208,13 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getDiscordBot()
             .getResponseCache()
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
+    }
+
+    default Mono<Void> withResponse(@NotNull Function<Response, Mono<Void>> function) {
+        return Mono.justOrEmpty(this.getFollowup())
+            .map(Response.Cache.Followup::getResponse)
+            .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
+            .flatMap(function);
     }
 
     default Mono<Void> withResponseEntry(@NotNull Function<Response.Cache.Entry, Mono<Response.Cache.Entry>> function) {
