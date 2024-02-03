@@ -4,7 +4,6 @@ import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.collection.concurrent.Concurrent;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
-import dev.sbs.api.util.helper.ListUtil;
 import dev.sbs.api.util.helper.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.exception.InvalidParameterException;
@@ -83,7 +82,7 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
             )
             .withColor(Color.DARK_GRAY);
 
-        if (ListUtil.notEmpty(parameters)) {
+        if (parameters.notEmpty()) {
             builder.withField(
                 "Usage",
                 String.format(
@@ -103,7 +102,7 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
             );
         }
 
-        if (ListUtil.notEmpty(this.getExampleArguments())) {
+        if (this.getExampleArguments().notEmpty()) {
             builder.withField(
                 "Examples",
                 StringUtil.join(
