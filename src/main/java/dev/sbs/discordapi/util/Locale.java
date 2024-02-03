@@ -4,6 +4,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * All supported Discord Locales.
+ * <br><br>
+ * @see <a href="https://discord.com/developers/docs/reference#locales">Discord Locales</a>
+ */
 @Getter
 @RequiredArgsConstructor
 public enum Locale {

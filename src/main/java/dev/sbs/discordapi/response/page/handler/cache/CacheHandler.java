@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler;
+package dev.sbs.discordapi.response.page.handler.cache;
 
 public interface CacheHandler {
 

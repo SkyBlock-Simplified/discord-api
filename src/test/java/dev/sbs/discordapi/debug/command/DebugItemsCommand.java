@@ -8,7 +8,7 @@ import dev.sbs.discordapi.command.impl.SlashCommand;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.handler.ItemHandler;
+import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
 import dev.sbs.discordapi.response.page.handler.search.Search;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.FooterItem;

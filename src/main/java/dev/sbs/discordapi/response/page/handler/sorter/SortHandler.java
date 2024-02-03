@@ -3,7 +3,7 @@ package dev.sbs.discordapi.response.page.handler.sorter;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.api.util.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.page.handler.CacheHandler;
+import dev.sbs.discordapi.response.page.handler.cache.CacheHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;

@@ -11,8 +11,8 @@ import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.page.handler.HistoryHandler;
-import dev.sbs.discordapi.response.page.handler.ItemHandler;
+import dev.sbs.discordapi.response.page.handler.cache.HistoryHandler;
+import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.PageItem;
 import lombok.AccessLevel;
@@ -40,7 +40,7 @@ public class Page implements Paging<Page> {
     private final @NotNull ItemHandler<?> itemHandler;
     private final @NotNull HistoryHandler<PageItem, String> historyHandler;
 
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder();
     }
 
@@ -105,7 +105,7 @@ public class Page implements Paging<Page> {
             .findFirst();
     }
 
-    public static Builder from(@NotNull Page page) {
+    public static @NotNull Builder from(@NotNull Page page) {
         return new Builder()
             .withOption(page.getOption())
             .withContent(page.getContent())
@@ -130,7 +130,7 @@ public class Page implements Paging<Page> {
             .build();
     }
 
-    public Builder mutate() {
+    public @NotNull Builder mutate() {
         return from(this);
     }
 
