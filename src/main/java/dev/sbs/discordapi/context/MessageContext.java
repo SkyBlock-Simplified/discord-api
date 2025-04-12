@@ -82,7 +82,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     default Mono<Void> deleteFollowup(@NotNull String identifier) {
         return this.discordDeleteFollowup(identifier)
             .checkpoint("ResponseContext#deleteFollowup Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,
@@ -102,7 +102,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
 
         return this.discordEditMessage(editedResponse)
             .checkpoint("ResponseContext#edit Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,
@@ -135,7 +135,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
 
                 return this.discordEditFollowup(identifier, editedResponse)
                     .checkpoint("ResponseContext#editFollowup Processing")
-                    .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                    .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                         ExceptionContext.of(
                             this.getDiscordBot(),
                             this,
@@ -161,7 +161,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     default Mono<Void> followup(@NotNull String identifier, @NotNull Response response) {
         return this.discordBuildFollowup(response)
             .checkpoint("ResponseContext#followup Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,

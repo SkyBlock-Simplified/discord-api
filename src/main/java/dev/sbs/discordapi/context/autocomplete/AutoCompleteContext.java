@@ -1,9 +1,9 @@
 package dev.sbs.discordapi.context.autocomplete;
 
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.context.TypeContext;
 import dev.sbs.discordapi.command.parameter.Argument;
-import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.InteractionContext;
 import dev.sbs.discordapi.context.TypingContext;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -19,14 +19,14 @@ public interface AutoCompleteContext extends InteractionContext<ChatInputAutoCom
     @NotNull Argument getArgument();
 
     @Override
-    @NotNull SlashCommandReference getCommand();
+    @NotNull SlashCommand getCommand();
 
     @Override
-    default @NotNull CommandReference.Type getType() {
-        return CommandReference.Type.CHAT_INPUT;
+    default @NotNull TypeContext getType() {
+        return TypeContext.CHAT_INPUT;
     }
 
-    static @NotNull AutoCompleteContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputAutoCompleteEvent event, @NotNull SlashCommandReference slashCommand, @NotNull Argument argument) {
+    static @NotNull AutoCompleteContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputAutoCompleteEvent event, @NotNull SlashCommand slashCommand, @NotNull Argument argument) {
         return new Impl(discordBot, event, slashCommand, argument);
     }
 
@@ -37,7 +37,7 @@ public interface AutoCompleteContext extends InteractionContext<ChatInputAutoCom
         private final @NotNull DiscordBot discordBot;
         private final @NotNull ChatInputAutoCompleteEvent event;
         private final @NotNull UUID responseId = UUID.randomUUID();
-        private final @NotNull SlashCommandReference command;
+        private final @NotNull SlashCommand command;
         private final @NotNull Argument argument;
 
     }

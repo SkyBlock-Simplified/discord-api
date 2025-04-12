@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.context.deferrable.command;
 
-import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.command.context.TypeContext;
 import dev.sbs.discordapi.context.TypingContext;
 import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
 import discord4j.common.util.Snowflake;
@@ -14,8 +14,8 @@ public interface CommandContext<T extends ApplicationCommandInteractionEvent> ex
     }
 
     @Override
-    default @NotNull CommandReference.Type getType() {
-        return CommandReference.Type.of(this.getEvent().getCommandType().getValue());
+    default @NotNull TypeContext getType() {
+        return TypeContext.of(this.getEvent().getCommandType().getValue());
     }
 
 }

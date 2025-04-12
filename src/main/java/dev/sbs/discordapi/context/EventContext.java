@@ -92,7 +92,7 @@ public interface EventContext<T extends Event> {
     default Mono<Void> reply(@NotNull Response response) {
         return this.discordBuildMessage(response)
             .checkpoint("EventContext#reply Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     this,

@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.deferrable.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.UserCommandReference;
+import dev.sbs.discordapi.command.UserCommand;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.object.entity.User;
@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface UserCommandContext extends CommandContext<UserInteractionEvent> {
 
     @Override
-    @NotNull UserCommandReference getCommand();
+    @NotNull UserCommand getCommand();
 
     default @NotNull User getTargetUser() {
         return this.getEvent().getResolvedUser();
@@ -25,7 +25,7 @@ public interface UserCommandContext extends CommandContext<UserInteractionEvent>
         return this.getEvent().getTargetId();
     }
 
-    static @NotNull UserCommandContext of(@NotNull DiscordBot discordBot, @NotNull UserInteractionEvent event, @NotNull UserCommandReference command) {
+    static @NotNull UserCommandContext of(@NotNull DiscordBot discordBot, @NotNull UserInteractionEvent event, @NotNull UserCommand command) {
         return new Impl(discordBot, event, command);
     }
 
@@ -36,7 +36,7 @@ public interface UserCommandContext extends CommandContext<UserInteractionEvent>
         private final @NotNull DiscordBot discordBot;
         private final @NotNull UserInteractionEvent event;
         private final @NotNull UUID responseId = UUID.randomUUID();
-        private final @NotNull UserCommandReference command;
+        private final @NotNull UserCommand command;
 
     }
 }

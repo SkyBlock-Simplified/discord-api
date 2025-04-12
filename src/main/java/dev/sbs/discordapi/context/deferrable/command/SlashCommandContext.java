@@ -2,9 +2,9 @@ package dev.sbs.discordapi.context.deferrable.command;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.SlashCommand;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -28,9 +28,9 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     @NotNull ConcurrentList<Argument> getArguments();
 
     @Override
-    @NotNull SlashCommandReference getCommand();
+    @NotNull SlashCommand getCommand();
 
-    static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull SlashCommandReference command, @NotNull ConcurrentList<Argument> arguments) {
+    static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull SlashCommand command, @NotNull ConcurrentList<Argument> arguments) {
         return new Impl(discordBot, event, command, arguments);
     }
 
@@ -41,7 +41,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         private final @NotNull DiscordBot discordBot;
         private final @NotNull ChatInputInteractionEvent event;
         private final @NotNull UUID responseId = UUID.randomUUID();
-        private final @NotNull SlashCommandReference command;
+        private final @NotNull SlashCommand command;
         private final @NotNull ConcurrentList<Argument> arguments;
 
     }

@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.deferrable.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.MessageCommandReference;
+import dev.sbs.discordapi.command.MessageCommand;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface MessageCommandContext extends CommandContext<MessageInteractionEvent> {
 
     @Override
-    @NotNull MessageCommandReference getCommand();
+    @NotNull MessageCommand getCommand();
 
     default @NotNull Message getTargetMessage() {
         return this.getEvent().getResolvedMessage();
@@ -25,7 +25,7 @@ public interface MessageCommandContext extends CommandContext<MessageInteraction
         return this.getEvent().getTargetId();
     }
 
-    static @NotNull MessageCommandContext of(@NotNull DiscordBot discordBot, @NotNull MessageInteractionEvent event, @NotNull MessageCommandReference command) {
+    static @NotNull MessageCommandContext of(@NotNull DiscordBot discordBot, @NotNull MessageInteractionEvent event, @NotNull MessageCommand command) {
         return new Impl(discordBot, event, command);
     }
 
@@ -36,7 +36,7 @@ public interface MessageCommandContext extends CommandContext<MessageInteraction
         private final @NotNull DiscordBot discordBot;
         private final @NotNull MessageInteractionEvent event;
         private final @NotNull UUID responseId = UUID.randomUUID();
-        private final @NotNull MessageCommandReference command;
+        private final @NotNull MessageCommand command;
 
     }
 }
