@@ -61,6 +61,7 @@ import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -119,12 +120,13 @@ public abstract class DiscordBot {
 
     protected DiscordBot() {
         this.exceptionHandler = new ExceptionHandler(this);
-        Configurator.setRootLevel(this.getConfig().getLogLevel());
+        Configurator.setRootLevel(Level.WARN);
     }
 
     @SuppressWarnings("unchecked")
     public void login(@NotNull DiscordConfig config) {
         this.config = config;
+        Configurator.setRootLevel(this.getConfig().getLogLevel());
 
         log.info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(this.getConfig().getToken())
