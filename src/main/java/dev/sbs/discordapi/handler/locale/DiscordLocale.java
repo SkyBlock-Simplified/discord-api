@@ -1,5 +1,6 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.handler.locale;
 
+import dev.sbs.api.util.StringUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -46,5 +47,9 @@ public enum DiscordLocale {
 
     private final @NotNull String shortName;
     private final @NotNull String nativeName;
+
+    public @NotNull String getLanguageName() {
+        return StringUtil.capitalizeFully(this.name().replace("_", " "));
+    }
 
 }
