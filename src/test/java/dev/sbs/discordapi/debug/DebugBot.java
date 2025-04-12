@@ -5,9 +5,11 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
-import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.util.DiscordConfig;
+import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.DiscordConfig;
+import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.util.DiscordEnvironment;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.MemberRequestFilter;
@@ -15,11 +17,12 @@ import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.util.AllowedMentions;
 import org.apache.logging.log4j.Level;
+import org.jetbrains.annotations.NotNull;
 
-public final class DebugBot {
+public final class DebugBot extends DiscordBot {
 
     public static void main(final String[] args) {
-        DiscordConfig.builder()
+        DiscordConfig discordConfig = DiscordConfig.builder()
             .withFileName("config-debug")
             .withEnvironment(DiscordEnvironment.DEVELOPMENT)
             .withToken(SystemUtil.getEnv("DISCORD_TOKEN"))
@@ -28,19 +31,24 @@ public final class DebugBot {
             .withCommands(
                 Reflection.getResources()
                     .filterPackage("dev.sbs.discordapi.debug.command")
-                    .getSubtypesOf(CommandReference.class)
+                    .getSubtypesOf(DiscordCommand.class)
             )
             .withAllowedMentions(AllowedMentions.suppressEveryone())
             .withDisabledIntents(IntentSet.of(Intent.GUILD_PRESENCES))
             .withClientPresence(ClientPresence.doNotDisturb(ClientActivity.watching("debugging")))
             .withMemberRequestFilter(MemberRequestFilter.all())
             .withLogLevel(Level.INFO)
-            .onGatewayConnected(gatewayDiscordClient -> SystemUtil.getEnv("HYPIXEL_API_KEY")
-                .map(StringUtil::toUUID)
-                .ifPresent(value -> SimplifiedApi.getKeyManager().add("HYPIXEL_API_KEY", value))
-            )
-            .build()
-            .createBot();
+            .build();
+
+        DebugBot debugBot = new DebugBot();
+        debugBot.login(discordConfig);
+    }
+
+    @Override
+    protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) {
+        SystemUtil.getEnv("HYPIXEL_API_KEY")
+            .map(StringUtil::toUUID)
+            .ifPresent(value -> SimplifiedApi.getKeyManager().add("HYPIXEL_API_KEY", value));
     }
 
 }
