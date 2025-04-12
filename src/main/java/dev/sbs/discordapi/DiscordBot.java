@@ -5,7 +5,6 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.discordapi.command.impl.DiscordCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.CommandReference;
@@ -33,7 +32,7 @@ import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.util.CommandRegistrar;
 import dev.sbs.discordapi.util.DiscordConfig;
 import dev.sbs.discordapi.util.ExceptionHandler;
-import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.util.exception.DiscordGatewayException;
 import dev.sbs.discordapi.util.shard.ShardHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
@@ -227,10 +226,7 @@ public class DiscordBot {
             )
             .login()
             .blockOptional()
-            .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to connect to gateway!")
-                .build()
-            );
+            .orElseThrow(() -> new DiscordGatewayException("Unable to connect to gateway."));
 
         this.shardHandler = new ShardHandler(this);
         this.getGateway().onDisconnect().block(); // Stay Online
@@ -244,20 +240,14 @@ public class DiscordBot {
         return this.getGateway()
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
-            .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate main guild in Discord Gateway!")
-                .build()
-            );
+            .orElseThrow(() -> new DiscordGatewayException("Unable to locate main guild in gateway."));
     }
 
     public final @NotNull User getSelf() {
         return this.getGateway()
             .getSelf()
             .blockOptional()
-            .orElseThrow(() -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate self in Discord Gateway!")
-                .build()
-            );
+            .orElseThrow(() -> new DiscordGatewayException("Unable to locate self in gateway."));
     }
 
     public final <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
