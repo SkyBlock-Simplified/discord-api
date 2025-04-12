@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.shard;
+package dev.sbs.discordapi.handler.shard;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
