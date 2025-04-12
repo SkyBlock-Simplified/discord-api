@@ -5,8 +5,8 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.CommandReference;
-import dev.sbs.discordapi.command.reference.SlashCommandReference;
+import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.command.SlashCommand;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -52,58 +52,50 @@ public abstract class DiscordReference {
         return StringUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
     }
 
-    protected @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> tClass, @NotNull Class<? extends CommandReference> command) {
-        return command.isAnnotationPresent(tClass) ? Optional.of(command.getAnnotation(tClass)) : java.util.Optional.empty();
+    protected @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
+        return tClass.isAnnotationPresent(aClass) ? Optional.of(tClass.getAnnotation(aClass)) : java.util.Optional.empty();
     }
 
     protected final @NotNull Mono<Guild> getGuild(@NotNull Snowflake guildId) {
         return this.getDiscordBot().getGateway().getGuildById(guildId);
     }
 
-    public static @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
-        return DiscordConfig.getEmojiLocator().flatMap(function -> function.apply(key));
-    }
-
-    public static @NotNull String getEmojiAsFormat(@NotNull String key) {
-        return getEmojiAsFormat(key, "");
-    }
-
-    public static @NotNull String getEmojiAsFormat(@NotNull String key, @NotNull String defaultValue) {
-        return getEmoji(key).map(Emoji::asFormat).orElse(defaultValue);
+    protected @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
+        return this.getDiscordBot().getEmojiHandler().getEmoji(key);
     }
 
     // --- Command Searching ---
 
-    protected final @NotNull ConcurrentList<CommandReference<?>> getCommandsById(long commandId) {
+    protected final @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
         return this.getDiscordBot()
-            .getCommandRegistrar()
+            .getCommandHandler()
             .getLoadedCommands()
             .stream()
             .filter(command -> command.getId() == commandId)
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    protected final boolean doesCommandMatch(@NotNull SlashCommandReference slashCommand, @NotNull ApplicationCommandInteractionData commandData) {
+    protected final boolean doesCommandMatch(@NotNull SlashCommand slashCommand, @NotNull ApplicationCommandInteractionData commandData) {
         if (commandData.name().isAbsent())
             return false;
 
         String compareName = commandData.name().get();
 
-        if (slashCommand.getParent().isPresent()) {
+        if (StringUtil.isNotEmpty(slashCommand.getStructure().parent())) {
             if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
                 return false;
 
             List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
             ApplicationCommandInteractionOptionData option = options.get(0);
 
-            if (!compareName.equals(slashCommand.getParent().get().getName()))
+            if (!compareName.equals(slashCommand.getStructure().parent()))
                 return false;
 
             if (options.get(0).type() > 2)
                 return false;
 
-            if (slashCommand.getGroup().isPresent()) {
-                if (!option.name().equals(slashCommand.getGroup().get().getName()))
+            if (StringUtil.isNotEmpty(slashCommand.getStructure().group())) {
+                if (!option.name().equals(slashCommand.getStructure().group()))
                     return false;
 
                 if (option.options().isAbsent() || option.options().get().isEmpty())
@@ -116,10 +108,10 @@ public abstract class DiscordReference {
             compareName = option.name();
         }
 
-        return compareName.equals(slashCommand.getName());
+        return compareName.equals(slashCommand.getStructure().name());
     }
 
-    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull SlashCommandReference slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
+    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull SlashCommand slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
         ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
         ConcurrentList<String> commandTree = Concurrent.newList(slashCommand.getCommandTree());
         commandTree.removeFirst();
@@ -145,7 +137,7 @@ public abstract class DiscordReference {
         return optionalGuild.map(guild -> guild.getMemberById(userId))
             .orElse(Mono.empty())
             .flatMap(Member::getBasePermissions)
-            .map(permissionSet -> this.getPermissionMap(permissionSet, permissions))
+            .map(permissionSet -> getPermissionMap(permissionSet, permissions))
             .blockOptional()
             .orElse(Concurrent.newLinkedMap());
     }
@@ -156,12 +148,12 @@ public abstract class DiscordReference {
 
     protected final @NotNull ConcurrentLinkedMap<Permission, Boolean> getChannelPermissionMap(@NotNull Snowflake userId, @NotNull Mono<GuildChannel> channel, @NotNull Iterable<Permission> permissions) {
         return channel.flatMap(chl -> chl.getEffectivePermissions(userId))
-            .map(permissionSet -> this.getPermissionMap(permissionSet, permissions))
+            .map(permissionSet -> getPermissionMap(permissionSet, permissions))
             .blockOptional()
             .orElse(Concurrent.newLinkedMap());
     }
 
-    private @NotNull ConcurrentLinkedMap<Permission, Boolean> getPermissionMap(@NotNull PermissionSet permissionSet, @NotNull Iterable<Permission> permissions) {
+    private static @NotNull ConcurrentLinkedMap<Permission, Boolean> getPermissionMap(@NotNull PermissionSet permissionSet, @NotNull Iterable<Permission> permissions) {
         // Set Default Permissions
         ConcurrentLinkedMap<Permission, Boolean> permissionMap = Concurrent.newLinkedMap();
         permissions.forEach(permission -> permissionMap.put(permission, false));
@@ -207,7 +199,7 @@ public abstract class DiscordReference {
 
                     return false;
                 })
-                .orElse(applicationInfoData.owner().id().asLong() == userId.asLong())
+                .orElse(applicationInfoData.owner().map(userData -> userData.id().asLong() == userId.asLong()).toOptional().orElse(false))
             )
             .orElse(false);
     }
