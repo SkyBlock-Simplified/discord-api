@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.deferrable.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.MessageCommandReference;
+import dev.sbs.discordapi.command.MessageCommand;
 import dev.sbs.discordapi.context.deferrable.command.MessageCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.MessageInteractionEvent;
@@ -23,7 +23,7 @@ public final class MessageCommandListener extends DiscordListener<MessageInterac
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong())))
             .single()
-            .cast(MessageCommandReference.class)
+            .cast(MessageCommand.class)
             .flatMap(command -> command.apply(
                 MessageCommandContext.of(
                     this.getDiscordBot(),

@@ -1,30 +1,26 @@
-package dev.sbs.discordapi.command.impl;
+package dev.sbs.discordapi.command;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.context.TypeContext;
 import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.command.reference.SlashCommandReference;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Footer;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.time.Instant;
 import java.util.Optional;
 
-@Getter
-public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> implements SlashCommandReference {
-
-    private @NotNull Optional<Emoji> emoji = Optional.empty();
+public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
 
     protected SlashCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
@@ -32,6 +28,40 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
 
     public @NotNull ConcurrentUnmodifiableList<String> getExampleArguments() {
         return NO_EXAMPLES;
+    }
+
+    public final @NotNull ConcurrentList<String> getCommandTree() {
+        ConcurrentList<String> commandTree = Concurrent.newList(this.getStructure().name().toLowerCase());
+
+        if (StringUtil.isNotEmpty(this.getStructure().group()))
+            commandTree.add(this.getStructure().group().toLowerCase());
+
+        if (StringUtil.isNotEmpty(this.getStructure().parent()))
+            commandTree.add(this.getStructure().parent().toLowerCase());
+
+        return commandTree.inverse().toUnmodifiableList();
+    }
+
+    public final @NotNull String getCommandPath() {
+        return String.format(
+            "/%s",
+            StringUtil.join(this.getCommandTree(), " ")
+        );
+    }
+
+    public final @NotNull Optional<Parameter> getParameter(int index) {
+        ConcurrentList<Parameter> parameters = this.getParameters();
+        index = Math.max(0, index);
+        return Optional.ofNullable(index < parameters.size() ? parameters.get(index) : null);
+    }
+
+    public @NotNull ConcurrentUnmodifiableList<Parameter> getParameters() {
+        return Concurrent.newUnmodifiableList();
+    }
+
+    @Override
+    public final @NotNull TypeContext getType() {
+        return TypeContext.CHAT_INPUT;
     }
 
     @Override
@@ -61,11 +91,11 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
             .withAuthor(
                 Author.builder()
                     .withName("Help")
-                    .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                    .withIconUrl(this.getDiscordBot().getEmojiHandler().getEmoji("STATUS_INFO").map(Emoji::getUrl))
                     .build()
             )
-            .withTitle("Command :: %s", this.getName())
-            .withDescription(this.getLongDescription())
+            .withTitle("Command :: %s", this.getStructure().name())
+            .withDescription(this.getStructure().description())
             .withFooter(
                 Footer.builder()
                     .withTimestamp(Instant.now())

@@ -67,7 +67,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .then(Mono.defer(() -> component.getInteraction().apply(context)))
             .checkpoint("ComponentListener#handleInteraction Processing")
             .onErrorResume(throwable -> context.deferEdit().then(
-                this.getDiscordBot().handleException(
+                this.getDiscordBot().getExceptionHandler().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),
                         context,

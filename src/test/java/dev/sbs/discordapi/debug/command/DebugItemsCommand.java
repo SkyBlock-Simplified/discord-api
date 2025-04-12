@@ -3,9 +3,10 @@ package dev.sbs.discordapi.debug.command;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandId;
-import dev.sbs.discordapi.command.impl.SlashCommand;
+import dev.sbs.discordapi.command.CommandStructure;
+import dev.sbs.discordapi.command.SlashCommand;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
+import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
@@ -13,46 +14,23 @@ import dev.sbs.discordapi.response.page.handler.search.Search;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.FooterItem;
 import dev.sbs.discordapi.response.page.item.field.StringItem;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
-import java.util.Optional;
 import java.util.stream.IntStream;
 
-@CommandId("898bec98-db76-4e8a-813c-2de707cc60a1")
+@CommandStructure(
+    parent = "debug",
+    name = "items",
+    guildId = 652148034448261150L,
+    description = "Debug Item Handler"
+)
 public class DebugItemsCommand extends SlashCommand {
 
     protected DebugItemsCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
-    }
-
-    @NotNull
-    @Override
-    public String getDescription() {
-        return "Debug Item Handler";
-    }
-
-    @Override
-    public long getGuildId() {
-        return 652148034448261150L;
-    }
-
-    @NotNull
-    @Override
-    public String getName() {
-        return "items";
-    }
-
-    @NotNull
-    @Override
-    public Optional<Parent> getParent() {
-        return Parent.op(
-            "debug",
-            "Debug Command"
-        );
     }
 
     @Override

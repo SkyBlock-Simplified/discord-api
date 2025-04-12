@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.command.exception.input;
 
-import dev.sbs.discordapi.util.exception.DiscordUserException;
+import dev.sbs.discordapi.exception.DiscordUserException;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

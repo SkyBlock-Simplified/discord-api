@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.exception;
 
-import dev.sbs.discordapi.command.impl.DiscordCommand;
-import dev.sbs.discordapi.util.exception.DiscordUserException;
+import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.exception.DiscordUserException;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

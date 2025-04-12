@@ -5,11 +5,15 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
-import dev.sbs.discordapi.command.impl.DiscordCommand;
+import dev.sbs.discordapi.command.CommandStructure;
+import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.exception.DiscordGatewayException;
+import dev.sbs.discordapi.handler.CommandHandler;
+import dev.sbs.discordapi.handler.EmojiHandler;
+import dev.sbs.discordapi.handler.ExceptionHandler;
+import dev.sbs.discordapi.handler.shard.ShardHandler;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.autocomplete.AutoCompleteListener;
 import dev.sbs.discordapi.listener.deferrable.command.MessageCommandListener;
@@ -23,17 +27,13 @@ import dev.sbs.discordapi.listener.message.MessageDeleteListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
+import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
-import dev.sbs.discordapi.util.CommandRegistrar;
-import dev.sbs.discordapi.util.DiscordConfig;
-import dev.sbs.discordapi.util.ExceptionHandler;
-import dev.sbs.discordapi.util.exception.DiscordGatewayException;
-import dev.sbs.discordapi.util.shard.ShardHandler;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -59,7 +59,6 @@ import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -70,7 +69,9 @@ import reactor.util.retry.Retry;
 
 import java.net.SocketException;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * Discord4J Framework Wrapper for Discord Bots.
@@ -81,9 +82,9 @@ import java.util.concurrent.TimeUnit;
  * - Followups ({@link Response.Cache.Followup})
  * - Contexts ({@link EventContext})
  * - Command:
- *   - Interfaces ({@link CommandReference})
+ *   - Structure ({@link CommandStructure})
  *   - Implementation ({@link DiscordCommand})
- *   - Building ({@link CommandRegistrar})
+ *   - Building ({@link CommandHandler})
  *   - Parameters ({@link Parameter})
  *   - Processing ({@link SlashCommandListener}, {@link MessageCommandListener}, {@link UserCommandListener})
  *   - Autocomplete ({@link AutoCompleteListener})
@@ -96,23 +97,35 @@ import java.util.concurrent.TimeUnit;
  */
 @Getter
 @Log4j2
-public class DiscordBot {
+public abstract class DiscordBot {
 
-    @Getter(AccessLevel.NONE)
-    private final @NotNull ExceptionHandler exceptionHandler;
-    private final @NotNull DiscordConfig config;
-    private final @NotNull DiscordClient client;
-    private final @NotNull GatewayDiscordClient gateway;
-    private final @NotNull ShardHandler shardHandler;
     private final @NotNull Scheduler scheduler = new Scheduler();
     private final @NotNull Response.Cache responseCache = new Response.Cache();
-    private CommandRegistrar commandRegistrar;
+    private DiscordConfig config;
+
+    // Handlers
+    private final @NotNull ExceptionHandler exceptionHandler;
+    private ShardHandler shardHandler;
+    private CommandHandler commandHandler;
+    private EmojiHandler emojiHandler;
+
+    // Connection
+    private DiscordClient client;
+    private GatewayDiscordClient gateway;
+
+    protected void setEmojiHandler(@NotNull Function<String, Optional<Emoji>> locator) {
+        this.emojiHandler = new EmojiHandler(this, locator);
+    }
+
+    protected DiscordBot() {
+        this.exceptionHandler = new ExceptionHandler(this);
+        this.emojiHandler = new EmojiHandler(this, __ -> Optional.empty());
+        Configurator.setRootLevel(this.getConfig().getLogLevel());
+    }
 
     @SuppressWarnings("unchecked")
-    public DiscordBot(@NotNull DiscordConfig discordConfig) {
-        this.exceptionHandler = new ExceptionHandler(this);
-        this.config = discordConfig;
-        Configurator.setRootLevel(this.getConfig().getLogLevel());
+    public void login(@NotNull DiscordConfig config) {
+        this.config = config;
 
         log.info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(this.getConfig().getToken())
@@ -136,9 +149,7 @@ public class DiscordBot {
                 .map(ConnectEvent::getClient)
                 .flatMap(gatewayDiscordClient -> {
                     log.info("Gateway Connected");
-                    this.getConfig()
-                        .getGatewayConnectedEvent()
-                        .ifPresent(event -> event.accept(gatewayDiscordClient));
+                    this.onGatewayConnected(gatewayDiscordClient);
 
                     this.getConfig()
                         .getDataConfig()
@@ -151,9 +162,7 @@ public class DiscordBot {
                                 SimplifiedApi.getSessionManager().getSession().getInitialization(),
                                 SimplifiedApi.getSessionManager().getSession().getStartup()
                             );
-                            this.getConfig()
-                                .getDatabaseConnectedEvent()
-                                .ifPresent(Runnable::run);
+                            this.onDatabaseConnected();
                         });
 
                     log.info("Scheduling Cache Cleaner");
@@ -200,10 +209,7 @@ public class DiscordBot {
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
 
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
-                            this.getConfig()
-                                .getGatewayDisconnectedEvent()
-                                .ifPresent(Runnable::run);
-
+                            this.onGatewayDisconnected();
                             this.getScheduler().shutdownNow();
                             SimplifiedApi.getSessionManager().disconnect();
                         }))
@@ -215,7 +221,7 @@ public class DiscordBot {
                     });
 
                     log.info("Registering Commands");
-                    Mono<Void> commands = (this.commandRegistrar = CommandRegistrar.builder(this)
+                    Mono<Void> commands = (this.commandHandler = CommandHandler.builder(this)
                         .withCommands(this.getConfig().getCommands())
                         .build())
                         .updateApplicationCommands();
@@ -250,8 +256,11 @@ public class DiscordBot {
             .orElseThrow(() -> new DiscordGatewayException("Unable to locate self in gateway."));
     }
 
-    public final <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
-        return this.exceptionHandler.handleException(exceptionContext);
-    }
+    protected void onDatabaseConnected() { }
+
+    @SuppressWarnings("unused")
+    protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) { }
+
+    protected void onGatewayDisconnected() { }
 
 }

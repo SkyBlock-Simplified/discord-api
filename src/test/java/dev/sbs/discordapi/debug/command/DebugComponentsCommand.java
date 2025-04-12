@@ -4,11 +4,12 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandId;
-import dev.sbs.discordapi.command.impl.SlashCommand;
+import dev.sbs.discordapi.command.CommandStructure;
+import dev.sbs.discordapi.command.SlashCommand;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
+import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Attachment;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -20,46 +21,23 @@ import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.function.Function;
 
-@CommandId("75f1762a-4672-48db-83d8-86d953645d08")
+@CommandStructure(
+    parent = "debug",
+    name = "components",
+    guildId = 652148034448261150L,
+    description = "Debug Components Handler"
+)
 public class DebugComponentsCommand extends SlashCommand {
 
     protected DebugComponentsCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
-    }
-
-    @NotNull
-    @Override
-    public String getDescription() {
-        return "Debug Discord Components";
-    }
-
-    @Override
-    public long getGuildId() {
-        return 652148034448261150L;
-    }
-
-    @NotNull
-    @Override
-    public String getName() {
-        return "components";
-    }
-
-    @NotNull
-    @Override
-    public Optional<Parent> getParent() {
-        return Optional.of(Parent.of(
-            "debug",
-            "Debug Command"
-        ));
     }
 
     @Override

@@ -1,61 +1,61 @@
-package dev.sbs.discordapi.command.impl;
+package dev.sbs.discordapi.command;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandId;
+import dev.sbs.discordapi.command.context.TypeContext;
+import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.DeveloperPermissionException;
-import dev.sbs.discordapi.command.reference.CommandReference;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.util.DiscordReference;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
+import java.util.function.Function;
 
 @Getter
-public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordReference implements CommandReference<C> {
+public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordReference implements Function<C, Mono<Void>> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
-    protected static final ConcurrentList<String> helpArguments = Concurrent.newUnmodifiableList("help", "?");
     protected final @NotNull DiscordBot discordBot;
-    protected final @NotNull UUID uniqueId;
+    protected final @NotNull CommandStructure structure;
 
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.discordBot = discordBot;
-        this.uniqueId = super.getAnnotation(CommandId.class, this.getClass())
-            .map(CommandId::value)
-            .map(StringUtil::toUUID)
-            .orElseThrow(); // Will Never Throw
+        this.structure = super.getAnnotation(CommandStructure.class, this.getClass())
+            .orElseThrow(() -> new CommandException("Cannot instantiate a command with no structure."));
     }
 
-    @Override
     public final long getId() {
         return this.getDiscordBot()
-            .getCommandRegistrar()
+            .getCommandHandler()
             .getApiCommandId(this.getClass());
     }
 
+    public abstract @NotNull TypeContext getType();
+
     protected void handleAdditionalChecks(@NotNull C commandContext) { }
+
+    public boolean isEnabled() {
+        return true; // TODO: Reimplement
+    }
 
     protected abstract @NotNull Mono<Void> process(@NotNull C commandContext) throws DiscordException;
 
     @Override
     public final @NotNull Mono<Void> apply(@NotNull C commandContext) {
         return commandContext.withEvent(event -> commandContext.withGuild(optionalGuild -> commandContext.withChannel(messageChannel -> commandContext
-            .deferReply(commandContext.getCommand().isEphemeral())
+            .deferReply(commandContext.getCommand().getStructure().ephemeral())
             .then(Mono.defer(() -> {
                 // Handle Developer Command
-                if (this.isDeveloperOnly() && !this.isDeveloper(commandContext.getInteractUserId()))
+                if (this.getStructure().developerOnly() && !this.isDeveloper(commandContext.getInteractUserId()))
                     throw new DeveloperPermissionException();
 
                 // Handle Disabled Command
@@ -65,8 +65,8 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 // Handle Bot Permissions
                 if (!commandContext.isPrivateChannel()) {
                     // Handle Required Permissions
-                    if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), commandContext.getChannel().ofType(GuildChannel.class), this.getRequiredPermissions()))
-                        throw new BotPermissionException(commandContext, this.getRequiredPermissions());
+                    if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), commandContext.getChannel().ofType(GuildChannel.class), this.getStructure().botPermissions()))
+                        throw new BotPermissionException(commandContext, Concurrent.newUnmodifiableSet(this.getStructure().botPermissions()));
                 }
 
                 // Process Additional Checks
@@ -75,7 +75,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 // Process Command
                 return this.process(commandContext);
             }))
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     commandContext,

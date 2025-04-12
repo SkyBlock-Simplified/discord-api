@@ -52,7 +52,7 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
     private Mono<Void> handleInteraction(@NotNull E event, @NotNull Response.Cache.Entry entry, @NotNull Emoji reaction, @NotNull Optional<Response.Cache.Followup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
             .flatMap(context -> Mono.just(entry)
-                .onErrorResume(throwable -> this.getDiscordBot().handleException(
+                .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),
                         context,
