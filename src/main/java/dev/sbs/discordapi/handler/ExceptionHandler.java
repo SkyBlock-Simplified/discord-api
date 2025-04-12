@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi.handler;
 
 import dev.sbs.api.client.exception.ApiException;
 import dev.sbs.api.collection.concurrent.Concurrent;
@@ -17,6 +17,7 @@ import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -24,7 +25,7 @@ import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.GuildChannel;
@@ -45,7 +46,7 @@ public final class ExceptionHandler extends DiscordReference {
         super(discordBot);
     }
 
-    private @NotNull Optional<Embed> buildReactiveUserError(ExceptionContext<?> exceptionContext) {
+    private @NotNull Optional<Embed> buildReactiveUserError(@NotNull ExceptionContext<?> exceptionContext) {
         Optional<Embed> responseBuilder = Optional.empty();
 
         if (exceptionContext.getException() instanceof ApiException apiException) {
@@ -337,7 +338,7 @@ public final class ExceptionHandler extends DiscordReference {
         // Modify Command Errors
         if (exceptionContext.getEventContext() instanceof CommandContext<?> commandContext) {
             userError = userError.mutate()
-                .withTitle("Command :: %s", commandContext.getCommand().getName())
+                .withTitle("Command :: %s", commandContext.getCommand().getStructure().name())
                 .build();
         }
 
