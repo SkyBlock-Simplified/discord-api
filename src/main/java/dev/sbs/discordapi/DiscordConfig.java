@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util;
+package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
@@ -10,10 +10,9 @@ import dev.sbs.api.data.yaml.YamlConfig;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
-import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.reference.CommandReference;
+import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
-import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.util.DiscordEnvironment;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.presence.ClientPresence;
@@ -38,9 +37,6 @@ import java.util.function.Function;
 @SuppressWarnings("rawtypes")
 public final class DiscordConfig extends YamlConfig {
 
-    @Getter
-    private static @NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator;
-
     private @NotNull DiscordEnvironment environment;
     @Flag(secure = true)
     private @NotNull String token;
@@ -49,7 +45,7 @@ public final class DiscordConfig extends YamlConfig {
     private @NotNull Optional<Class<? extends Model>> dataModel;
     private @NotNull Optional<DataConfig<? extends Model>> dataConfig;
     private ConcurrentSet<Class<? extends DiscordListener>> listeners;
-    private ConcurrentSet<Class<? extends CommandReference>> commands;
+    private ConcurrentSet<Class<? extends DiscordCommand>> commands;
     private @NotNull AllowedMentions allowedMentions;
     private @NotNull IntentSet intents;
     @Getter(AccessLevel.NONE)
@@ -69,9 +65,8 @@ public final class DiscordConfig extends YamlConfig {
         long mainGuildId,
         @NotNull Optional<Long> debugChannelId,
         @NotNull Optional<DataConfig<? extends Model>> dataConfig,
-        @NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator,
         @NotNull ConcurrentSet<Class<? extends DiscordListener>> listeners,
-        @NotNull ConcurrentSet<Class<? extends CommandReference>> commands,
+        @NotNull ConcurrentSet<Class<? extends DiscordCommand>> commands,
         @NotNull AllowedMentions allowedMentions,
         @NotNull IntentSet intents,
         @NotNull Function<ShardInfo, ClientPresence> clientPresence,
@@ -87,7 +82,6 @@ public final class DiscordConfig extends YamlConfig {
         this.mainGuildId = mainGuildId;
         this.debugChannelId = debugChannelId;
         this.dataConfig = dataConfig;
-        DiscordConfig.emojiLocator = emojiLocator;
         this.listeners = listeners.toUnmodifiableSet();
         this.commands = commands.toUnmodifiableSet();
         this.allowedMentions = allowedMentions;
@@ -98,14 +92,6 @@ public final class DiscordConfig extends YamlConfig {
         this.databaseConnectedEvent = databaseConnectedEvent;
         this.gatewayConnectedEvent = gatewayConnectedEvent;
         this.gatewayDisconnectedEvent = gatewayDisconnectedEvent;
-    }
-
-    public @NotNull DiscordBot createBot() {
-        return this.createBot(DiscordBot::new);
-    }
-
-    public <T extends DiscordBot> @NotNull T createBot(@NotNull Function<DiscordConfig, T> bot) {
-        return bot.apply(this);
     }
 
     public static @NotNull Builder builder() {
@@ -135,11 +121,10 @@ public final class DiscordConfig extends YamlConfig {
         private Optional<Long> debugChannelId = Optional.empty();
         private Optional<Class<? extends Model>> dataModel = Optional.empty();
         private Optional<DataConfig<? extends Model>> dataConfig = Optional.empty();
-        private Optional<Function<String, Optional<Emoji>>> emojiLocator = Optional.empty();
 
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
-        private ConcurrentSet<Class<? extends CommandReference>> commands = Concurrent.newSet();
+        private ConcurrentSet<Class<? extends DiscordCommand>> commands = Concurrent.newSet();
         @BuildFlag(nonNull = true)
         private AllowedMentions allowedMentions = AllowedMentions.builder().build();
         @BuildFlag(nonNull = true)
@@ -201,17 +186,17 @@ public final class DiscordConfig extends YamlConfig {
             this.commands.addAll(
                 Reflection.getResources()
                     .filterPackage(packagePath)
-                    .getSubtypesOf(CommandReference.class)
+                    .getSubtypesOf(DiscordCommand.class)
             );
             return this;
         }
 
-        public Builder withCommands(@NotNull Class<? extends CommandReference<?>>... commands) {
+        public Builder withCommands(@NotNull Class<? extends DiscordCommand>... commands) {
             this.commands.addAll(commands);
             return this;
         }
 
-        public Builder withCommands(@NotNull Iterable<Class<? extends CommandReference>> commands) {
+        public Builder withCommands(@NotNull Iterable<Class<? extends DiscordCommand>> commands) {
             commands.forEach(this.commands::add);
             return this;
         }
@@ -241,15 +226,6 @@ public final class DiscordConfig extends YamlConfig {
 
         public Builder withDisabledIntents(@NotNull IntentSet disabledIntents) {
             this.intents = IntentSet.all().andNot(disabledIntents);
-            return this;
-        }
-
-        public Builder withEmojiLocator(@Nullable Function<String, Optional<Emoji>> emojiLocator) {
-            return this.withEmojiLocator(Optional.ofNullable(emojiLocator));
-        }
-
-        public Builder withEmojiLocator(@NotNull Optional<Function<String, Optional<Emoji>>> emojiLocator) {
-            this.emojiLocator = emojiLocator;
             return this;
         }
 
@@ -338,9 +314,8 @@ public final class DiscordConfig extends YamlConfig {
                 this.mainGuildId.orElseThrow(),
                 this.debugChannelId,
                 this.dataConfig,
-                this.emojiLocator,
-                this.listeners,
-                this.commands,
+                this.listeners.toUnmodifiableSet(),
+                this.commands.toUnmodifiableSet(),
                 this.allowedMentions,
                 this.intents,
                 this.clientPresence,
