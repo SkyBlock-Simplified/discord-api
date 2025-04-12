@@ -1,16 +1,22 @@
 package dev.sbs.discordapi.command.exception.permission;
 
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.mutable.triple.Triple;
+import dev.sbs.api.collection.concurrent.ConcurrentSet;
+import dev.sbs.discordapi.context.deferrable.command.CommandContext;
+import discord4j.rest.util.Permission;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link BotPermissionException BotPermissionExceptions} are thrown when the bot lacks permissions to continue.
  */
-public final class BotPermissionException extends PermissionException {
+@Getter
+public class BotPermissionException extends PermissionException {
 
-    private BotPermissionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, ConcurrentList<Triple<String, String, Boolean>> fields, ConcurrentMap<String, Object> data) {
-        super(message, cause, enableSuppression, writableStackTrace, fields, data);
+    private final @NotNull ConcurrentSet<Permission> requiredPermissions;
+
+    public BotPermissionException(@NotNull CommandContext<?> commandContext, @NotNull ConcurrentSet<Permission> requiredPermissions) {
+        super("The command '%s' lacks permissions required to run!", commandContext.getCommand().getName());
+        this.requiredPermissions = requiredPermissions;
     }
 
 }

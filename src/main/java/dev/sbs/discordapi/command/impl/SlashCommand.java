@@ -3,10 +3,9 @@ package dev.sbs.discordapi.command.impl;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.exception.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.command.reference.SlashCommandReference;
@@ -46,19 +45,11 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> i
 
             String value = argument.map(Argument::asString).get();
 
-            if (!parameter.getType().isValid(value)) {
-                throw SimplifiedException.of(InvalidParameterException.class)
-                    .addData("PARAMETER", parameter)
-                    .addData("VALUE", value)
-                    .build();
-            }
+            if (!parameter.getType().isValid(value))
+                throw new ParameterException(parameter, value, "Type of '%s' does not match '%s'.", value, parameter.getType().name());
 
-            if (!parameter.isValid(value, commandContext)) {
-                throw SimplifiedException.of(InvalidParameterException.class)
-                    .addData("PARAMETER", parameter)
-                    .addData("VALUE", value)
-                    .build();
-            }
+            if (!parameter.isValid(value, commandContext))
+                throw new ParameterException(parameter, value, "Value '%s' does not validate against '%s'.", value, parameter.getName());
         }
     }
 

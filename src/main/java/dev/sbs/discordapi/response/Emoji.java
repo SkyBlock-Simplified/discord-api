@@ -3,7 +3,6 @@ package dev.sbs.discordapi.response;
 import dev.sbs.api.client.impl.sbs.response.SkyBlockEmojisResponse;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
@@ -184,9 +183,7 @@ public abstract class Emoji {
 
         @Override
         public @NotNull String getUrl() {
-            throw SimplifiedException.of(DiscordException.class)
-                .withMessage("Unicode emojis have no url!")
-                .build();
+            throw new DiscordException("Unicode emojis have no url.");
         }
 
     }

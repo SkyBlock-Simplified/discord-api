@@ -1,17 +1,28 @@
 package dev.sbs.discordapi.util.exception;
 
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.mutable.triple.Triple;
-import dev.sbs.api.util.SimplifiedException;
+import org.intellij.lang.annotations.PrintFormat;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link DiscordException DiscordExceptions} are thrown when something is unable to progress.
  */
-public class DiscordException extends SimplifiedException {
+public class DiscordException extends RuntimeException {
 
-    protected DiscordException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, ConcurrentList<Triple<String, String, Boolean>> fields, ConcurrentMap<String, Object> data) {
-        super(message, cause, enableSuppression, writableStackTrace, fields, data);
+    public DiscordException(@NotNull Throwable cause) {
+        super(cause);
+    }
+
+    public DiscordException(@NotNull String message) {
+        super(message);
+    }
+
+    public DiscordException(@NotNull String message, @NotNull Throwable cause) {
+        super(message, cause);
+    }
+
+    public DiscordException(@NotNull @PrintFormat String message, @Nullable Object... args) {
+        super(String.format(message, args));
     }
 
 }

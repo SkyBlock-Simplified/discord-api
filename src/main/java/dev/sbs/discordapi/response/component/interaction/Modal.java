@@ -2,9 +2,8 @@ package dev.sbs.discordapi.response.component.interaction;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.command.exception.user.UserInputException;
+import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
@@ -112,10 +111,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
                         ExceptionContext.of(
                             modalContext.getDiscordBot(),
                             modalContext,
-                            SimplifiedException.of(UserInputException.class)
-                                .withMessage("The input you provided is invalid!")
-                                .withField("Input", textInput.getValue().orElse(""))
-                                .build(),
+                            new InputException(textInput.getValue()),
                             "Modal Interaction Exception"
                         )
                     );

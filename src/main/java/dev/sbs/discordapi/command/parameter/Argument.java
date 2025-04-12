@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.command.parameter;
 
-import dev.sbs.api.util.SimplifiedException;
-import dev.sbs.discordapi.command.exception.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.response.Attachment;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -115,9 +114,12 @@ public class Argument {
 
     private <T> @NotNull T getValueAs(@NotNull String parsedTypeName, @NotNull Function<String, T> transformer, @NotNull Parameter.Type... allowedTypes) {
         if (!Arrays.asList(allowedTypes).contains(this.getParameter().getType())) {
-            throw SimplifiedException.of(InvalidParameterException.class)
-                .withMessage("Option value cannot be converted to %s.", parsedTypeName)
-                .build();
+            throw new ParameterException(
+                this.getParameter(),
+                this.getValue().getRaw(),
+                "Option value cannot be converted to %s.",
+                parsedTypeName
+            );
         }
 
         return transformer.apply(this.getValue().getRaw());

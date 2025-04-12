@@ -7,7 +7,6 @@ import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.mutable.Range;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.impl.SlashCommand;
@@ -382,11 +381,8 @@ public final class Parameter {
         public @NotNull Parameter build() {
             Reflection.validateFlags(this);
 
-            if (this.choices.notEmpty() && this.type != Type.CHANNEL) {
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("You can only specify channel types for parameters of type Channel!")
-                    .build();
-            }
+            if (this.choices.notEmpty() && this.type != Type.CHANNEL)
+                throw new DiscordException("You can only specify channel types for parameters of type Channel!");
 
             return new Parameter(
                 this.uniqueId,

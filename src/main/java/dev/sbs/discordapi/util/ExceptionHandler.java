@@ -2,17 +2,17 @@ package dev.sbs.discordapi.util;
 
 import dev.sbs.api.client.exception.ApiException;
 import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.mutable.pair.Pair;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
-import dev.sbs.discordapi.command.exception.InvalidParameterException;
+import dev.sbs.discordapi.command.exception.input.ExpectedInputException;
+import dev.sbs.discordapi.command.exception.input.InputException;
+import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.PermissionException;
-import dev.sbs.discordapi.command.exception.user.UserInputException;
-import dev.sbs.discordapi.command.exception.user.UserVerificationException;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
@@ -53,7 +53,7 @@ public final class ExceptionHandler extends DiscordReference {
                 Embed.builder()
                     .withAuthor(
                         Author.builder()
-                            .withName("%s Api Error", apiException.getName())
+                            .withName("%s Api", apiException.getName())
                             .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                             .build()
                     )
@@ -77,40 +77,45 @@ public final class ExceptionHandler extends DiscordReference {
                     )
                     .build()
             );
-        } else if (exceptionContext.getException() instanceof UserInputException) {
+        } else if (exceptionContext.getException() instanceof InputException inputException) {
             responseBuilder = Optional.of(
                 Embed.builder()
                     .withAuthor(
                         Author.builder()
-                            .withName("User Input Error")
-                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
-                            .build())
-                    .withDescription(exceptionContext.getException().getMessage())
-                    .withFields((UserInputException) exceptionContext.getException())
-                    .build()
-            );
-        } else if (exceptionContext.getException() instanceof UserVerificationException userVerificationException) {
-            String defaultMessage = "You must be verified to run this command!";
-            String commandMessage = "You must be verified to run this command without providing a Minecraft Username or UUID!";
-            String exceptionMessage = userVerificationException.getMessage();
-            boolean useExceptionMessage = (boolean) userVerificationException.getData().getOrDefault("MESSAGE", false);
-            boolean useCommandMessage = (boolean) userVerificationException.getData().getOrDefault("COMMAND", false);
-
-            responseBuilder = Optional.of(
-                Embed.builder()
-                    .withAuthor(
-                        Author.builder()
-                            .withName("User Verification Error")
+                            .withName("Invalid Input")
                             .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
                             .build()
                     )
-                    .withDescription(useExceptionMessage ? exceptionMessage : (useCommandMessage ? commandMessage : defaultMessage))
-                    .withFields(userVerificationException)
+                    .withDescription(inputException.getMessage())
+                    .withField(
+                        "Invalid Input",
+                        inputException.getInvalidInput()
+                    )
                     .build()
             );
-        } else if (exceptionContext.getException() instanceof InvalidParameterException parameterException) {
-            Parameter parameter = (Parameter) parameterException.getData().get("PARAMETER");
-            String value = (String) parameterException.getData().get("VALUE");
+        } else if (exceptionContext.getException() instanceof ExpectedInputException expectedInputException) {
+            responseBuilder = Optional.of(
+                Embed.builder()
+                    .withAuthor(
+                        Author.builder()
+                            .withName("Expected Input")
+                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                            .build()
+                    )
+                    .withDescription(expectedInputException.getMessage())
+                    .withField(
+                        "Invalid Input",
+                        expectedInputException.getInvalidInput()
+                    )
+                    .withField(
+                        "Expected Input",
+                        expectedInputException.getExpectedInput()
+                    )
+                    .build()
+            );
+        } else if (exceptionContext.getException() instanceof ParameterException parameterException) {
+            Parameter parameter = parameterException.getParameter();
+            Optional<String> value = parameterException.getValue();
 
             Embed.Builder builder = Embed.builder()
                 .withAuthor(
@@ -160,8 +165,8 @@ public final class ExceptionHandler extends DiscordReference {
                 .withDescription(permissionException.getMessage());
 
             if (botPermissions) {
-                Snowflake snowflake = (Snowflake) permissionException.getData().get("ID");
-                Permission[] permissions = (Permission[]) permissionException.getData().get("PERMISSIONS");
+                Snowflake snowflake = this.getDiscordBot().getClientId();
+                ConcurrentSet<Permission> permissions = ((BotPermissionException) permissionException).getRequiredPermissions();
                 ConcurrentLinkedMap<Permission, Boolean> permissionMap = this.getChannelPermissionMap(snowflake, exceptionContext.getChannel().ofType(GuildChannel.class), permissions);
 
                 builder.withField(
@@ -191,6 +196,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withEmptyField(true);
             }
 
+            builder.withField("Notify", "Please notify a Server Administrator.");
             responseBuilder = Optional.of(builder.build());
         } else if (exceptionContext.getException() instanceof DisabledCommandException) {
             responseBuilder = Optional.of(
@@ -287,8 +293,8 @@ public final class ExceptionHandler extends DiscordReference {
         exceptionContext.getEmbedBuilderConsumer().ifPresent(consumer -> consumer.accept(logErrorBuilder));
 
         // Add SimplifiedException Fields
-        if (exceptionContext.getException() instanceof SimplifiedException)
-            logErrorBuilder.withFields((SimplifiedException) exceptionContext.getException());
+        //if (exceptionContext.getException() instanceof SimplifiedException)
+        //    logErrorBuilder.withFields((SimplifiedException) exceptionContext.getException());
 
         return logErrorBuilder.build();
     }

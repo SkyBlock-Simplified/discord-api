@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.MessageCreateFields;
 import lombok.AllArgsConstructor;
@@ -31,11 +30,8 @@ public final class Attachment {
     private @NotNull OptionalInt width;
 
     public @NotNull MessageCreateFields.File getD4jFile() {
-        if (this.isUploaded()) {
-            throw SimplifiedException.of(DiscordException.class)
-                .withMessage("Cannot upload the same file!")
-                .build();
-        }
+        if (this.isUploaded())
+            throw new DiscordException("The file '%s' is already uploaded.", this.getName());
 
         return this.isSpoiler() ?
             MessageCreateFields.File.of(this.getName(), this.getUploadStream().orElseThrow()) :

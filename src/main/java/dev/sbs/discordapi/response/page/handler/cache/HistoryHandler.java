@@ -2,7 +2,6 @@ package dev.sbs.discordapi.response.page.handler.cache;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.page.Paging;
@@ -116,11 +115,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
      * @param identifier The page option value.
      */
     public void gotoPage(I identifier) {
-        this.gotoPage(this.getPage(identifier).orElseThrow(
-            () -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate page identified by '%s'.", identifier)
-                .build()
-        ));
+        this.gotoPage(this.getPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate page identified by '%s'.", identifier)));
     }
 
     /**
@@ -145,11 +140,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
      * @param identifier The subpage option value.
      */
     public void gotoSubPage(I identifier) {
-        this.history.add(this.getSubPage(identifier).orElseThrow(
-            () -> SimplifiedException.of(DiscordException.class)
-                .withMessage("Unable to locate subpage identified by '%s'.", identifier)
-                .build()
-        ));
+        this.history.add(this.getSubPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate subpage identified by '%s'.", identifier)));
         this.setCacheUpdateRequired();
     }
 
