@@ -6,12 +6,12 @@ import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
+import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
@@ -25,7 +25,6 @@ import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.cache.HistoryHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
-import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -39,6 +38,7 @@ import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
 import discord4j.discordjson.Id;
+import discord4j.discordjson.json.MessageReferenceData;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
@@ -194,7 +194,7 @@ public class Response implements Paging<Page> {
                         SelectMenu.Option.builder()
                             .withValue("BACK")
                             .withLabel("Back")
-                            .withEmoji(DiscordReference.getEmoji("ARROW_LEFT"))
+                            .withEmoji(EmojiHandler.getEmoji("ARROW_LEFT"))
                             .build()
                     );
                 }
@@ -351,7 +351,7 @@ public class Response implements Paging<Page> {
             .nonce(this.getUniqueId().toString().substring(0, 25))
             .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .allowedMentions(AllowedMentions.suppressEveryone())
-            .messageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
+            .messageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
             .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
@@ -363,7 +363,8 @@ public class Response implements Paging<Page> {
             .withNonce(this.getUniqueId().toString().substring(0, 25))
             .withContent(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
             .withAllowedMentions(AllowedMentions.suppressEveryone())
-            .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(this.getReferenceId().get()) : Possible.absent())
+            .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
+            .withComponents()
             .withFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .withComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .withEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()));
@@ -695,7 +696,7 @@ public class Response implements Paging<Page> {
                     try {
                         return Attachment.of(file.getName(), new FileInputStream(file));
                     } catch (FileNotFoundException fnfex) {
-                        throw SimplifiedException.wrapNative(fnfex).build();
+                        throw new RuntimeException(fnfex);
                     }
                 })
                 .forEach(this::withAttachments);

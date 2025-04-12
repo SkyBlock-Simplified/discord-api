@@ -3,7 +3,6 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
@@ -15,8 +14,6 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.InteractableComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,8 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -192,6 +187,7 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
         private boolean placeholderUsingSelectedOption;
         private Optional<Integer> minValue = Optional.empty();
         private Optional<Integer> maxValue = Optional.empty();
+        @BuildFlag(limit = Option.MAX_ALLOWED)
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean preserved;
         private boolean deferEdit;
@@ -335,13 +331,7 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
          * @param options Collection of options to add.
          */
         public Builder withOptions(@NotNull Iterable<Option> options) {
-            if (this.options.size() == Option.MAX_ALLOWED)
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("Number of options cannot exceed %s.", Option.MAX_ALLOWED)
-                    .build();
-
-            List<Option> optionList = List.class.isAssignableFrom(options.getClass()) ? (List<Option>) options : StreamSupport.stream(options.spliterator(), false).toList();
-            IntStream.range(0, Math.min(optionList.size(), (Field.MAX_ALLOWED - this.options.size()))).forEach(index -> this.options.add(optionList.get(index)));
+            options.forEach(this.options::add);
             return this;
         }
 

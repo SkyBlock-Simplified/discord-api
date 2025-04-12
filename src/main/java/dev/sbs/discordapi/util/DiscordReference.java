@@ -7,6 +7,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -61,7 +62,7 @@ public abstract class DiscordReference {
     }
 
     protected @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
-        return this.getDiscordBot().getEmojiHandler().getEmoji(key);
+        return EmojiHandler.getEmoji(key);
     }
 
     // --- Command Searching ---

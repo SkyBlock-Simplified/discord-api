@@ -4,11 +4,11 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.util.DiscordReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public final class NumberItem<T extends Number> implements FieldItem<T> {
     public @NotNull String getRenderValue() {
         return this.getValue()
             .map(T::toString)
-            .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
+            .orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder<T> mutate() {

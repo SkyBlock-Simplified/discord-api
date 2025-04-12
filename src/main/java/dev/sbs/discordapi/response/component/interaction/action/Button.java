@@ -9,6 +9,7 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
+import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -18,7 +19,6 @@ import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.handler.search.Search;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
-import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -411,12 +411,12 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
     public enum PageType {
 
         NONE("", __ -> Mono.empty()),
-        PREVIOUS("Previous", DiscordReference.getEmoji("ARROW_SQUARE_PREVIOUS"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        PREVIOUS("Previous", EmojiHandler.getEmoji("ARROW_SQUARE_PREVIOUS"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .gotoPreviousItemPage()
         )),
-        SEARCH("Search", DiscordReference.getEmoji("SEARCH"), context -> context.withResponse(response -> context.presentModal(
+        SEARCH("Search", EmojiHandler.getEmoji("SEARCH"), context -> context.withResponse(response -> context.presentModal(
             Modal.builder()
                 .withComponents(
                     ActionRow.of(TextInput.SearchType.PAGE.build(response.getHistoryHandler().getCurrentPage().getItemHandler())),
@@ -486,20 +486,20 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
                 )
                 .build()
         ))),
-        NEXT("Next", DiscordReference.getEmoji("ARROW_SQUARE_NEXT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        NEXT("Next", EmojiHandler.getEmoji("ARROW_SQUARE_NEXT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .gotoNextItemPage()
         ));
-        //LAST("Last", 1, DiscordReference.getEmoji("ARROW_SQUARE_LAST")),
-        /*BACK("Back", DiscordReference.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
-        SORT("Sort", DiscordReference.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        //LAST("Last", 1, EmojiHandler.getEmoji("ARROW_SQUARE_LAST")),
+        /*BACK("Back", EmojiHandler.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
+        SORT("Sort", EmojiHandler.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .getSortHandler()
             .gotoNext()
         )),
-        ORDER("Order", DiscordReference.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        ORDER("Order", EmojiHandler.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .getSortHandler()

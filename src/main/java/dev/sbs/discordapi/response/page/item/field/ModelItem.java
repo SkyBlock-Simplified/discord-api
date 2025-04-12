@@ -4,14 +4,14 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.data.model.Model;
-import dev.sbs.api.util.SimplifiedException;
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
+import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.util.DiscordReference;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -68,7 +67,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
     public @NotNull String getRenderValue() {
         return this.getValue()
             .map(this.getValueFunction())
-            .orElse(DiscordReference.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
+            .orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
     }
 
     public @NotNull Builder<T> mutate() {
@@ -85,6 +84,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
         private final ConcurrentList<T> options = Concurrent.newList();
         private Optional<T> value = Optional.empty();
         private Optional<Function<T, String>> nameFunction = Optional.empty();
+        @BuildFlag(nonNull = true)
         private Function<T, String> valueFunction;
 
         /**
@@ -299,10 +299,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
 
         @Override
         public @NotNull ModelItem<T> build() {
-            if (Objects.isNull(this.valueFunction))
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("The value function must be specified.")
-                    .build();
+            Reflection.validateFlags(this);
 
             return new ModelItem<>(
                 this.optionBuilder.build(),

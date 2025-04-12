@@ -90,7 +90,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withDescription(inputException.getMessage())
                     .withField(
                         "Invalid Input",
-                        inputException.getInvalidInput()
+                        inputException.getInvalidInput().orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
                     )
                     .build()
             );
@@ -106,7 +106,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withDescription(expectedInputException.getMessage())
                     .withField(
                         "Invalid Input",
-                        expectedInputException.getInvalidInput()
+                        expectedInputException.getInvalidInput().orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
                     )
                     .withField(
                         "Expected Input",
@@ -149,7 +149,7 @@ public final class ExceptionHandler extends DiscordReference {
                 )
                 .withField(
                     "Argument",
-                    value
+                    value.orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"))
                 );
 
             responseBuilder = Optional.of(builder.build());

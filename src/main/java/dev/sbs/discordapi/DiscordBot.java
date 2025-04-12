@@ -114,12 +114,11 @@ public abstract class DiscordBot {
     private GatewayDiscordClient gateway;
 
     protected void setEmojiHandler(@NotNull Function<String, Optional<Emoji>> locator) {
-        this.emojiHandler = new EmojiHandler(this, locator);
+        EmojiHandler.setLocator(locator);
     }
 
     protected DiscordBot() {
         this.exceptionHandler = new ExceptionHandler(this);
-        this.emojiHandler = new EmojiHandler(this, __ -> Optional.empty());
         Configurator.setRootLevel(this.getConfig().getLogLevel());
     }
 
