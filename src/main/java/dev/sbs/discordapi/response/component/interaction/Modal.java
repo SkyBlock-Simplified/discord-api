@@ -107,7 +107,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
                     .orElse(true);
 
                 if (!validInput) {
-                    return modalContext.getDiscordBot().handleException(
+                    return modalContext.getDiscordBot().getExceptionHandler().handleException(
                         ExceptionContext.of(
                             modalContext.getDiscordBot(),
                             modalContext,

@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.core.spec.MessageCreateFields;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

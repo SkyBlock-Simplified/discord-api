@@ -6,7 +6,7 @@ import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
-import dev.sbs.discordapi.util.exception.DiscordException;
+import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
