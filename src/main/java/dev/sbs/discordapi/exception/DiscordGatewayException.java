@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.exception;
+package dev.sbs.discordapi.exception;
 
 import dev.sbs.discordapi.DiscordBot;
 import discord4j.core.GatewayDiscordClient;

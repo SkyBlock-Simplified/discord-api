@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.util.exception;
+package dev.sbs.discordapi.exception;
 
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
