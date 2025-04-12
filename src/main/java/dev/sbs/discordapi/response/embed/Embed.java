@@ -4,7 +4,6 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
-import dev.sbs.api.util.SimplifiedException;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
@@ -22,7 +21,6 @@ import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.ThumbnailUrlItem;
 import dev.sbs.discordapi.response.page.item.TitleItem;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
-import dev.sbs.discordapi.util.exception.DiscordException;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -35,11 +33,8 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
 @Getter
 @AllArgsConstructor
@@ -254,7 +249,7 @@ public class Embed implements IdentifiableComponent {
          * @param inline True if field should render inline.
          */
         public Builder withEmptyField(boolean inline) {
-            return this.withField(null, null, inline);
+            return this.withField(null, Optional.empty(), inline);
         }
 
         /**
@@ -275,6 +270,27 @@ public class Embed implements IdentifiableComponent {
          * @param inline True if field should render inline.
          */
         public Builder withField(@Nullable String name, @Nullable String value, boolean inline) {
+            return this.withField(name, Optional.ofNullable(value), inline);
+        }
+
+        /**
+         * Adds a {@link Field} to the {@link Embed}.
+         *
+         * @param name The name of the field.
+         * @param value The value of the field.
+         */
+        public Builder withField(@Nullable String name, @NotNull Optional<String> value) {
+            return this.withField(name, value, false);
+        }
+
+        /**
+         * Adds a {@link Field} to the {@link Embed}.
+         *
+         * @param name The name of the field.
+         * @param value The value of the field.
+         * @param inline True if field should render inline.
+         */
+        public Builder withField(@Nullable String name, @NotNull Optional<String> value, boolean inline) {
             return this.withFields(
                 Field.builder()
                     .withName(name)
@@ -299,29 +315,8 @@ public class Embed implements IdentifiableComponent {
          * @param fields Collection of fields to add.
          */
         public Builder withFields(@NotNull Iterable<Field> fields) {
-            if (this.fields.size() == Field.MAX_ALLOWED)
-                throw SimplifiedException.of(DiscordException.class)
-                    .withMessage("Number of fields cannot exceed %s.", Field.MAX_ALLOWED)
-                    .build();
-
-            List<Field> fieldList = List.class.isAssignableFrom(fields.getClass()) ? (List<Field>) fields : StreamSupport.stream(fields.spliterator(), false).toList();
-            IntStream.range(0, Math.min(fieldList.size(), (Field.MAX_ALLOWED - this.fields.size()))).forEach(index -> this.fields.add(fieldList.get(index)));
+            fields.forEach(this.fields::add);
             return this;
-        }
-
-        /**
-         * Adds the fields of a {@link SimplifiedException} to the fields of the {@link Embed}.
-         *
-         * @param simplifiedException The exception with fields to add.
-         */
-        public Builder withFields(@NotNull SimplifiedException simplifiedException) {
-            return this.withFields(
-                simplifiedException.getFields()
-                    .stream()
-                    .map(Field::from)
-                    .map(Field.Builder::build)
-                    .collect(Concurrent.toList())
-            );
         }
 
         /**
