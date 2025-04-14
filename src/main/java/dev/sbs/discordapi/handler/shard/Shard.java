@@ -18,7 +18,7 @@ import java.time.Duration;
 @Getter
 public class Shard extends DiscordReference {
 
-    private final GatewayClient gatewayClient;
+    private final @NotNull GatewayClient gatewayClient;
 
     public Shard(@NotNull DiscordBot discordBot, @NotNull GatewayClient gatewayClient) {
         super(discordBot);
@@ -46,14 +46,12 @@ public class Shard extends DiscordReference {
         return !this.isConnected() ? this.getClient()
             .getGatewayService()
             .getGateway()
-            .flatMap(gatewayData -> this.getGatewayClient()
-                .execute(
-                    RouteUtils.expandQuery(
-                        gatewayData.url(),
-                        Reflection.of(GatewayBootstrap.class).invokeMethod(Multimap.class, this.getClient().gateway())
-                    )
+            .flatMap(gatewayData -> this.getGatewayClient().execute(
+                RouteUtils.expandQuery(
+                    gatewayData.url(),
+                    Reflection.of(GatewayBootstrap.class).invokeMethod(Multimap.class, this.getClient().gateway())
                 )
-            ) : Mono.empty();
+            )) : Mono.empty();
     }
 
     public Mono<CloseStatus> stop() {

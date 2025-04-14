@@ -19,7 +19,7 @@ public final class ShardHandler extends DiscordReference {
     }
 
     public @NotNull Optional<Shard> getShard(int shardId) {
-        return this._getShard(this.getDiscordBot().getGateway(), shardId);
+        return this.getShard(this.getDiscordBot().getGateway(), shardId);
     }
 
     public int getShardCount() {
@@ -31,7 +31,7 @@ public final class ShardHandler extends DiscordReference {
     }
 
     public @NotNull Optional<Shard> getShardOfGuild(@NotNull Snowflake guildId) {
-        return this._getShard(
+        return this.getShard(
             this.getDiscordBot().getGateway(),
             this.getDiscordBot().getGateway().getGatewayClientGroup().computeShardIndex(guildId)
         );
@@ -39,13 +39,13 @@ public final class ShardHandler extends DiscordReference {
 
     public @NotNull ConcurrentList<Shard> getShards() {
         return IntStream.range(0, this.getShardCount() + 1)
-            .mapToObj(shardId -> this._getShard(this.getDiscordBot().getGateway(), shardId))
+            .mapToObj(shardId -> this.getShard(this.getDiscordBot().getGateway(), shardId))
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Concurrent.toList());
     }
 
-    private @NotNull Optional<Shard> _getShard(GatewayDiscordClient gatewayDiscordClient, int shardId) {
+    private @NotNull Optional<Shard> getShard(@NotNull GatewayDiscordClient gatewayDiscordClient, int shardId) {
         return gatewayDiscordClient.getGatewayClient(shardId).map(gatewayClient -> new Shard(this.getDiscordBot(), gatewayClient));
     }
 
