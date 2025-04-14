@@ -39,4 +39,5 @@ public interface UserCommandContext extends CommandContext<UserInteractionEvent>
         private final @NotNull UserCommand command;
 
     }
+
 }

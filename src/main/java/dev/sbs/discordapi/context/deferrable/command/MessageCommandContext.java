@@ -39,4 +39,5 @@ public interface MessageCommandContext extends CommandContext<MessageInteraction
         private final @NotNull MessageCommand command;
 
     }
+
 }
