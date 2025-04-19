@@ -108,26 +108,28 @@ public class CommandHandler extends DiscordReference {
                 // Handle Parent Commands
                 this.getSlashCommands()
                     .stream()
+                    .filter(command -> StringUtil.isNotEmpty(command.getStructure().parent().name()))
                     .map(command -> command.getStructure().parent())
-                    .filter(StringUtil::isNotEmpty)
-                    .distinct()
+                    .filter(parent -> StringUtil.isNotEmpty(parent.name()))
+                    .filter(StreamUtil.distinctByKey(CommandStructure.Parent::name))
                     .map(parent -> this.buildParentCommand(parent)
                         // Handle SubCommand Groups
                         .addAllOptions(
                             this.getSlashCommands()
                                 .stream()
-                                .filter(command -> command.getStructure().parent().equalsIgnoreCase(parent))
+                                .filter(command -> command.getStructure().parent().name().equalsIgnoreCase(parent.name()))
                                 .map(command -> command.getStructure().group())
-                                .distinct()
+                                .filter(group -> StringUtil.isNotEmpty(group.name()))
+                                .filter(StreamUtil.distinctByKey(CommandStructure.Group::name))
                                 .map(group -> ApplicationCommandOptionData.builder()
                                     .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
-                                    .name(group.toLowerCase())
-                                    //.description(group.getDescription())
+                                    .name(group.name().toLowerCase())
+                                    .description(group.description())
                                     .addAllOptions(
                                         this.getSlashCommands()
                                             .stream()
-                                            .filter(command -> parent.equalsIgnoreCase(command.getStructure().parent()))
-                                            .filter(command -> group.equalsIgnoreCase(command.getStructure().group()))
+                                            .filter(command -> parent.name().equalsIgnoreCase(command.getStructure().parent().name()))
+                                            .filter(command -> group.name().equalsIgnoreCase(command.getStructure().group().name()))
                                             .filter(command -> command.getStructure().guildId() == guildId)
                                             .map(this::buildSubCommand)
                                             .collect(Concurrent.toList())
@@ -140,8 +142,8 @@ public class CommandHandler extends DiscordReference {
                         .addAllOptions(
                             this.getSlashCommands()
                                 .stream()
-                                .filter(command -> parent.equalsIgnoreCase(command.getStructure().parent()))
-                                .filter(command -> StringUtil.isEmpty(command.getStructure().group()))
+                                .filter(command -> parent.name().equalsIgnoreCase(command.getStructure().parent().name()))
+                                .filter(command -> StringUtil.isEmpty(command.getStructure().group().name()))
                                 .filter(command -> command.getStructure().guildId() == guildId)
                                 .map(this::buildSubCommand)
                                 .collect(Concurrent.toList())
@@ -151,8 +153,8 @@ public class CommandHandler extends DiscordReference {
                 // Handle Top-Level Commands
                 this.getSlashCommands()
                     .stream()
-                    .filter(command -> StringUtil.isEmpty(command.getStructure().parent()))
-                    .filter(command -> StringUtil.isEmpty(command.getStructure().group()))
+                    .filter(command -> StringUtil.isEmpty(command.getStructure().parent().name()))
+                    .filter(command -> StringUtil.isEmpty(command.getStructure().group().name()))
                     .filter(command -> command.getStructure().guildId() == guildId)
                     .map(command -> this.buildCommand(command)
                         // Handle Parameters
@@ -170,11 +172,11 @@ public class CommandHandler extends DiscordReference {
             .toUnmodifiableList();
     }
 
-    private @NotNull ImmutableApplicationCommandRequest.Builder buildParentCommand(@NotNull String parent) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildParentCommand(@NotNull CommandStructure.Parent parent) {
         return ApplicationCommandRequest.builder()
             .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
-            .name(parent);
-            //.description(parent.getDescription());
+            .name(parent.name())
+            .description(parent.description());
     }
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DiscordCommand command) {
@@ -232,6 +234,13 @@ public class CommandHandler extends DiscordReference {
             .build();
     }
 
+    public final @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
+        return this.getLoadedCommands()
+            .stream()
+            .filter(command -> command.getId() == commandId)
+            .collect(Concurrent.toUnmodifiableList());
+    }
+
     public Mono<Void> updateApplicationCommands() {
         return this.getDiscordBot()
             .getGateway()
@@ -277,8 +286,8 @@ public class CommandHandler extends DiscordReference {
             .filter(command -> command.getType() == type)
             .filter(command -> {
                 if (command instanceof SlashCommand slashCommand) {
-                    if (StringUtil.isNotEmpty(slashCommand.getStructure().parent()))
-                        return slashCommand.getStructure().parent().equalsIgnoreCase(name);
+                    if (StringUtil.isNotEmpty(slashCommand.getStructure().parent().name()))
+                        return slashCommand.getStructure().parent().name().equalsIgnoreCase(name);
                     else
                         return slashCommand.getStructure().name().equalsIgnoreCase(name);
                 } else
