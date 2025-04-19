@@ -24,9 +24,9 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
-            .flatMapMany(commandData -> Flux.fromIterable(this.getCommandsById(event.getCommandId().asLong()))
+            .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong()))
                 .cast(SlashCommand.class)
-                .filter(command -> this.doesCommandMatch(command, commandData))
+                .filter(command -> command.matchesInteractionData(commandData))
             )
             .single()
             .flatMap(slashCommand -> event.respondWithSuggestions(

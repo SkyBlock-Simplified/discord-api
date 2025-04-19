@@ -10,14 +10,11 @@ import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
-import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.structure.Author;
-import dev.sbs.discordapi.response.embed.structure.Footer;
+import discord4j.discordjson.json.ApplicationCommandInteractionData;
+import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
-import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
@@ -26,27 +23,40 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
         super(discordBot);
     }
 
-    public @NotNull ConcurrentUnmodifiableList<String> getExampleArguments() {
-        return NO_EXAMPLES;
-    }
+    public final boolean matchesInteractionData(@NotNull ApplicationCommandInteractionData commandData) {
+        if (commandData.name().isAbsent())
+            return false;
 
-    public final @NotNull ConcurrentList<String> getCommandTree() {
-        ConcurrentList<String> commandTree = Concurrent.newList(this.getStructure().name().toLowerCase());
+        String compareName = commandData.name().get();
 
-        if (StringUtil.isNotEmpty(this.getStructure().group()))
-            commandTree.add(this.getStructure().group().toLowerCase());
+        if (StringUtil.isNotEmpty(this.getStructure().parent().name())) {
+            if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
+                return false;
 
-        if (StringUtil.isNotEmpty(this.getStructure().parent()))
-            commandTree.add(this.getStructure().parent().toLowerCase());
+            List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
+            ApplicationCommandInteractionOptionData option = options.get(0);
 
-        return commandTree.inverse().toUnmodifiableList();
-    }
+            if (!compareName.equals(this.getStructure().parent().name()))
+                return false;
 
-    public final @NotNull String getCommandPath() {
-        return String.format(
-            "/%s",
-            StringUtil.join(this.getCommandTree(), " ")
-        );
+            if (options.get(0).type() > 2)
+                return false;
+
+            if (StringUtil.isNotEmpty(this.getStructure().group().name())) {
+                if (!option.name().equals(this.getStructure().group().name()))
+                    return false;
+
+                if (option.options().isAbsent() || option.options().get().isEmpty())
+                    return false;
+
+                options = option.options().get();
+                option = options.get(0);
+            }
+
+            compareName = option.name();
+        }
+
+        return compareName.equals(this.getStructure().name());
     }
 
     public final @NotNull Optional<Parameter> getParameter(int index) {
@@ -76,14 +86,14 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
             String value = argument.map(Argument::asString).get();
 
             if (!parameter.getType().isValid(value))
-                throw new ParameterException(parameter, value, "Type of '%s' does not match '%s'.", value, parameter.getType().name());
+                throw new ParameterException(parameter, value, "Value '%s' does not match parameter type for '%s'.", value, parameter.getType().name());
 
             if (!parameter.isValid(value, commandContext))
-                throw new ParameterException(parameter, value, "Value '%s' does not validate against '%s'.", value, parameter.getName());
+                throw new ParameterException(parameter, value, "Value '%s' does not validate against parameter '%s'.", value, parameter.getName());
         }
     }
 
-    public Embed createHelpEmbed() {
+    /*public Embed createHelpEmbed() {
         String commandPath = this.getCommandPath();
         ConcurrentList<Parameter> parameters = this.getParameters();
 
@@ -91,7 +101,7 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
             .withAuthor(
                 Author.builder()
                     .withName("Help")
-                    .withIconUrl(this.getDiscordBot().getEmojiHandler().getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                    .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
                     .build()
             )
             .withTitle("Command :: %s", this.getStructure().name())
@@ -121,9 +131,9 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
                     )
                 )
             );
-        }
+        }*/
 
-        if (this.getExampleArguments().notEmpty()) {
+        /*if (this.getExampleArguments().notEmpty()) {
             builder.withField(
                 "Examples",
                 StringUtil.join(
@@ -134,9 +144,9 @@ public abstract class SlashCommand extends DiscordCommand<SlashCommandContext> {
                     "\n"
                 )
             );
-        }
+        }*/
 
-        return builder.build();
-    }
+        /*return builder.build();
+    }*/
 
 }
