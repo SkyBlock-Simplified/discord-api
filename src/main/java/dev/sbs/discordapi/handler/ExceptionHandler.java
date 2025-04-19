@@ -55,7 +55,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withAuthor(
                         Author.builder()
                             .withName("%s Api", apiException.getName())
-                            .withIconUrl(getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
+                            .withIconUrl(EmojiHandler.getEmoji("CLOUD_DISABLED").map(Emoji::getUrl))
                             .build()
                     )
                     .withDescription(apiException.getResponse().getReason())
@@ -84,7 +84,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withAuthor(
                         Author.builder()
                             .withName("Invalid Input")
-                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                            .withIconUrl(EmojiHandler.getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
                             .build()
                     )
                     .withDescription(inputException.getMessage())
@@ -100,7 +100,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withAuthor(
                         Author.builder()
                             .withName("Expected Input")
-                            .withIconUrl(getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
+                            .withIconUrl(EmojiHandler.getEmoji("STATUS_IMPORTANT").map(Emoji::getUrl))
                             .build()
                     )
                     .withDescription(expectedInputException.getMessage())
@@ -122,7 +122,7 @@ public final class ExceptionHandler extends DiscordReference {
                 .withAuthor(
                     Author.builder()
                         .withName("Invalid Parameter")
-                        .withIconUrl(getEmoji("STATUS_INFO").map(Emoji::getUrl))
+                        .withIconUrl(EmojiHandler.getEmoji("STATUS_INFO").map(Emoji::getUrl))
                         .build()
                 )
                 .withDescription("The provided argument does not validate against the expected parameter.")
@@ -160,7 +160,7 @@ public final class ExceptionHandler extends DiscordReference {
                 .withAuthor(
                     Author.builder()
                         .withName("Missing %s Permissions", (botPermissions ? "Bot" : "User"))
-                        .withIconUrl(getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
+                        .withIconUrl(EmojiHandler.getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
                         .build()
                 )
                 .withDescription(permissionException.getMessage());
@@ -188,7 +188,7 @@ public final class ExceptionHandler extends DiscordReference {
                             permissionMap.stream()
                                 .map(Map.Entry::getValue)
                                 .filter(value -> !value)
-                                .map(value -> getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
+                                .map(value -> EmojiHandler.getEmoji("ACTION_DENY").map(Emoji::asFormat).orElse("No"))
                                 .collect(Concurrent.toList()),
                             "\n"
                         ),
@@ -205,7 +205,7 @@ public final class ExceptionHandler extends DiscordReference {
                     .withAuthor(
                         Author.builder()
                             .withName("Disabled Command")
-                            .withIconUrl(getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
+                            .withIconUrl(EmojiHandler.getEmoji("STATUS_DISABLED").map(Emoji::getUrl))
                             .build()
                     )
                     .withDescription("This command is currently disabled.")
@@ -308,7 +308,7 @@ public final class ExceptionHandler extends DiscordReference {
             .withAuthor(
                 Author.builder()
                     .withName("Exception")
-                    .withIconUrl(getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
+                    .withIconUrl(EmojiHandler.getEmoji("STATUS_HIGH_IMPORTANCE").map(Emoji::getUrl))
                     .build()
             )
             .withTitle("Error :: %s", exceptionContext.getTitle())
