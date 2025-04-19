@@ -100,8 +100,8 @@ public final class Parameter {
 
         UNKNOWN(-1, ApplicationCommandOption.Type.UNKNOWN, String.class, argument -> false),
         TEXT(3, ApplicationCommandOption.Type.STRING, String.class, argument -> true),
-        WORD(3, ApplicationCommandOption.Type.STRING, String.class, "Only Letters, Numbers and Underscores are allowed!", argument -> !argument.matches("\\w")),
-        INTEGER(4, ApplicationCommandOption.Type.INTEGER, Integer.class, String.format("Only numbers between %s and %s are allowed!", Integer.MIN_VALUE, Integer.MAX_VALUE), argument -> {
+        WORD(3, ApplicationCommandOption.Type.STRING, String.class, "Only Letters, Numbers and Underscores are allowed.", argument -> !argument.matches("\\w")),
+        INTEGER(4, ApplicationCommandOption.Type.INTEGER, Integer.class, String.format("Only numbers between %s and %s are allowed.", Integer.MIN_VALUE, Integer.MAX_VALUE), argument -> {
             if (NumberUtil.isCreatable(argument) && !argument.contains(".")) {
                 double value = NumberUtil.createBigDecimal(argument).doubleValue();
                 return value <= Integer.MAX_VALUE && value >= Integer.MIN_VALUE;
@@ -109,7 +109,7 @@ public final class Parameter {
 
             return false;
         }),
-        LONG(4, ApplicationCommandOption.Type.INTEGER, Long.class, String.format("Only numbers between %s and %s are allowed!", Long.MIN_VALUE, Long.MAX_VALUE), argument -> {
+        LONG(4, ApplicationCommandOption.Type.INTEGER, Long.class, String.format("Only numbers between %s and %s are allowed.", Long.MIN_VALUE, Long.MAX_VALUE), argument -> {
             if (NumberUtil.isCreatable(argument) && !argument.contains(".")) {
                 double value = NumberUtil.createBigDecimal(argument).doubleValue();
                 return value <= Long.MAX_VALUE && value >= Long.MIN_VALUE;
@@ -117,14 +117,14 @@ public final class Parameter {
 
             return false;
         }),
-        BOOLEAN(5, ApplicationCommandOption.Type.BOOLEAN, Boolean.class, "Only `true` or `false` values are allowed!", argument -> argument.equalsIgnoreCase("true") || argument.equalsIgnoreCase("false")),
-        USER(6, ApplicationCommandOption.Type.USER, User.class, "Only User Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_USER_PATTERN.matcher(argument).matches()),
-        CHANNEL(7, ApplicationCommandOption.Type.CHANNEL, Channel.class, "Only Channel Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_CHANNEL_PATTERN.matcher(argument).matches()),
-        ROLE(8, ApplicationCommandOption.Type.ROLE, Role.class, "Only Role Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_ROLE_PATTERN.matcher(argument).matches()),
-        MENTIONABLE(9, ApplicationCommandOption.Type.MENTIONABLE, String.class, "Only Mentions and IDs are allowed!", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_PATTERN.matcher(argument).matches()),
-        EMOJI(9, ApplicationCommandOption.Type.MENTIONABLE, ReactionEmoji.class, "Only Emojis are allowed!", argument -> EMOJI_PATTERN.matcher(argument).matches()),
-        DOUBLE(10, ApplicationCommandOption.Type.NUMBER, Double.class, String.format("Only numbers between %s and %s are allowed!", Double.MIN_VALUE, Double.MAX_VALUE), NumberUtil::isCreatable),
-        ATTACHMENT(11, ApplicationCommandOption.Type.ATTACHMENT, Attachment.class, "Only Attachments are allowed!", argument -> true);
+        BOOLEAN(5, ApplicationCommandOption.Type.BOOLEAN, Boolean.class, "Only `true` or `false` values are allowed.", argument -> argument.equalsIgnoreCase("true") || argument.equalsIgnoreCase("false")),
+        USER(6, ApplicationCommandOption.Type.USER, User.class, "Only User Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_USER_PATTERN.matcher(argument).matches()),
+        CHANNEL(7, ApplicationCommandOption.Type.CHANNEL, Channel.class, "Only Channel Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_CHANNEL_PATTERN.matcher(argument).matches()),
+        ROLE(8, ApplicationCommandOption.Type.ROLE, Role.class, "Only Role Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_ROLE_PATTERN.matcher(argument).matches()),
+        MENTIONABLE(9, ApplicationCommandOption.Type.MENTIONABLE, String.class, "Only Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_PATTERN.matcher(argument).matches()),
+        EMOJI(9, ApplicationCommandOption.Type.MENTIONABLE, ReactionEmoji.class, "Only Emojis are allowed.", argument -> EMOJI_PATTERN.matcher(argument).matches()),
+        DOUBLE(10, ApplicationCommandOption.Type.NUMBER, Double.class, String.format("Only numbers between %s and %s are allowed.", Double.MIN_VALUE, Double.MAX_VALUE), NumberUtil::isCreatable),
+        ATTACHMENT(11, ApplicationCommandOption.Type.ATTACHMENT, Attachment.class, "Only Attachments are allowed.", argument -> true);
 
         private final int value;
         private final @NotNull ApplicationCommandOption.Type optionType;
@@ -382,7 +382,7 @@ public final class Parameter {
             Reflection.validateFlags(this);
 
             if (this.choices.notEmpty() && this.type != Type.CHANNEL)
-                throw new DiscordException("You can only specify channel types for parameters of type Channel!");
+                throw new DiscordException("You can only specify channel types for parameters of type Channel.");
 
             return new Parameter(
                 this.uniqueId,
