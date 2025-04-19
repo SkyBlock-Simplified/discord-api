@@ -1,21 +1,12 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.DiscordCommand;
-import dev.sbs.discordapi.command.SlashCommand;
-import dev.sbs.discordapi.handler.EmojiHandler;
-import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.discordjson.json.ApplicationCommandInteractionData;
-import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
@@ -29,11 +20,9 @@ import reactor.core.publisher.Mono;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@SuppressWarnings("rawtypes")
 public abstract class DiscordReference {
 
     @Getter(AccessLevel.PROTECTED)
@@ -45,91 +34,12 @@ public abstract class DiscordReference {
         this.log = LogManager.getLogger(this);
     }
 
-    public @NotNull String capitalizeEnum(@NotNull Enum<?> value) {
-        return capitalizeFully(value.name());
-    }
-
-    public @NotNull String capitalizeFully(@NotNull String value) {
-        return StringUtil.capitalizeFully(StringUtil.defaultIfEmpty(value, "").replace("_", " "));
-    }
-
     protected @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
         return tClass.isAnnotationPresent(aClass) ? Optional.of(tClass.getAnnotation(aClass)) : java.util.Optional.empty();
     }
 
-    protected final @NotNull Mono<Guild> getGuild(@NotNull Snowflake guildId) {
-        return this.getDiscordBot().getGateway().getGuildById(guildId);
-    }
-
-    protected @NotNull Optional<Emoji> getEmoji(@NotNull String key) {
-        return EmojiHandler.getEmoji(key);
-    }
-
-    // --- Command Searching ---
-
-    protected final @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
-        return this.getDiscordBot()
-            .getCommandHandler()
-            .getLoadedCommands()
-            .stream()
-            .filter(command -> command.getId() == commandId)
-            .collect(Concurrent.toUnmodifiableList());
-    }
-
-    protected final boolean doesCommandMatch(@NotNull SlashCommand slashCommand, @NotNull ApplicationCommandInteractionData commandData) {
-        if (commandData.name().isAbsent())
-            return false;
-
-        String compareName = commandData.name().get();
-
-        if (StringUtil.isNotEmpty(slashCommand.getStructure().parent())) {
-            if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
-                return false;
-
-            List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
-            ApplicationCommandInteractionOptionData option = options.get(0);
-
-            if (!compareName.equals(slashCommand.getStructure().parent()))
-                return false;
-
-            if (options.get(0).type() > 2)
-                return false;
-
-            if (StringUtil.isNotEmpty(slashCommand.getStructure().group())) {
-                if (!option.name().equals(slashCommand.getStructure().group()))
-                    return false;
-
-                if (option.options().isAbsent() || option.options().get().isEmpty())
-                    return false;
-
-                options = option.options().get();
-                option = options.get(0);
-            }
-
-            compareName = option.name();
-        }
-
-        return compareName.equals(slashCommand.getStructure().name());
-    }
-
-    protected final @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull SlashCommand slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
-        ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
-        ConcurrentList<String> commandTree = Concurrent.newList(slashCommand.getCommandTree());
-        commandTree.removeFirst();
-
-        while (commandTree.notEmpty()) {
-            for (ApplicationCommandInteractionOption option : options) {
-                if (option.getName().equals(commandTree.get(0))) {
-                    commandTree.removeFirst();
-                    options = Concurrent.newList(option.getOptions());
-                }
-            }
-        }
-
-        return options;
-    }
-
     // --- Permissions ---
+
     protected final @NotNull ConcurrentLinkedMap<Permission, Boolean> getGuildPermissionMap(@NotNull Snowflake userId, @NotNull Optional<Guild> guild, @NotNull Permission... permissions) {
         return this.getGuildPermissionMap(userId, guild, Arrays.asList(permissions));
     }
