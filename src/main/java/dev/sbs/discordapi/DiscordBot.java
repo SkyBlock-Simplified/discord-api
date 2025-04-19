@@ -108,7 +108,6 @@ public abstract class DiscordBot {
     private final @NotNull ExceptionHandler exceptionHandler;
     private ShardHandler shardHandler;
     private CommandHandler commandHandler;
-    private EmojiHandler emojiHandler;
 
     // Connection
     private DiscordClient client;
