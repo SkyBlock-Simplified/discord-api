@@ -29,7 +29,10 @@ import java.time.Instant;
 import java.util.function.Function;
 
 @CommandStructure(
-    parent = "debug",
+    parent = @CommandStructure.Parent(
+        name = "debug",
+        description = "Debugging Commands"
+    ),
     name = "components",
     guildId = 652148034448261150L,
     description = "Debug Components Handler"

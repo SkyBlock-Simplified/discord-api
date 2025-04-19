@@ -22,7 +22,10 @@ import java.util.Comparator;
 import java.util.stream.IntStream;
 
 @CommandStructure(
-    parent = "debug",
+    parent = @CommandStructure.Parent(
+        name = "debug",
+        description = "Debugging Commands"
+    ),
     name = "items",
     guildId = 652148034448261150L,
     description = "Debug Item Handler"

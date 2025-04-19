@@ -32,29 +32,29 @@ public @interface CommandStructure {
      * Description for slash commands.
      * <ul>
      *     <li>1-100 Characters</li>
-     *     <li>Empty string for USER and MESSAGE commands</li>
+     *     <li>Empty for USER and MESSAGE commands</li>
      * </ul>
      */
     @Pattern("^.{1,100}$")
     @NotNull String description() default "";
 
     /**
-     * Parent name of command.
+     * Parent data of slash command.
      * <ul>
-     *     <li>1-32 Characters</li>
+     *     <li>Empty for USER and MESSAGE commands</li>
      * </ul>
      */
-    @Pattern("^[\\w-]{1,32}$")
-    @NotNull String parent() default "";
+    @SuppressWarnings("all")
+    @NotNull Parent parent() default @Parent(name = "", description = "");
 
     /**
-     * Group name of command.
+     * Group data of slash command.
      * <ul>
-     *     <li>1-32 Characters</li>
+     *     <li>Empty for USER and MESSAGE commands</li>
      * </ul>
      */
-    @Pattern("^[\\w-]{1,32}$")
-    @NotNull String group() default "";
+    @SuppressWarnings("all")
+    @NotNull Group group() default @Group(name = "", description = "");
 
     /**
      * Guild ID of the command.
@@ -128,5 +128,59 @@ public @interface CommandStructure {
      * </ul>
      */
     @NotNull AccessContext[] contexts() default { AccessContext.GUILD, AccessContext.DIRECT_MESSAGE, AccessContext.PRIVATE_CHANNEL };
+
+    /**
+     * Immutable {@link DiscordCommand} parent api structure.
+     */
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Parent {
+
+        /**
+         * Parent name of command.
+         * <ul>
+         *     <li>1-32 Characters</li>
+         * </ul>
+         */
+        @Pattern("^[\\w-]{1,32}$")
+        @NotNull String name();
+
+        /**
+         * Parent description of command.
+         * <ul>
+         *     <li>1-100 Characters</li>
+         * </ul>
+         */
+        @Pattern("^.{1,100}$")
+        @NotNull String description();
+
+    }
+
+    /**
+     * Immutable {@link DiscordCommand} group api structure.
+     */
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Group {
+
+        /**
+         * Group name of command.
+         * <ul>
+         *     <li>1-32 Characters</li>
+         * </ul>
+         */
+        @Pattern("^[\\w-]{1,32}$")
+        @NotNull String name();
+
+        /**
+         * Group description of command.
+         * <ul>
+         *     <li>1-100 Characters</li>
+         * </ul>
+         */
+        @Pattern("^.{1,100}$")
+        @NotNull String description();
+
+    }
 
 }
