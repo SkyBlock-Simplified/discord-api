@@ -2,7 +2,6 @@ package dev.sbs.discordapi.response;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
@@ -12,7 +11,6 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.handler.EmojiHandler;
-import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -28,16 +26,13 @@ import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.object.reaction.Reaction;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.discordjson.Id;
 import discord4j.discordjson.json.MessageReferenceData;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
@@ -781,7 +776,7 @@ public class Response implements Paging<Page> {
         }
 
         /**
-         * Sets the time in seconds for the {@link Response} to live in {@link DiscordBot#getResponseCache()}.
+         * Sets the time in seconds for the {@link Response} to live in {@link DiscordBot#getResponseHandler()}.
          * <br><br>
          * This value moves whenever the user interacts with the {@link Response}.
          * <br><br>
@@ -846,301 +841,4 @@ public class Response implements Paging<Page> {
 
     }
 
-    public final static class Cache extends ConcurrentList<Cache.Entry> {
-
-        /**
-         * Adds a {@link Response} and it's assigned {@link MessageChannel}, User ID and Message ID.
-         *
-         * @param channelId the discord channel id of the response
-         * @param userId the user interacting with the response
-         * @param messageId the discord response id of the response
-         * @param response the response to cache
-         */
-        public Entry createAndGet(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-            Entry entry = new Entry(channelId, userId, messageId, response);
-            this.add(entry);
-            return entry;
-        }
-
-        @Getter
-        public static final class Entry extends BaseEntry {
-
-            private final @NotNull ConcurrentList<Followup> followups = Concurrent.newList();
-            private final @NotNull ConcurrentMap<Snowflake, Modal> activeModals = Concurrent.newMap();
-            private long lastInteract = System.currentTimeMillis();
-            private boolean busy;
-            private boolean deferred;
-
-            public Entry(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-                super(channelId, userId, messageId, response, response);
-                this.busy = true;
-                this.deferred = false;
-            }
-
-            public Mono<Followup> addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-                Followup followup = new Followup(identifier, channelId, userId, messageId, response);
-                this.followups.add(followup);
-                return Mono.just(followup);
-            }
-
-            public boolean containsFollowup(@NotNull String identifier) {
-                return this.getFollowups()
-                    .stream()
-                    .anyMatch(followup -> followup.getIdentifier().equals(identifier));
-            }
-
-            public boolean containsFollowup(@NotNull Snowflake messageId) {
-                return this.getFollowups()
-                    .stream()
-                    .anyMatch(followup -> followup.getMessageId().equals(messageId));
-            }
-
-            public Optional<Followup> findFollowup(@NotNull String identifier) {
-                return this.getFollowups().findFirst(Followup::getIdentifier, identifier);
-            }
-
-            public Optional<Followup> findFollowup(@NotNull Snowflake messageId) {
-                return this.getFollowups().findFirst(Followup::getMessageId, messageId);
-            }
-
-            public void removeFollowup(@NotNull String identifier) {
-                this.followups.removeIf(followup -> followup.getIdentifier().equals(identifier));
-            }
-
-            public void clearModal(@NotNull User user) {
-                this.activeModals.remove(user.getId());
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                if (!super.equals(o)) return false;
-
-                Entry entry = (Entry) o;
-
-                return new EqualsBuilder()
-                    .append(this.getLastInteract(), entry.getLastInteract())
-                    .append(this.isBusy(), entry.isBusy())
-                    .append(this.isDeferred(), entry.isDeferred())
-                    .append(this.getFollowups(), entry.getFollowups())
-                    .append(this.getActiveModals(), entry.getActiveModals())
-                    .build();
-            }
-
-            public @NotNull Optional<Modal> getUserModal(@NotNull User user) {
-                return Optional.ofNullable(this.activeModals.getOrDefault(user.getId(), null));
-            }
-
-            @Override
-            public int hashCode() {
-                return new HashCodeBuilder()
-                    .appendSuper(super.hashCode())
-                    .append(this.getFollowups())
-                    .append(this.getActiveModals())
-                    .append(this.getLastInteract())
-                    .append(this.isBusy())
-                    .append(this.isDeferred())
-                    .build();
-            }
-
-            public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Snowflake userId) {
-                return this.getUserId().equals(userId) && (this.getMessageId().equals(messageId) || this.containsFollowup(messageId));
-            }
-
-            public boolean matchesMessage(@NotNull Snowflake messageId, @NotNull Id userId) {
-                return this.getUserId().asLong() == userId.asLong() && (this.getMessageId().equals(messageId) || this.containsFollowup(messageId));
-            }
-
-            /**
-             * Checks if this response is busy or not expired.
-             * <br><br>
-             * See {@link #getLastInteract()} and {@link Response#getTimeToLive()}.
-             *
-             * @return True if busy or not expired.
-             */
-            public boolean isActive() {
-                return this.isBusy() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
-            }
-
-            @Override
-            public boolean isFollowup() {
-                return true;
-            }
-
-            public boolean notActive() {
-                return !this.isActive();
-            }
-
-            /**
-             * Sets this response as busy, preventing it from being removed from the {@link DiscordBot#getResponseCache()}.
-             */
-            public void setBusy() {
-                this.busy = true;
-            }
-
-            public void setDeferred() {
-                this.deferred = true;
-            }
-
-            public void setUserModal(@NotNull User user, @NotNull Modal modal) {
-                this.activeModals.put(user.getId(), modal);
-            }
-
-            /**
-             * Updates this response as not busy, allowing it to be later removed from the {@link DiscordBot#getResponseCache()}.
-             */
-            public Mono<Entry> updateLastInteract() {
-                return Mono.fromRunnable(() -> {
-                    super.processLastInteract();
-                    this.lastInteract = System.currentTimeMillis();
-                    this.busy = false;
-                    this.deferred = false;
-                });
-            }
-
-            public Mono<Entry> updateResponse(@NotNull Response response) {
-                super.setUpdatedResponse(response);
-                return Mono.just(this);
-            }
-
-        }
-
-        @Getter
-        public static class Followup extends BaseEntry {
-
-            private final @NotNull String identifier;
-
-            private Followup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-                super(channelId, userId, messageId, response, response);
-                this.identifier = identifier;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                if (!super.equals(o)) return false;
-
-                Followup followup = (Followup) o;
-
-                return new EqualsBuilder()
-                    .append(this.getIdentifier(), followup.getIdentifier())
-                    .build();
-            }
-
-            @Override
-            public int hashCode() {
-                return new HashCodeBuilder()
-                    .appendSuper(super.hashCode())
-                    .append(this.getIdentifier())
-                    .build();
-            }
-
-            @Override
-            public boolean isFollowup() {
-                return true;
-            }
-
-            public Mono<Followup> updateResponse(@NotNull Response response) {
-                super.setUpdatedResponse(response);
-                return Mono.just(this);
-            }
-
-        }
-
-        @Getter
-        @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-        public static abstract class BaseEntry {
-
-            private final @NotNull Snowflake channelId;
-            private final @NotNull Snowflake userId;
-            private final @NotNull Snowflake messageId;
-            private @NotNull Response response;
-            @Getter(AccessLevel.PROTECTED)
-            private @NotNull Response currentResponse;
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                BaseEntry baseEntry = (BaseEntry) o;
-
-                return new EqualsBuilder()
-                    .append(this.getChannelId(), baseEntry.getChannelId())
-                    .append(this.getUserId(), baseEntry.getUserId())
-                    .append(this.getMessageId(), baseEntry.getMessageId())
-                    .append(this.getResponse(), baseEntry.getResponse())
-                    .append(this.getCurrentResponse(), baseEntry.getCurrentResponse())
-                    .build();
-            }
-
-            @Override
-            public int hashCode() {
-                return new HashCodeBuilder()
-                    .append(this.getChannelId())
-                    .append(this.getUserId())
-                    .append(this.getMessageId())
-                    .append(this.getResponse())
-                    .append(this.getCurrentResponse())
-                    .build();
-            }
-
-            public abstract boolean isFollowup();
-
-            public boolean isModified() {
-                return !this.getCurrentResponse().equals(this.getResponse()) || this.getResponse().isCacheUpdateRequired();
-            }
-
-            protected void processLastInteract() {
-                this.currentResponse = this.response;
-                this.response.setNoCacheUpdateRequired();
-            }
-
-            protected void setUpdatedResponse(@NotNull Response response) {
-                this.response = response;
-            }
-
-            public Mono<Entry> updateAttachments(@NotNull Message message) {
-                return Mono.fromRunnable(() -> this.getResponse().updateAttachments(message));
-            }
-
-            public Mono<BaseEntry> updateReactions(@NotNull Message message) {
-                return Mono.just(message)
-                    .checkpoint("ResponseCache#updateReactions Processing")
-                    .flatMap(msg -> {
-                        // Update Reactions
-                        ConcurrentList<Emoji> newReactions = this.getResponse()
-                            .getHistoryHandler()
-                            .getCurrentPage()
-                            .getReactions();
-
-                        // Current Reactions
-                        ConcurrentList<Emoji> currentReactions = msg.getReactions()
-                            .stream()
-                            .filter(Reaction::selfReacted)
-                            .map(Reaction::getEmoji)
-                            .map(Emoji::of)
-                            .collect(Concurrent.toList());
-
-                        Mono<Void> mono = Mono.empty();
-
-                        // Remove Existing Reactions
-                        if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
-                            mono = msg.removeAllReactions();
-
-                        return mono.then(Mono.when(
-                            newReactions.stream()
-                                .map(emoji -> msg.addReaction(emoji.getD4jReaction()))
-                                .collect(Concurrent.toList())
-                        ));
-                    })
-                    .thenReturn(this);
-            }
-
-        }
-
-    }
-    
 }
