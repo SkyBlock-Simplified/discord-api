@@ -1,19 +1,14 @@
 package dev.sbs.discordapi;
 
-import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.data.DataConfig;
 import dev.sbs.api.data.model.Model;
-import dev.sbs.api.data.yaml.YamlConfig;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
-import dev.sbs.discordapi.util.DiscordEnvironment;
-import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.MemberRequestFilter;
@@ -21,28 +16,26 @@ import discord4j.gateway.ShardInfo;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Getter
 @Setter
+@AllArgsConstructor
 @SuppressWarnings("rawtypes")
-public final class DiscordConfig extends YamlConfig {
+public final class DiscordConfig {
 
-    private @NotNull DiscordEnvironment environment;
     @Flag(secure = true)
     private @NotNull String token;
     private long mainGuildId;
     private @NotNull Optional<Long> debugChannelId;
-    private @NotNull Optional<Class<? extends Model>> dataModel;
     private @NotNull Optional<DataConfig<? extends Model>> dataConfig;
     private ConcurrentSet<Class<? extends DiscordListener>> listeners;
     private ConcurrentSet<Class<DiscordCommand>> commands;
@@ -52,47 +45,6 @@ public final class DiscordConfig extends YamlConfig {
     private @NotNull Function<ShardInfo, ClientPresence> clientPresence;
     private @NotNull MemberRequestFilter memberRequestFilter;
     private @NotNull Level logLevel;
-    private Optional<Runnable> databaseConnectedEvent;
-    private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent;
-    private Optional<Runnable> gatewayDisconnectedEvent;
-
-    private DiscordConfig(
-        @NotNull String fileName,
-        @NotNull File configDir,
-        @NotNull ConcurrentList<String> header,
-        @NotNull DiscordEnvironment environment,
-        @NotNull String token,
-        long mainGuildId,
-        @NotNull Optional<Long> debugChannelId,
-        @NotNull Optional<DataConfig<? extends Model>> dataConfig,
-        @NotNull ConcurrentSet<Class<? extends DiscordListener>> listeners,
-        @NotNull ConcurrentSet<Class<DiscordCommand>> commands,
-        @NotNull AllowedMentions allowedMentions,
-        @NotNull IntentSet intents,
-        @NotNull Function<ShardInfo, ClientPresence> clientPresence,
-        @NotNull MemberRequestFilter memberRequestFilter,
-        @NotNull Level logLevel,
-        @NotNull Optional<Runnable> databaseConnectedEvent,
-        @NotNull Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent,
-        @NotNull Optional<Runnable> gatewayDisconnectedEvent
-    ) {
-        super(fileName, configDir, header);
-        this.environment = environment;
-        this.token = token;
-        this.mainGuildId = mainGuildId;
-        this.debugChannelId = debugChannelId;
-        this.dataConfig = dataConfig;
-        this.listeners = listeners.toUnmodifiableSet();
-        this.commands = commands.toUnmodifiableSet();
-        this.allowedMentions = allowedMentions;
-        this.intents = intents;
-        this.clientPresence = clientPresence;
-        this.memberRequestFilter = memberRequestFilter;
-        this.logLevel = logLevel;
-        this.databaseConnectedEvent = databaseConnectedEvent;
-        this.gatewayConnectedEvent = gatewayConnectedEvent;
-        this.gatewayDisconnectedEvent = gatewayDisconnectedEvent;
-    }
 
     public static @NotNull Builder builder() {
         return new Builder();
@@ -104,22 +56,12 @@ public final class DiscordConfig extends YamlConfig {
 
     public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordConfig> {
 
-        // Config File
-        @BuildFlag(nonNull = true)
-        private String fileName;
-        @BuildFlag(nonNull = true)
-        private File directory = SimplifiedApi.getCurrentDirectory();
-        private ConcurrentList<String> header = Concurrent.newList();
-
         // Settings
-        @BuildFlag(nonNull = true)
-        private DiscordEnvironment environment = DiscordEnvironment.DEVELOPMENT;
         @BuildFlag(nonNull = true)
         private Optional<String> token = Optional.empty();
         @BuildFlag(nonNull = true)
         private Optional<Long> mainGuildId = Optional.empty();
         private Optional<Long> debugChannelId = Optional.empty();
-        private Optional<Class<? extends Model>> dataModel = Optional.empty();
         private Optional<DataConfig<? extends Model>> dataConfig = Optional.empty();
 
         // Collections
@@ -135,38 +77,6 @@ public final class DiscordConfig extends YamlConfig {
         private MemberRequestFilter memberRequestFilter = MemberRequestFilter.all();
         @BuildFlag(nonNull = true)
         private Level logLevel = Level.WARN;
-
-        // Events
-        private Optional<Runnable> databaseConnectedEvent = Optional.empty();
-        private Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent = Optional.empty();
-        private Optional<Runnable> gatewayDisconnectedEvent = Optional.empty();
-
-        public Builder onDatabaseConnected(@Nullable Runnable databaseConnectedEvent) {
-            return this.onDatabaseConnected(Optional.ofNullable(databaseConnectedEvent));
-        }
-
-        public Builder onDatabaseConnected(@NotNull Optional<Runnable> databaseConnectedEvent) {
-            this.databaseConnectedEvent = databaseConnectedEvent;
-            return this;
-        }
-
-        public Builder onGatewayConnected(@Nullable Consumer<GatewayDiscordClient> gatewayConnectedEvent) {
-            return this.onGatewayConnected(Optional.ofNullable(gatewayConnectedEvent));
-        }
-
-        public Builder onGatewayConnected(@NotNull Optional<Consumer<GatewayDiscordClient>> gatewayConnectedEvent) {
-            this.gatewayConnectedEvent = gatewayConnectedEvent;
-            return this;
-        }
-
-        public Builder onGatewayDisconnected(@Nullable Runnable gatewayConnectedEvent) {
-            return this.onGatewayDisconnected(Optional.ofNullable(gatewayConnectedEvent));
-        }
-
-        public Builder onGatewayDisconnected(@NotNull Optional<Runnable> gatewayConnectedEvent) {
-            this.gatewayDisconnectedEvent = gatewayConnectedEvent;
-            return this;
-        }
 
         public Builder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
             this.allowedMentions = allowedMentions;
@@ -219,11 +129,6 @@ public final class DiscordConfig extends YamlConfig {
             return this;
         }
 
-        public Builder withDirectory(@NotNull File directory) {
-            this.directory = directory;
-            return this;
-        }
-
         public Builder withDisabledIntents(@NotNull IntentSet disabledIntents) {
             this.intents = IntentSet.all().andNot(disabledIntents);
             return this;
@@ -231,26 +136,6 @@ public final class DiscordConfig extends YamlConfig {
 
         public Builder withEnabledIntents(@NotNull IntentSet enabledIntents) {
             this.intents = enabledIntents;
-            return this;
-        }
-
-        public Builder withEnvironment(@NotNull DiscordEnvironment environment) {
-            this.environment = environment;
-            return this;
-        }
-
-        public Builder withFileName(@NotNull String fileName) {
-            this.fileName = fileName;
-            return this;
-        }
-
-        public Builder withHeader(@NotNull String... header) {
-            this.header.addAll(header);
-            return this;
-        }
-
-        public Builder withHeader(@NotNull Iterable<String> header) {
-            header.forEach(this.header::add);
             return this;
         }
 
@@ -306,10 +191,6 @@ public final class DiscordConfig extends YamlConfig {
             Reflection.validateFlags(this);
 
             return new DiscordConfig(
-                this.fileName,
-                this.directory,
-                this.header,
-                this.environment,
                 this.token.orElseThrow(),
                 this.mainGuildId.orElseThrow(),
                 this.debugChannelId,
@@ -320,10 +201,7 @@ public final class DiscordConfig extends YamlConfig {
                 this.intents,
                 this.clientPresence,
                 this.memberRequestFilter,
-                this.logLevel,
-                this.databaseConnectedEvent,
-                this.gatewayConnectedEvent,
-                this.gatewayDisconnectedEvent
+                this.logLevel
             );
         }
 
