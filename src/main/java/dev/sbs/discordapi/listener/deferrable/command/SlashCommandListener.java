@@ -4,7 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -24,20 +24,21 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
     }
 
     @Override
+    @SuppressWarnings("all")
     public Publisher<Void> apply(@NotNull ChatInputInteractionEvent event) {
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong()))
-                .cast(SlashCommand.class)
-                .filter(command -> command.matchesInteractionData(commandData))
+                .filter(command -> this.matchesInteractionData(command, commandData))
             )
             .single()
+            .map(command -> (DiscordCommand<SlashCommandContext>) command)
             .flatMap(command -> command.apply(SlashCommandContext.of(
                 this.getDiscordBot(),
                 event,
-                command,
-                getActualOptionData(command, event.getOptions())
+                command.getStructure(),
+                this.getActualOptionData(command, event.getOptions())
                     .stream()
                     .flatMap(commandOption -> command.getParameters()
                         .stream()
@@ -48,17 +49,17 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             )));
     }
 
-    private static @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull SlashCommand slashCommand, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
+    private @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull DiscordCommand<?> command, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
         ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
 
         // Build Tree
-        ConcurrentList<String> commandTree = Concurrent.newList(slashCommand.getStructure().name().toLowerCase());
+        ConcurrentList<String> commandTree = Concurrent.newList(command.getStructure().name().toLowerCase());
 
-        if (StringUtil.isNotEmpty(slashCommand.getStructure().group().name()))
-            commandTree.add(slashCommand.getStructure().group().name().toLowerCase());
+        if (StringUtil.isNotEmpty(command.getStructure().group().name()))
+            commandTree.add(command.getStructure().group().name().toLowerCase());
 
-        if (StringUtil.isNotEmpty(slashCommand.getStructure().parent().name()))
-            commandTree.add(slashCommand.getStructure().parent().name().toLowerCase());
+        if (StringUtil.isNotEmpty(command.getStructure().parent().name()))
+            commandTree.add(command.getStructure().parent().name().toLowerCase());
 
         // Invert
         commandTree = commandTree.inverse();

@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.debug.command;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandStructure;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Emoji;
@@ -22,13 +22,16 @@ import dev.sbs.discordapi.response.page.item.TitleItem;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-@CommandStructure(
-    parent = "debug",
+@Structure(
+    parent = @Structure.Parent(
+        name = "debug",
+        description = "Debugging Commands"
+    ),
     name = "embed",
     guildId = 652148034448261150L,
     description = "Debug Embed Builder"
 )
-public class EmbedCommand extends SlashCommand {
+public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
 
     protected EmbedCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);

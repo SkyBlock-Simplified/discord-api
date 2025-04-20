@@ -76,7 +76,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
             commandContext,
             throwable,
             "Command Exception",
-            embedBuilder -> embedBuilder.withTitle("Command :: %s", commandContext.getCommand().getStructure().name())
+            embedBuilder -> embedBuilder.withTitle("Command :: %s", commandContext.getStructure().name())
         );
     }
 

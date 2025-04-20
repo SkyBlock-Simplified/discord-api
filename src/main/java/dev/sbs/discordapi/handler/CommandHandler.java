@@ -9,16 +9,16 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.stream.StreamUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandStructure;
 import dev.sbs.discordapi.command.DiscordCommand;
-import dev.sbs.discordapi.command.MessageCommand;
-import dev.sbs.discordapi.command.SlashCommand;
-import dev.sbs.discordapi.command.UserCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.context.AccessContext;
 import dev.sbs.discordapi.command.context.InstallContext;
 import dev.sbs.discordapi.command.context.TypeContext;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
+import dev.sbs.discordapi.context.deferrable.command.MessageCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.UserCommandContext;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.object.command.ApplicationCommand;
@@ -51,13 +51,13 @@ public class CommandHandler extends DiscordReference {
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends DiscordCommand>, Long> commandIds = Concurrent.newMap();
     @Getter private final @NotNull ConcurrentList<DiscordCommand> loadedCommands;
-    @Getter private final @NotNull ConcurrentList<SlashCommand> slashCommands;
-    @Getter private final @NotNull ConcurrentList<UserCommand> userCommands;
-    @Getter private final @NotNull ConcurrentList<MessageCommand> messageCommands;
+    @Getter private final @NotNull ConcurrentList<DiscordCommand<SlashCommandContext>> slashCommands;
+    @Getter private final @NotNull ConcurrentList<DiscordCommand<UserCommandContext>> userCommands;
+    @Getter private final @NotNull ConcurrentList<DiscordCommand<MessageCommandContext>> messageCommands;
 
     CommandHandler(
         @NotNull DiscordBot discordBot,
-        @NotNull ConcurrentSet<Class<? extends DiscordCommand>> commands
+        @NotNull ConcurrentSet<Class<DiscordCommand>> commands
     ) {
         super(discordBot);
 
@@ -65,9 +65,9 @@ public class CommandHandler extends DiscordReference {
         ConcurrentList<DiscordCommand> initializedCommands = this.validateCommands(discordBot, commands);
 
         this.getLog().info("Retrieving Commands");
-        this.getLog().debug("Retrieving Slash Commands");
+        this.getLog().debug("Filtering Slash Commands");
         this.slashCommands = this.retrieveTypedCommands(
-            SlashCommand.class,
+            SlashCommandContext.class,
             initializedCommands,
             (commandEntry, compareEntry) -> Objects.equals(
                 commandEntry.getStructure().parent(),
@@ -78,16 +78,16 @@ public class CommandHandler extends DiscordReference {
             ) && commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
 
-        this.getLog().debug("Retrieving User Commands");
+        this.getLog().debug("Filtering User Commands");
         this.userCommands = this.retrieveTypedCommands(
-            UserCommand.class,
+            UserCommandContext.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
 
-        this.getLog().debug("Retrieving Message Commands");
+        this.getLog().debug("Filtering Message Commands");
         this.messageCommands = this.retrieveTypedCommands(
-            MessageCommand.class,
+            MessageCommandContext.class,
             initializedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
@@ -111,7 +111,7 @@ public class CommandHandler extends DiscordReference {
                     .filter(command -> StringUtil.isNotEmpty(command.getStructure().parent().name()))
                     .map(command -> command.getStructure().parent())
                     .filter(parent -> StringUtil.isNotEmpty(parent.name()))
-                    .filter(StreamUtil.distinctByKey(CommandStructure.Parent::name))
+                    .filter(StreamUtil.distinctByKey(Structure.Parent::name))
                     .map(parent -> this.buildParentCommand(parent)
                         // Handle SubCommand Groups
                         .addAllOptions(
@@ -120,7 +120,7 @@ public class CommandHandler extends DiscordReference {
                                 .filter(command -> command.getStructure().parent().name().equalsIgnoreCase(parent.name()))
                                 .map(command -> command.getStructure().group())
                                 .filter(group -> StringUtil.isNotEmpty(group.name()))
-                                .filter(StreamUtil.distinctByKey(CommandStructure.Group::name))
+                                .filter(StreamUtil.distinctByKey(Structure.Group::name))
                                 .map(group -> ApplicationCommandOptionData.builder()
                                     .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
                                     .name(group.name().toLowerCase())
@@ -172,7 +172,7 @@ public class CommandHandler extends DiscordReference {
             .toUnmodifiableList();
     }
 
-    private @NotNull ImmutableApplicationCommandRequest.Builder buildParentCommand(@NotNull CommandStructure.Parent parent) {
+    private @NotNull ImmutableApplicationCommandRequest.Builder buildParentCommand(@NotNull Structure.Parent parent) {
         return ApplicationCommandRequest.builder()
             .type(ApplicationCommand.Type.CHAT_INPUT.getValue())
             .name(parent.name())
@@ -181,7 +181,7 @@ public class CommandHandler extends DiscordReference {
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DiscordCommand command) {
         return ApplicationCommandRequest.builder()
-            .type(command.getType().getValue())
+            .type(command.getStructure().type().getValue())
             .name(command.getStructure().name())
             .description(command.getStructure().description())
             .nsfw(command.getStructure().nsfw())
@@ -190,7 +190,7 @@ public class CommandHandler extends DiscordReference {
             .contexts(AccessContext.intValues(command.getStructure().contexts()));
     }
 
-    private @NotNull ApplicationCommandOptionData buildSubCommand(@NotNull SlashCommand command) {
+    private @NotNull ApplicationCommandOptionData buildSubCommand(@NotNull DiscordCommand<SlashCommandContext> command) {
         return ApplicationCommandOptionData.builder()
             .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue())
             .name(command.getStructure().name())
@@ -256,7 +256,7 @@ public class CommandHandler extends DiscordReference {
             .thenMany(
                 Flux.fromIterable(this.getLoadedCommands())
                     .map(DiscordCommand::getStructure)
-                    .map(CommandStructure::guildId)
+                    .map(Structure::guildId)
                     .filter(guildId -> guildId > 0)
                     .distinct()
                     .flatMap(guildId -> this.getDiscordBot()
@@ -283,55 +283,49 @@ public class CommandHandler extends DiscordReference {
     private @NotNull ConcurrentList<DiscordCommand> getCommandReferences(@NotNull String name, @NotNull TypeContext type) {
         return this.getLoadedCommands()
             .stream()
-            .filter(command -> command.getType() == type)
+            .filter(command -> command.getStructure().type() == type)
             .filter(command -> {
-                if (command instanceof SlashCommand slashCommand) {
-                    if (StringUtil.isNotEmpty(slashCommand.getStructure().parent().name()))
-                        return slashCommand.getStructure().parent().name().equalsIgnoreCase(name);
+                if (command.getStructure().type() == TypeContext.CHAT_INPUT) {
+                    if (StringUtil.isNotEmpty(command.getStructure().parent().name()))
+                        return command.getStructure().parent().name().equalsIgnoreCase(name);
                     else
-                        return slashCommand.getStructure().name().equalsIgnoreCase(name);
+                        return command.getStructure().name().equalsIgnoreCase(name);
                 } else
                     return command.getStructure().name().equals(name);
             })
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    private <
-        A extends ApplicationCommandInteractionEvent,
-        C extends CommandContext<A>,
-        T extends DiscordCommand<C>
-        > @NotNull ConcurrentList<T> retrieveTypedCommands(
-        @NotNull Class<T> referenceType,
+    @SuppressWarnings("all")
+    private <A extends ApplicationCommandInteractionEvent, C extends CommandContext<A>> @NotNull ConcurrentList<DiscordCommand<C>> retrieveTypedCommands(
+        @NotNull Class<C> type,
         @NotNull ConcurrentList<DiscordCommand> commands,
-        @NotNull BiPredicate<T, T> filter
+        @NotNull BiPredicate<DiscordCommand, DiscordCommand> filter
     ) {
-        ConcurrentList<T> typedCommands = commands.stream()
-            .filter(reference -> referenceType.isAssignableFrom(reference.getClass()))
-            .map(referenceType::cast)
-            .collect(Concurrent.toList());
-
-        return typedCommands.stream()
-            .filter(commandEntry -> {
-                Optional<T> commandOverlap = typedCommands.stream()
-                    .filter(compareEntry -> !commandEntry.equals(compareEntry))
-                    .filter(compareEntry -> filter.test(commandEntry, compareEntry)) // Compare Commands
+        return commands.stream()
+            .filter(command -> type.isAssignableFrom(Reflection.getSuperClass(command)))
+            .filter(command -> {
+                Optional<DiscordCommand> commandOverlap = commands.stream()
+                    .filter(compareEntry -> !command.equals(compareEntry))
+                    .filter(compareEntry -> filter.test(command, compareEntry)) // Compare Commands
                     .findAny();
 
                 if (commandOverlap.isPresent()) {
-                    this.getLog().info("Command '{}' conflicts with '{}'!", commandEntry.getStructure().name(), commandOverlap.get().getStructure().name());
+                    this.getLog().info("Command '{}' conflicts with '{}'!", command.getStructure().name(), commandOverlap.get().getStructure().name());
                     return false;
                 }
 
                 return true;
             })
+            .map(command -> (DiscordCommand<C>) command)
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    private @NotNull ConcurrentList<DiscordCommand> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<? extends DiscordCommand>> commands) {
+    private @NotNull ConcurrentList<DiscordCommand> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<DiscordCommand>> commands) {
         return commands.stream()
             .map(commandClass -> Pair.of(
                 commandClass,
-                getAnnotation(CommandStructure.class, commandClass)
+                getAnnotation(Structure.class, commandClass)
             ))
             .filter(commandLink -> {
                 if (commandLink.getRight().isEmpty()) {
@@ -362,13 +356,13 @@ public class CommandHandler extends DiscordReference {
     public static class Builder implements dev.sbs.api.util.builder.Builder<CommandHandler> {
 
         private final DiscordBot discordBot;
-        private final ConcurrentSet<Class<? extends DiscordCommand>> commands = Concurrent.newSet();
+        private final ConcurrentSet<Class<DiscordCommand>> commands = Concurrent.newSet();
 
-        public Builder withCommands(@NotNull Class<? extends DiscordCommand>... commands) {
+        public Builder withCommands(@NotNull Class<DiscordCommand>... commands) {
             return this.withCommands(Arrays.asList(commands));
         }
 
-        public Builder withCommands(@NotNull Iterable<Class<? extends DiscordCommand>> commands) {
+        public Builder withCommands(@NotNull Iterable<Class<DiscordCommand>> commands) {
             commands.forEach(this.commands::add);
             return this;
         }

@@ -5,8 +5,8 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
-import dev.sbs.discordapi.command.CommandStructure;
 import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.exception.DiscordGatewayException;
@@ -83,7 +83,7 @@ import java.util.function.Function;
  * - Followups ({@link Response.Cache.Followup})
  * - Contexts ({@link EventContext})
  * - Command:
- *   - Structure ({@link CommandStructure})
+ *   - Structure ({@link Structure})
  *   - Implementation ({@link DiscordCommand})
  *   - Building ({@link CommandHandler})
  *   - Parameters ({@link Parameter})

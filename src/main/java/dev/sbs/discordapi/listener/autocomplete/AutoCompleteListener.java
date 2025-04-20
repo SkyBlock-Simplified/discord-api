@@ -2,9 +2,10 @@ package dev.sbs.discordapi.listener.autocomplete;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
+import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
@@ -20,15 +21,16 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
     }
 
     @Override
+    @SuppressWarnings("all")
     public Publisher<Void> apply(@NotNull ChatInputAutoCompleteEvent event) {
         return Mono.just(event.getInteraction())
             .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong()))
-                .cast(SlashCommand.class)
-                .filter(command -> command.matchesInteractionData(commandData))
+                .filter(command -> this.matchesInteractionData(command, commandData))
             )
             .single()
+            .map(command -> (DiscordCommand<SlashCommandContext>) command)
             .flatMap(slashCommand -> event.respondWithSuggestions(
                 slashCommand.getParameters()
                     .stream()
@@ -38,7 +40,7 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
                         .apply(AutoCompleteContext.of(
                             this.getDiscordBot(),
                             event,
-                            slashCommand,
+                            slashCommand.getStructure(),
                             new Argument(
                                 event.getInteraction(),
                                 parameter,

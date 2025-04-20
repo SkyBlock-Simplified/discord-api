@@ -15,7 +15,7 @@ public class BotPermissionException extends PermissionException {
     private final @NotNull ConcurrentSet<Permission> requiredPermissions;
 
     public BotPermissionException(@NotNull CommandContext<?> commandContext, @NotNull ConcurrentSet<Permission> requiredPermissions) {
-        super("The command '%s' lacks permissions required to run!", commandContext.getCommand().getStructure().name());
+        super("The command '%s' lacks permissions required to run!", commandContext.getStructure().name());
         this.requiredPermissions = requiredPermissions;
     }
 

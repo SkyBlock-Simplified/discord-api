@@ -2,6 +2,7 @@ package dev.sbs.discordapi.command;
 
 import dev.sbs.discordapi.command.context.AccessContext;
 import dev.sbs.discordapi.command.context.InstallContext;
+import dev.sbs.discordapi.command.context.TypeContext;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import org.intellij.lang.annotations.Pattern;
@@ -17,7 +18,18 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CommandStructure {
+public @interface Structure {
+
+    /**
+     * Type of command.
+     *
+     * <ul>
+     *     <li>{@link TypeContext#MESSAGE} for Message Commands</li>
+     *     <li>{@link TypeContext#CHAT_INPUT} for Slash Commands</li>
+     *     <li>{@link TypeContext#USER} for User Commands</li>
+     * </ul>
+     */
+    @NotNull TypeContext type() default TypeContext.CHAT_INPUT;
 
     /**
      * Name of command.

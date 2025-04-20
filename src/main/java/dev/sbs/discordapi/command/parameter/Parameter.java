@@ -9,7 +9,6 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
-import dev.sbs.discordapi.command.SlashCommand;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
@@ -193,14 +192,14 @@ public final class Parameter {
         }
 
         /**
-         * Sets the {@link Parameter} as required by the {@link SlashCommand}.
+         * Sets the {@link Parameter} as required.
          */
         public Builder isRequired() {
             return this.isRequired(true);
         }
 
         /**
-         * Sets if the {@link Parameter} is required by the {@link SlashCommand}.
+         * Sets if the {@link Parameter} is required.
          *
          * @param required True if required.
          */

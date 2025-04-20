@@ -3,8 +3,8 @@ package dev.sbs.discordapi.debug.command;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandStructure;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Response;
@@ -21,8 +21,8 @@ import reactor.core.publisher.Mono;
 import java.util.Comparator;
 import java.util.stream.IntStream;
 
-@CommandStructure(
-    parent = @CommandStructure.Parent(
+@Structure(
+    parent = @Structure.Parent(
         name = "debug",
         description = "Debugging Commands"
     ),
@@ -30,7 +30,7 @@ import java.util.stream.IntStream;
     guildId = 652148034448261150L,
     description = "Debug Item Handler"
 )
-public class DebugItemsCommand extends SlashCommand {
+public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
 
     protected DebugItemsCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);

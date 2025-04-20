@@ -2,11 +2,15 @@ package dev.sbs.discordapi.util;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.command.DiscordCommand;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.GuildChannel;
+import discord4j.discordjson.json.ApplicationCommandInteractionData;
+import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationTeamMemberData;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
@@ -20,6 +24,7 @@ import reactor.core.publisher.Mono;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,8 +39,44 @@ public abstract class DiscordReference {
         this.log = LogManager.getLogger(this);
     }
 
-    protected @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
+    protected final @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
         return tClass.isAnnotationPresent(aClass) ? Optional.of(tClass.getAnnotation(aClass)) : java.util.Optional.empty();
+    }
+
+    protected final boolean matchesInteractionData(@NotNull DiscordCommand<?> command, @NotNull ApplicationCommandInteractionData commandData) {
+        if (commandData.name().isAbsent())
+            return false;
+
+        String compareName = commandData.name().get();
+
+        if (StringUtil.isNotEmpty(command.getStructure().parent().name())) {
+            if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
+                return false;
+
+            List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
+            ApplicationCommandInteractionOptionData option = options.get(0);
+
+            if (!compareName.equals(command.getStructure().parent().name()))
+                return false;
+
+            if (options.get(0).type() > 2)
+                return false;
+
+            if (StringUtil.isNotEmpty(command.getStructure().group().name())) {
+                if (!option.name().equals(command.getStructure().group().name()))
+                    return false;
+
+                if (option.options().isAbsent() || option.options().get().isEmpty())
+                    return false;
+
+                options = option.options().get();
+                option = options.get(0);
+            }
+
+            compareName = option.name();
+        }
+
+        return compareName.equals(command.getStructure().name());
     }
 
     // --- Permissions ---

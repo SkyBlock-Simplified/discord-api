@@ -4,8 +4,8 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
 import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.CommandStructure;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
@@ -28,8 +28,8 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.function.Function;
 
-@CommandStructure(
-    parent = @CommandStructure.Parent(
+@Structure(
+    parent = @Structure.Parent(
         name = "debug",
         description = "Debugging Commands"
     ),
@@ -37,7 +37,7 @@ import java.util.function.Function;
     guildId = 652148034448261150L,
     description = "Debug Components Handler"
 )
-public class DebugComponentsCommand extends SlashCommand {
+public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> {
 
     protected DebugComponentsCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);

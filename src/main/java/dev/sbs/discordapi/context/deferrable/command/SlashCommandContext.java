@@ -2,7 +2,7 @@ package dev.sbs.discordapi.context.deferrable.command;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.command.SlashCommand;
+import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -28,10 +28,10 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
     @NotNull ConcurrentList<Argument> getArguments();
 
     @Override
-    @NotNull SlashCommand getCommand();
+    @NotNull Structure getStructure();
 
-    static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull SlashCommand command, @NotNull ConcurrentList<Argument> arguments) {
-        return new Impl(discordBot, event, command, arguments);
+    static @NotNull SlashCommandContext of(@NotNull DiscordBot discordBot, @NotNull ChatInputInteractionEvent event, @NotNull Structure structure, @NotNull ConcurrentList<Argument> arguments) {
+        return new Impl(discordBot, event, structure, arguments);
     }
 
     @Getter
@@ -41,7 +41,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         private final @NotNull DiscordBot discordBot;
         private final @NotNull ChatInputInteractionEvent event;
         private final @NotNull UUID responseId = UUID.randomUUID();
-        private final @NotNull SlashCommand command;
+        private final @NotNull Structure structure;
         private final @NotNull ConcurrentList<Argument> arguments;
 
     }

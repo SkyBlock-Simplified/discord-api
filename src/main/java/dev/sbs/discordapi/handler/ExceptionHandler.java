@@ -338,7 +338,7 @@ public final class ExceptionHandler extends DiscordReference {
         // Modify Command Errors
         if (exceptionContext.getEventContext() instanceof CommandContext<?> commandContext) {
             userError = userError.mutate()
-                .withTitle("Command :: %s", commandContext.getCommand().getStructure().name())
+                .withTitle("Command :: %s", commandContext.getStructure().name())
                 .build();
         }
 

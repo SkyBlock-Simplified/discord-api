@@ -45,7 +45,7 @@ public final class DiscordConfig extends YamlConfig {
     private @NotNull Optional<Class<? extends Model>> dataModel;
     private @NotNull Optional<DataConfig<? extends Model>> dataConfig;
     private ConcurrentSet<Class<? extends DiscordListener>> listeners;
-    private ConcurrentSet<Class<? extends DiscordCommand>> commands;
+    private ConcurrentSet<Class<DiscordCommand>> commands;
     private @NotNull AllowedMentions allowedMentions;
     private @NotNull IntentSet intents;
     @Getter(AccessLevel.NONE)
@@ -66,7 +66,7 @@ public final class DiscordConfig extends YamlConfig {
         @NotNull Optional<Long> debugChannelId,
         @NotNull Optional<DataConfig<? extends Model>> dataConfig,
         @NotNull ConcurrentSet<Class<? extends DiscordListener>> listeners,
-        @NotNull ConcurrentSet<Class<? extends DiscordCommand>> commands,
+        @NotNull ConcurrentSet<Class<DiscordCommand>> commands,
         @NotNull AllowedMentions allowedMentions,
         @NotNull IntentSet intents,
         @NotNull Function<ShardInfo, ClientPresence> clientPresence,
@@ -124,7 +124,7 @@ public final class DiscordConfig extends YamlConfig {
 
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
-        private ConcurrentSet<Class<? extends DiscordCommand>> commands = Concurrent.newSet();
+        private ConcurrentSet<Class<DiscordCommand>> commands = Concurrent.newSet();
         @BuildFlag(nonNull = true)
         private AllowedMentions allowedMentions = AllowedMentions.builder().build();
         @BuildFlag(nonNull = true)
@@ -186,17 +186,17 @@ public final class DiscordConfig extends YamlConfig {
             this.commands.addAll(
                 Reflection.getResources()
                     .filterPackage(packagePath)
-                    .getSubtypesOf(DiscordCommand.class)
+                    .getTypesOf(DiscordCommand.class)
             );
             return this;
         }
 
-        public Builder withCommands(@NotNull Class<? extends DiscordCommand>... commands) {
+        public Builder withCommands(@NotNull Class<DiscordCommand>... commands) {
             this.commands.addAll(commands);
             return this;
         }
 
-        public Builder withCommands(@NotNull Iterable<Class<? extends DiscordCommand>> commands) {
+        public Builder withCommands(@NotNull Iterable<Class<DiscordCommand>> commands) {
             commands.forEach(this.commands::add);
             return this;
         }
