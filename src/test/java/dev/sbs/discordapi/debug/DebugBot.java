@@ -8,7 +8,6 @@ import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.DiscordConfig;
 import dev.sbs.discordapi.command.DiscordCommand;
-import dev.sbs.discordapi.util.DiscordEnvironment;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
@@ -23,8 +22,6 @@ public final class DebugBot extends DiscordBot {
 
     public static void main(final String[] args) {
         DiscordConfig discordConfig = DiscordConfig.builder()
-            .withFileName("config-debug")
-            .withEnvironment(DiscordEnvironment.DEVELOPMENT)
             .withToken(SystemUtil.getEnv("DISCORD_TOKEN"))
             .withMainGuildId(652148034448261150L)
             .withDebugChannelId(SystemUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
