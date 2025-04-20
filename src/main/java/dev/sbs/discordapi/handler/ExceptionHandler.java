@@ -291,13 +291,6 @@ public final class ExceptionHandler extends DiscordReference {
                     .build()
             );
 
-        // Handle Calling Fields
-        exceptionContext.getEmbedBuilderConsumer().ifPresent(consumer -> consumer.accept(logErrorBuilder));
-
-        // Add SimplifiedException Fields
-        //if (exceptionContext.getException() instanceof SimplifiedException)
-        //    logErrorBuilder.withFields((SimplifiedException) exceptionContext.getException());
-
         return logErrorBuilder.build();
     }
 
