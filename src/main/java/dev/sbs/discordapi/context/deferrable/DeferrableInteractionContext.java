@@ -10,13 +10,6 @@ import reactor.core.publisher.Mono;
 
 public interface DeferrableInteractionContext<T extends DeferrableInteractionEvent> extends InteractionContext<T> {
 
-    /*@Override
-    default Mono<Message> discordBuildMessage(@NotNull Response response) {
-        return this.interactionEdit(response.getD4jComponentCallbackSpec())
-            .publishOn(response.getReactorScheduler())
-            .then(this.getReply());
-    }*/
-
     @Override
     default Mono<Message> discordBuildMessage(@NotNull Response response) {
         return this.getEvent()
@@ -39,10 +32,5 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
     default Mono<Message> getReply() {
         return this.getEvent().getReply();
     }
-
-    /*@Override
-    default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
-        return this.getEvent().reply(interactionApplicationCommandCallbackSpec);
-    }*/
 
 }

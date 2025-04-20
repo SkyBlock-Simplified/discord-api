@@ -85,11 +85,6 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
         return this.getEvent().getMessageId();
     }
 
-    /*@Override
-    default Mono<Void> interactionEdit(InteractionApplicationCommandCallbackSpec interactionApplicationCommandCallbackSpec) {
-        return this.getEvent().edit(interactionApplicationCommandCallbackSpec);
-    }*/
-
     default Mono<Void> presentModal(@NotNull Modal modal) {
         return Mono.justOrEmpty(this.getResponseCacheEntry())
             .doOnNext(entry -> entry.setUserModal(this.getInteractUser(), modal))
