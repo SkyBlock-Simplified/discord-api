@@ -54,7 +54,8 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
                             .build()
                         )
                         .map(ApplicationCommandOptionChoiceData.class::cast)
-                        .collect(Concurrent.toList()))
+                        .collect(Concurrent.toList())
+                    )
                     .orElse(Concurrent.newList())
             ));
     }
