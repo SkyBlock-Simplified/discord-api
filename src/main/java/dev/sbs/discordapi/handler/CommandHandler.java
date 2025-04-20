@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 
 @Log4j2
 @SuppressWarnings("rawtypes")
-public class CommandHandler extends DiscordReference {
+public final class CommandHandler extends DiscordReference {
 
     private static final Pattern validCommandPattern = Pattern.compile("^[\\w-]{1,32}$");
     private final @NotNull ConcurrentMap<Class<? extends DiscordCommand>, Long> commandIds = Concurrent.newMap();
@@ -303,7 +303,7 @@ public class CommandHandler extends DiscordReference {
         @NotNull BiPredicate<DiscordCommand, DiscordCommand> filter
     ) {
         return commands.stream()
-            .filter(command -> type.isAssignableFrom(Reflection.getSuperClass(command)))
+            .filter(command -> type.isAssignableFrom(command.getContextType()))
             .filter(command -> {
                 Optional<DiscordCommand> commandOverlap = commands.stream()
                     .filter(compareEntry -> !command.equals(compareEntry))

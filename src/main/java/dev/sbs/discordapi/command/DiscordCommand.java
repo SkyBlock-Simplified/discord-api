@@ -3,6 +3,7 @@ package dev.sbs.discordapi.command;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.unmodifiable.ConcurrentUnmodifiableList;
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
@@ -30,14 +31,14 @@ import java.util.function.Function;
 public abstract class DiscordCommand<C extends CommandContext<?>> extends DiscordReference implements Function<C, Mono<Void>> {
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
-    protected final @NotNull DiscordBot discordBot;
     protected final @NotNull Structure structure;
+    protected final @NotNull Class<C> contextType;
 
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
-        this.discordBot = discordBot;
         this.structure = super.getAnnotation(Structure.class, this.getClass())
             .orElseThrow(() -> new CommandException("Cannot instantiate a command with no structure."));
+        this.contextType = Reflection.getSuperClass(this);
     }
 
     public final long getId() {
