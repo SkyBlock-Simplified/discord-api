@@ -28,7 +28,8 @@ import java.util.stream.IntStream;
     ),
     name = "items",
     guildId = 652148034448261150L,
-    description = "Debug Item Handler"
+    description = "Debug Item Handler",
+    developerOnly = true
 )
 public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
 

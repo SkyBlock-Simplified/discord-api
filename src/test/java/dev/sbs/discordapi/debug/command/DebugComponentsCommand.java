@@ -35,7 +35,8 @@ import java.util.function.Function;
     ),
     name = "components",
     guildId = 652148034448261150L,
-    description = "Debug Components Handler"
+    description = "Debug Components Handler",
+    developerOnly = true
 )
 public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> {
 

@@ -29,7 +29,8 @@ import reactor.core.publisher.Mono;
     ),
     name = "embed",
     guildId = 652148034448261150L,
-    description = "Debug Embed Builder"
+    description = "Debug Embed Builder",
+    developerOnly = true
 )
 public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
 
