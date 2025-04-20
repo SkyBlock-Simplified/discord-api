@@ -25,7 +25,7 @@ public @interface Structure {
      *
      * <ul>
      *     <li>{@link TypeContext#MESSAGE} for Message Commands</li>
-     *     <li>{@link TypeContext#CHAT_INPUT} for Slash Commands</li>
+     *     <li>{@link TypeContext#CHAT_INPUT} for Slash Commands (Default)</li>
      *     <li>{@link TypeContext#USER} for User Commands</li>
      * </ul>
      */
