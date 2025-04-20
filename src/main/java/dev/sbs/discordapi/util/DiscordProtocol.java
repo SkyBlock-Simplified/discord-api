@@ -94,6 +94,7 @@ public enum DiscordProtocol {
     public @NotNull String getLibraryStorePath(@NotNull Snowflake sku) {
         return ROOT.getPath() + String.format("store/skus/%s", sku.asLong());
     }
+
     public @NotNull String getLibraryAppStorePath(@NotNull Snowflake appId) {
         return ROOT.getPath() + String.format("store/applications/%s", appId.asLong());
     }
