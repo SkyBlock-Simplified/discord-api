@@ -25,40 +25,6 @@ public interface EventContext<T extends Event> {
             .publishOn(response.getReactorScheduler());
     }
 
-    /*default Mono<Message> discordEditMessage(@NotNull Response response) {
-        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
-            .filter(entry -> entry.getResponse().getUniqueId().equals(response.getUniqueId()))
-            .singleOrEmpty()
-            .flatMap(entry -> this.discordEditMessage(entry.getMessageId(), response));
-    }
-
-    default Mono<Message> discordEditMessage(@NotNull Snowflake messageId, @NotNull Response response) {
-        return this.getChannel()
-            .flatMap(channel -> channel.getMessageById(messageId))
-            .flatMap(message -> message.edit(response.getD4jEditSpec()));
-    }
-
-    default Mono<Void> edit(@NotNull Response response) {
-        return this.discordEditMessage(response)
-            .checkpoint("EventContext#edit Processing")
-            .onErrorResume(throwable -> this.getDiscordBot().handleException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    this,
-                    throwable,
-                    "Event Edit Exception"
-                )
-            ))
-            .flatMap(message -> Mono.justOrEmpty(this.getDiscordBot().getResponseCache().findFirst(entry -> entry.getResponse().getUniqueId(), this.getResponseId()))
-                .flatMap(entry -> entry.updateResponse(response)
-                    .then(entry.updateReactions(message))
-                    .then(entry.updateAttachments(message))
-                    .then(entry.updateLastInteract())
-                )
-            )
-            .then();
-    }*/
-
     Mono<MessageChannel> getChannel();
 
     @NotNull Snowflake getChannelId();
