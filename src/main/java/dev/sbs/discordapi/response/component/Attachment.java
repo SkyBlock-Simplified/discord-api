@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response;
+package dev.sbs.discordapi.response.component;
 
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.core.spec.MessageCreateFields;

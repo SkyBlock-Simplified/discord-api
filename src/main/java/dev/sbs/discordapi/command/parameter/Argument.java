@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.discordapi.command.exception.input.ParameterException;
-import dev.sbs.discordapi.response.Attachment;
+import dev.sbs.discordapi.response.component.Attachment;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.Interaction;
