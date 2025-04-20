@@ -2,6 +2,7 @@ package dev.sbs.discordapi.listener.deferrable.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
+import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
@@ -16,7 +17,7 @@ public final class SelectMenuListener extends ComponentListener<SelectMenuIntera
     }
 
     @Override
-    protected @NotNull SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component, @NotNull Optional<Response.Cache.Followup> followup) {
+    protected @NotNull SelectMenuContext getContext(@NotNull SelectMenuInteractionEvent event, @NotNull Response response, @NotNull SelectMenu component, @NotNull Optional<Followup> followup) {
         return SelectMenuContext.of(
             this.getDiscordBot(),
             event,

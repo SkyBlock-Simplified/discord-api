@@ -141,14 +141,14 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
         private Optional<String> url = Optional.empty();
 
         /**
-         * Sets this {@link Button} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets this {@link Button} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
          */
         public Builder isPreserved() {
             return this.isPreserved(true);
         }
 
         /**
-         * Sets whether to preserve this {@link Button} when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets whether to preserve this {@link Button} when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
          *
          * @param preserved True to preserve this button.
          */

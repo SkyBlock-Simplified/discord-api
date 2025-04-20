@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.deferrable.component.action;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
@@ -31,7 +32,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         return this.modify(selectMenuBuilder.apply(this.getComponent().mutate()).build());
     }
 
-    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<Response.Cache.Followup> followup) {
+    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<Followup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -49,7 +50,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         private final @NotNull SelectMenuInteractionEvent event;
         private final @NotNull UUID responseId;
         private final @NotNull SelectMenu component;
-        private final @NotNull Optional<Response.Cache.Followup> followup;
+        private final @NotNull Optional<Followup> followup;
 
     }
 

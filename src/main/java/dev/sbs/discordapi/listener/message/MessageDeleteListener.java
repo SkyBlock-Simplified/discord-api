@@ -16,7 +16,7 @@ public class MessageDeleteListener extends DiscordListener<MessageDeleteEvent> {
 
     @Override
     public final Publisher<Void> apply(@NotNull MessageDeleteEvent event) {
-        return Flux.fromIterable(this.getDiscordBot().getResponseCache())
+        return Flux.fromIterable(this.getDiscordBot().getResponseHandler())
             .filter(entry -> entry.containsFollowup(event.getMessageId()))
             .flatMap(entry -> Mono.justOrEmpty(entry.findFollowup(event.getMessageId()))
                 .doOnNext(followup -> entry.removeFollowup(followup.getIdentifier()))

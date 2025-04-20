@@ -101,7 +101,7 @@ public interface EventContext<T extends Event> {
                 )
             ))
             .flatMap(message -> this.getDiscordBot()
-                .getResponseCache()
+                .getResponseHandler()
                 .createAndGet(
                     message.getChannelId(),
                     this.getInteractUserId(),

@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.deferrable.component;
 
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
+import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -47,7 +48,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
     @Override
     default Mono<Message> discordEditMessage(@NotNull Response response) {
         return Mono.just(this.getResponseCacheEntry())
-            .filter(Response.Cache.Entry::isDeferred)
+            .filter(CachedResponse::isDeferred)
             .flatMap(entry -> this.getEvent().editReply(response.getD4jInteractionReplyEditSpec()))
             .switchIfEmpty(
                 this.getEvent()

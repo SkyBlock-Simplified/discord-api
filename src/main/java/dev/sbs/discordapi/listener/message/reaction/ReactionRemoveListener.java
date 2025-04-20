@@ -2,6 +2,7 @@ package dev.sbs.discordapi.listener.message.reaction;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
+import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
@@ -19,7 +20,7 @@ public final class ReactionRemoveListener extends ReactionListener<ReactionRemov
     }
 
     @Override
-    protected @NotNull ReactionContext getContext(@NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Response.Cache.Followup> followup) {
+    protected @NotNull ReactionContext getContext(@NotNull ReactionRemoveEvent event, @NotNull Response cachedMessage, @NotNull Emoji emoji, @NotNull Optional<Followup> followup) {
         return ReactionContext.ofRemove(
             this.getDiscordBot(),
             event,

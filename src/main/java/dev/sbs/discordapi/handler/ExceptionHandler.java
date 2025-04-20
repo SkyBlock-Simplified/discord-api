@@ -18,6 +18,7 @@ import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.exception.DiscordException;
+import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -385,9 +386,9 @@ public final class ExceptionHandler extends DiscordReference {
                         messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
                     else
                         messageId = this.getDiscordBot()
-                            .getResponseCache()
+                            .getResponseHandler()
                             .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
-                            .map(Response.Cache.Entry::getMessageId);
+                            .map(CachedResponse::getMessageId);
 
                     // Build Exception Response
                     Response logResponse = Response.builder()
@@ -403,7 +404,7 @@ public final class ExceptionHandler extends DiscordReference {
                         .publishOn(logResponse.getReactorScheduler())
                         .flatMap(logResponse::getD4jCreateMono)
                         .doOnNext(__ -> messageId.ifPresent(id -> this.getDiscordBot()
-                            .getResponseCache()
+                            .getResponseHandler()
                             .removeIf(entry -> entry.getMessageId().equals(id))
                         ))
                         .then(Mono.empty());

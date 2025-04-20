@@ -2,6 +2,9 @@ package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.handler.response.BaseEntry;
+import dev.sbs.discordapi.handler.response.CachedResponse;
+import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -25,7 +28,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
 
     default Mono<Void> consumeResponse(@NotNull Consumer<Response> consumer) {
         return Mono.justOrEmpty(this.getFollowup())
-            .map(Response.Cache.Followup::getResponse)
+            .map(Followup::getResponse)
             .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
             .flatMap(response -> {
                 consumer.accept(response);
@@ -121,14 +124,14 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     }
 
     default Mono<Void> editFollowup() {
-        return this.editFollowup(Response.Cache.BaseEntry::getResponse);
+        return this.editFollowup(BaseEntry::getResponse);
     }
 
-    default Mono<Void> editFollowup(@NotNull Function<Response.Cache.Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull Function<Followup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.editFollowup(followup.getIdentifier(), responseFunction));
     }
 
-    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<Response.Cache.Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<Followup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup(identifier))
             .flatMap(followup -> {
                 Response editedResponse = responseFunction.apply(followup);
@@ -190,9 +193,9 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getMessage().flatMap(Message::getChannel);
     }
 
-    @NotNull Optional<Response.Cache.Followup> getFollowup();
+    @NotNull Optional<Followup> getFollowup();
 
-    default @NotNull Optional<Response.Cache.Followup> getFollowup(@NotNull String identifier) {
+    default @NotNull Optional<Followup> getFollowup(@NotNull String identifier) {
         return this.getResponseCacheEntry().findFollowup(identifier);
     }
 
@@ -204,26 +207,26 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getResponseCacheEntry().getResponse();
     }
 
-    default @NotNull Response.Cache.Entry getResponseCacheEntry() {
+    default @NotNull CachedResponse getResponseCacheEntry() {
         return this.getDiscordBot()
-            .getResponseCache()
+            .getResponseHandler()
             .findFirstOrNull(entry -> entry.getResponse().getUniqueId(), this.getResponseId());
     }
 
     default Mono<Void> withResponse(@NotNull Function<Response, Mono<Void>> function) {
         return Mono.justOrEmpty(this.getFollowup())
-            .map(Response.Cache.Followup::getResponse)
+            .map(Followup::getResponse)
             .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
             .flatMap(function);
     }
 
-    default Mono<Void> withResponseEntry(@NotNull Function<Response.Cache.Entry, Mono<Response.Cache.Entry>> function) {
+    default Mono<Void> withResponseEntry(@NotNull Function<CachedResponse, Mono<CachedResponse>> function) {
         return Mono.just(this.getResponseCacheEntry())
             .flatMap(function)
             .then();
     }
 
-    static @NotNull Create ofCreate(@NotNull DiscordBot discordBot, @NotNull MessageCreateEvent event, @NotNull Response cachedMessage, @NotNull Optional<Response.Cache.Followup> followup) {
+    static @NotNull Create ofCreate(@NotNull DiscordBot discordBot, @NotNull MessageCreateEvent event, @NotNull Response cachedMessage, @NotNull Optional<Followup> followup) {
         return new Create(
             discordBot,
             event,
@@ -241,7 +244,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         private final @NotNull MessageCreateEvent event;
         private final @NotNull UUID responseId;
         private final @NotNull User interactUser;
-        private final @NotNull Optional<Response.Cache.Followup> followup;
+        private final @NotNull Optional<Followup> followup;
 
         @Override
         public @NotNull Snowflake getChannelId() {

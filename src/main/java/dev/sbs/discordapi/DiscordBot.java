@@ -13,6 +13,9 @@ import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.handler.ExceptionHandler;
+import dev.sbs.discordapi.handler.response.CachedResponse;
+import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseHandler;
 import dev.sbs.discordapi.handler.shard.ShardHandler;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.listener.autocomplete.AutoCompleteListener;
@@ -79,8 +82,8 @@ import java.util.function.Function;
  * <br><br>
  * Automatically provides support for the following features when using {@link Response}:
  * <pre>
- * - Caching ({@link Response.Cache})
- * - Followups ({@link Response.Cache.Followup})
+ * - Caching ({@link ResponseHandler})
+ * - Followups ({@link Followup})
  * - Contexts ({@link EventContext})
  * - Command:
  *   - Structure ({@link Structure})
@@ -101,11 +104,11 @@ import java.util.function.Function;
 public abstract class DiscordBot {
 
     private final @NotNull Scheduler scheduler = new Scheduler();
-    private final @NotNull Response.Cache responseCache = new Response.Cache();
     private DiscordConfig config;
 
     // Handlers
     private final @NotNull ExceptionHandler exceptionHandler;
+    private final @NotNull ResponseHandler responseHandler;
     private ShardHandler shardHandler;
     private CommandHandler commandHandler;
 
@@ -119,6 +122,7 @@ public abstract class DiscordBot {
 
     protected DiscordBot() {
         this.exceptionHandler = new ExceptionHandler(this);
+        this.responseHandler = new ResponseHandler();
         Configurator.setRootLevel(Level.WARN);
     }
 
@@ -166,9 +170,9 @@ public abstract class DiscordBot {
                         });
 
                     log.info("Scheduling Cache Cleaner");
-                    this.scheduler.scheduleAsync(() -> this.responseCache.matchAll(Response.Cache.Entry::notActive).forEach(entry -> {
+                    this.scheduler.scheduleAsync(() -> this.responseHandler.matchAll(CachedResponse::notActive).forEach(entry -> {
                         // Clear Cached Message
-                        this.responseCache.remove(entry);
+                        this.responseHandler.remove(entry);
 
                         // Clear Message Components and Reactions
                         this.getGateway()

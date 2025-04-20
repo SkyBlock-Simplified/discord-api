@@ -226,14 +226,14 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
         }
 
         /**
-         * Sets this {@link SelectMenu} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets this {@link SelectMenu} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
          */
         public Builder isPreserved() {
             return this.isPreserved(true);
         }
 
         /**
-         * Sets whether to preserve this {@link SelectMenu} when a {@link Response} is removed from {@link DiscordBot#getResponseCache()}.
+         * Sets whether to preserve this {@link SelectMenu} when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
          *
          * @param preserved True to preserve this select menu.
          */

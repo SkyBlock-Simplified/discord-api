@@ -2,6 +2,8 @@ package dev.sbs.discordapi.listener.deferrable.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.handler.response.CachedResponse;
+import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
@@ -17,7 +19,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected @NotNull ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<Response.Cache.Followup> followup) {
+    protected @NotNull ModalContext getContext(@NotNull ModalSubmitInteractionEvent event, @NotNull Response response, @NotNull Modal component, @NotNull Optional<Followup> followup) {
         return ModalContext.of(
             this.getDiscordBot(),
             event,
@@ -28,7 +30,7 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     }
 
     @Override
-    protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull Response.Cache.Entry entry, @NotNull Optional<Response.Cache.Followup> followup) {
+    protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull CachedResponse entry, @NotNull Optional<Followup> followup) {
         return Mono.justOrEmpty(entry.getUserModal(event.getInteraction().getUser())) // Handle User Modal
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier())) // Validate Message ID
             .doOnNext(modal -> entry.clearModal(event.getInteraction().getUser()))
