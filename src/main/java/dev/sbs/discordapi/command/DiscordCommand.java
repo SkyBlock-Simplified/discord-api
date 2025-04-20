@@ -89,7 +89,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
 
     @Override
     public final @NotNull Mono<Void> apply(@NotNull C context) {
-        return context.withEvent(event -> context.withGuild(optionalGuild -> context.withChannel(messageChannel -> context
+        return context.withEvent(event -> context.withChannel(messageChannel -> context
             .deferReply(this.getStructure().ephemeral())
             .then(Mono.defer(() -> {
                 // Handle Developer Command
@@ -121,7 +121,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                     throwable
                 )
             ))
-        )));
+        ));
     }
 
     /*public Embed createHelpEmbed() {
