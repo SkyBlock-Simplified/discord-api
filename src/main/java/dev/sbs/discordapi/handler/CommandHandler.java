@@ -234,49 +234,14 @@ public final class CommandHandler extends DiscordReference {
             .build();
     }
 
-    public final @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
+    public @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
         return this.getLoadedCommands()
             .stream()
             .filter(command -> command.getId() == commandId)
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    public Mono<Void> updateApplicationCommands() {
-        return this.getDiscordBot()
-            .getGateway()
-            .getRestClient()
-            .getApplicationService()
-            .bulkOverwriteGlobalApplicationCommand(
-                this.getDiscordBot().getClientId().asLong(),
-                this.buildCommandRequests(-1)
-            )
-            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
-                .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
-            )
-            .thenMany(
-                Flux.fromIterable(this.getLoadedCommands())
-                    .map(DiscordCommand::getStructure)
-                    .map(Structure::guildId)
-                    .filter(guildId -> guildId > 0)
-                    .distinct()
-                    .flatMap(guildId -> this.getDiscordBot()
-                        .getGateway()
-                        .getRestClient()
-                        .getApplicationService()
-                        .bulkOverwriteGuildApplicationCommand(
-                            this.getDiscordBot().getClientId().asLong(),
-                            guildId,
-                            this.buildCommandRequests(guildId)
-                        )
-                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
-                            .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
-                        )
-                    )
-            )
-            .then();
-    }
-
-    public long getApiCommandId(@NotNull Class<? extends DiscordCommand> commandClass) {
+    public Long getCommandId(@NotNull Class<? extends DiscordCommand> commandClass) {
         return this.commandIds.get(commandClass);
     }
 
@@ -319,6 +284,41 @@ public final class CommandHandler extends DiscordReference {
             })
             .map(command -> (DiscordCommand<C>) command)
             .collect(Concurrent.toUnmodifiableList());
+    }
+
+    public Mono<Void> updateApplicationCommands() {
+        return this.getDiscordBot()
+            .getGateway()
+            .getRestClient()
+            .getApplicationService()
+            .bulkOverwriteGlobalApplicationCommand(
+                this.getDiscordBot().getClientId().asLong(),
+                this.buildCommandRequests(-1)
+            )
+            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
+                .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
+            )
+            .thenMany(
+                Flux.fromIterable(this.getLoadedCommands())
+                    .map(DiscordCommand::getStructure)
+                    .map(Structure::guildId)
+                    .filter(guildId -> guildId > 0)
+                    .distinct()
+                    .flatMap(guildId -> this.getDiscordBot()
+                        .getGateway()
+                        .getRestClient()
+                        .getApplicationService()
+                        .bulkOverwriteGuildApplicationCommand(
+                            this.getDiscordBot().getClientId().asLong(),
+                            guildId,
+                            this.buildCommandRequests(guildId)
+                        )
+                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
+                            .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
+                        )
+                    )
+            )
+            .then();
     }
 
     private @NotNull ConcurrentList<DiscordCommand> validateCommands(@NotNull DiscordBot discordBot, @NotNull ConcurrentSet<Class<DiscordCommand>> commands) {

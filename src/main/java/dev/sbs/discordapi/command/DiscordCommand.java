@@ -44,7 +44,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     public final long getId() {
         return this.getDiscordBot()
             .getCommandHandler()
-            .getApiCommandId(this.getClass());
+            .getCommandId(this.getClass());
     }
 
     public final @NotNull Optional<Parameter> getParameter(int index) {
