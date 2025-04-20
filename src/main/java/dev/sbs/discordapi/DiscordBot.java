@@ -7,8 +7,17 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
+import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
+import dev.sbs.discordapi.context.deferrable.command.MessageCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
+import dev.sbs.discordapi.context.deferrable.command.UserCommandContext;
+import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
+import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
+import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
+import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
 import dev.sbs.discordapi.handler.EmojiHandler;
@@ -28,15 +37,12 @@ import dev.sbs.discordapi.listener.deferrable.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.MessageCreateListener;
 import dev.sbs.discordapi.listener.message.MessageDeleteListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
-import dev.sbs.discordapi.listener.message.reaction.ReactionListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.response.Form;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
+import dev.sbs.discordapi.response.page.Page;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -79,24 +85,44 @@ import java.util.function.Function;
 
 /**
  * Discord4J Framework Wrapper for Discord Bots.
- * <br><br>
- * Automatically provides support for the following features when using {@link Response}:
- * <pre>
- * - Caching ({@link ResponseHandler})
- * - Followups ({@link Followup})
- * - Contexts ({@link EventContext})
- * - Command:
- *   - Structure ({@link Structure})
- *   - Implementation ({@link DiscordCommand})
- *   - Building ({@link CommandHandler})
- *   - Parameters ({@link Parameter})
- *   - Processing ({@link SlashCommandListener}, {@link MessageCommandListener}, {@link UserCommandListener})
- *   - Autocomplete ({@link AutoCompleteListener})
- * - Component:
- *   - Interfaces ({@link Component})
- *   - Implementation ({@link Button}, {@link SelectMenu}, {@link Modal}, {@link TextInput})
- *   - Processing ({@link ButtonListener}, {@link SelectMenuListener}, {@link ModalListener})
- * - Reactions {@link ReactionListener}</pre>
+ * <ul>
+ *     <li>Commands
+ *     <ul>
+ *         <li>{@link Structure Immutable API Structure}</li>
+ *         <li>{@link CommandHandler Registration & Caching}</li>
+ *         <li>{@link DiscordCommand Implementation}
+ *         <ul>
+ *             <li>Message Commands ({@link MessageCommandContext Context}, {@link MessageCommandListener Listener})</li>
+ *             <li>Slash Commands ({@link SlashCommandContext Context}, {@link SlashCommandListener Listener})
+ *             <ul>
+ *                 <li>{@link Parameter Parameters}</li>
+ *                 <li>{@link Argument Arguments}</li>
+ *             </ul></li>
+ *             <li>User Commands ({@link UserCommandContext Context}, {@link UserCommandListener Listener})</li>
+ *             <li>Auto Complete ({@link AutoCompleteContext Context}, {@link AutoCompleteListener Listener})</li>
+ *         </ul></li>
+ *     </ul></li>
+ *     <li>Responses
+ *     <ul>
+ *         <li>{@link ResponseHandler Registration & Caching}</li>
+ *         <li>{@link Page Pages}</li>
+ *         <li>Implementations
+ *         <ul>
+ *             <li>{@link Response}</li>
+ *             <li>{@link Form}</li>
+ *             <li>{@link Followup Followups}</li>
+ *         </ul></li>
+ *         <li>Components
+ *         <ul>
+ *             <li>Buttons ({@link ButtonContext Context}, {@link ButtonListener Listener})</li>
+ *             <li>Modals ({@link ModalContext Context}, {@link ModalListener Listener})</li>
+ *             <li>Select Menus ({@link SelectMenuContext Context}, {@link OptionContext Option Context}, {@link SelectMenuListener Listener})</li>
+ *             <li>Text Inputs ({@link TextInput Context})</li>
+ *         </ul></li>
+ *         <li>Messages ({@link MessageCreateListener Create Listener}, {@link MessageDeleteListener Delete Listener})</li>
+ *         <li>Reactions ({@link ReactionContext Context}, {@link ReactionRemoveListener Add Listener}, {@link ReactionRemoveListener Remove Listener})
+ *     </ul></li>
+ * </ul>
  * @see <a href="https://github.com/Discord4J/Discord4J">Discord4J</a>
  */
 @Getter
