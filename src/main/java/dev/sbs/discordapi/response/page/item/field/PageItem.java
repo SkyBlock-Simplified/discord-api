@@ -7,7 +7,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
-import dev.sbs.discordapi.response.page.Paging;
+import dev.sbs.discordapi.response.page.Subpages;
 import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public final class PageItem implements FieldItem<ItemHandler<?>>, Paging<PageItem> {
+public final class PageItem implements FieldItem<ItemHandler<?>>, Subpages<PageItem> {
 
     private final @NotNull SelectMenu.Option option;
     private final boolean editable;

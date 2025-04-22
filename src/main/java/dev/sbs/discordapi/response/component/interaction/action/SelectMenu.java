@@ -674,7 +674,7 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
             if (selectedValue.equals("BACK"))
                 response.getHistoryHandler().gotoPreviousPage();
             else
-                response.getHistoryHandler().gotoPage(selectedValue);
+                response.getHistoryHandler().locatePage(selectedValue);
         })),
         ITEM(context -> context.consumeResponse(response -> {
             /*

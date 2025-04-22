@@ -354,19 +354,19 @@ public final class TextInput implements ActionComponent {
         NONE((c_, t_) -> Mono.empty()),
         PAGE(
             "Go to Page",
-            itemHandler -> String.format("Enter a number between 1 and %d.", itemHandler.getTotalItemPages()),
+            itemHandler -> String.format("Enter a number between 1 and %d.", itemHandler.getTotalPages()),
             itemHandler -> value -> {
                 if (!NumberUtil.isCreatable(value))
                     return false;
 
-                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalItemPages());
+                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
                 int page = NumberUtil.createInteger(value);
                 return pageRange.contains(page);
             },
             (context, textInput) -> context.consumeResponse(response -> {
             ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
-            Range<Integer> pageRange = Range.between(1, itemHandler.getTotalItemPages());
-            itemHandler.gotoItemPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
+            Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
+            itemHandler.gotoPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
         })
         ),
         INDEX(
@@ -384,7 +384,7 @@ public final class TextInput implements ActionComponent {
                 ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
                 Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
                 int index = indexRange.fit(Integer.parseInt(textInput.getValue().orElseThrow()));
-                itemHandler.gotoItemPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
+                itemHandler.gotoPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
             })
         ),
         CUSTOM((context, textInput) -> context.consumeResponse(response -> context.getResponse()

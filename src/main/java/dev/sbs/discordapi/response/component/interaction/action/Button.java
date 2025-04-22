@@ -414,7 +414,7 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
         PREVIOUS("Previous", EmojiHandler.getEmoji("ARROW_SQUARE_PREVIOUS"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
-            .gotoPreviousItemPage()
+            .gotoPreviousPage()
         )),
         SEARCH("Search", EmojiHandler.getEmoji("SEARCH"), context -> context.withResponse(response -> context.presentModal(
             Modal.builder()
@@ -489,7 +489,7 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
         NEXT("Next", EmojiHandler.getEmoji("ARROW_SQUARE_NEXT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
-            .gotoNextItemPage()
+            .gotoNextPage()
         ));
         //LAST("Last", 1, EmojiHandler.getEmoji("ARROW_SQUARE_LAST")),
         /*BACK("Back", EmojiHandler.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),

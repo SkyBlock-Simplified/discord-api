@@ -16,6 +16,7 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.filter.Filter;
 import dev.sbs.discordapi.response.page.handler.filter.FilterHandler;
 import dev.sbs.discordapi.response.page.handler.search.Search;
@@ -39,7 +40,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor
-public final class ItemHandler<T> implements OutputHandler<T> {
+public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     private final @NotNull Class<T> type;
     private final @NotNull ConcurrentList<T> items;
@@ -57,7 +58,7 @@ public final class ItemHandler<T> implements OutputHandler<T> {
     private final @NotNull SearchHandler<T> searchHandler;
 
     // Caching
-    private int currentItemPage = 1;
+    private int currentPage = 1;
     private boolean cacheUpdateRequired = true;
     private ConcurrentList<T> cachedFilteredItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<FieldItem<?>> cachedFieldItems = Concurrent.newUnmodifiableList();
@@ -88,7 +89,7 @@ public final class ItemHandler<T> implements OutputHandler<T> {
             .append(this.getFilterHandler(), that.getFilterHandler())
             .append(this.getSearchHandler(), that.getSearchHandler())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getCurrentItemPage(), that.getCurrentItemPage())
+            .append(this.getCurrentPage(), that.getCurrentPage())
             .append(this.getCachedFilteredItems(), that.getCachedFilteredItems())
             .append(this.getCachedFieldItems(), that.getCachedFieldItems())
             .append(this.getCachedStaticItems(), that.getCachedStaticItems())
@@ -144,10 +145,10 @@ public final class ItemHandler<T> implements OutputHandler<T> {
                 .map(index -> Math.ceil((double) index / this.getAmountPerPage()))
                 .map(Double::intValue)
                 .map(index -> NumberUtil.ensureRange(index, 1, filteredFieldItems.size()))
-                .ifPresent(index -> this.currentItemPage = index); // Do not call this.gotoItemPage(index)
+                .ifPresent(index -> this.currentPage = index); // Do not call this.gotoItemPage(index)
 
             // Cache Sublist
-            int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
+            int startIndex = (this.getCurrentPage() - 1) * this.getAmountPerPage();
             int endIndex = Math.min(startIndex + this.getAmountPerPage(), filteredFieldItems.size());
             this.cachedFieldItems = filteredFieldItems.subList(startIndex, endIndex);
 
@@ -206,29 +207,35 @@ public final class ItemHandler<T> implements OutputHandler<T> {
         };
     }
 
-    public int getTotalItemPages() {
+
+
+    @Override
+    public int getTotalPages() {
         return NumberUtil.roundUp((double) this.getFilteredItems().size() / this.getAmountPerPage(), 1);
     }
 
-    public void gotoItemPage(int index) {
-        this.currentItemPage = NumberUtil.ensureRange(index, 1, this.getFilteredItems().size());
+    @Override
+    public void gotoPage(@NotNull Integer index) {
+        this.currentPage = NumberUtil.ensureRange(index, 1, this.getFilteredItems().size());
         this.setCacheUpdateRequired();
     }
 
     public void gotoFirstItemPage() {
-        this.gotoItemPage(1);
+        this.gotoPage(1);
     }
 
     public void gotoLastItemPage() {
-        this.gotoItemPage(this.getTotalItemPages());
+        this.gotoPage(this.getTotalPages());
     }
 
-    public void gotoNextItemPage() {
-        this.gotoItemPage(this.currentItemPage + 1);
+    @Override
+    public void gotoNextPage() {
+        this.gotoPage(this.currentPage + 1);
     }
 
-    public void gotoPreviousItemPage() {
-        this.gotoItemPage(this.currentItemPage - 1);
+    @Override
+    public void gotoPreviousPage() {
+        this.gotoPage(this.currentPage - 1);
     }
 
     @Override
@@ -247,7 +254,7 @@ public final class ItemHandler<T> implements OutputHandler<T> {
             .append(this.getFilterHandler())
             .append(this.getSearchHandler())
             .append(this.isCacheUpdateRequired())
-            .append(this.getCurrentItemPage())
+            .append(this.getCurrentPage())
             .append(this.getCachedFilteredItems())
             .append(this.getCachedFieldItems())
             .append(this.getCachedStaticItems())
@@ -255,11 +262,11 @@ public final class ItemHandler<T> implements OutputHandler<T> {
     }
 
     public boolean hasNextItemPage() {
-        return this.currentItemPage < this.getTotalItemPages();
+        return this.currentPage < this.getTotalPages();
     }
 
     public boolean hasPreviousItemPage() {
-        return this.currentItemPage > 1;
+        return this.currentPage > 1;
     }
 
     @Override

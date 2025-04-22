@@ -6,6 +6,7 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.page.Paging;
+import dev.sbs.discordapi.response.page.Subpages;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +28,7 @@ import java.util.function.Function;
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandler<P> {
+public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHandler<P>, Paging<P> {
 
     private final @NotNull ConcurrentList<P> items;
     private final @NotNull Optional<BiFunction<P, I, Boolean>> historyMatcher;
@@ -37,7 +38,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandl
     @Getter(AccessLevel.NONE)
     private final @NotNull ConcurrentList<P> history = Concurrent.newList();
 
-    public static <P extends Paging<P>, I> @NotNull Builder<P, I> builder() {
+    public static <P extends Subpages<P>, I> @NotNull Builder<P, I> builder() {
         return new Builder<>();
     }
 
@@ -109,12 +110,17 @@ public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandl
             .findFirst();
     }
 
+    @Override
+    public int getTotalPages() {
+        return this.getCurrentPage().getPages().size();
+    }
+
     /**
      * Changes the current {@link P page} to a top-level page using the given identifier.
      *
      * @param identifier The page option value.
      */
-    public void gotoPage(I identifier) {
+    public void locatePage(@NotNull I identifier) {
         this.gotoPage(this.getPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate page identified by '%s'.", identifier)));
     }
 
@@ -123,12 +129,19 @@ public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandl
      *
      * @param page The page value.
      */
-    public void gotoPage(P page) {
+    @Override
+    public void gotoPage(@NotNull P page) {
         this.history.clear();
         this.history.add(page);
         this.setCacheUpdateRequired();
     }
 
+    @Override
+    public void gotoNextPage() {
+        throw new DiscordException("Next page is unsupported for page history.");
+    }
+
+    @Override
     public void gotoPreviousPage() {
         if (this.hasPageHistory())
             this.history.removeLast();
@@ -161,7 +174,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandl
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<P extends Paging<P>, I> implements dev.sbs.api.util.builder.Builder<HistoryHandler<P, I>> {
+    public static class Builder<P extends Subpages<P>, I> implements dev.sbs.api.util.builder.Builder<HistoryHandler<P, I>> {
 
         private final ConcurrentList<P> pages = Concurrent.newList();
         private Optional<Function<P, I>> historyTransformer = Optional.empty();

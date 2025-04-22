@@ -11,8 +11,8 @@ import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.PreservableComponent;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.page.handler.cache.HistoryHandler;
-import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
+import dev.sbs.discordapi.response.page.handler.HistoryHandler;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.PageItem;
 import lombok.AccessLevel;
@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-public class Page implements Paging<Page> {
+public class Page implements Subpages<Page> {
 
     private final @NotNull SelectMenu.Option option;
     private final @NotNull Optional<String> content;
