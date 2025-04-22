@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler.cache;
+package dev.sbs.discordapi.response.page.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -27,17 +27,17 @@ import java.util.function.Function;
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandler {
+public final class HistoryHandler<P extends Paging<P>, I> implements OutputHandler<P> {
 
-    private final ConcurrentList<P> pages;
-    private final Optional<BiFunction<P, I, Boolean>> historyMatcher;
-    private final Optional<Function<P, I>> historyTransformer;
+    private final @NotNull ConcurrentList<P> items;
+    private final @NotNull Optional<BiFunction<P, I, Boolean>> historyMatcher;
+    private final @NotNull Optional<Function<P, I>> historyTransformer;
     private final int minimumSize;
     @Setter private boolean cacheUpdateRequired;
     @Getter(AccessLevel.NONE)
-    private final ConcurrentList<P> history = Concurrent.newList();
+    private final @NotNull ConcurrentList<P> history = Concurrent.newList();
 
-    public static <P extends Paging<P>, I> Builder<P, I> builder() {
+    public static <P extends Paging<P>, I> @NotNull Builder<P, I> builder() {
         return new Builder<>();
     }
 
@@ -58,7 +58,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
         return new EqualsBuilder()
             .append(this.getMinimumSize(), that.getMinimumSize())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getPages(), that.getPages())
+            .append(this.getItems(), that.getItems())
             .append(this.getHistoryMatcher(), that.getHistoryMatcher())
             .append(this.getHistoryTransformer(), that.getHistoryTransformer())
             .append(this.getHistory(), that.getHistory())
@@ -70,8 +70,8 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
      *
      * @param identifier The identifier to find.
      */
-    public Optional<P> getPage(I identifier) {
-        return this.getPages()
+    public @NotNull Optional<P> getPage(I identifier) {
+        return this.getItems()
             .stream()
             .filter(page -> this.getHistoryMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
             .findFirst();
@@ -81,7 +81,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
         return this.history.getLast().orElseThrow(); // Will Always Exist
     }
 
-    public Optional<P> getPreviousPage() {
+    public @NotNull Optional<P> getPreviousPage() {
         return Optional.ofNullable(this.history.size() > 1 ? this.history.get(this.history.size() - 2) : null);
     }
 
@@ -101,7 +101,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
      *
      * @param identifier The subpage option value.
      */
-    public Optional<P> getSubPage(I identifier) {
+    public @NotNull Optional<P> getSubPage(I identifier) {
         return this.getCurrentPage()
             .getPages()
             .stream()
@@ -147,7 +147,7 @@ public final class HistoryHandler<P extends Paging<P>, I> implements CacheHandle
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getPages())
+            .append(this.getItems())
             .append(this.getHistoryMatcher())
             .append(this.getHistoryTransformer())
             .append(this.getMinimumSize())
