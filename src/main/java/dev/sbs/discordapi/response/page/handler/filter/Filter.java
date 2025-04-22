@@ -2,9 +2,8 @@ package dev.sbs.discordapi.response.page.handler.filter;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.collection.sort.SortOrder;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.stream.triple.TriPredicate;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
@@ -12,7 +11,7 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.page.item.Item;
+import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,48 +21,22 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings({ "unchecked", "rawtypes" })
-public class Filter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>> {
+public class Filter<T> implements TriPredicate<T, Long, Long> {
 
     private final @NotNull SelectMenu.Option option;
-    private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
-    private final @NotNull SortOrder order;
+    private final @NotNull ConcurrentList<TriPredicate<T, Long, Long>> predicates;
+    private final boolean enabled;
 
     @Override
-    public @NotNull ConcurrentList<T> apply(@NotNull ConcurrentList<T> list, Boolean reversed) {
-        ConcurrentList<T> copy = Concurrent.newList(list).sorted((o1, o2) -> {
-            Iterator<Map.Entry<Comparator<? extends T>, SortOrder>> iterator = this.getComparators().iterator();
-            Map.Entry<Comparator<? extends T>, SortOrder> entry = iterator.next();
-            Comparator comparator = entry.getKey();
-
-            if (entry.getValue() == SortOrder.DESCENDING)
-                comparator = comparator.reversed();
-
-            while (iterator.hasNext()) {
-                entry = iterator.next();
-                comparator = comparator.thenComparing(entry.getKey());
-
-                if (entry.getValue() == SortOrder.DESCENDING)
-                    comparator = comparator.reversed();
-            }
-
-            return this.getOrder() == SortOrder.ASCENDING ? comparator.compare(o1, o2) : comparator.compare(o2, o1);
-        });
-
-        // Reverse Results
-        if (reversed)
-            copy = copy.inverse();
-
-        return copy;
+    public boolean test(@NotNull T item, Long index, Long size) {
+        return !this.isEnabled() || this.getPredicates()
+            .stream()
+            .allMatch(predicate -> predicate.test(item, index, size));
     }
 
     public static <T> @NotNull Builder<T> builder() {
@@ -79,24 +52,24 @@ public class Filter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
 
         return new EqualsBuilder()
             .append(this.getOption(), filter.getOption())
-            .append(this.getComparators(), filter.getComparators())
-            .append(this.getOrder(), filter.getOrder())
+            .append(this.getPredicates(), filter.getPredicates())
+            .append(this.isEnabled(), filter.isEnabled())
             .build();
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Filter<T> filter) {
         return new Builder<T>()
             .withOption(filter.getOption())
-            .withComparators(filter.getComparators())
-            .withOrder(filter.getOrder());
+            .withTriPredicates(filter.getPredicates())
+            .isEnabled(filter.isEnabled());
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getOption())
-            .append(this.getComparators())
-            .append(this.getOrder())
+            .append(this.getPredicates())
+            .append(this.isEnabled())
             .build();
     }
 
@@ -110,51 +83,76 @@ public class Filter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         @BuildFlag(nonNull = true)
         private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         @BuildFlag(nonNull = true)
-        private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
-        @BuildFlag(nonNull = true)
-        private SortOrder order = SortOrder.DESCENDING;
+        private final ConcurrentList<TriPredicate<T, Long, Long>> predicates = Concurrent.newList();
+        private boolean enabled = false;
 
         /**
-         * Add custom comparators for the {@link Item FieldItems}.
-         *
-         * @param comparators A variable amount of comparators.
+         * Sets this filter as enabled.
          */
-        public Builder<T> withComparators(@NotNull Comparator<? extends T>... comparators) {
-            return this.withComparators(Arrays.asList(comparators));
+        public Builder<T> isEnabled() {
+            return this.isEnabled(true);
         }
 
         /**
-         * Add custom comparators for the {@link Item FieldItems}.
-         *
-         * @param order How the comparators are sorted.
-         * @param comparators A variable amount of comparators.
+         * Sets this filter as enabled if given true.
+         * @param value True to enable.
          */
-        public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Comparator<? extends T>... comparators) {
-            return this.withComparators(order, Arrays.asList(comparators));
-        }
-
-        /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param comparators A variable amount of comparators.
-         */
-        public Builder<T> withComparators(@NotNull Iterable<Comparator<? extends T>> comparators) {
-            return this.withComparators(SortOrder.DESCENDING, comparators);
-        }
-
-        /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param order How the comparators are sorted.
-         * @param comparators A variable amount of comparators.
-         */
-        public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Iterable<Comparator<? extends T>> comparators) {
-            comparators.forEach(comparator -> this.comparators.put(comparator, order));
+        public Builder<T> isEnabled(boolean value) {
+            this.enabled = value;
             return this;
         }
 
-        private Builder<T> withComparators(@NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators) {
-            this.comparators.putAll(comparators);
+        /**
+         * Sets this filter as disabled.
+         */
+        public Builder<T> isDisabled() {
+            return this.isDisabled(true);
+        }
+
+        /**
+         * Sets this filter as disabled if given true.
+         * @param value True to disable.
+         */
+        public Builder<T> isDisabled(boolean value) {
+            this.enabled = !value;
+            return this;
+        }
+
+        /**
+         * Adds predicates used to filter {@link FieldItem RenderItems}.
+         *
+         * @param predicates Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withPredicates(@NotNull Predicate<T>... predicates) {
+            return this.withPredicates(Arrays.asList(predicates));
+        }
+
+        /**
+         * Adds predicates used to filter {@link FieldItem RenderItems}.
+         *
+         * @param predicates Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withPredicates(@NotNull Iterable<Predicate<T>> predicates) {
+            predicates.forEach(predicate -> this.predicates.add((t, index, size) -> predicate.test(t)));
+            return this;
+        }
+
+        /**
+         * Adds predicates used to filter {@link FieldItem RenderItems}.
+         *
+         * @param predicates Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withTriPredicates(@NotNull TriPredicate<T, Long, Long>... predicates) {
+            return this.withTriPredicates(Arrays.asList(predicates));
+        }
+
+        /**
+         * Adds predicates used to filter {@link FieldItem RenderItems}.
+         *
+         * @param predicates Collection of filters to apply to {@link T}.
+         */
+        public Builder<T> withTriPredicates(@NotNull Iterable<TriPredicate<T, Long, Long>> predicates) {
+            predicates.forEach(this.predicates::add);
             return this;
         }
 
@@ -211,45 +209,6 @@ public class Filter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         }
 
         /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param functions A variable amount of sort functions.
-         */
-        public Builder<T> withFunctions(@NotNull Function<T, ? extends Comparable>... functions) {
-            return this.withFunctions(SortOrder.DESCENDING, functions);
-        }
-
-        /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param functions A variable amount of sort functions.
-         * @param order How the comparators are sorted.
-         */
-        public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Function<T, ? extends Comparable>... functions) {
-            return this.withFunctions(order, Arrays.asList(functions));
-        }
-
-        /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param functions A collection of sort functions.
-         */
-        public Builder<T> withFunctions(@NotNull Iterable<Function<T, ? extends Comparable>> functions) {
-            return this.withFunctions(SortOrder.DESCENDING, functions);
-        }
-
-        /**
-         * Add custom sort functions for the {@link Item FieldItems}.
-         *
-         * @param functions A collection of sort functions.
-         * @param order How the comparators are sorted.
-         */
-        public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Iterable<Function<T, ? extends Comparable>> functions) {
-            functions.forEach(function -> this.comparators.put(Comparator.comparing(function), order));
-            return this;
-        }
-
-        /**
          * Sets the label of the {@link Filter}.
          * <br><br>
          * This is used for the {@link Button}.
@@ -279,27 +238,14 @@ public class Filter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
             return this;
         }
 
-        /**
-         * Sets the sort order for the {@link Item PageItems}.
-         * <br><br>
-         * Descending - Highest to Lowest (Default)<br>
-         * Ascending - Lowest to Highest
-         *
-         * @param order The order to sort the items in.
-         */
-        public Builder<T> withOrder(@NotNull SortOrder order) {
-            this.order = order;
-            return this;
-        }
-
         @Override
         public @NotNull Filter<T> build() {
             Reflection.validateFlags(this);
 
             return new Filter<>(
                 this.optionBuilder.build(),
-                this.comparators.toUnmodifiableMap(),
-                this.order
+                this.predicates.toUnmodifiableList(),
+                this.enabled
             );
         }
 
