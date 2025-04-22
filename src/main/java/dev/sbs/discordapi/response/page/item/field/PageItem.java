@@ -8,7 +8,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Paging;
-import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
+import dev.sbs.discordapi.response.page.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
