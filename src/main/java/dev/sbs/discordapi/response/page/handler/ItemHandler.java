@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler.cache;
+package dev.sbs.discordapi.response.page.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -8,17 +8,18 @@ import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.stream.StreamUtil;
 import dev.sbs.api.stream.triple.TriFunction;
-import dev.sbs.api.stream.triple.TriPredicate;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.handler.filter.Filter;
+import dev.sbs.discordapi.response.page.handler.filter.FilterHandler;
 import dev.sbs.discordapi.response.page.handler.search.Search;
+import dev.sbs.discordapi.response.page.handler.search.SearchHandler;
 import dev.sbs.discordapi.response.page.handler.sorter.SortHandler;
 import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.Item;
@@ -27,7 +28,6 @@ import dev.sbs.discordapi.response.page.item.field.StringItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,24 +39,26 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor
-public final class ItemHandler<T> implements CacheHandler {
+public final class ItemHandler<T> implements OutputHandler<T> {
 
     private final @NotNull Class<T> type;
     private final @NotNull ConcurrentList<T> items;
     private final @NotNull ConcurrentList<Item> staticItems;
-    private final @NotNull SortHandler<T> sortHandler;
-    private final @NotNull ConcurrentList<Search<T>> searchers;
     private final @NotNull ConcurrentMap<String, Object> variables;
     private final @NotNull FieldStyle fieldStyle;
-    private final @NotNull ConcurrentList<TriPredicate<T, Long, Long>> filters;
     private final @NotNull TriFunction<T, Long, Long, FieldItem<?>> transformer;
     private final @NotNull Optional<String> listTitle;
     private final boolean editorEnabled;
     private final int amountPerPage;
 
+    // Handlers
+    private final @NotNull SortHandler<T> sortHandler;
+    private final @NotNull FilterHandler<T> filterHandler;
+    private final @NotNull SearchHandler<T> searchHandler;
+
     // Caching
     private int currentItemPage = 1;
-    @Setter private boolean cacheUpdateRequired = true;
+    private boolean cacheUpdateRequired = true;
     private ConcurrentList<T> cachedFilteredItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<FieldItem<?>> cachedFieldItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<Item> cachedStaticItems = Concurrent.newUnmodifiableList();
@@ -76,14 +78,16 @@ public final class ItemHandler<T> implements CacheHandler {
             .append(this.getType(), that.getType())
             .append(this.getItems(), that.getItems())
             .append(this.getStaticItems(), that.getStaticItems())
-            .append(this.getSortHandler(), that.getSortHandler())
             .append(this.getVariables(), that.getVariables())
             .append(this.getFieldStyle(), that.getFieldStyle())
-            .append(this.getFilters(), that.getFilters())
             .append(this.getTransformer(), that.getTransformer())
             .append(this.getListTitle(), that.getListTitle())
             .append(this.isEditorEnabled(), that.isEditorEnabled())
             .append(this.getAmountPerPage(), that.getAmountPerPage())
+            .append(this.getSortHandler(), that.getSortHandler())
+            .append(this.getFilterHandler(), that.getFilterHandler())
+            .append(this.getSearchHandler(), that.getSearchHandler())
+            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
             .append(this.getCurrentItemPage(), that.getCurrentItemPage())
             .append(this.getCachedFilteredItems(), that.getCachedFilteredItems())
             .append(this.getCachedFieldItems(), that.getCachedFieldItems())
@@ -95,18 +99,19 @@ public final class ItemHandler<T> implements CacheHandler {
         return builder(itemHandler.getType())
             .withItems(itemHandler.getItems())
             .withStaticItems(itemHandler.getStaticItems())
-            .withSorters(itemHandler.getSortHandler().getSorters())
             .withVariables(itemHandler.getVariables())
             .withFieldStyle(itemHandler.getFieldStyle())
-            .withFilters(itemHandler.getFilters())
             .withTransformer(itemHandler.getTransformer())
             .withListTitle(itemHandler.getListTitle())
             .isEditorEnabled(itemHandler.isEditorEnabled())
-            .withAmountPerPage(itemHandler.getAmountPerPage());
+            .withAmountPerPage(itemHandler.getAmountPerPage())
+            .withSorters(itemHandler.getSortHandler().getItems())
+            .withFilters(itemHandler.getFilterHandler().getItems())
+            .withSearch(itemHandler.getSearchHandler().getItems());
     }
 
     public @NotNull ConcurrentList<Item> getCachedStaticItems() {
-        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
+        if (this.isCacheUpdateRequired()) {
             this.cachedStaticItems = this.staticItems.stream()
                 .map(item -> item.applyVariables(this.getVariables()))
                 .collect(Concurrent.toUnmodifiableList());
@@ -116,19 +121,38 @@ public final class ItemHandler<T> implements CacheHandler {
     }
 
     public @NotNull ConcurrentList<FieldItem<?>> getCachedFieldItems() {
-        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
-            ConcurrentList<FieldItem<?>> filteredItems = this.getFilteredItems()
-                .indexedStream()
+        if (this.isCacheUpdateRequired()) {
+            // Load Filtered Items
+            ConcurrentList<T> filteredItems = this.getFilteredItems();
+            ConcurrentList<FieldItem<?>> filteredFieldItems = filteredItems.indexedStream()
                 .map(this.getTransformer())
                 .filter(Objects::nonNull)
                 .collect(Concurrent.toUnmodifiableList());
 
-            int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
-            int endIndex = Math.min(startIndex + this.getAmountPerPage(), filteredItems.size());
-            this.cachedFieldItems = filteredItems.subList(startIndex, endIndex);
+            // Custom Search
+            this.getSearchHandler()
+                .getPending()
+                .flatMap(search -> filteredItems.indexedStream()
+                    .filter((item, index, size) -> search.getPredicates()
+                        .stream()
+                        .anyMatch(predicate -> predicate.test(item, search.getLastMatch().orElseThrow()))
+                    )
+                    .map(Triple::getMiddle)
+                    .findFirst()
+                )
+                .filter(index -> index > -1)
+                .map(index -> Math.ceil((double) index / this.getAmountPerPage()))
+                .map(Double::intValue)
+                .map(index -> NumberUtil.ensureRange(index, 1, filteredFieldItems.size()))
+                .ifPresent(index -> this.currentItemPage = index); // Do not call this.gotoItemPage(index)
 
-            // Variables
-            this.variables.put("FILTERED_SIZE", filteredItems.size());
+            // Cache Sublist
+            int startIndex = (this.getCurrentItemPage() - 1) * this.getAmountPerPage();
+            int endIndex = Math.min(startIndex + this.getAmountPerPage(), filteredFieldItems.size());
+            this.cachedFieldItems = filteredFieldItems.subList(startIndex, endIndex);
+
+            // Cache Variables
+            this.variables.put("FILTERED_SIZE", filteredFieldItems.size());
             this.variables.put("CACHED_SIZE", this.cachedFieldItems.size());
             this.variables.put("START_INDEX", startIndex);
             this.variables.put("END_INDEX", endIndex);
@@ -138,15 +162,16 @@ public final class ItemHandler<T> implements CacheHandler {
     }
 
     private @NotNull ConcurrentList<T> getFilteredItems() {
-        if (this.isCacheUpdateRequired() || this.getSortHandler().isCacheUpdateRequired()) {
+        if (this.isCacheUpdateRequired()) {
             this.cachedFilteredItems = this.getSortHandler()
                 .getCurrent()
                 .map(sorter -> sorter.apply(this.getItems(), this.getSortHandler().isReversed()))
                 .orElse(this.getItems())
                 .indexedStream()
-                .filter((t, index, size) -> this.getFilters()
+                .filter((t, index, size) -> this.getFilterHandler()
+                    .getItems()
                     .stream()
-                    .allMatch(predicate -> predicate.test(t, index, size))
+                    .allMatch(filter -> filter.test(t, index, size))
                 )
                 .map(Triple::getLeft)
                 .collect(Concurrent.toUnmodifiableList());
@@ -190,25 +215,6 @@ public final class ItemHandler<T> implements CacheHandler {
         this.setCacheUpdateRequired();
     }
 
-    public void gotoItemPage(@NotNull TextInput textInput) {
-        this.getSearchers()
-            .stream()
-            .filter(search -> search.getTextInput().getIdentifier().equals(textInput.getIdentifier()))
-            .findFirst()
-            .flatMap(search -> this.getItems()
-                .indexedStream()
-                .filter((item, index, size) -> search.getPredicates()
-                    .stream()
-                    .anyMatch(predicate -> predicate.test(item, textInput.getValue().orElseThrow()))
-                )
-                .map(Triple::getMiddle)
-                .findFirst()
-            )
-            .filter(index -> index > -1)
-            .map(index -> Math.ceil((double) index / this.getAmountPerPage()))
-            .ifPresent(index -> this.gotoItemPage(index.intValue()));
-    }
-
     public void gotoFirstItemPage() {
         this.gotoItemPage(1);
     }
@@ -231,14 +237,16 @@ public final class ItemHandler<T> implements CacheHandler {
             .append(this.getType())
             .append(this.getItems())
             .append(this.getStaticItems())
-            .append(this.getSortHandler())
             .append(this.getVariables())
             .append(this.getFieldStyle())
-            .append(this.getFilters())
             .append(this.getTransformer())
             .append(this.getListTitle())
             .append(this.isEditorEnabled())
             .append(this.getAmountPerPage())
+            .append(this.getSortHandler())
+            .append(this.getFilterHandler())
+            .append(this.getSearchHandler())
+            .append(this.isCacheUpdateRequired())
             .append(this.getCurrentItemPage())
             .append(this.getCachedFilteredItems())
             .append(this.getCachedFieldItems())
@@ -254,8 +262,24 @@ public final class ItemHandler<T> implements CacheHandler {
         return this.currentItemPage > 1;
     }
 
+    @Override
+    public boolean isCacheUpdateRequired() {
+        return this.cacheUpdateRequired ||
+            this.getSortHandler().isCacheUpdateRequired() ||
+            this.getFilterHandler().isCacheUpdateRequired() ||
+            this.getSearchHandler().isCacheUpdateRequired();
+    }
+
     public @NotNull Builder<T> mutate() {
         return from(this);
+    }
+
+    @Override
+    public void setCacheUpdateRequired(boolean cacheUpdateRequired) {
+        this.cacheUpdateRequired = cacheUpdateRequired;
+        this.getSortHandler().setCacheUpdateRequired(cacheUpdateRequired);
+        this.getFilterHandler().setCacheUpdateRequired(cacheUpdateRequired);
+        this.getSearchHandler().setCacheUpdateRequired(cacheUpdateRequired);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
@@ -265,24 +289,16 @@ public final class ItemHandler<T> implements CacheHandler {
         private final ConcurrentList<T> items = Concurrent.newList();
         private final ConcurrentList<Item> staticItems = Concurrent.newList();
         private final ConcurrentList<Sorter<T>> sorters = Concurrent.newList();
+        private final ConcurrentList<Filter<T>> filters = Concurrent.newList();
         private final ConcurrentList<Search<T>> searchers = Concurrent.newList();
         private final ConcurrentMap<String, Object> variables = Concurrent.newMap();
         @BuildFlag(nonNull = true)
         private FieldStyle fieldStyle = FieldStyle.DEFAULT;
-        private final ConcurrentList<TriPredicate<T, Long, Long>> filters = Concurrent.newList();
         @BuildFlag(nonNull = true)
         private TriFunction<T, Long, Long, FieldItem<?>> transformer = (t, index, size) -> StringItem.builder().build();
         private Optional<String> listTitle = Optional.empty();
         private boolean editorEnabled = false;
         private int amountPerPage = 12;
-
-        /**
-         * Clear all filters from the {@link ItemHandler}.
-         */
-        public Builder<T> clearFilters() {
-            this.filters.clear();
-            return this;
-        }
 
         /**
          * Clear all items from the {@link ItemHandler}.
@@ -310,10 +326,10 @@ public final class ItemHandler<T> implements CacheHandler {
         /**
          * Sets if the editor is enabled.
          *
-         * @param editorEnabled True to enable editor.
+         * @param value True to enable editor.
          */
-        public Builder<T> isEditorEnabled(boolean editorEnabled) {
-            this.editorEnabled = editorEnabled;
+        public Builder<T> isEditorEnabled(boolean value) {
+            this.editorEnabled = value;
             return this;
         }
 
@@ -336,7 +352,7 @@ public final class ItemHandler<T> implements CacheHandler {
          *
          * @param filters Collection of filters to apply to {@link T}.
          */
-        public Builder<T> withFilters(@NotNull TriPredicate<T, Long, Long>... filters) {
+        public Builder<T> withFilters(@NotNull Filter<T>... filters) {
             return this.withFilters(Arrays.asList(filters));
         }
 
@@ -345,7 +361,7 @@ public final class ItemHandler<T> implements CacheHandler {
          *
          * @param filters Collection of filters to apply to {@link T}.
          */
-        public Builder<T> withFilters(@NotNull Iterable<TriPredicate<T, Long, Long>> filters) {
+        public Builder<T> withFilters(@NotNull Iterable<Filter<T>> filters) {
             filters.forEach(this.filters::add);
             return this;
         }
@@ -513,15 +529,15 @@ public final class ItemHandler<T> implements CacheHandler {
                 this.type,
                 this.items.toUnmodifiableList(),
                 this.staticItems.toUnmodifiableList(),
-                new SortHandler<>(this.sorters),
-                this.searchers,
                 this.variables,
                 this.fieldStyle,
-                this.filters,
                 this.transformer,
                 this.listTitle,
                 this.editorEnabled,
-                this.amountPerPage
+                this.amountPerPage,
+                new SortHandler<>(this.sorters),
+                new FilterHandler<>(this.filters),
+                new SearchHandler<>(this.searchers)
             );
         }
 
