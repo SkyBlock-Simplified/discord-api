@@ -32,6 +32,7 @@ public class Search<T> {
 
     private final @NotNull TextInput textInput;
     private final @NotNull ConcurrentList<BiPredicate<T, String>> predicates;
+    private @NotNull Optional<String> lastMatch = Optional.empty();
 
     public static <T> @NotNull Builder<T> builder() {
         return new Builder<>();
@@ -78,6 +79,10 @@ public class Search<T> {
 
     public @NotNull Builder<T> mutate() {
         return from(this);
+    }
+
+    public void updateLastMatch(@NotNull TextInput textInput) {
+        this.lastMatch = textInput.getValue();
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
