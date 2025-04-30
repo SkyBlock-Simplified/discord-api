@@ -4,8 +4,8 @@ import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -73,7 +73,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
         return DeferrableInteractionContext.super.getChannel();
     }
 
-    @NotNull Component getComponent();
+    @NotNull UserInteractComponent getComponent();
 
     @Override
     default Mono<Message> getMessage() {
