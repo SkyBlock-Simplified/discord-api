@@ -12,8 +12,8 @@ import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.component.type.EventComponent;
+import dev.sbs.discordapi.response.component.type.ToggleableComponent;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,10 +32,10 @@ import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu implements ActionComponent, InteractableComponent<SelectMenuContext>, PreservableComponent {
+public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, ToggleableComponent {
 
     private final @NotNull String identifier;
-    private final boolean disabled;
+    private boolean disabled;
     private final @NotNull Optional<String> placeholder;
     private final @NotNull Optional<Integer> minValue;
     private final @NotNull Optional<Integer> maxValue;
@@ -137,6 +137,11 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
     }
 
     @Override
+    public @NotNull Type getType() {
+        return Type.SELECT_MENU; // TODO: Support subtypes
+    }
+
+    @Override
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
@@ -156,6 +161,12 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
 
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    @Override
+    public @NotNull SelectMenu setState(boolean enabled) {
+        this.disabled = !enabled;
+        return this;
     }
 
     public @NotNull SelectMenu updateSelected() {
@@ -293,6 +304,22 @@ public final class SelectMenu implements ActionComponent, InteractableComponent<
         public Builder withDeferEdit(boolean deferEdit) {
             this.deferEdit = deferEdit;
             return this;
+        }
+
+        /**
+         * Sets the {@link SelectMenu} as enabled.
+         */
+        public Builder setEnabled() {
+            return this.setEnabled(true);
+        }
+
+        /**
+         * Sets if the {@link SelectMenu} should be enabled.
+         *
+         * @param value True to enable the button.
+         */
+        public Builder setEnabled(boolean value) {
+            return this.setDisabled(!value);
         }
 
         /**
