@@ -4,7 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.response.component.type.MessageComponent;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import lombok.AccessLevel;
@@ -19,7 +19,7 @@ import java.util.UUID;
 public final class Separator implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
 
     private final @NotNull String identifier = UUID.randomUUID().toString();
-    private final @NotNull ConcurrentList<MessageComponent> components = Concurrent.newUnmodifiableList();
+    private final @NotNull ConcurrentList<Component> components = Concurrent.newUnmodifiableList();
     private final @NotNull Size size;
     @Getter(AccessLevel.NONE)
     private final boolean divider;

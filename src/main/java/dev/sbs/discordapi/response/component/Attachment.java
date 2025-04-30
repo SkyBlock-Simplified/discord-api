@@ -7,7 +7,6 @@ import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
-import dev.sbs.discordapi.response.component.type.MessageComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import discord4j.core.spec.MessageCreateFields;
@@ -29,7 +28,7 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Attachment implements MessageComponent, TopLevelMessageComponent, ContainerComponent {
+public final class Attachment implements Component, TopLevelMessageComponent, ContainerComponent {
 
     // File Details
     private final @NotNull String identifier;

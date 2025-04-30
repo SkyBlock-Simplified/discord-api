@@ -6,8 +6,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.type.MessageComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
@@ -75,8 +75,8 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
     }
 
     @Override
-    public @NotNull MessageComponent.Type getType() {
-        return MessageComponent.Type.SECTION;
+    public @NotNull Component.Type getType() {
+        return Component.Type.SECTION;
     }
 
     @Override
