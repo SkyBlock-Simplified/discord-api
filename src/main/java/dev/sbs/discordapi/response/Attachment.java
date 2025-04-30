@@ -4,6 +4,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
+import dev.sbs.api.util.builder.hash.EqualsBuilder;
+import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.component.type.MessageComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
@@ -51,6 +53,30 @@ public final class Attachment implements MessageComponent, TopLevelMessageCompon
 
     public static @NotNull Builder builder() {
         return new Builder();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Attachment that = (Attachment) o;
+
+        return new EqualsBuilder()
+            .append(this.getFileId(), that.getFileId())
+            .append(this.isSpoiler(), that.isSpoiler())
+            .append(this.getIdentifier(), that.getIdentifier())
+            .append(this.getUrl(), that.getUrl())
+            .append(this.getName(), that.getName())
+            .append(this.getUploadStream(), that.getUploadStream())
+            .append(this.getState(), that.getState())
+            .append(this.getAttachmentId(), that.getAttachmentId())
+            .append(this.getDescription(), that.getDescription())
+            .append(this.getSize(), that.getSize())
+            .append(this.getContentType(), that.getContentType())
+            .append(this.getProxyUrl(), that.getProxyUrl())
+            .append(this.getHeight(), that.getHeight())
+            .append(this.getWidth(), that.getWidth())
+            .build();
     }
 
     public static @NotNull Builder from(@NotNull Attachment attachment) {
@@ -103,6 +129,26 @@ public final class Attachment implements MessageComponent, TopLevelMessageCompon
     @Override
     public @NotNull Type getType() {
         return Type.FILE;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getIdentifier())
+            .append(this.getFileId())
+            .append(this.isSpoiler())
+            .append(this.getUrl())
+            .append(this.getName())
+            .append(this.getUploadStream())
+            .append(this.getState())
+            .append(this.getAttachmentId())
+            .append(this.getDescription())
+            .append(this.getSize())
+            .append(this.getContentType())
+            .append(this.getProxyUrl())
+            .append(this.getHeight())
+            .append(this.getWidth())
+            .build();
     }
 
     public boolean isPendingUpload() {
