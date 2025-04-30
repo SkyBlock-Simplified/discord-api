@@ -8,7 +8,7 @@ import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.type.InteractableComponent;
+import dev.sbs.discordapi.response.component.type.EventComponent;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends InteractableComponent<C>> extends DiscordListener<E> {
+public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends EventComponent<C>> extends DiscordListener<E> {
 
     private final Class<T> componentClass;
 
