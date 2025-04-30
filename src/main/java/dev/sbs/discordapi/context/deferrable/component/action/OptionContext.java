@@ -36,7 +36,7 @@ public interface OptionContext extends ActionComponentContext {
         );
     }
 
-    static OptionContext of(@NotNull SelectMenuContext selectMenuContext, @NotNull Response response, @NotNull SelectMenu.Option option) {
+    static @NotNull OptionContext of(@NotNull SelectMenuContext selectMenuContext, @NotNull Response response, @NotNull SelectMenu.Option option) {
         return new Impl(
             selectMenuContext.getDiscordBot(),
             selectMenuContext.getEvent(),

@@ -27,7 +27,7 @@ public interface ButtonContext extends ActionComponentContext {
         return this.modify(buttonBuilder.apply(this.getComponent().mutate()).build());
     }
 
-    static ButtonContext of(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button button, @NotNull Optional<Followup> followup) {
+    static @NotNull ButtonContext of(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Response response, @NotNull Button button, @NotNull Optional<Followup> followup) {
         return new Impl(
             discordBot,
             event,
