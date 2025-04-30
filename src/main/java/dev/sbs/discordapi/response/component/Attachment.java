@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response;
+package dev.sbs.discordapi.response.component;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
