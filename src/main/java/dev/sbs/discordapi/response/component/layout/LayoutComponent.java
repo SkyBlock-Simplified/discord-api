@@ -1,14 +1,12 @@
 package dev.sbs.discordapi.response.component.layout;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.component.type.D4jComponent;
-import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
-import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.component.Component;
 import org.jetbrains.annotations.NotNull;
 
-public interface LayoutComponent<T extends IdentifiableComponent> extends PreservableComponent, D4jComponent {
+public interface LayoutComponent extends Component {
 
-    @NotNull ConcurrentList<T> getComponents();
+    @NotNull ConcurrentList<Component> getComponents();
 
     @NotNull discord4j.core.object.component.LayoutComponent getD4jComponent();
 
