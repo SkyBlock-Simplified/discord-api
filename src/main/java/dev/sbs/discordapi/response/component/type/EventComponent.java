@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-public interface InteractableComponent<T extends ComponentContext> extends IdentifiableComponent {
+public interface EventComponent<T extends ComponentContext> {
 
     @NotNull Function<T, Mono<Void>> getInteraction();
 
