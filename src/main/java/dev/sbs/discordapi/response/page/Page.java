@@ -3,21 +3,17 @@ package dev.sbs.discordapi.response.page;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
-import dev.sbs.discordapi.response.component.type.PreservableComponent;
-import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.page.handler.HistoryHandler;
-import dev.sbs.discordapi.response.page.handler.ItemHandler;
-import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.field.PageItem;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.sbs.discordapi.response.component.type.ToggleableComponent;
+import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.history.HistoryHandler;
+import dev.sbs.discordapi.response.page.impl.ContainerPage;
+import dev.sbs.discordapi.response.page.impl.LegacyPage;
+import dev.sbs.discordapi.response.page.impl.form.QuestionPage;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,130 +23,59 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-@Getter
-@RequiredArgsConstructor
-public class Page implements Subpages<Page> {
+public interface Page {
 
-    private final @NotNull SelectMenu.Option option;
-    private final @NotNull Optional<String> content;
-    private final @NotNull ConcurrentList<Page> pages;
-    private final @NotNull ConcurrentList<Embed> embeds;
-    private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
-    private final @NotNull ConcurrentList<Emoji> reactions;
-    private final @NotNull ItemHandler<?> itemHandler;
-    private final @NotNull HistoryHandler<PageItem, String> historyHandler;
+    @NotNull ConcurrentList<LayoutComponent> getComponents();
 
-    public static @NotNull Builder builder() {
-        return new Builder();
+    @NotNull HistoryHandler<?, String> getHistoryHandler();
+
+    @NotNull ItemHandler<?> getItemHandler();
+
+    @NotNull SelectMenu.Option getOption();
+
+    @NotNull ConcurrentList<Emoji> getReactions();
+
+    @NotNull PageBuilder mutate();
+
+    // Builders
+
+    static @NotNull ContainerPage.Builder builder() {
+        return ContainerPage.builder();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        Page page = (Page) o;
-
-        return new EqualsBuilder()
-            .append(this.getOption(), page.getOption())
-            .append(this.getContent(), page.getContent())
-            .append(this.getPages(), page.getPages())
-            .append(this.getEmbeds(), page.getEmbeds())
-            .append(this.getComponents(), page.getComponents())
-            .append(this.getReactions(), page.getReactions())
-            .append(this.getItemHandler(), page.getItemHandler())
-            .append(this.getHistoryHandler(), page.getHistoryHandler())
-            .build();
+    static @NotNull QuestionPage.Builder form() {
+        return QuestionPage.builder();
     }
 
-    public final boolean hasItems() {
-        return this.getItemHandler().getItems().notEmpty();
+    static @NotNull LegacyPage.Builder legacy() {
+        return LegacyPage.builder();
     }
 
-    public final boolean hasNoItems() {
-        return !this.hasItems();
+    static @NotNull ContainerPage.Builder from(@NotNull ContainerPage page) {
+        return ContainerPage.from(page);
     }
 
-    /**
-     * Finds an existing {@link ActionComponent}.
-     *
-     * @param tClass   The component type to match.
-     * @param function The method reference to match with.
-     * @param value    The value to match with.
-     * @return The matching component, if it exists.
-     */
-    public <S, T extends ActionComponent> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
-        return this.getComponents()
-            .stream()
-            .flatMap(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(tClass::isInstance)
-                .map(tClass::cast)
-                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-            )
-            .findFirst();
+    static @NotNull QuestionPage.Builder from(@NotNull QuestionPage questionPage) {
+        return QuestionPage.from(questionPage);
     }
 
-    /**
-     * Finds an existing {@link Embed}.
-     *
-     * @param identifier The unique id of the embed to search for.
-     * @return The matching embed, if it exists.
-     */
-    public Optional<Embed> findEmbed(@NotNull String identifier) {
-        return this.getEmbeds()
-            .stream()
-            .filter(embed -> embed.getIdentifier().equals(identifier))
-            .findFirst();
+    static @NotNull LegacyPage.Builder from(@NotNull LegacyPage page) {
+        return LegacyPage.from(page);
     }
 
-    public static @NotNull Builder from(@NotNull Page page) {
-        return new Builder()
-            .withOption(page.getOption())
-            .withContent(page.getContent())
-            .withPages(page.getPages())
-            .withEmbeds(page.getEmbeds())
-            .withComponents(page.getComponents())
-            .withReactions(page.getReactions())
-            .withItemHandler(page.getItemHandler());
-    }
+    abstract class PageBuilder implements dev.sbs.api.util.builder.Builder<Page> {
 
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
-            .append(this.getContent())
-            .append(this.getPages())
-            .append(this.getEmbeds())
-            .append(this.getComponents())
-            .append(this.getReactions())
-            .append(this.getItemHandler())
-            .append(this.getHistoryHandler())
-            .build();
-    }
+        protected SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        protected final ConcurrentList<LayoutComponent> components = Concurrent.newList();
+        protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
 
-    public @NotNull Builder mutate() {
-        return from(this);
-    }
-
-    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Page> {
-
-        private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
-        private final ConcurrentList<Page> pages = Concurrent.newList();
-        private final ConcurrentList<Embed> embeds = Concurrent.newList();
-        private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
-        private final ConcurrentList<Emoji> reactions = Concurrent.newList();
-        private Optional<String> content = Optional.empty();
-        private Optional<SelectMenu.Option> option = Optional.empty();
-        private ItemHandler<?> itemHandler = ItemHandler.builder(Item.class).build();
+        //private ItemHandler<?> itemHandler = ItemHandler.builder(Item.class).build();
 
         /**
          * Clear all but preservable components from {@link Page}.
          */
-        public Builder clearComponents() {
-            return this.clearComponents(false);
+        public PageBuilder disableComponents() {
+            return this.disableComponents(false);
         }
 
         /**
@@ -158,50 +83,33 @@ public class Page implements Subpages<Page> {
          *
          * @param recursive True to recursively clear components.
          */
-        public Builder clearComponents(boolean recursive) {
-            return this.clearComponents(recursive, true);
+        public PageBuilder disableComponents(boolean recursive) {
+            this.components.forEach(this::toggleComponents);
+            return this;
         }
 
-        /**
-         * Clear all components from {@link Page}.
-         *
-         * @param recursive       True to recursively clear components.
-         * @param enforcePreserve True to leave preservable components.
-         */
-        public Builder clearComponents(boolean recursive, boolean enforcePreserve) {
-            // Remove Possibly Preserved Components
-            this.components.stream()
-                .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
-                .forEach(layoutComponent -> layoutComponent.getComponents()
+        protected final @NotNull Component toggleComponents(@NotNull Component component) {
+            if (component instanceof LayoutComponent layoutComponent) {
+                layoutComponent.getComponents()
                     .stream()
-                    .filter(PreservableComponent.class::isInstance)
-                    .map(PreservableComponent.class::cast)
-                    .filter(component -> !enforcePreserve || component.notPreserved())
-                    .forEach(component -> layoutComponent.getComponents().remove(component))
-                );
+                    .map(this::toggleComponents)
+                    .filter(ToggleableComponent.class::isInstance)
+                    .map(ToggleableComponent.class::cast)
+                    .forEach(component1 -> layoutComponent.getComponents().set(
+                        layoutComponent.getComponents().indexOf(component1),
+                        component1.setState(false)
+                    ));
+            }
 
-            if (recursive)
-                this.pages.forEach(page -> this.editPage(page.mutate().clearComponents(true, enforcePreserve).build()));
-
-            // Remove Empty Layout Components
-            this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
-            return this;
+            return component;
         }
 
-        /**
-         * Clear all pages from the {@link Page}.
-         */
-        public Builder clearPages() {
-            this.pages.clear();
-            return this;
-        }
-
-        public Builder clearReaction(@NotNull Emoji emoji) {
+        public PageBuilder clearReaction(@NotNull Emoji emoji) {
             this.reactions.remove(emoji);
             return this;
         }
 
-        public Builder clearReactions() {
+        public PageBuilder clearReactions() {
             this.reactions.clear();
             return this;
         }
@@ -211,7 +119,8 @@ public class Page implements Subpages<Page> {
          *
          * @param actionComponent The component to edit.
          */
-        public Builder editComponent(@NotNull ActionComponent actionComponent) {
+        public PageBuilder editComponent(@NotNull ActionComponent actionComponent) {
+            // TODO: Recursive component search
             this.components.forEach(layoutComponent -> layoutComponent.getComponents()
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
@@ -228,67 +137,6 @@ public class Page implements Subpages<Page> {
         }
 
         /**
-         * Edits an existing {@link Embed}.
-         *
-         * @param identifier   The identifier of the embed to search for.
-         * @param embedBuilder The embed builder to edit with.
-         */
-        public Builder editEmbed(@NotNull String identifier, @NotNull Function<Embed.Builder, Embed.Builder> embedBuilder) {
-            this.embeds.stream()
-                .filter(embed -> embed.getIdentifier().equals(identifier))
-                .findFirst()
-                .ifPresent(embed -> {
-                Embed editedEmbed = embedBuilder.apply(embed.mutate()).build();
-
-                // Locate and Update Existing Embed
-                for (int i = 0; i < this.embeds.size(); i++) {
-                    if (this.embeds.get(i).getIdentifier().equals(identifier)) {
-                        this.embeds.set(i, editedEmbed);
-                        break;
-                    }
-                }
-            });
-
-            return this;
-        }
-
-        /**
-         * Edits an existing {@link Page} at the given index.
-         *
-         * @param pageBuilder The page builder to edit with.
-         */
-        public Builder editPage(@NotNull Function<Builder, Builder> pageBuilder) {
-            return this.editPage(0, pageBuilder);
-        }
-
-        /**
-         * Edits an existing {@link Page} at the given index.
-         *
-         * @param index       The page index to edit.
-         * @param pageBuilder The page builder to edit with.
-         */
-        public Builder editPage(int index, @NotNull Function<Builder, Builder> pageBuilder) {
-            if (index < this.pages.size())
-                this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
-
-            return this;
-        }
-
-        /**
-         * Updates an existing {@link Page}.
-         *
-         * @param page The page to edit.
-         */
-        public Builder editPage(@NotNull Page page) {
-            this.pages.stream()
-                .filter(existingPage -> existingPage.getOption().getUniqueId().equals(page.getOption().getUniqueId()))
-                .findFirst()
-                .ifPresent(existingPage -> this.pages.set(this.pages.indexOf(existingPage), page));
-
-            return this;
-        }
-
-        /**
          * Finds an existing {@link ActionComponent}.
          *
          * @param tClass   The component type to match.
@@ -296,7 +144,7 @@ public class Page implements Subpages<Page> {
          * @param value    The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        public final <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
                 .flatMap(layoutComponent -> layoutComponent.getComponents()
                     .stream()
@@ -312,7 +160,7 @@ public class Page implements Subpages<Page> {
          *
          * @param components Variable number of layout components to add.
          */
-        public Builder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
+        public PageBuilder withComponents(@NotNull LayoutComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -321,112 +169,45 @@ public class Page implements Subpages<Page> {
          *
          * @param components Collection of layout components to add.
          */
-        public Builder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
+        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent> components) {
             components.forEach(this.components::add);
             return this;
         }
 
-        /**
-         * Sets the content text to add to the {@link Page}.
-         *
-         * @param content The text to add to the page.
-         */
-        public Builder withContent(@Nullable String content) {
-            return this.withContent(Optional.ofNullable(content));
-        }
-
-        /**
-         * Sets the content text to add to the {@link Page}.
-         *
-         * @param content The text to add to the page.
-         */
-        public Builder withContent(@NotNull Optional<String> content) {
-            this.content = content;
-            return this;
-        }
-
-        public Builder withDescription(@Nullable String description) {
+        public PageBuilder withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
         }
 
-        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+        public PageBuilder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
-        public Builder withDescription(@NotNull Optional<String> description) {
+        public PageBuilder withDescription(@NotNull Optional<String> description) {
             this.optionBuilder.withDescription(description);
             return this;
         }
 
-        /**
-         * Add {@link Embed Embeds} to the {@link Page}.
-         *
-         * @param embeds Variable number of embeds to add.
-         */
-        public Builder withEmbeds(@NotNull Embed... embeds) {
-            return this.withEmbeds(Arrays.asList(embeds));
-        }
-
-        /**
-         * Add {@link Embed Embeds} to the {@link Page}.
-         *
-         * @param embeds Collection of embeds to add.
-         */
-        public Builder withEmbeds(@NotNull Iterable<Embed> embeds) {
-            embeds.forEach(this.embeds::add);
-            return this;
-        }
-
-        public Builder withEmoji(@Nullable Emoji emoji) {
+        public PageBuilder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
-        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public PageBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.optionBuilder.withEmoji(emoji);
             return this;
         }
 
-        /**
-         * Sets the item data to be used with the {@link Page}.
-         *
-         * @param itemHandler The item data for the page.
-         */
-        public Builder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
-            this.itemHandler = itemHandler;
-            return this;
-        }
-
-        public Builder withLabel(@NotNull String label) {
+        public PageBuilder withLabel(@NotNull String label) {
             this.optionBuilder.withLabel(label);
             return this;
         }
 
-        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+        public PageBuilder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
             this.optionBuilder.withLabel(label, args);
             return this;
         }
 
-        public Builder withOption(@NotNull SelectMenu.Option option) {
+        public PageBuilder withOption(@NotNull SelectMenu.Option option) {
             this.optionBuilder = SelectMenu.Option.from(option);
-            return this;
-        }
-
-        /**
-         * Add sub {@link Page Pages} to the {@link Page}.
-         *
-         * @param subPages Variable number of pages to add.
-         */
-        public Builder withPages(@NotNull Page... subPages) {
-            return this.withPages(Arrays.asList(subPages));
-        }
-
-        /**
-         * Add sub {@link Page Pages} to the {@link Page}.
-         *
-         * @param subPages Collection of pages to add.
-         */
-        public Builder withPages(@NotNull Iterable<Page> subPages) {
-            subPages.forEach(this.pages::add);
             return this;
         }
 
@@ -435,7 +216,7 @@ public class Page implements Subpages<Page> {
          *
          * @param reactions The reactions to add to the response.
          */
-        public Builder withReactions(@NotNull Emoji... reactions) {
+        public PageBuilder withReactions(@NotNull Emoji... reactions) {
             return this.withReactions(Arrays.asList(reactions));
         }
 
@@ -444,17 +225,17 @@ public class Page implements Subpages<Page> {
          *
          * @param reactions The reactions to add to the response.
          */
-        public Builder withReactions(@NotNull Iterable<Emoji> reactions) {
+        public PageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
             reactions.forEach(this.reactions::add);
             return this;
         }
 
-        public Builder withValue(@NotNull String value) {
+        public PageBuilder withValue(@NotNull String value) {
             this.optionBuilder.withValue(value);
             return this;
         }
 
-        public Builder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
+        public PageBuilder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
             this.optionBuilder.withValue(value, args);
             return this;
         }
@@ -465,33 +246,7 @@ public class Page implements Subpages<Page> {
          * @return A built {@link Page}.
          */
         @Override
-        public @NotNull Page build() {
-            // Prevent Empty Rows
-            this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
-
-            return new Page(
-                this.optionBuilder.build(),
-                this.content,
-                this.pages.toUnmodifiableList(),
-                this.embeds.toUnmodifiableList(),
-                this.components.toUnmodifiableList(),
-                this.reactions.toUnmodifiableList(),
-                this.itemHandler,
-                HistoryHandler.<PageItem, String>builder()
-                    .withPages(
-                        this.itemHandler
-                            .getItems()
-                            .stream()
-                            .filter(PageItem.class::isInstance)
-                            .map(PageItem.class::cast)
-                            .collect(Concurrent.toList())
-                    )
-                    .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
-                    .withHistoryTransformer(page -> page.getOption().getValue())
-                    .withMinimumSize(0)
-                    .build()
-            );
-        }
+        public abstract @NotNull Page build();
 
     }
 
