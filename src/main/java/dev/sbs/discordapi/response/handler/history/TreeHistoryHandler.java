@@ -1,11 +1,11 @@
-package dev.sbs.discordapi.response.page.handler;
+package dev.sbs.discordapi.response.handler.history;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
-import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.Subpages;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -28,11 +28,11 @@ import java.util.function.Function;
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHandler<P>, Paging<P> {
+public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHandler<P, I> {
 
     private final @NotNull ConcurrentList<P> items;
-    private final @NotNull Optional<BiFunction<P, I, Boolean>> historyMatcher;
-    private final @NotNull Optional<Function<P, I>> historyTransformer;
+    private final @NotNull Optional<BiFunction<P, I, Boolean>> matcher;
+    private final @NotNull Optional<Function<P, I>> transformer;
     private final int minimumSize;
     @Setter private boolean cacheUpdateRequired;
     @Getter(AccessLevel.NONE)
@@ -54,14 +54,14 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        HistoryHandler<?, ?> that = (HistoryHandler<?, ?>) o;
+        TreeHistoryHandler<?, ?> that = (TreeHistoryHandler<?, ?>) o;
 
         return new EqualsBuilder()
             .append(this.getMinimumSize(), that.getMinimumSize())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
             .append(this.getItems(), that.getItems())
-            .append(this.getHistoryMatcher(), that.getHistoryMatcher())
-            .append(this.getHistoryTransformer(), that.getHistoryTransformer())
+            .append(this.getMatcher(), that.getMatcher())
+            .append(this.getTransformer(), that.getTransformer())
             .append(this.getHistory(), that.getHistory())
             .build();
     }
@@ -74,7 +74,7 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
     public @NotNull Optional<P> getPage(I identifier) {
         return this.getItems()
             .stream()
-            .filter(page -> this.getHistoryMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
+            .filter(page -> this.getMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
             .findFirst();
     }
 
@@ -90,9 +90,9 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         return this.history.toUnmodifiableList();
     }
 
-    public @NotNull ConcurrentList<I> getHistoryIdentifiers() {
+    public @NotNull ConcurrentList<I> getIdentifierHistory() {
         return this.history.stream()
-            .map(page -> this.getHistoryTransformer().map(transformer -> transformer.apply(page)))
+            .map(page -> this.getTransformer().map(transformer -> transformer.apply(page)))
             .flatMap(Optional::stream)
             .collect(Concurrent.toList());
     }
@@ -106,7 +106,7 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         return this.getCurrentPage()
             .getPages()
             .stream()
-            .filter(page -> this.getHistoryMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
+            .filter(page -> this.getMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
             .findFirst();
     }
 
@@ -138,7 +138,9 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
 
     @Override
     public void gotoNextPage() {
-        throw new DiscordException("Next page is unsupported for page history.");
+        int index = this.getCurrentPage().getPages().indexOf(this.getCurrentPage());
+        int next = NumberUtil.ensureRange(index, 0, this.getCurrentPage().getPages().size() - 1);
+        this.history.add(this.getCurrentPage().getPages().get(next));
     }
 
     @Override
@@ -161,8 +163,8 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getItems())
-            .append(this.getHistoryMatcher())
-            .append(this.getHistoryTransformer())
+            .append(this.getMatcher())
+            .append(this.getTransformer())
             .append(this.getMinimumSize())
             .append(this.isCacheUpdateRequired())
             .append(this.getHistory())
@@ -174,29 +176,29 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<P extends Subpages<P>, I> implements dev.sbs.api.util.builder.Builder<HistoryHandler<P, I>> {
+    public static class Builder<P extends Subpages<P>, I> implements dev.sbs.api.util.builder.Builder<TreeHistoryHandler<P, I>> {
 
         private final ConcurrentList<P> pages = Concurrent.newList();
-        private Optional<Function<P, I>> historyTransformer = Optional.empty();
-        private Optional<BiFunction<P, I, Boolean>> historyMatcher = Optional.empty();
+        private Optional<Function<P, I>> transformer = Optional.empty();
+        private Optional<BiFunction<P, I, Boolean>> matcher = Optional.empty();
         private int minimumSize = 1;
 
-        public Builder<P, I> withHistoryMatcher(@Nullable BiFunction<P, I, Boolean> transformer) {
-            return this.withHistoryMatcher(Optional.ofNullable(transformer));
+        public Builder<P, I> withMatcher(@Nullable BiFunction<P, I, Boolean> transformer) {
+            return this.withMatcher(Optional.ofNullable(transformer));
         }
 
-        public Builder<P, I> withHistoryMatcher(@NotNull Optional<BiFunction<P, I, Boolean>> transformer) {
-            this.historyMatcher = transformer;
+        public Builder<P, I> withMatcher(@NotNull Optional<BiFunction<P, I, Boolean>> transformer) {
+            this.matcher = transformer;
             return this;
         }
 
 
-        public Builder<P, I> withHistoryTransformer(@Nullable Function<P, I> transformer) {
-            return this.withHistoryTransformer(Optional.ofNullable(transformer));
+        public Builder<P, I> withTransformer(@Nullable Function<P, I> transformer) {
+            return this.withTransformer(Optional.ofNullable(transformer));
         }
 
-        public Builder<P, I> withHistoryTransformer(@NotNull Optional<Function<P, I>> transformer) {
-            this.historyTransformer = transformer;
+        public Builder<P, I> withTransformer(@NotNull Optional<Function<P, I>> transformer) {
+            this.transformer = transformer;
             return this;
         }
 
@@ -206,7 +208,7 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         }
 
         /**
-         * Add pages to the {@link HistoryHandler}.
+         * Add pages to the {@link TreeHistoryHandler}.
          *
          * @param pages Variable number of pages to add.
          */
@@ -215,7 +217,7 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         }
 
         /**
-         * Add pages to the {@link HistoryHandler}.
+         * Add pages to the {@link TreeHistoryHandler}.
          *
          * @param pages Collection of pages to add.
          */
@@ -225,11 +227,11 @@ public final class HistoryHandler<P extends Subpages<P>, I> implements OutputHan
         }
 
         @Override
-        public @NotNull HistoryHandler<P, I> build() {
-            return new HistoryHandler<>(
+        public @NotNull TreeHistoryHandler<P, I> build() {
+            return new TreeHistoryHandler<>(
                 this.pages.toUnmodifiableList(),
-                this.historyMatcher,
-                this.historyTransformer,
+                this.matcher,
+                this.transformer,
                 this.minimumSize
             );
         }
