@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler;
+package dev.sbs.discordapi.response.handler;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import org.jetbrains.annotations.NotNull;

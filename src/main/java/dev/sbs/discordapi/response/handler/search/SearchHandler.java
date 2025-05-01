@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.response.page.handler.search;
+package dev.sbs.discordapi.response.handler.search;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
-import dev.sbs.discordapi.response.page.handler.OutputHandler;
+import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;

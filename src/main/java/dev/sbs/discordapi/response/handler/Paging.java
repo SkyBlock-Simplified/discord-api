@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page;
+package dev.sbs.discordapi.response.handler;
 
 import org.jetbrains.annotations.NotNull;
 

@@ -1,9 +1,9 @@
-package dev.sbs.discordapi.response.page.handler.sorter;
+package dev.sbs.discordapi.response.handler.sorter;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.response.page.handler.OutputHandler;
+import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;

@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.handler.filter;
+package dev.sbs.discordapi.response.handler.filter;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;

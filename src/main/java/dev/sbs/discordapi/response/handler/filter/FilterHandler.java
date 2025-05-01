@@ -1,9 +1,9 @@
-package dev.sbs.discordapi.response.page.handler.filter;
+package dev.sbs.discordapi.response.handler.filter;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.response.page.handler.OutputHandler;
+import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
