@@ -5,19 +5,21 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ActionRow implements LayoutComponent<ActionComponent> {
+public final class ActionRow implements LayoutComponent, ContainerComponent {
 
-    private final @NotNull ConcurrentList<ActionComponent> components = Concurrent.newList();
-    private final boolean preserved;
+    private final @NotNull String identifier = UUID.randomUUID().toString();
+    private final @NotNull ConcurrentList<ActionComponent> components;
 
     @Override
     public boolean equals(Object o) {
@@ -27,7 +29,7 @@ public final class ActionRow implements LayoutComponent<ActionComponent> {
         ActionRow actionRow = (ActionRow) o;
 
         return new EqualsBuilder()
-            .append(this.isPreserved(), actionRow.isPreserved())
+            .append(this.getIdentifier(), actionRow.getIdentifier())
             .append(this.getComponents(), actionRow.getComponents())
             .build();
     }
@@ -35,17 +37,23 @@ public final class ActionRow implements LayoutComponent<ActionComponent> {
     @Override
     public @NotNull discord4j.core.object.component.ActionRow getD4jComponent() {
         return discord4j.core.object.component.ActionRow.of(
-            this.components.stream()
+            this.getComponents()
+                .stream()
                 .map(ActionComponent::getD4jComponent)
                 .collect(Concurrent.toList())
         );
     }
 
     @Override
+    public @NotNull Type getType() {
+        return Type.ACTION_ROW;
+    }
+
+    @Override
     public int hashCode() {
         return new HashCodeBuilder()
+            .append(this.getIdentifier())
             .append(this.getComponents())
-            .append(this.isPreserved())
             .build();
     }
 
@@ -54,21 +62,9 @@ public final class ActionRow implements LayoutComponent<ActionComponent> {
     }
 
     public static @NotNull ActionRow of(@NotNull Iterable<ActionComponent> components) {
-        return of(components, false);
-    }
-
-    public static @NotNull ActionRow preserved(@NotNull ActionComponent... components) {
-        return preserved(Arrays.asList(components));
-    }
-
-    public static @NotNull ActionRow preserved(@NotNull Iterable<ActionComponent> components) {
-        return of(components, true);
-    }
-
-    private static @NotNull ActionRow of(@NotNull Iterable<ActionComponent> components, boolean preserved) {
-        ActionRow actionRow = new ActionRow(preserved);
-        components.forEach(actionRow.components::add);
-        return actionRow;
+        ConcurrentList<ActionComponent> componentList = Concurrent.newList();
+        components.forEach(componentList::add);
+        return new ActionRow(componentList.toUnmodifiableList());
     }
 
 }
