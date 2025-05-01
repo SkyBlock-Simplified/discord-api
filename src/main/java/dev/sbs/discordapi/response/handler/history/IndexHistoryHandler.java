@@ -33,21 +33,20 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
     private final @NotNull ConcurrentList<P> items;
     private final @NotNull Optional<BiFunction<P, I, Boolean>> matcher;
     private final @NotNull Optional<Function<P, I>> transformer;
-    private final int minimumSize;
     @Setter private boolean cacheUpdateRequired;
-    @Getter(AccessLevel.PRIVATE)
     private int currentIndex = 0;
 
     public static <P, I> @NotNull Builder<P, I> builder() {
         return new Builder<>();
     }
 
-    /*public @NotNull P editCurrentPage(@NotNull Function<P, P> page) {
+    @Override
+    public @NotNull P editCurrentPage(@NotNull Function<P, P> page) {
         P newPage = page.apply(this.getCurrentPage());
-        this.history.set(this.history.size() - 1, newPage);
+        this.getItems().set(this.getCurrentIndex(), newPage);
         this.setCacheUpdateRequired();
         return newPage;
-    }*/
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -57,7 +56,6 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
         IndexHistoryHandler<?, ?> that = (IndexHistoryHandler<?, ?>) o;
 
         return new EqualsBuilder()
-            .append(this.getMinimumSize(), that.getMinimumSize())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
             .append(this.getItems(), that.getItems())
             .append(this.getMatcher(), that.getMatcher())
@@ -141,17 +139,11 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
     }
 
     @Override
-    public boolean hasPageHistory() {
-        return this.getCurrentIndex() > 0;
-    }
-
-    @Override
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getItems())
             .append(this.getMatcher())
             .append(this.getTransformer())
-            .append(this.getMinimumSize())
             .append(this.isCacheUpdateRequired())
             .append(this.getHistory())
             .build();
@@ -163,7 +155,6 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
         private final ConcurrentList<P> pages = Concurrent.newList();
         private Optional<Function<P, I>> transformer = Optional.empty();
         private Optional<BiFunction<P, I, Boolean>> matcher = Optional.empty();
-        private int minimumSize = 1;
 
         public Builder<P, I> withMatcher(@Nullable BiFunction<P, I, Boolean> transformer) {
             return this.withMatcher(Optional.ofNullable(transformer));
@@ -181,11 +172,6 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
 
         public Builder<P, I> withTransformer(@NotNull Optional<Function<P, I>> transformer) {
             this.transformer = transformer;
-            return this;
-        }
-
-        public Builder<P, I> withMinimumSize(int value) {
-            this.minimumSize = Math.max(value, 0);
             return this;
         }
 
@@ -211,10 +197,9 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
         @Override
         public @NotNull IndexHistoryHandler<P, I> build() {
             return new IndexHistoryHandler<>(
-                this.pages.toUnmodifiableList(),
+                this.pages,
                 this.matcher,
-                this.transformer,
-                this.minimumSize
+                this.transformer
             );
         }
 

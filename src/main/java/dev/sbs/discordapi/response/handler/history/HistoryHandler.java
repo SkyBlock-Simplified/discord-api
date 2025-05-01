@@ -24,9 +24,7 @@ public interface HistoryHandler<P, I> extends OutputHandler<P>, Paging<P> {
 
     @NotNull Optional<Function<P, I>> getTransformer();
 
-    int getMinimumSize();
-
-    //@NotNull P editCurrentPage(@NotNull Function<P, P> page);
+    @NotNull P editCurrentPage(@NotNull Function<P, P> page);
 
     /**
      * Gets an {@link P page} from the provided identifier.
@@ -40,15 +38,11 @@ public interface HistoryHandler<P, I> extends OutputHandler<P>, Paging<P> {
             .findFirst();
     }
 
-    @NotNull P getCurrentPage();
-
     @NotNull Optional<P> getPreviousPage();
 
     @NotNull ConcurrentList<P> getHistory();
 
     @NotNull ConcurrentList<I> getIdentifierHistory();
-
-    boolean hasPageHistory();
 
     /**
      * Changes the current {@link P page} to a top-level page using the given identifier.

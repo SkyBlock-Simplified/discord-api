@@ -360,7 +360,6 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
                     )
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withTransformer(page -> page.getOption().getValue())
-                    .withMinimumSize(0)
                     .build(),
                 this.pages.toUnmodifiableList()
             );

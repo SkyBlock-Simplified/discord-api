@@ -33,7 +33,6 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
     private final @NotNull ConcurrentList<P> items;
     private final @NotNull Optional<BiFunction<P, I, Boolean>> matcher;
     private final @NotNull Optional<Function<P, I>> transformer;
-    private final int minimumSize;
     @Setter private boolean cacheUpdateRequired;
     @Getter(AccessLevel.NONE)
     private final @NotNull ConcurrentList<P> history = Concurrent.newList();
@@ -42,6 +41,7 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
         return new Builder<>();
     }
 
+    @Override
     public @NotNull P editCurrentPage(@NotNull Function<P, P> page) {
         P newPage = page.apply(this.getCurrentPage());
         this.history.set(this.history.size() - 1, newPage);
@@ -57,7 +57,6 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
         TreeHistoryHandler<?, ?> that = (TreeHistoryHandler<?, ?>) o;
 
         return new EqualsBuilder()
-            .append(this.getMinimumSize(), that.getMinimumSize())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
             .append(this.getItems(), that.getItems())
             .append(this.getMatcher(), that.getMatcher())
@@ -76,6 +75,11 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
             .stream()
             .filter(page -> this.getMatcher().map(matcher -> matcher.apply(page, identifier)).orElse(false))
             .findFirst();
+    }
+
+    @Override
+    public int getCurrentIndex() {
+        throw new UnsupportedOperationException("TreeHistoryHandler does not support indexed paging.");
     }
 
     public @NotNull P getCurrentPage() {
@@ -165,14 +169,14 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
             .append(this.getItems())
             .append(this.getMatcher())
             .append(this.getTransformer())
-            .append(this.getMinimumSize())
             .append(this.isCacheUpdateRequired())
             .append(this.getHistory())
             .build();
     }
 
+    @Override
     public boolean hasPageHistory() {
-        return this.history.size() > this.getMinimumSize();
+        return this.history.size() > 1;
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -181,7 +185,6 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
         private final ConcurrentList<P> pages = Concurrent.newList();
         private Optional<Function<P, I>> transformer = Optional.empty();
         private Optional<BiFunction<P, I, Boolean>> matcher = Optional.empty();
-        private int minimumSize = 1;
 
         public Builder<P, I> withMatcher(@Nullable BiFunction<P, I, Boolean> transformer) {
             return this.withMatcher(Optional.ofNullable(transformer));
@@ -199,11 +202,6 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
 
         public Builder<P, I> withTransformer(@NotNull Optional<Function<P, I>> transformer) {
             this.transformer = transformer;
-            return this;
-        }
-
-        public Builder<P, I> withMinimumSize(int value) {
-            this.minimumSize = Math.max(value, 0);
             return this;
         }
 
@@ -229,10 +227,9 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
         @Override
         public @NotNull TreeHistoryHandler<P, I> build() {
             return new TreeHistoryHandler<>(
-                this.pages.toUnmodifiableList(),
+                this.pages,
                 this.matcher,
-                this.transformer,
-                this.minimumSize
+                this.transformer
             );
         }
 

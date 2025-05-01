@@ -258,7 +258,6 @@ public class QuestionPage implements Page {
                     .withPages(this.questions.toUnmodifiableList())
                     .withMatcher((question, identifier) -> question.getIdentifier().equals(identifier))
                     .withTransformer(Question::getIdentifier)
-                    .withMinimumSize(0)
                     .build(),
                 this.title.orElseThrow(),
                 this.details
