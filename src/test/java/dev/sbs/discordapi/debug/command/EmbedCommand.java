@@ -10,8 +10,9 @@ import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.handler.ItemHandler;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
+import dev.sbs.discordapi.response.page.impl.LegacyPage;
 import dev.sbs.discordapi.response.page.item.AuthorItem;
 import dev.sbs.discordapi.response.page.item.DescriptionItem;
 import dev.sbs.discordapi.response.page.item.FooterItem;
@@ -41,11 +42,11 @@ public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
-            Response.builder()
+            Response.legacy()
                 .withTimeToLive(60)
                 .isEphemeral()
                 .withPages(
-                    Page.builder()
+                    LegacyPage.builder()
                         .withEmbeds(
                             Embed.builder()
                                 .withTitle("Embed Management")
@@ -65,7 +66,7 @@ public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
                                         .withPages(
                                             Page.builder()
                                                 .withItemHandler(
-                                                    ItemHandler.builder(Item.class)
+                                                    ItemHandler.<Item>builder()
                                                         .withStaticItems(
                                                             AuthorItem.builder().isEditable().build(),
                                                             TitleItem.builder().isEditable().build(),

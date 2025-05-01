@@ -8,10 +8,11 @@ import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Response;
+import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.filter.Filter;
+import dev.sbs.discordapi.response.handler.search.Search;
+import dev.sbs.discordapi.response.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.handler.cache.ItemHandler;
-import dev.sbs.discordapi.response.page.handler.search.Search;
-import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.FooterItem;
 import dev.sbs.discordapi.response.page.item.field.StringItem;
 import lombok.Getter;
@@ -45,9 +46,13 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
                 .withPages(
                     Page.builder()
                         .withItemHandler(
-                            ItemHandler.builder(Test.class)
+                            ItemHandler.<Test>builder()
                                 .withItems(tests)
-                                .withFilters((test, index, size) -> test.getIndex() < 100)
+                                .withFilters(
+                                    Filter.<Test>builder()
+                                        .withTriPredicates((test, index, size) -> test.getIndex() < 100)
+                                        .build()
+                                )
                                 .withAmountPerPage(15)
                                 .withVariable("WORLD", "World!")
                                 .withStaticItems(
