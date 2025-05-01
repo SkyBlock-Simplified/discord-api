@@ -27,7 +27,10 @@ public class Argument {
     public @NotNull Attachment asAttachment() {
         return this.getValueAs(
             "attachment",
-            value -> Attachment.of(this.getValue().asAttachment()),
+            value -> Attachment.from(
+                this.getParameter().getName(),
+                this.getValue().asAttachment()
+            ),
             Parameter.Type.ATTACHMENT
         );
     }
