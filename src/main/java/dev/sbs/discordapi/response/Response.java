@@ -2,27 +2,18 @@ package dev.sbs.discordapi.response;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
-import dev.sbs.discordapi.handler.EmojiHandler;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.layout.ActionRow;
+import dev.sbs.discordapi.response.component.Attachment;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
-import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.handler.history.HistoryHandler;
+import dev.sbs.discordapi.response.impl.ContainerResponse;
+import dev.sbs.discordapi.response.impl.FormResponse;
+import dev.sbs.discordapi.response.impl.LegacyResponse;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.Paging;
-import dev.sbs.discordapi.response.page.handler.cache.HistoryHandler;
-import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -33,11 +24,8 @@ import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.core.spec.MessageCreateMono;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.discordjson.json.MessageReferenceData;
-import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,473 +44,133 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-@Getter
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Response implements Paging<Page> {
+public interface Response {
 
-    private static Function<MessageContext<MessageCreateEvent>, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
-    private final long buildTime = System.currentTimeMillis();
-    private final @NotNull UUID uniqueId;
-    private final @NotNull Optional<Snowflake> referenceId;
-    private final @NotNull Scheduler reactorScheduler;
-    private final int timeToLive;
-    private final boolean renderingPagingComponents;
-    private final boolean ephemeral;
-    private final @NotNull HistoryHandler<Page, String> historyHandler;
-    private final @NotNull ConcurrentList<Attachment> attachments;
-    private final Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction;
-    @Getter(AccessLevel.NONE)
-    private ConcurrentList<LayoutComponent<ActionComponent>> cachedPageComponents = Concurrent.newUnmodifiableList();
+    long getBuildTime();
 
-    public static @NotNull Builder builder() {
-        return new Builder();
-    }
+    @NotNull UUID getUniqueId();
 
-    /**
-     * Updates an existing paging {@link Button}.
-     *
-     * @param buttonBuilder The button to edit.
-     */
-    private <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.Builder, Button.Builder> buttonBuilder) {
-        this.cachedPageComponents.forEach(layoutComponent -> layoutComponent.getComponents()
-            .stream()
-            .filter(Button.class::isInstance)
-            .map(Button.class::cast)
-            .filter(button -> Objects.equals(function.apply(button), value))
-            .findFirst()
-            .ifPresent(button -> layoutComponent.getComponents().set(
-                layoutComponent.getComponents().indexOf(button),
-                buttonBuilder.apply(button.mutate()).build()
-            ))
-        );
-    }
+    @NotNull Optional<Snowflake> getReferenceId();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    @NotNull Scheduler getReactorScheduler();
 
-        Response response = (Response) o;
+    @NotNull AllowedMentions getAllowedMentions();
 
-        return new EqualsBuilder()
-            .append(this.getTimeToLive(), response.getTimeToLive())
-            .append(this.getAttachments(), response.getAttachments())
-            .append(this.isRenderingPagingComponents(), response.isRenderingPagingComponents())
-            .append(this.isEphemeral(), response.isEphemeral())
-            .append(this.getUniqueId(), response.getUniqueId())
-            .append(this.getHistoryHandler(), response.getHistoryHandler())
-            .append(this.getAttachments(), response.getAttachments())
-            .append(this.getReferenceId(), response.getReferenceId())
-            .append(this.getReactorScheduler(), response.getReactorScheduler())
-            .build();
-    }
+    int getTimeToLive();
 
-    public static Builder from(@NotNull Response response) {
-        return new Builder()
-            .withUniqueId(response.getUniqueId())
-            .withPages(response.getPages())
-            .withAttachments(response.getAttachments())
-            .withReference(response.getReferenceId())
-            .withReactorScheduler(response.getReactorScheduler())
-            .withTimeToLive(response.getTimeToLive())
-            .isRenderingPagingComponents(response.isRenderingPagingComponents())
-            .isEphemeral(response.isEphemeral())
-            .withPageHistory(response.getHistoryHandler().getHistoryIdentifiers())
-            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentItemPage());
-    }
+    boolean isEphemeral();
 
-    public boolean isCacheUpdateRequired() {
+    @NotNull ConcurrentList<Attachment> getAttachments();
+
+    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getInteraction();
+
+    boolean isRenderingPagingComponents();
+
+    @NotNull HistoryHandler<Page, String> getHistoryHandler();
+
+    @NotNull ConcurrentList<LayoutComponent> getCachedPageComponents();
+
+    @NotNull ResponseBuilder<?> mutate();
+
+    // D4J Specs
+
+    @NotNull MessageCreateSpec getD4jCreateSpec();
+
+    @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel);
+
+    @NotNull MessageEditSpec getD4jEditSpec();
+
+    @NotNull InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec();
+
+    @NotNull InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec();
+
+    @NotNull InteractionReplyEditSpec getD4jInteractionReplyEditSpec();
+
+    // Cache
+
+    default boolean isCacheUpdateRequired() {
         return this.getHistoryHandler().isCacheUpdateRequired() ||
             this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().isCacheUpdateRequired();
+            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired();
     }
 
-    public void setNoCacheUpdateRequired() {
+    default void setNoCacheUpdateRequired() {
         this.getHistoryHandler().setCacheUpdateRequired(false);
         this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
         this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
-        this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().setCacheUpdateRequired(false);
     }
 
-    public final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> getCachedPageComponents() {
-        if (this.isRenderingPagingComponents() && this.isCacheUpdateRequired()) {
-            ConcurrentList<LayoutComponent<ActionComponent>> pageComponents = Concurrent.newList();
+    default void updateAttachments(@NotNull Message message) {
+        if (this.getAttachments().contains(Attachment::getState, Attachment.State.LOADING)) {
+            for (int i = 0; this.getAttachments().notEmpty(); i++) {
+                Attachment attachment = this.getAttachments().get(i);
+                final int index = i;
 
-            // Page List
-            if (this.getPages().size() > 1 && !this.getHistoryHandler().hasPageHistory()) {
-                pageComponents.add(ActionRow.of(
-                    SelectMenu.builder()
-                        .withPageType(SelectMenu.PageType.PAGE)
-                        .withPlaceholder("Select a page.")
-                        .withPlaceholderUsesSelectedOption()
-                        .withOptions(
-                            this.getPages()
-                                .stream()
-                                .map(Page::getOption)
-                                .collect(Concurrent.toList())
-                        )
-                        .onInteract(SelectMenu.PageType.PAGE.getInteraction())
-                        .build()
-                        .updateSelected(this.getHistoryHandler().getHistoryIdentifiers().get(0))
-                ));
+                // Update Attachment
+                message.getAttachments()
+                    .stream()
+                    .filter(d4jAttachment -> d4jAttachment.getFilename().equals(attachment.getName()))
+                    .findFirst()
+                    .ifPresent(d4jAttachment -> this.getAttachments().set(index, attachment.mutate(d4jAttachment).build()));
+
+                // Update File
+                message.getComponentById(attachment.getFileId())
+                    .map(discord4j.core.object.component.File.class::cast)
+                    .filter(d4jFile -> d4jFile.getId() == attachment.getFileId())
+                    .ifPresent(d4jFile -> this.getAttachments().set(index, attachment.mutate(d4jFile).build()));
             }
-
-            // SubPage List
-            if (this.getHistoryHandler().getCurrentPage().getPages().notEmpty() || this.getHistoryHandler().hasPageHistory()) {
-                SelectMenu.Builder subPageBuilder = SelectMenu.builder()
-                    .withPageType(SelectMenu.PageType.SUBPAGE)
-                    .withPlaceholder("Select a subpage.")
-                    .withPlaceholderUsesSelectedOption()
-                    .onInteract(SelectMenu.PageType.SUBPAGE.getInteraction());
-
-                if (this.getHistoryHandler().hasPageHistory()) {
-                    subPageBuilder.withOptions(
-                        SelectMenu.Option.builder()
-                            .withValue("BACK")
-                            .withLabel("Back")
-                            .withEmoji(EmojiHandler.getEmoji("ARROW_LEFT"))
-                            .build()
-                    );
-                }
-
-                Page subPage = this.getHistoryHandler().getCurrentPage().getPages().notEmpty() ?
-                    this.getHistoryHandler().getCurrentPage() :
-                    this.getHistoryHandler().getPreviousPage().orElse(this.getHistoryHandler().getCurrentPage());
-
-                subPageBuilder.withOptions(
-                    subPage.getPages()
-                        .stream()
-                        .map(Page::getOption)
-                        .collect(Concurrent.toList())
-                );
-
-                pageComponents.add(ActionRow.of(subPageBuilder.build()));
-            }
-
-            if (this.getHistoryHandler().getCurrentPage().hasItems()) {
-                // Item List
-                pageComponents.add(ActionRow.of(
-                    Arrays.stream(Button.PageType.values())
-                        .filter(pageType -> pageType != Button.PageType.NONE)
-                        .map(Button.PageType::build)
-                        .collect(Concurrent.toList())
-                ));
-
-                // Editor
-                if (this.getHistoryHandler().getCurrentPage().getItemHandler().isEditorEnabled()) {
-                    // Must Cache First
-                    ConcurrentList<FieldItem<?>> cachedFieldItems = this.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getCachedFieldItems();
-
-                    pageComponents.add(ActionRow.of(
-                        SelectMenu.builder()
-                            .withPageType(SelectMenu.PageType.ITEM)
-                            .withPlaceholder("Select an item to edit.")
-                            .onInteract(SelectMenu.PageType.ITEM.getInteraction())
-                            .withOptions(
-                                Stream.concat(
-                                        this.getHistoryHandler()
-                                            .getCurrentPage()
-                                            .getItemHandler()
-                                            .getCachedStaticItems()
-                                            .stream(),
-                                        cachedFieldItems.stream()
-                                    )
-                                    .map(Item::getOption)
-                                    .collect(Concurrent.toList())
-                            )
-                            .build()
-                    ));
-                }
-            }
-
-            this.cachedPageComponents = pageComponents.toUnmodifiableList();
-            this.updatePagingComponents();
-        }
-
-        return this.cachedPageComponents;
-    }
-
-    @Override
-    public @NotNull ConcurrentList<Page> getPages() {
-        return this.getHistoryHandler().getPages();
-    }
-
-    public void updateAttachments(@NotNull Message message) {
-        if (this.attachments.contains(Attachment::notUploaded, true)) {
-            message.getAttachments().forEach(d4jAttachment -> this.attachments.stream()
-                .filter(Attachment::notUploaded)
-                .filter(attachment -> attachment.getName().equals(d4jAttachment.getFilename()))
-                .findFirst()
-                .ifPresent(attachment -> this.attachments.set(
-                    this.attachments.indexOf(attachment),
-                    Attachment.of(d4jAttachment)
-                )));
         }
     }
 
-    private void updatePagingComponents() {
-        // Enabled
-        //this.editPageButton(Button::getPageType, Button.PageType.FIRST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.PREVIOUS, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasPreviousItemPage()));
-        this.editPageButton(Button::getPageType, Button.PageType.NEXT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        //this.editPageButton(Button::getPageType, Button.PageType.LAST, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().hasNextItemPage()));
-        //this.editPageButton(Button::getPageType, Button.PageType.BACK, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getHistoryHandler().hasPageHistory()));
-        //this.editPageButton(Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(this.getHistoryHandler().getCurrentPage().getItemHandler().getSortHandler().hasSorters()));
-        this.editPageButton(Button::getPageType, Button.PageType.SEARCH, Button.Builder::setEnabled);
-        //this.editPageButton(Button::getPageType, Button.PageType.ORDER, Button.Builder::setEnabled);
+    // Builders
 
-        // Labels
-        this.editPageButton(
-            Button::getPageType,
-            Button.PageType.INDEX,
-            builder -> builder
-                .withLabel(
-                    "%s / %s",
-                    this.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getCurrentItemPage(),
-                    this.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getTotalItemPages()
-                )
-        );
-
-        /*this.editPageButton(
-            Button::getPageType,
-            Button.PageType.SORT,
-            builder -> builder
-                .withLabel(
-                    "Sort: %s",
-                    this.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getSortHandler()
-                        .getCurrent()
-                        .map(sorter -> sorter.getOption().getLabel())
-                        .orElse("N/A")
-                )
-        );
-
-        this.editPageButton(
-            Button::getPageType,
-            Button.PageType.ORDER,
-            builder -> builder.setEnabled()
-                .withLabel(
-                    "Order: %s",
-                    this.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getSortHandler()
-                        .isReversed() ? "Reversed" : "Normal"
-                )
-                .withEmoji(
-                    DiscordReference.getEmoji(
-                        String.format("SORT_%s", this.getHistoryHandler()
-                            .getCurrentPage()
-                            .getItemHandler()
-                            .getSortHandler()
-                            .isReversed() ? "ASCENDING" : "DESCENDING")
-                    )
-                )
-        );*/
+    static @NotNull ContainerResponse.Builder builder() {
+        return ContainerResponse.builder();
     }
 
-    public MessageCreateSpec getD4jCreateSpec() {
-        return MessageCreateSpec.builder()
-            .nonce(this.getUniqueId().toString().substring(0, 25))
-            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .allowedMentions(AllowedMentions.suppressEveryone())
-            .messageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
-            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .build();
+    static @NotNull FormResponse.Builder form() {
+        return FormResponse.builder();
     }
 
-    public MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
-        return MessageCreateMono.of(channel)
-            .withNonce(this.getUniqueId().toString().substring(0, 25))
-            .withContent(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .withAllowedMentions(AllowedMentions.suppressEveryone())
-            .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
-            .withComponents()
-            .withFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .withComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .withEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()));
+    static @NotNull LegacyResponse.Builder legacy() {
+        return LegacyResponse.builder();
     }
 
-    public MessageEditSpec getD4jEditSpec() {
-        return MessageEditSpec.builder()
-            .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .addAllFiles(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .addAllComponents(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .addAllEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .build();
-    }
-
-    public InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
-        return InteractionApplicationCommandCallbackSpec.builder()
-            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .ephemeral(this.isEphemeral())
-            .allowedMentions(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .build();
-    }
-
-    public InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec() {
-        return InteractionFollowupCreateSpec.builder()
-            .content(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .ephemeral(this.isEphemeral())
-            .allowedMentions(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .build();
-    }
-
-    public InteractionReplyEditSpec getD4jInteractionReplyEditSpec() {
-        return InteractionReplyEditSpec.builder()
-            .contentOrNull(this.getHistoryHandler().getCurrentPage().getContent().orElse(""))
-            .allowedMentionsOrNull(AllowedMentions.suppressEveryone())
-            .files(this.getAttachments().stream().filter(Attachment::notUploaded).map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .componentsOrNull(this.getCurrentComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
-            .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .build();
-    }
-
-    private ConcurrentList<LayoutComponent<ActionComponent>> getCurrentComponents() {
-        ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
-        components.addAll(this.getCachedPageComponents()); // Paging Components
-        components.addAll(this.getHistoryHandler().getCurrentPage().getComponents()); // Current Page Components
-        return components;
-    }
-
-    private ConcurrentList<Embed> getCurrentEmbeds() {
-        ConcurrentList<Embed> embeds = Concurrent.newList(this.getHistoryHandler().getCurrentPage().getEmbeds());
-
-        // Handle Item List
-        if (this.getHistoryHandler().getCurrentPage().hasItems()) {
-            // Must Cache First
-            ConcurrentList<Field> renderFields = this.getHistoryHandler()
-                .getCurrentPage()
-                .getItemHandler()
-                .getRenderFields();
-
-            embeds.add(
-                Embed.builder()
-                    .withItems(
-                        this.getHistoryHandler()
-                            .getCurrentPage()
-                            .getItemHandler()
-                            .getCachedStaticItems()
-                    )
-                    .withFields(renderFields)
-                    .build()
-            );
-        }
-
-        return embeds;
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getUniqueId())
-            .append(this.getHistoryHandler())
-            .append(this.getPages())
-            .append(this.getAttachments())
-            .append(this.getReferenceId())
-            .append(this.getReactorScheduler())
-            .append(this.getTimeToLive())
-            .append(this.isRenderingPagingComponents())
-            .append(this.isEphemeral())
-            .build();
-    }
-
-    public Builder mutate() {
-        return from(this);
-    }
-
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Response> {
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    abstract class ResponseBuilder<P extends Page> implements dev.sbs.api.util.builder.Builder<Response> {
 
         @BuildFlag(nonNull = true)
-        private UUID uniqueId = UUID.randomUUID();
+        protected UUID uniqueId = UUID.randomUUID();
         @BuildFlag(nonNull = true)
-        private final ConcurrentList<Page> pages = Concurrent.newList();
-        private final ConcurrentList<Attachment> attachments = Concurrent.newList();
-        private boolean inlineItems;
-        private Optional<Snowflake> referenceId = Optional.empty();
+        protected final ConcurrentList<P> pages = Concurrent.newList();
+        protected final ConcurrentList<Attachment> attachments = Concurrent.newList();
+        protected Optional<Snowflake> referenceId = Optional.empty();
         @BuildFlag(nonNull = true)
-        private Scheduler reactorScheduler = Schedulers.boundedElastic();
-        private int timeToLive = 10;
-        private boolean renderingPagingComponents = true;
-        private boolean ephemeral = false;
-        private Optional<String> defaultPage = Optional.empty();
-        private Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction = Optional.empty();
-
-        // Current Page/Item History
-        private ConcurrentList<String> pageHistory = Concurrent.newList();
-        private int currentItemPage = 1;
+        protected Scheduler reactorScheduler = Schedulers.boundedElastic();
+        protected int timeToLive = 10;
+        protected boolean renderingPagingComponents = true;
+        protected boolean ephemeral = false;
+        @BuildFlag(nonNull = true)
+        protected AllowedMentions allowedMentions = AllowedMentions.suppressEveryone();
+        protected Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction = Optional.empty();
 
         /**
-         * Recursively clear all but preservable components from all {@link Page Pages} in {@link Response}.
+         * Recursively disable all interactable components from all {@link Page Pages} in {@link Response}.
          */
-        public Builder clearAllComponents() {
-            return this.clearAllComponents(true);
-        }
-
-        /**
-         * Recursively clear all components from all {@link Page Pages} in {@link Response}.
-         *
-         * @param enforcePreserve True to leave preservable components.
-         */
-        public Builder clearAllComponents(boolean enforcePreserve) {
-            this.pages.forEach(page -> this.editPage(page.mutate().clearComponents(true, enforcePreserve).build()));
-            return this;
-        }
-
-        /**
-         * Updates the current {@link Page}.
-         *
-         * @param builder The current page builder.
-         */
-        public Builder editCurrentPage(@NotNull Function<Page.Builder, Page.Builder> builder) {
-            if (this.pageHistory.getLast().isEmpty())
-                return this;
-
-            return this.editPage(
-                builder.apply(
-                        this.pages.findFirst(page -> page.getOption().getValue(), this.pageHistory.getLast().get())
-                            .orElseThrow()
-                            .mutate()
-                    )
-                    .build()
-            );
-        }
+        public abstract ResponseBuilder<P> disableAllComponents();
 
         /**
          * Updates an existing {@link Page}.
          *
          * @param page The page to edit.
          */
-        public Builder editPage(@NotNull Page page) {
+        public ResponseBuilder<P> editPage(@NotNull P page) {
             this.pages.stream()
                 .filter(existingPage -> existingPage.getOption().getValue().equals(page.getOption().getValue()))
                 .findFirst()
@@ -533,21 +181,17 @@ public class Response implements Paging<Page> {
 
         /**
          * Sets the {@link Response} should be ephemeral.
-         * <br><br>
-         * Only applies to slash commands.
          */
-        public Builder isEphemeral() {
+        public ResponseBuilder<P> isEphemeral() {
             return this.isEphemeral(true);
         }
 
         /**
          * Sets the {@link Response} should be ephemeral.
-         * <br><br>
-         * Only applies to slash commands.
          *
-         * @param value True if interactable.
+         * @param value True if ephemeral.
          */
-        public Builder isEphemeral(boolean value) {
+        public ResponseBuilder<P> isEphemeral(boolean value) {
             this.ephemeral = value;
             return this;
         }
@@ -555,7 +199,7 @@ public class Response implements Paging<Page> {
         /**
          * Sets the {@link Response} to render paging components.
          */
-        public Builder isRenderingPagingComponents() {
+        public ResponseBuilder<P> isRenderingPagingComponents() {
             return this.isRenderingPagingComponents(true);
         }
 
@@ -564,7 +208,7 @@ public class Response implements Paging<Page> {
          *
          * @param value True if rendering page components.
          */
-        public Builder isRenderingPagingComponents(boolean value) {
+        public ResponseBuilder<P> isRenderingPagingComponents(boolean value) {
             this.renderingPagingComponents = value;
             return this;
         }
@@ -574,7 +218,7 @@ public class Response implements Paging<Page> {
          *
          * @param interaction The interaction function.
          */
-        public Builder onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
+        public ResponseBuilder<P> onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
             return this.onCreate(Optional.ofNullable(interaction));
         }
 
@@ -583,8 +227,18 @@ public class Response implements Paging<Page> {
          *
          * @param interaction The interaction function.
          */
-        public Builder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
+        public ResponseBuilder<P> onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
             this.interaction = interaction;
+            return this;
+        }
+
+        /**
+         * Specifies the allowed mentions for the {@link Response}.
+         *
+         * @param allowedMentions An {@link AllowedMentions} object that defines which mentions should be allowed in the response.
+         */
+        public ResponseBuilder<P> withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
+            this.allowedMentions = allowedMentions;
             return this;
         }
 
@@ -594,7 +248,7 @@ public class Response implements Paging<Page> {
          * @param name The name of the attachment.
          * @param inputStream The stream of attachment data.
          */
-        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
+        public ResponseBuilder<P> withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
             return this.withAttachment(name, inputStream, false);
         }
 
@@ -605,8 +259,14 @@ public class Response implements Paging<Page> {
          * @param inputStream The stream of attachment data.
          * @param spoiler True if the attachment should be a spoiler.
          */
-        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
-            return this.withAttachments(Attachment.of(name, inputStream, spoiler));
+        public ResponseBuilder<P> withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
+            return this.withAttachments(
+                Attachment.builder()
+                    .isSpoiler(spoiler)
+                    .withName(name)
+                    .withStream(inputStream)
+                    .build()
+            );
         }
 
         /**
@@ -614,7 +274,7 @@ public class Response implements Paging<Page> {
          *
          * @param attachments Variable number of attachments to add.
          */
-        public Builder withAttachments(@NotNull Attachment... attachments) {
+        public ResponseBuilder<P> withAttachments(@NotNull Attachment... attachments) {
             Arrays.stream(attachments)
                 .filter(attachment -> !this.attachments.contains(Attachment::getName, attachment.getName()))
                 .forEach(this.attachments::add);
@@ -627,7 +287,7 @@ public class Response implements Paging<Page> {
          *
          * @param attachments Collection of attachments to add.
          */
-        public Builder withAttachments(@NotNull Iterable<Attachment> attachments) {
+        public ResponseBuilder<P> withAttachments(@NotNull Iterable<Attachment> attachments) {
             attachments.forEach(attachment -> {
                 if (!this.attachments.contains(Attachment::getName, attachment.getName()))
                     this.attachments.add(attachment);
@@ -641,31 +301,14 @@ public class Response implements Paging<Page> {
          *
          * @param throwable The throwable exception stack trace to add.
          */
-        public Builder withException(@NotNull Throwable throwable) {
-            this.attachments.add(Attachment.of(
-                String.format("stacktrace-%s.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now())),
-                new ByteArrayInputStream(ExceptionUtil.getStackTrace(throwable).getBytes(StandardCharsets.UTF_8)))
+        public ResponseBuilder<P> withException(@NotNull Throwable throwable) {
+            this.attachments.add(
+                Attachment.builder()
+                    .withName("stacktrace-%s.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now()))
+                    .withStream(new ByteArrayInputStream(ExceptionUtil.getStackTrace(throwable).getBytes(StandardCharsets.UTF_8)))
+                    .build()
             );
 
-            return this;
-        }
-
-        /**
-         * Sets the default page the {@link Response} should load.
-         *
-         * @param pageIdentifier The page identifier to load.
-         */
-        public Builder withDefaultPage(@Nullable String pageIdentifier) {
-            return this.withDefaultPage(Optional.ofNullable(pageIdentifier));
-        }
-
-        /**
-         * Sets the default page the {@link Response} should load.
-         *
-         * @param pageIdentifier The page identifier to load.
-         */
-        public Builder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
-            this.defaultPage = pageIdentifier;
             return this;
         }
 
@@ -674,7 +317,7 @@ public class Response implements Paging<Page> {
          *
          * @param files Variable number of files to add.
          */
-        public Builder withFiles(@NotNull File... files) {
+        public ResponseBuilder<P> withFiles(@NotNull File... files) {
             return this.withFiles(Arrays.asList(files));
         }
 
@@ -683,13 +326,16 @@ public class Response implements Paging<Page> {
          *
          * @param files Collection of files to add.
          */
-        public Builder withFiles(@NotNull Iterable<File> files) {
+        public ResponseBuilder<P> withFiles(@NotNull Iterable<File> files) {
             List<File> fileList = List.class.isAssignableFrom(files.getClass()) ? (List<File>) files : StreamSupport.stream(files.spliterator(), false).toList();
 
             fileList.stream()
                 .map(file -> {
                     try {
-                        return Attachment.of(file.getName(), new FileInputStream(file));
+                        return Attachment.builder()
+                            .withName(file.getName())
+                            .withStream(new FileInputStream(file))
+                            .build();
                     } catch (FileNotFoundException fnfex) {
                         throw new RuntimeException(fnfex);
                     }
@@ -699,22 +345,12 @@ public class Response implements Paging<Page> {
             return this;
         }
 
-        private Builder withItemPage(int currentItemPage) {
-            this.currentItemPage = currentItemPage;
-            return this;
-        }
-
-        private Builder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
-            this.pageHistory = pageHistory;
-            return this;
-        }
-
         /**
          * Add {@link Page Pages} to the {@link Response}.
          *
          * @param pages Variable number of pages to add.
          */
-        public Builder withPages(@NotNull Page... pages) {
+        public ResponseBuilder<P> withPages(@NotNull P... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
@@ -723,17 +359,17 @@ public class Response implements Paging<Page> {
          *
          * @param pages Collection of pages to add.
          */
-        public Builder withPages(@NotNull Iterable<Page> pages) {
+        public ResponseBuilder<P> withPages(@NotNull Iterable<P> pages) {
             pages.forEach(this.pages::add);
             return this;
         }
 
-        public Builder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
+        public ResponseBuilder<P> withReactorScheduler(@NotNull Scheduler reactorScheduler) {
             this.reactorScheduler = reactorScheduler;
             return this;
         }
 
-        public Builder withReactorScheduler(@NotNull ExecutorService executorService) {
+        public ResponseBuilder<P> withReactorScheduler(@NotNull ExecutorService executorService) {
             this.reactorScheduler = Schedulers.fromExecutorService(executorService);
             return this;
         }
@@ -743,7 +379,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageContext The message to reference.
          */
-        public Builder withReference(@NotNull MessageContext<?> messageContext) {
+        public ResponseBuilder<P> withReference(@NotNull MessageContext<?> messageContext) {
             return this.withReference(messageContext.getMessageId());
         }
 
@@ -752,7 +388,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public Builder withReference(@Nullable Snowflake messageId) {
+        public ResponseBuilder<P> withReference(@Nullable Snowflake messageId) {
             return this.withReference(Optional.ofNullable(messageId));
         }
 
@@ -761,7 +397,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public Builder withReference(@NotNull Mono<Snowflake> messageId) {
+        public ResponseBuilder<P> withReference(@NotNull Mono<Snowflake> messageId) {
             return this.withReference(messageId.blockOptional());
         }
 
@@ -770,7 +406,7 @@ public class Response implements Paging<Page> {
          *
          * @param messageId The message to reference.
          */
-        public Builder withReference(@NotNull Optional<Snowflake> messageId) {
+        public ResponseBuilder<P> withReference(@NotNull Optional<Snowflake> messageId) {
             this.referenceId = messageId;
             return this;
         }
@@ -784,7 +420,7 @@ public class Response implements Paging<Page> {
          *
          * @param secondsToLive How long the response should live without interaction in seconds.
          */
-        public Builder withTimeToLive(int secondsToLive) {
+        public ResponseBuilder<P> withTimeToLive(int secondsToLive) {
             this.timeToLive = NumberUtil.ensureRange(secondsToLive, 5, 300);
             return this;
         }
@@ -794,7 +430,7 @@ public class Response implements Paging<Page> {
          *
          * @param uniqueId Unique ID to assign to {@link Response}.
          */
-        public Builder withUniqueId(@NotNull UUID uniqueId) {
+        public ResponseBuilder<P> withUniqueId(@NotNull UUID uniqueId) {
             this.uniqueId = uniqueId;
             return this;
         }
@@ -805,39 +441,7 @@ public class Response implements Paging<Page> {
          * @return A built {@link Response}.
          */
         @Override
-        public @NotNull Response build() {
-            Reflection.validateFlags(this);
-
-            Response response = new Response(
-                this.uniqueId,
-                this.referenceId,
-                this.reactorScheduler,
-                this.timeToLive,
-                this.renderingPagingComponents,
-                this.ephemeral,
-                HistoryHandler.<Page, String>builder()
-                    .withPages(this.pages.toUnmodifiableList())
-                    .withHistoryMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
-                    .withHistoryTransformer(page -> page.getOption().getValue())
-                    .build(),
-                this.attachments,
-                this.interaction.orElse(NOOP_HANDLER)
-            );
-
-            // First Page
-            if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
-                response.getHistoryHandler().gotoPage(this.defaultPage.get());
-            else {
-                if (!this.pageHistory.isEmpty()) {
-                    response.getHistoryHandler().gotoPage(this.pageHistory.removeFirst());
-                    this.pageHistory.forEach(identifier -> response.getHistoryHandler().gotoSubPage(identifier));
-                    response.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(this.currentItemPage);
-                } else
-                    response.getHistoryHandler().gotoPage(response.getPages().get(0));
-            }
-
-            return response;
-        }
+        public abstract @NotNull Response build();
 
     }
 
