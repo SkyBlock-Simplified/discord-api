@@ -14,12 +14,12 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
-import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.component.type.EventComponent;
+import dev.sbs.discordapi.response.component.type.ToggleableComponent;
+import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
+import dev.sbs.discordapi.response.handler.search.Search;
+import dev.sbs.discordapi.response.handler.sorter.Sorter;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.handler.search.Search;
-import dev.sbs.discordapi.response.page.handler.sorter.Sorter;
-import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,12 +36,12 @@ import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button implements ActionComponent, InteractableComponent<ButtonContext>, PreservableComponent {
+public final class Button implements ActionComponent, AccessoryComponent, EventComponent<ButtonContext>, ToggleableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String identifier;
     private final @NotNull Style style;
-    private final boolean disabled;
+    private boolean disabled;
     private final @NotNull Optional<Emoji> emoji;
     private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> url;
@@ -91,7 +91,7 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
 
     @Override
     public @NotNull discord4j.core.object.component.Button getD4jComponent() {
-        ReactionEmoji d4jReaction = this.getEmoji().map(Emoji::getD4jReaction).orElse(null);
+        discord4j.core.object.emoji.Emoji d4jReaction = this.getEmoji().map(Emoji::getD4jReaction).orElse(null);
         String label = this.getLabel().orElse(null);
 
         return (switch (this.getStyle()) {
@@ -101,6 +101,11 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
             case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
         }).disabled(this.isDisabled());
+    }
+
+    @Override
+    public @NotNull Type getType() {
+        return Type.BUTTON;
     }
 
     @Override
@@ -119,6 +124,14 @@ public final class Button implements ActionComponent, InteractableComponent<Butt
 
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    @Override
+    public @NotNull Button setState(boolean enabled) {
+        if (this.getStyle() == Style.LINK)
+            this.disabled = !enabled;
+
+        return this;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
