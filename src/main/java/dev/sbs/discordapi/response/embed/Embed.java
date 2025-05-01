@@ -9,7 +9,6 @@ import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
@@ -34,13 +33,11 @@ import java.awt.*;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class Embed implements IdentifiableComponent {
+public class Embed {
 
-    private final @NotNull String identifier;
     private final @NotNull Optional<Color> color;
     private final @NotNull Optional<Author> author;
     private final @NotNull Optional<String> title;
@@ -52,7 +49,7 @@ public class Embed implements IdentifiableComponent {
     private final @NotNull ConcurrentList<Field> fields;
 
     public static @NotNull Embed.Builder builder() {
-        return new Builder().withIdentifier(UUID.randomUUID().toString());
+        return new Builder();
     }
 
     @Override
@@ -63,7 +60,6 @@ public class Embed implements IdentifiableComponent {
         Embed embed = (Embed) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), embed.getIdentifier())
             .append(this.getColor(), embed.getColor())
             .append(this.getAuthor(), embed.getAuthor())
             .append(this.getTitle(), embed.getTitle())
@@ -78,7 +74,6 @@ public class Embed implements IdentifiableComponent {
 
     public static @NotNull Builder from(@NotNull Embed embed) {
         return new Builder()
-            .withIdentifier(embed.getIdentifier())
             .withColor(embed.getColor())
             .withAuthor(embed.getAuthor())
             .withTitle(embed.getTitle())
@@ -92,7 +87,6 @@ public class Embed implements IdentifiableComponent {
 
     public static @NotNull Builder from(@NotNull Throwable throwable) {
         return new Builder()
-            .withIdentifier(UUID.randomUUID().toString())
             .withColor(Color.RED)
             .withTitle("An exception has occurred!")
             .withDescription(ExceptionUtil.getRootCauseMessage(throwable))
@@ -127,7 +121,6 @@ public class Embed implements IdentifiableComponent {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
             .append(this.getColor())
             .append(this.getAuthor())
             .append(this.getTitle())
@@ -147,8 +140,6 @@ public class Embed implements IdentifiableComponent {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Embed> {
 
-        @BuildFlag(nonNull = true)
-        private String identifier;
         @BuildFlag(limit = 256)
         private Optional<String> title = Optional.empty();
         @BuildFlag(limit = 4096)
@@ -316,27 +307,6 @@ public class Embed implements IdentifiableComponent {
          */
         public Builder withFields(@NotNull Iterable<Field> fields) {
             fields.forEach(this.fields::add);
-            return this;
-        }
-
-        /**
-         * Overrides the default identifier of the {@link Embed}.
-         *
-         * @param identifier The identifier to use.
-         */
-        public Builder withIdentifier(@NotNull String identifier) {
-            this.identifier = identifier;
-            return this;
-        }
-
-        /**
-         * Overrides the default identifier of the {@link Embed}.
-         *
-         * @param identifier The identifier to use.
-         * @param args The objects used to format the identifier.
-         */
-        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
-            this.identifier = String.format(identifier, args);
             return this;
         }
 
@@ -526,7 +496,6 @@ public class Embed implements IdentifiableComponent {
             Reflection.validateFlags(this);
 
             return new Embed(
-                this.identifier,
                 this.color,
                 this.author,
                 this.title,
