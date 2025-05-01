@@ -39,10 +39,10 @@ import dev.sbs.discordapi.listener.message.MessageDeleteListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.Form;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.impl.form.QuestionPage;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -109,7 +109,7 @@ import java.util.function.Function;
  *         <li>Implementations
  *         <ul>
  *             <li>{@link Response}</li>
- *             <li>{@link Form}</li>
+ *             <li>{@link QuestionPage}</li>
  *             <li>{@link Followup Followups}</li>
  *         </ul></li>
  *         <li>Components
@@ -208,7 +208,7 @@ public abstract class DiscordBot {
                             .flatMap(message -> Mono.just(entry.getResponse())
                                 .flatMap(response -> message.removeAllReactions().then(message.edit(
                                     response.mutate()
-                                        .clearAllComponents()
+                                        .disableAllComponents()
                                         .isRenderingPagingComponents(false)
                                         .build()
                                         .getD4jEditSpec()
