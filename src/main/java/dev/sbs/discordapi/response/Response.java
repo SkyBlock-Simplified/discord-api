@@ -52,29 +52,29 @@ import java.util.stream.StreamSupport;
 
 public interface Response {
 
-    long getBuildTime();
-
-    @NotNull UUID getUniqueId();
-
-    @NotNull Optional<Snowflake> getReferenceId();
-
-    @NotNull Scheduler getReactorScheduler();
-
     @NotNull AllowedMentions getAllowedMentions();
-
-    int getTimeToLive();
-
-    boolean isEphemeral();
 
     @NotNull ConcurrentList<Attachment> getAttachments();
 
-    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getInteraction();
+    long getBuildTime();
 
-    boolean isRenderingPagingComponents();
+    @NotNull ConcurrentList<LayoutComponent> getCachedPageComponents();
 
     @NotNull HistoryHandler<Page, String> getHistoryHandler();
 
-    @NotNull ConcurrentList<LayoutComponent> getCachedPageComponents();
+    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getInteraction();
+
+    @NotNull Scheduler getReactorScheduler();
+
+    @NotNull Optional<Snowflake> getReferenceId();
+
+    int getTimeToLive();
+
+    @NotNull UUID getUniqueId();
+
+    boolean isEphemeral();
+
+    boolean isRenderingPagingComponents();
 
     @NotNull ResponseBuilder<?> mutate();
 
