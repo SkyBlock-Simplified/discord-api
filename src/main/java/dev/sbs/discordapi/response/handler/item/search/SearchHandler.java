@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.handler.search;
+package dev.sbs.discordapi.response.handler.item.search;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;

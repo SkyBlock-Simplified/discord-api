@@ -8,7 +8,7 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
