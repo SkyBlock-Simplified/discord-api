@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor
-public class Footer {
+public final class Footer {
 
     private final @NotNull Optional<String> text;
     private final @NotNull Optional<String> iconUrl;

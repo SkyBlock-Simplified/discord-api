@@ -36,7 +36,7 @@ import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
-public class Embed {
+public final class Embed {
 
     private final @NotNull Optional<Color> color;
     private final @NotNull Optional<Author> author;
