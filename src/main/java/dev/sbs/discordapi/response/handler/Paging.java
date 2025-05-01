@@ -6,6 +6,8 @@ public interface Paging<T> {
 
     @NotNull T getCurrentPage();
 
+    int getCurrentIndex();
+
     int getTotalPages();
 
     void gotoPage(@NotNull T identifier);
@@ -13,5 +15,9 @@ public interface Paging<T> {
     void gotoNextPage();
 
     void gotoPreviousPage();
+
+    default boolean hasPageHistory() {
+        return this.getCurrentIndex() > 0;
+    }
 
 }
