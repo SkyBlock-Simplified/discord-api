@@ -16,7 +16,6 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.handler.filter.Filter;
 import dev.sbs.discordapi.response.page.handler.filter.FilterHandler;
 import dev.sbs.discordapi.response.page.handler.search.Search;
@@ -42,7 +41,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
-    private final @NotNull Class<T> type;
     private final @NotNull ConcurrentList<T> items;
     private final @NotNull ConcurrentList<Item> staticItems;
     private final @NotNull ConcurrentMap<String, Object> variables;
@@ -64,8 +62,8 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     private ConcurrentList<FieldItem<?>> cachedFieldItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<Item> cachedStaticItems = Concurrent.newUnmodifiableList();
 
-    public static <T> @NotNull Builder<T> builder(@NotNull Class<T> type) {
-        return new Builder<>(type);
+    public static <T> @NotNull Builder<T> builder() {
+        return new Builder<>();
     }
 
     @Override
@@ -76,7 +74,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         ItemHandler<?> that = (ItemHandler<?>) o;
 
         return new EqualsBuilder()
-            .append(this.getType(), that.getType())
             .append(this.getItems(), that.getItems())
             .append(this.getStaticItems(), that.getStaticItems())
             .append(this.getVariables(), that.getVariables())
@@ -97,7 +94,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull ItemHandler<T> itemHandler) {
-        return builder(itemHandler.getType())
+        return new Builder<T>()
             .withItems(itemHandler.getItems())
             .withStaticItems(itemHandler.getStaticItems())
             .withVariables(itemHandler.getVariables())
@@ -241,7 +238,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getType())
             .append(this.getItems())
             .append(this.getStaticItems())
             .append(this.getVariables())
@@ -292,7 +288,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public static class Builder<T> implements dev.sbs.api.util.builder.Builder<ItemHandler<T>> {
 
-        private final Class<T> type;
         private final ConcurrentList<T> items = Concurrent.newList();
         private final ConcurrentList<Item> staticItems = Concurrent.newList();
         private final ConcurrentList<Sorter<T>> sorters = Concurrent.newList();
@@ -533,7 +528,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             this.variables.put("SIZE", this.items.size());
 
             return new ItemHandler<>(
-                this.type,
                 this.items.toUnmodifiableList(),
                 this.staticItems.toUnmodifiableList(),
                 this.variables,
