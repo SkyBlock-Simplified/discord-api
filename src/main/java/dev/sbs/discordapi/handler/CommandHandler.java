@@ -11,9 +11,6 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
-import dev.sbs.discordapi.command.context.AccessContext;
-import dev.sbs.discordapi.command.context.InstallContext;
-import dev.sbs.discordapi.command.context.TypeContext;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
 import dev.sbs.discordapi.context.deferrable.command.MessageCommandContext;
@@ -186,8 +183,8 @@ public final class CommandHandler extends DiscordReference {
             .description(command.getStructure().description())
             .nsfw(command.getStructure().nsfw())
             .defaultMemberPermissions(String.valueOf(PermissionSet.of(command.getStructure().userPermissions()).getRawValue()))
-            .integrationTypes(InstallContext.intValues(command.getStructure().integrations()))
-            .contexts(AccessContext.intValues(command.getStructure().contexts()));
+            .integrationTypes(DiscordCommand.Install.intValues(command.getStructure().integrations()))
+            .contexts(DiscordCommand.Access.intValues(command.getStructure().contexts()));
     }
 
     private @NotNull ApplicationCommandOptionData buildSubCommand(@NotNull DiscordCommand<SlashCommandContext> command) {
@@ -245,12 +242,12 @@ public final class CommandHandler extends DiscordReference {
         return this.commandIds.get(commandClass);
     }
 
-    private @NotNull ConcurrentList<DiscordCommand> getCommandReferences(@NotNull String name, @NotNull TypeContext type) {
+    private @NotNull ConcurrentList<DiscordCommand> getCommandReferences(@NotNull String name, @NotNull DiscordCommand.Type type) {
         return this.getLoadedCommands()
             .stream()
             .filter(command -> command.getStructure().type() == type)
             .filter(command -> {
-                if (command.getStructure().type() == TypeContext.CHAT_INPUT) {
+                if (command.getStructure().type() == DiscordCommand.Type.CHAT_INPUT) {
                     if (StringUtil.isNotEmpty(command.getStructure().parent().name()))
                         return command.getStructure().parent().name().equalsIgnoreCase(name);
                     else
@@ -295,7 +292,7 @@ public final class CommandHandler extends DiscordReference {
                 this.getDiscordBot().getClientId().asLong(),
                 this.buildCommandRequests(-1)
             )
-            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
+            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), DiscordCommand.Type.of(commandData.type().toOptional().orElse(-1)))
                 .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
             )
             .thenMany(
@@ -313,7 +310,7 @@ public final class CommandHandler extends DiscordReference {
                             guildId,
                             this.buildCommandRequests(guildId)
                         )
-                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), TypeContext.of(commandData.type().toOptional().orElse(-1)))
+                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), DiscordCommand.Type.of(commandData.type().toOptional().orElse(-1)))
                             .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
                         )
                     )

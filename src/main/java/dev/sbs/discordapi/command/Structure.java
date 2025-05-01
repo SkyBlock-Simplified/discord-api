@@ -1,8 +1,5 @@
 package dev.sbs.discordapi.command;
 
-import dev.sbs.discordapi.command.context.AccessContext;
-import dev.sbs.discordapi.command.context.InstallContext;
-import dev.sbs.discordapi.command.context.TypeContext;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import org.intellij.lang.annotations.Pattern;
@@ -24,12 +21,12 @@ public @interface Structure {
      * Type of command.
      *
      * <ul>
-     *     <li>{@link TypeContext#MESSAGE} for Message Commands</li>
-     *     <li>{@link TypeContext#CHAT_INPUT} for Slash Commands (Default)</li>
-     *     <li>{@link TypeContext#USER} for User Commands</li>
+     *     <li>{@link DiscordCommand.Type#MESSAGE} for Message Commands</li>
+     *     <li>{@link DiscordCommand.Type#CHAT_INPUT} for Slash Commands (Default)</li>
+     *     <li>{@link DiscordCommand.Type#USER} for User Commands</li>
      * </ul>
      */
-    @NotNull TypeContext type() default TypeContext.CHAT_INPUT;
+    @NotNull DiscordCommand.Type type() default DiscordCommand.Type.CHAT_INPUT;
 
     /**
      * Name of command.
@@ -129,7 +126,7 @@ public @interface Structure {
      *     <li>Defaults to Guild context</li>
      * </ul>
      */
-    @NotNull InstallContext[] integrations() default InstallContext.GUILD;
+    @NotNull DiscordCommand.Install[] integrations() default DiscordCommand.Install.GUILD;
 
     /**
      * Access contexts where the command can be used.
@@ -139,7 +136,7 @@ public @interface Structure {
      *     <li>Defaults to all access types for new commands</li>
      * </ul>
      */
-    @NotNull AccessContext[] contexts() default { AccessContext.GUILD, AccessContext.DIRECT_MESSAGE, AccessContext.PRIVATE_CHANNEL };
+    @NotNull DiscordCommand.Access[] contexts() default { DiscordCommand.Access.GUILD, DiscordCommand.Access.DIRECT_MESSAGE, DiscordCommand.Access.PRIVATE_CHANNEL };
 
     /**
      * Immutable {@link DiscordCommand} parent api structure.

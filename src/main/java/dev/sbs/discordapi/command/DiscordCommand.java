@@ -21,9 +21,11 @@ import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -123,6 +125,116 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 )
             ))
         ));
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum Access {
+
+        UNKNOWN(-1),
+        /**
+         * Interaction can be used within servers
+         */
+        GUILD(0),
+        /**
+         * Interaction can be used within DMs with the app's bot user
+         */
+        DIRECT_MESSAGE(1),
+        /**
+         * Interaction can be used within Group DMs and DMs other than the app's bot user
+         */
+        PRIVATE_CHANNEL(2);
+
+        /**
+         * The underlying value as represented by Discord.
+         */
+        private final int value;
+
+        public static @NotNull Access of(final int value) {
+            return switch (value) {
+                case 0 -> GUILD;
+                case 1 -> DIRECT_MESSAGE;
+                case 2 -> PRIVATE_CHANNEL;
+                default -> UNKNOWN;
+            };
+        }
+
+        public static @NotNull Integer[] intValues(@NotNull Access[] contexts) {
+            return Arrays.stream(contexts).map(Access::getValue).toArray(Integer[]::new);
+        }
+
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum Install {
+
+        UNKNOWN(-1),
+        /**
+         * Installable to servers
+         */
+        GUILD(0),
+        /**
+         * Installable to users
+         */
+        USER(1);
+
+        /**
+         * The underlying value as represented by Discord.
+         */
+        private final int value;
+
+        public static @NotNull Install of(final int value) {
+            return switch (value) {
+                case 0 -> GUILD;
+                case 1 -> USER;
+                default -> UNKNOWN;
+            };
+        }
+
+        public static @NotNull Integer[] intValues(@NotNull Install[] contexts) {
+            return Arrays.stream(contexts).map(Install::getValue).toArray(Integer[]::new);
+        }
+
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum Type {
+
+        UNKNOWN(-1),
+        /**
+         * Slash commands; a text-based command that shows up when a user types /
+         */
+        CHAT_INPUT(1),
+        /**
+         * A UI-based command that shows up when you right click or tap on a user
+         */
+        USER(2),
+        /**
+         * A UI-based command that shows up when you right click or tap on a message
+         */
+        MESSAGE(3),
+        /**
+         * A UI-based command that represents the primary way to invoke an app's Activity
+         */
+        PRIMARY_ENTRY_POINT(4);
+
+        /**
+         * The underlying value as represented by Discord.
+         */
+        private final int value;
+
+        public static @NotNull Type of(final int value) {
+            return switch (value) {
+                case 1 -> CHAT_INPUT;
+                case 2 -> USER;
+                case 3 -> MESSAGE;
+                case 4 -> PRIMARY_ENTRY_POINT;
+                default -> UNKNOWN;
+            };
+        }
+
     }
 
     /*public Embed createHelpEmbed() {
