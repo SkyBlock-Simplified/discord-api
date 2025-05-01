@@ -25,7 +25,7 @@ import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
-import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.impl.LegacyPage;
 import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -347,10 +347,10 @@ public final class ExceptionHandler extends DiscordReference {
         }
 
         // Build User Error
-        Response userErrorResponse = Response.builder()
+        Response userErrorResponse = Response.legacy()
             .isEphemeral(true)
             .withPages(
-                Page.builder()
+                LegacyPage.builder()
                     .withEmbeds(userError)
                     .build()
             )
@@ -384,10 +384,10 @@ public final class ExceptionHandler extends DiscordReference {
                             .map(CachedResponse::getMessageId);
 
                     // Build Exception Response
-                    Response logResponse = Response.builder()
+                    Response logResponse = Response.legacy()
                         .withException(exceptionContext.getException())
                         .withPages(
-                            Page.builder()
+                            LegacyPage.builder()
                                 .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
                                 .build()
                         )
