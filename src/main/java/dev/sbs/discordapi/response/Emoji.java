@@ -8,7 +8,8 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
-import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.core.object.emoji.CustomEmoji;
+import discord4j.core.object.emoji.UnicodeEmoji;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +42,8 @@ public abstract class Emoji {
         return this.asFormat() + " ";
     }
 
-    public final @NotNull ReactionEmoji getD4jReaction() {
-        return this.getRaw().isPresent() ? ReactionEmoji.unicode(this.getRaw().get()) : ReactionEmoji.of(this.getId().asLong(), this.getName(), this.isAnimated());
+    public final @NotNull discord4j.core.object.emoji.Emoji getD4jReaction() {
+        return this.getRaw().isPresent() ? UnicodeEmoji.of(this.getRaw().get()) : CustomEmoji.of(this.getId().asLong(), this.getName(), this.isAnimated());
     }
 
     public final @NotNull Function<ReactionContext, Mono<Void>> getInteraction() {
@@ -104,8 +105,8 @@ public abstract class Emoji {
         return of(emoji.getId(), emoji.getName(), emoji.isAnimated());
     }
 
-    public static @NotNull Emoji of(@NotNull ReactionEmoji emoji) {
-        return emoji instanceof ReactionEmoji.Custom ? new Custom((ReactionEmoji.Custom) emoji) : new Unicode((ReactionEmoji.Unicode) emoji);
+    public static @NotNull Emoji of(@NotNull discord4j.core.object.emoji.Emoji emoji) {
+        return emoji instanceof CustomEmoji ? new Custom((CustomEmoji) emoji) : new Unicode((UnicodeEmoji) emoji);
     }
 
     public static @NotNull Emoji of(long id, @NotNull String name) {
@@ -142,7 +143,7 @@ public abstract class Emoji {
 
     static class Custom extends Emoji {
 
-        Custom(ReactionEmoji.Custom emoji) {
+        Custom(CustomEmoji emoji) {
             this(emoji.getId(), emoji.getName(), emoji.isAnimated(), null);
         }
 
@@ -164,7 +165,7 @@ public abstract class Emoji {
 
     static class Unicode extends Emoji {
 
-        Unicode(ReactionEmoji.Unicode emoji) {
+        Unicode(UnicodeEmoji emoji) {
             this(emoji.getRaw(), null);
         }
 
