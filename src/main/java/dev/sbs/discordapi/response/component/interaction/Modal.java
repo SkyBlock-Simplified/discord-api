@@ -12,9 +12,8 @@ import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
-import dev.sbs.discordapi.response.component.type.IdentifiableComponent;
-import dev.sbs.discordapi.response.component.type.InteractableComponent;
-import dev.sbs.discordapi.response.component.type.PreservableComponent;
+import dev.sbs.discordapi.response.component.type.EventComponent;
+import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
@@ -36,12 +35,12 @@ import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Modal implements Component, InteractableComponent<ModalContext> {
+public final class Modal implements EventComponent<ModalContext>, UserInteractComponent {
 
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String identifier;
     private final @NotNull Optional<String> title;
-    private final @NotNull ConcurrentList<LayoutComponent<ActionComponent>> components;
+    private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
@@ -75,7 +74,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
      * @return The matching component, if it exists.
      */
     public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, IdentifiableComponent::getIdentifier, identifier);
+        return this.findComponent(tClass, Component::getIdentifier, identifier);
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
@@ -140,35 +139,14 @@ public final class Modal implements Component, InteractableComponent<ModalContex
 
         private final String identifier;
         private Optional<String> title = Optional.empty();
-        private final ConcurrentList<LayoutComponent<ActionComponent>> components = Concurrent.newList();
+        private final ConcurrentList<LayoutComponent> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
-         * Clear all but preservable components from {@link Modal}.
+         * Clear all components from {@link Modal}.
          */
         public Builder clearComponents() {
-            return this.clearComponents(true);
-        }
-
-        /**
-         * Clear all components from {@link Modal}.
-         *
-         * @param enforcePreserve True to leave preservable components.
-         */
-        public Builder clearComponents(boolean enforcePreserve) {
-            // Remove Possibly Preserved Components
-            this.components.stream()
-                .filter(layoutComponent -> !enforcePreserve || layoutComponent.notPreserved())
-                .forEach(layoutComponent -> layoutComponent.getComponents()
-                    .stream()
-                    .filter(PreservableComponent.class::isInstance)
-                    .map(PreservableComponent.class::cast)
-                    .filter(component -> !enforcePreserve || component.notPreserved())
-                    .forEach(component -> layoutComponent.getComponents().remove(component))
-                );
-
-            // Remove Empty Layout Components
-            this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
+            this.components.clear();
             return this;
         }
 
@@ -276,7 +254,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
          * @param components Variable number of layout components to add.
          */
         @SuppressWarnings("all")
-        public Builder withComponents(@NotNull LayoutComponent<ActionComponent>... components) {
+        public Builder withComponents(@NotNull LayoutComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -285,7 +263,7 @@ public final class Modal implements Component, InteractableComponent<ModalContex
          *
          * @param components Collection of layout components to add.
          */
-        public Builder withComponents(@NotNull Iterable<LayoutComponent<ActionComponent>> components) {
+        public Builder withComponents(@NotNull Iterable<LayoutComponent> components) {
             components.forEach(this.components::add);
             return this;
         }
