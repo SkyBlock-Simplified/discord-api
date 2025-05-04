@@ -8,8 +8,7 @@ import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
-import discord4j.discordjson.json.ImmutableComponentData;
-import discord4j.discordjson.possible.Possible;
+import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -61,20 +60,17 @@ public final class Container implements LayoutComponent, TopLevelMessageComponen
 
     @Override
     public @NotNull discord4j.core.object.component.Container getD4jComponent() {
-        return Reflection.of(discord4j.core.object.component.Container.class).newInstance(
-            ImmutableComponentData.builder()
-                .type(this.getType().getValue())
-                .id(Possible.absent())
-                .components(
-                    this.getComponents()
-                        .stream()
-                        .map(ContainerComponent::getD4jComponent)
-                        .map(discord4j.core.object.component.MessageComponent::getData)
-                        .collect(Concurrent.toList())
-                )
-                .spoiler(this.isSpoiler())
-                .accentColor(Possible.of(this.getAccent().map(Color::getRGB)))
-                .build()
+        return discord4j.core.object.component.Container.of(
+            this.getAccent()
+                .map(Color::getRGB)
+                .map(discord4j.rest.util.Color::of)
+                .orElse(null),
+            this.isSpoiler(),
+            this.getComponents()
+                .stream()
+                .map(ContainerComponent::getD4jComponent)
+                .map(ICanBeUsedInContainerComponent.class::cast)
+                .collect(Concurrent.toList())
         );
     }
 

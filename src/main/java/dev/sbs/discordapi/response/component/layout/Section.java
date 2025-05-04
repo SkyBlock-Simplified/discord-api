@@ -12,7 +12,8 @@ import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.v2.SectionComponent;
-import discord4j.discordjson.json.ImmutableComponentData;
+import discord4j.core.object.component.IAccessoryComponent;
+import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -60,17 +61,13 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
 
     @Override
     public @NotNull discord4j.core.object.component.Section getD4jComponent() {
-        return Reflection.of(discord4j.core.object.component.Section.class).newInstance(
-            ImmutableComponentData.builder()
-                .type(this.getType().getValue())
-                .accessory(this.getAccessory().getD4jComponent().getData())
-                .components(
-                    this.getComponents()
-                        .stream()
-                        .map(SectionComponent::getD4jComponent)
-                        .map(discord4j.core.object.component.MessageComponent::getData)
-                        .collect(Concurrent.toList())
-                )
+        return discord4j.core.object.component.Section.of(
+            (IAccessoryComponent) this.getAccessory().getD4jComponent(),
+            this.getComponents()
+                .stream()
+                .map(SectionComponent::getD4jComponent)
+                .map(ICanBeUsedInSectionComponent.class::cast)
+                .collect(Concurrent.toList())
         );
     }
 
