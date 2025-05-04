@@ -115,6 +115,11 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
         this.gotoPage(this.getPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate page identified by '%s'.", identifier)));
     }
 
+    public void gotoPage(int index) {
+        this.currentIndex = NumberUtil.ensureRange(index, 0, this.getItems().size() - 1);
+        this.setCacheUpdateRequired();
+    }
+
     /**
      * Changes the current {@link P page} to a top-level page.
      *
@@ -122,20 +127,17 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
      */
     @Override
     public void gotoPage(@NotNull P page) {
-        this.currentIndex = this.getItems().indexOf(page);
-        this.setCacheUpdateRequired();
+        this.gotoPage(this.getItems().indexOf(page));
     }
 
     @Override
     public void gotoNextPage() {
-        this.currentIndex = NumberUtil.ensureRange(this.getCurrentIndex() + 1, 0, this.getItems().size() - 1);
-        this.setCacheUpdateRequired();
+        this.gotoPage(this.getCurrentIndex() + 1);
     }
 
     @Override
     public void gotoPreviousPage() {
-        this.currentIndex = NumberUtil.ensureRange(this.getCurrentIndex() + 1, 0, this.getItems().size() - 1);
-        this.setCacheUpdateRequired();
+        this.gotoPage(this.getCurrentIndex() - 1);
     }
 
     @Override
