@@ -9,9 +9,8 @@ import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
+import discord4j.core.object.component.UnfurledMediaItem;
 import discord4j.core.spec.MessageCreateFields;
-import discord4j.discordjson.json.ImmutableComponentData;
-import discord4j.discordjson.json.UnfurledMediaItemData;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -115,13 +114,10 @@ public final class Attachment implements Component, TopLevelMessageComponent, Co
 
     @Override
     public @NotNull discord4j.core.object.component.File getD4jComponent() {
-        return Reflection.of(discord4j.core.object.component.File.class).newInstance(
-            ImmutableComponentData.builder()
-                .type(this.getType().getValue())
-                .id(this.getFileId())
-                .file(UnfurledMediaItemData.builder().url(this.getUrl()).build())
-                .spoiler(this.isSpoiler())
-                .build()
+        return discord4j.core.object.component.File.of(
+            this.getFileId(),
+            UnfurledMediaItem.of(this.getD4jFile()),
+            this.isSpoiler()
         );
     }
 
