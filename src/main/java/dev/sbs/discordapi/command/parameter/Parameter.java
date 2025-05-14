@@ -18,7 +18,6 @@ import discord4j.core.object.entity.Attachment;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.object.reaction.ReactionEmoji;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +120,7 @@ public final class Parameter {
         CHANNEL(7, ApplicationCommandOption.Type.CHANNEL, Channel.class, "Only Channel Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_CHANNEL_PATTERN.matcher(argument).matches()),
         ROLE(8, ApplicationCommandOption.Type.ROLE, Role.class, "Only Role Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_ROLE_PATTERN.matcher(argument).matches()),
         MENTIONABLE(9, ApplicationCommandOption.Type.MENTIONABLE, String.class, "Only Mentions and IDs are allowed.", argument -> LONG.getValidator().apply(argument) || MENTIONABLE_PATTERN.matcher(argument).matches()),
-        EMOJI(9, ApplicationCommandOption.Type.MENTIONABLE, ReactionEmoji.class, "Only Emojis are allowed.", argument -> EMOJI_PATTERN.matcher(argument).matches()),
+        EMOJI(9, ApplicationCommandOption.Type.MENTIONABLE, discord4j.core.object.emoji.Emoji.class, "Only Emojis are allowed.", argument -> EMOJI_PATTERN.matcher(argument).matches()),
         DOUBLE(10, ApplicationCommandOption.Type.NUMBER, Double.class, String.format("Only numbers between %s and %s are allowed.", Double.MIN_VALUE, Double.MAX_VALUE), NumberUtil::isCreatable),
         ATTACHMENT(11, ApplicationCommandOption.Type.ATTACHMENT, Attachment.class, "Only Attachments are allowed.", argument -> true);
 
