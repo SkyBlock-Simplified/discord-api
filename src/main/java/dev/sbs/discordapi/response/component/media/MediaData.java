@@ -243,7 +243,7 @@ public final class MediaData {
                 this.proxyUrl,
                 this.width,
                 this.height,
-                this.contentType.orElse("application/octet-stream"),
+                this.contentType.orElse("multipart/form-data"),
                 this.state
             );
         }
