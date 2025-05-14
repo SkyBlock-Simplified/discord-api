@@ -7,7 +7,6 @@ import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
@@ -38,7 +37,7 @@ import java.util.function.Function;
 public final class Modal implements EventComponent<ModalContext>, UserInteractComponent {
 
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    private final @NotNull String identifier;
+    private final @NotNull String userIdentifier;
     private final @NotNull Optional<String> title;
     private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
@@ -74,11 +73,11 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
      * @return The matching component, if it exists.
      */
     public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, Component::getIdentifier, identifier);
+        return this.findComponent(tClass, UserInteractComponent::getUserIdentifier, identifier);
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
-        return new Builder(modal.getIdentifier())
+        return new Builder(modal.getUserIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
             .onInteract(modal.getInteraction());
@@ -86,7 +85,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
     public @NotNull InteractionPresentModalSpec getD4jPresentSpec() {
         return InteractionPresentModalSpec.builder()
-            .customId(this.getIdentifier())
+            .customId(this.getUserIdentifier())
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
             .components(this.getComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
@@ -160,7 +159,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                 .stream()
                 .filter(actionComponent.getClass()::isInstance)
                 .map(actionComponent.getClass()::cast)
-                .filter(innerComponent -> innerComponent.getIdentifier().equals(actionComponent.getIdentifier()))
+                .filter(innerComponent -> innerComponent.getUserIdentifier().equals(actionComponent.getUserIdentifier()))
                 .findFirst()
                 .ifPresent(innerComponent -> layoutComponent.getComponents().set(
                     layoutComponent.getComponents().indexOf(innerComponent),
@@ -220,7 +219,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                     switch (d4jComponent.getType()) {
                         case TEXT_INPUT -> this.findComponent(
                             TextInput.class,
-                            TextInput::getIdentifier,
+                            TextInput::getUserIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(textInput -> this.editComponent(
                             textInput.mutate()
@@ -234,7 +233,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                         ));
                         case SELECT_MENU -> this.findComponent(
                             SelectMenu.class,
-                            SelectMenu::getIdentifier,
+                            SelectMenu::getUserIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(selectMenu -> selectMenu.updateSelected(
                             d4jComponent.getData()

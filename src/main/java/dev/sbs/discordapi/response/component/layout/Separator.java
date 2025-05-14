@@ -12,13 +12,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
-
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Separator implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
 
-    private final @NotNull String identifier = UUID.randomUUID().toString();
     private final @NotNull ConcurrentList<Component> components = Concurrent.newUnmodifiableList();
     private final @NotNull Size size;
     @Getter(AccessLevel.NONE)
@@ -32,8 +29,8 @@ public final class Separator implements LayoutComponent, TopLevelMessageComponen
         Separator separator = (Separator) o;
 
         return new EqualsBuilder()
-            .append(this.getSize(), separator.hasDivider())
-            .append(this.getSize(), separator.hasDivider())
+            .append(this.getSize(), separator.getSize())
+            .append(this.hasDivider(), separator.hasDivider())
             .build();
     }
 

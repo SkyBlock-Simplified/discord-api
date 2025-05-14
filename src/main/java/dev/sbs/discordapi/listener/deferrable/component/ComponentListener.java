@@ -9,6 +9,7 @@ import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.EventComponent;
+import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -52,7 +53,8 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents())
             .concatWith(Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()))
             .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
-            .filter(component -> event.getCustomId().equals(component.getIdentifier())) // Validate Component ID
+            .filter(UserInteractComponent.class::isInstance)
+            .filter(component -> event.getCustomId().equals(((UserInteractComponent) component).getUserIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
             .map(this.componentClass::cast)
             .singleOrEmpty()

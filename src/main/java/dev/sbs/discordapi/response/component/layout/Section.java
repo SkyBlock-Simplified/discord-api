@@ -7,7 +7,6 @@ import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
@@ -18,24 +17,20 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Section implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
 
-    private final @NotNull String identifier;
     private final @NotNull AccessoryComponent accessory;
     private final @NotNull ConcurrentList<SectionComponent> components;
 
     public static @NotNull Builder builder() {
-        return new Builder().withIdentifier(UUID.randomUUID().toString());
+        return new Builder();
     }
 
     @Override
@@ -46,7 +41,6 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
         Section section = (Section) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), section.getIdentifier())
             .append(this.getAccessory(), section.getAccessory())
             .append(this.getComponents(), section.getComponents())
             .build();
@@ -54,7 +48,6 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
 
     public static @NotNull Builder from(@NotNull Section section) {
         return builder()
-            .withIdentifier(section.getIdentifier())
             .withAccessory(section.getAccessory())
             .withComponents(section.getComponents());
     }
@@ -79,7 +72,6 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
             .append(this.getAccessory())
             .append(this.getComponents())
             .build();
@@ -92,8 +84,6 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Section> {
 
-        @BuildFlag(nonNull = true)
-        private String identifier;
         @BuildFlag(notEmpty = true)
         private Optional<AccessoryComponent> accessory = Optional.empty();
         private final ConcurrentList<SectionComponent> components = Concurrent.newList();
@@ -130,33 +120,11 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
             return this;
         }
 
-        /**
-         * Overrides the default identifier of the {@link Button}.
-         *
-         * @param identifier The identifier to use.
-         */
-        public Builder withIdentifier(@NotNull String identifier) {
-            this.identifier = identifier;
-            return this;
-        }
-
-        /**
-         * Overrides the default identifier of the {@link Button}.
-         *
-         * @param identifier The identifier to use.
-         * @param args The objects used to format the identifier.
-         */
-        public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
-            this.identifier = String.format(identifier, args);
-            return this;
-        }
-
         @Override
         public @NotNull Section build() {
             Reflection.validateFlags(this);
 
             return new Section(
-                this.identifier,
                 this.accessory.orElseThrow(),
                 this.components.toUnmodifiableList()
             );

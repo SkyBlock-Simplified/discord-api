@@ -12,13 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ActionRow implements LayoutComponent, ContainerComponent {
 
-    private final @NotNull String identifier = UUID.randomUUID().toString();
     private final @NotNull ConcurrentList<ActionComponent> components;
 
     @Override
@@ -29,7 +27,6 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
         ActionRow actionRow = (ActionRow) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), actionRow.getIdentifier())
             .append(this.getComponents(), actionRow.getComponents())
             .build();
     }
@@ -52,7 +49,6 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
             .append(this.getComponents())
             .build();
     }

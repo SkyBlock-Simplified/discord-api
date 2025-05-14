@@ -39,7 +39,7 @@ import java.util.function.Function;
 public final class Button implements ActionComponent, AccessoryComponent, EventComponent<ButtonContext>, ToggleableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    private final @NotNull String identifier;
+    private final @NotNull String userIdentifier;
     private final @NotNull Style style;
     private boolean disabled;
     private final @NotNull Optional<Emoji> emoji;
@@ -63,7 +63,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         Button button = (Button) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), button.getIdentifier())
+            .append(this.getUserIdentifier(), button.getUserIdentifier())
             .append(this.getStyle(), button.getStyle())
             .append(this.isDisabled(), button.isDisabled())
             .append(this.getEmoji(), button.getEmoji())
@@ -77,7 +77,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
     public static @NotNull Builder from(@NotNull Button button) {
         return new Builder()
-            .withIdentifier(button.getIdentifier())
+            .withIdentifier(button.getUserIdentifier())
             .withStyle(button.getStyle())
             .setDisabled(button.isDisabled())
             .withEmoji(button.getEmoji())
@@ -95,11 +95,11 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         String label = this.getLabel().orElse(null);
 
         return (switch (this.getStyle()) {
-            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getIdentifier(), d4jReaction, label);
-            case SUCCESS -> discord4j.core.object.component.Button.success(this.getIdentifier(), d4jReaction, label);
-            case DANGER -> discord4j.core.object.component.Button.danger(this.getIdentifier(), d4jReaction, label);
+            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getUserIdentifier(), d4jReaction, label);
+            case SUCCESS -> discord4j.core.object.component.Button.success(this.getUserIdentifier(), d4jReaction, label);
+            case DANGER -> discord4j.core.object.component.Button.danger(this.getUserIdentifier(), d4jReaction, label);
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
-            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
+            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getUserIdentifier(), d4jReaction, label);
         }).disabled(this.isDisabled());
     }
 
@@ -111,7 +111,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
+            .append(this.getUserIdentifier())
             .append(this.getStyle())
             .append(this.isDisabled())
             .append(this.getEmoji())

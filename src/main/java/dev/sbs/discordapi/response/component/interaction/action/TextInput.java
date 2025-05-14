@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 public final class TextInput implements ActionComponent {
 
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
-    private final @NotNull String identifier;
+    private final @NotNull String userIdentifier;
     private final @NotNull Style style;
     private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> value;
@@ -57,7 +57,7 @@ public final class TextInput implements ActionComponent {
         TextInput that = (TextInput) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), that.getIdentifier())
+            .append(this.getUserIdentifier(), that.getUserIdentifier())
             .append(this.getStyle(), that.getStyle())
             .append(this.getLabel(), that.getLabel())
             .append(this.getValue(), that.getValue())
@@ -72,7 +72,7 @@ public final class TextInput implements ActionComponent {
 
     public static @NotNull Builder from(@NotNull TextInput textInput) {
         return new Builder()
-            .withIdentifier(textInput.getIdentifier())
+            .withIdentifier(textInput.getUserIdentifier())
             .withStyle(textInput.getStyle())
             .withLabel(textInput.getLabel())
             .withValue(textInput.getValue())
@@ -90,7 +90,7 @@ public final class TextInput implements ActionComponent {
             ComponentData.builder()
                 .type(MessageComponent.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
-                .customId(this.getIdentifier())
+                .customId(this.getUserIdentifier())
                 .label(this.getLabel().map(Possible::of).orElse(Possible.absent()))
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
@@ -109,7 +109,7 @@ public final class TextInput implements ActionComponent {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
+            .append(this.getUserIdentifier())
             .append(this.getStyle())
             .append(this.getLabel())
             .append(this.getValue())

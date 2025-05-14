@@ -36,7 +36,7 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
         if (this.notEmpty()) {
             this.pending = this.getItems()
                 .stream()
-                .filter(search -> search.getTextInput().getIdentifier().equals(textInput.getIdentifier()))
+                .filter(search -> search.getTextInput().getUserIdentifier().equals(textInput.getUserIdentifier()))
                 .findFirst();
 
             if (this.getPending().isPresent()) {

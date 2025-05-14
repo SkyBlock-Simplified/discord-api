@@ -9,8 +9,6 @@ public interface Component {
 
     @NotNull discord4j.core.object.component.MessageComponent getD4jComponent();
 
-    @NotNull String getIdentifier();
-
     @NotNull Type getType();
 
     @Getter

@@ -12,13 +12,10 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TextDisplay implements Component, TopLevelMessageComponent, ContainerComponent, SectionComponent {
 
-    private final @NotNull String identifier = UUID.randomUUID().toString();
     private final @NotNull String content;
 
     @Override
@@ -29,7 +26,6 @@ public final class TextDisplay implements Component, TopLevelMessageComponent, C
         TextDisplay textDisplay = (TextDisplay) o;
 
         return new EqualsBuilder()
-            .append(this.getIdentifier(), textDisplay.getIdentifier())
             .append(this.getContent(), textDisplay.getContent())
             .build();
     }
@@ -49,15 +45,12 @@ public final class TextDisplay implements Component, TopLevelMessageComponent, C
 
     @Override
     public @NotNull discord4j.core.object.component.TextDisplay getD4jComponent() {
-        return discord4j.core.object.component.TextDisplay.of(
-            this.getContent()
-        );
+        return discord4j.core.object.component.TextDisplay.of(this.getContent());
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getIdentifier())
             .append(this.getContent())
             .build();
     }

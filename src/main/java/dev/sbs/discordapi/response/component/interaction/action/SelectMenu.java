@@ -34,7 +34,7 @@ import java.util.function.Function;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, ToggleableComponent {
 
-    private final @NotNull String identifier;
+    private final @NotNull String userIdentifier;
     private boolean disabled;
     private final @NotNull Optional<String> placeholder;
     private final @NotNull Optional<Integer> minValue;
@@ -66,7 +66,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             .append(this.isPlaceholderUsingSelectedOption(), that.isPlaceholderUsingSelectedOption())
             .append(this.isPreserved(), that.isPreserved())
             .append(this.isDeferEdit(), that.isDeferEdit())
-            .append(this.getIdentifier(), that.getIdentifier())
+            .append(this.getUserIdentifier(), that.getUserIdentifier())
             .append(this.getPlaceholder(), that.getPlaceholder())
             .append(this.getMinValue(), that.getMinValue())
             .append(this.getMaxValue(), that.getMaxValue())
@@ -91,7 +91,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
     public static @NotNull Builder from(@NotNull SelectMenu selectMenu) {
         return new Builder()
-            .withIdentifier(selectMenu.getIdentifier())
+            .withIdentifier(selectMenu.getUserIdentifier())
             .setDisabled(selectMenu.isDisabled())
             .withPlaceholder(selectMenu.getPlaceholder())
             .withMinValue(selectMenu.getMinValue())
@@ -105,7 +105,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     @Override
     public @NotNull discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
-                this.getIdentifier(),
+                this.getUserIdentifier(),
                 this.getOptions()
                     .stream()
                     .map(option -> option.getD4jOption(this.getSelected().contains(option)))
@@ -145,7 +145,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
-            .append(this.getIdentifier())
+            .append(this.getUserIdentifier())
             .append(this.isDisabled())
             .append(this.getPlaceholder())
             .append(this.getMinValue())
