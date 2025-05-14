@@ -19,7 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -30,7 +29,7 @@ public final class Container implements LayoutComponent, TopLevelMessageComponen
     private final boolean spoiler;
 
     public static @NotNull Builder builder() {
-        return new Builder().withIdentifier(UUID.randomUUID().toString());
+        return new Builder();
     }
 
     @Override
