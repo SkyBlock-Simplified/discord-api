@@ -20,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public final class Author {
 
-    private final @NotNull Optional<String> name;
+    private final @NotNull String name;
     private final @NotNull Optional<String> url;
     private final @NotNull Optional<String> iconUrl;
 
@@ -43,7 +43,7 @@ public final class Author {
     }
 
     public @NotNull EmbedCreateFields.Author getD4jAuthor() {
-        return EmbedCreateFields.Author.of(this.getName().orElse(""), this.getUrl().orElse(null), this.getIconUrl().orElse(null));
+        return EmbedCreateFields.Author.of(this.getName(), this.getUrl().orElse(null), this.getIconUrl().orElse(null));
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class Author {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements dev.sbs.api.util.builder.Builder<Author> {
 
-        @BuildFlag(nonNull = true, limit = 256)
+        @BuildFlag(notEmpty = true, limit = 256)
         private Optional<String> name = Optional.empty();
         private Optional<String> url = Optional.empty();
         private Optional<String> iconUrl = Optional.empty();
@@ -155,7 +155,7 @@ public final class Author {
             Reflection.validateFlags(this);
 
             return new Author(
-                this.name,
+                this.name.orElseThrow(),
                 this.url,
                 this.iconUrl
             );
