@@ -8,7 +8,12 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.discordapi.response.component.TextDisplay;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.layout.Container;
+import dev.sbs.discordapi.response.component.layout.Section;
+import dev.sbs.discordapi.response.component.media.MediaGallery;
+import dev.sbs.discordapi.response.component.media.Thumbnail;
 import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
@@ -31,13 +36,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 @Getter
 @AllArgsConstructor
 public final class Embed {
 
+    private final static @NotNull DateTimeFormatter FOOTER_TIME_FORMAT = DateTimeFormatter.ofPattern("M/dd/yyyy h:mm a", Locale.CANADA);
     private final @NotNull Optional<Color> color;
     private final @NotNull Optional<Author> author;
     private final @NotNull Optional<String> title;
@@ -48,7 +57,7 @@ public final class Embed {
     private final @NotNull Optional<Footer> footer;
     private final @NotNull ConcurrentList<Field> fields;
 
-    public static @NotNull Embed.Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder();
     }
 
@@ -116,6 +125,78 @@ public final class Embed {
         });
 
         return builder.build();
+    }
+
+    public @NotNull discord4j.core.object.component.Container getD4jContainer() {
+        Container.Builder builder = Container.builder();
+        builder.withAccent(this.getColor());
+
+        // Top of Embed
+        StringJoiner joiner = new StringJoiner("\n");
+        String authorLine = this.getAuthor().map(author -> {
+            String text = author.getName();
+            if (author.getUrl().isPresent()) text = String.format("[%s](%s)", text, author.getUrl().get());
+            if (author.getIconUrl().isPresent()) text = String.format("%s %s", author.getIconUrl().get(), text);
+            return text;
+        }).orElse("");
+
+        joiner.add(authorLine);
+        String titleLine = this.getTitle().orElse("");
+        if (StringUtil.isNotEmpty(titleLine) && this.getUrl().isPresent()) titleLine = String.format("[%s](%s)", titleLine, this.getUrl().get());
+        if (StringUtil.isNotEmpty(titleLine)) joiner.add(String.format("### %s", titleLine));
+        this.getDescription().ifPresent(joiner::add);
+
+        String joinText = joiner.toString();
+        if (StringUtil.isNotEmpty(joinText)) {
+            TextDisplay textDisplay = TextDisplay.of(joiner.toString());
+
+            if (this.getThumbnailUrl().isPresent()) {
+                builder.withComponents(
+                    Section.builder()
+                        .withComponents(textDisplay)
+                        .withAccessory(
+                            Thumbnail.builder()
+                                .withUrl(this.getThumbnailUrl())
+                                .build()
+                        )
+                        .build()
+                );
+            } else
+                builder.withComponents(textDisplay);
+        }
+
+        // TODO: Handle Fields
+
+        if (this.getImageUrl().isPresent()) {
+            builder.withComponents(
+                MediaGallery.builder()
+                    .withItem(
+                        Thumbnail.builder()
+                            .withUrl(this.getImageUrl())
+                            .build()
+                    )
+                    .build()
+            );
+        }
+
+        String footerLine = this.getFooter()
+            .map(footer -> {
+                StringJoiner footerJoiner = new StringJoiner(" • ");
+                if (footer.getText().isPresent())
+                    footerJoiner.add(footer.getText().orElseThrow());
+
+                if (footer.getTimestamp().isPresent())
+                    footerJoiner.add(FOOTER_TIME_FORMAT.format(footer.getTimestamp().orElseThrow()));
+
+                return footerJoiner.toString();
+            })
+            .map(value -> String.format("-# %s", value))
+            .orElse("");
+
+        if (StringUtil.isNotEmpty(footerLine))
+            builder.withComponents(TextDisplay.of(footerLine));
+
+        return builder.build().getD4jComponent();
     }
 
     @Override
