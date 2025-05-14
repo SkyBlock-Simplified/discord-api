@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.command.parameter;
 
 import dev.sbs.discordapi.command.exception.input.ParameterException;
-import dev.sbs.discordapi.response.component.Attachment;
+import dev.sbs.discordapi.response.component.media.Attachment;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.Interaction;
@@ -27,10 +27,7 @@ public class Argument {
     public @NotNull Attachment asAttachment() {
         return this.getValueAs(
             "attachment",
-            value -> Attachment.from(
-                this.getParameter().getName(),
-                this.getValue().asAttachment()
-            ),
+            value -> Attachment.from(this.getValue().asAttachment()).build(),
             Parameter.Type.ATTACHMENT
         );
     }
