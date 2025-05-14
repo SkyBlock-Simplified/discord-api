@@ -58,7 +58,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     private final @NotNull SearchHandler<T> searchHandler;
 
     // Caching
-    private int currentPage = 1;
+    private int currentIndex = 1;
     private boolean cacheUpdateRequired = true;
     private ConcurrentList<T> cachedFilteredItems = Concurrent.newUnmodifiableList();
     private ConcurrentList<FieldItem<?>> cachedFieldItems = Concurrent.newUnmodifiableList();
@@ -88,7 +88,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             .append(this.getFilterHandler(), that.getFilterHandler())
             .append(this.getSearchHandler(), that.getSearchHandler())
             .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getCurrentPage(), that.getCurrentPage())
+            .append(this.getCurrentIndex(), that.getCurrentIndex())
             .append(this.getCachedFilteredItems(), that.getCachedFilteredItems())
             .append(this.getCachedFieldItems(), that.getCachedFieldItems())
             .append(this.getCachedStaticItems(), that.getCachedStaticItems())
@@ -144,10 +144,10 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
                 .map(index -> Math.ceil((double) index / this.getAmountPerPage()))
                 .map(Double::intValue)
                 .map(index -> NumberUtil.ensureRange(index, 1, filteredFieldItems.size()))
-                .ifPresent(index -> this.currentPage = index); // Do not call this.gotoItemPage(index)
+                .ifPresent(index -> this.currentIndex = index); // Do not call this.gotoItemPage(index)
 
             // Cache Sublist
-            int startIndex = (this.getCurrentPage() - 1) * this.getAmountPerPage();
+            int startIndex = (this.getCurrentIndex() - 1) * this.getAmountPerPage();
             int endIndex = Math.min(startIndex + this.getAmountPerPage(), filteredFieldItems.size());
             this.cachedFieldItems = filteredFieldItems.subList(startIndex, endIndex);
 
@@ -206,7 +206,10 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         };
     }
 
-
+    @Override
+    public @NotNull Integer getCurrentPage() {
+        return this.getCurrentIndex();
+    }
 
     @Override
     public int getTotalPages() {
@@ -215,7 +218,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     @Override
     public void gotoPage(@NotNull Integer index) {
-        this.currentPage = NumberUtil.ensureRange(index, 1, this.getFilteredItems().size());
+        this.currentIndex = NumberUtil.ensureRange(index, 1, this.getFilteredItems().size());
         this.setCacheUpdateRequired();
     }
 
@@ -229,12 +232,12 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     @Override
     public void gotoNextPage() {
-        this.gotoPage(this.currentPage + 1);
+        this.gotoPage(this.currentIndex + 1);
     }
 
     @Override
     public void gotoPreviousPage() {
-        this.gotoPage(this.currentPage - 1);
+        this.gotoPage(this.currentIndex - 1);
     }
 
     @Override
@@ -252,7 +255,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             .append(this.getFilterHandler())
             .append(this.getSearchHandler())
             .append(this.isCacheUpdateRequired())
-            .append(this.getCurrentPage())
+            .append(this.getCurrentIndex())
             .append(this.getCachedFilteredItems())
             .append(this.getCachedFieldItems())
             .append(this.getCachedStaticItems())
@@ -260,11 +263,11 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     }
 
     public boolean hasNextItemPage() {
-        return this.currentPage < this.getTotalPages();
+        return this.currentIndex < this.getTotalPages();
     }
 
     public boolean hasPreviousItemPage() {
-        return this.currentPage > 1;
+        return this.currentIndex > 1;
     }
 
     @Override
