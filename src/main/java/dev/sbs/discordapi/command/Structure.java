@@ -99,6 +99,15 @@ public @interface Structure {
     boolean ephemeral() default false;
 
     /**
+     * Indicates whether the command can only be executed
+     * by one person at a time.
+     * <ul>
+     *     <li>Defaults to false</li>
+     * </ul>
+     */
+    boolean singleton() default false;
+
+    /**
      * Users with these permissions can initially run this command.
      *
      * <ul>

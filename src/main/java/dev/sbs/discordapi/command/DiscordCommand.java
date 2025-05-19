@@ -7,6 +7,7 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.exception.CommandException;
 import dev.sbs.discordapi.command.exception.DisabledCommandException;
+import dev.sbs.discordapi.command.exception.SingletonCommandException;
 import dev.sbs.discordapi.command.exception.input.ParameterException;
 import dev.sbs.discordapi.command.exception.permission.BotPermissionException;
 import dev.sbs.discordapi.command.exception.permission.DeveloperPermissionException;
@@ -35,12 +36,56 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected final @NotNull Structure structure;
     protected final @NotNull Class<C> contextType;
+    private boolean processing = false;
 
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.structure = super.getAnnotation(Structure.class, this.getClass())
             .orElseThrow(() -> new CommandException("Cannot instantiate a command with no structure."));
         this.contextType = Reflection.getSuperClass(this);
+    }
+
+    @Override
+    public final @NotNull Mono<Void> apply(@NotNull C context) {
+        return context.withEvent(event -> context.withChannel(messageChannel -> context
+            .deferReply(this.getStructure().ephemeral())
+            .then(Mono.defer(() -> {
+                // Handle Developer Command
+                if (this.getStructure().developerOnly() && !this.isDeveloper(context.getInteractUserId()))
+                    throw new DeveloperPermissionException();
+
+                // Handle Disabled Command
+                if (!this.isEnabled() && !this.isDeveloper(context.getInteractUserId()))
+                    throw new DisabledCommandException();
+
+                // Handle Bot Permissions
+                if (!context.isPrivateChannel()) {
+                    // Handle Required Permissions
+                    if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), context.getChannel().ofType(GuildChannel.class), this.getStructure().botPermissions()))
+                        throw new BotPermissionException(context, Concurrent.newUnmodifiableSet(this.getStructure().botPermissions()));
+                }
+
+                // Handle Singleton Command
+                if (this.getStructure().singleton() && this.isProcessing())
+                    throw new SingletonCommandException();
+
+                // Process Parameter Checks
+                if (context instanceof SlashCommandContext slashCommandContext)
+                    this.handleParameterChecks(slashCommandContext);
+
+                // Process Command
+                this.processing = true;
+                return this.process(context);
+            }))
+            .thenEmpty(Mono.fromRunnable(() -> this.processing = false))
+            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
+                ExceptionContext.of(
+                    this.getDiscordBot(),
+                    context,
+                    throwable
+                )
+            ))
+        ));
     }
 
     public final long getId() {
@@ -89,43 +134,6 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     }
 
     protected abstract @NotNull Mono<Void> process(@NotNull C context) throws DiscordException;
-
-    @Override
-    public final @NotNull Mono<Void> apply(@NotNull C context) {
-        return context.withEvent(event -> context.withChannel(messageChannel -> context
-            .deferReply(this.getStructure().ephemeral())
-            .then(Mono.defer(() -> {
-                // Handle Developer Command
-                if (this.getStructure().developerOnly() && !this.isDeveloper(context.getInteractUserId()))
-                    throw new DeveloperPermissionException();
-
-                // Handle Disabled Command
-                if (!this.isEnabled() && !this.isDeveloper(context.getInteractUserId()))
-                    throw new DisabledCommandException();
-
-                // Handle Bot Permissions
-                if (!context.isPrivateChannel()) {
-                    // Handle Required Permissions
-                    if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), context.getChannel().ofType(GuildChannel.class), this.getStructure().botPermissions()))
-                        throw new BotPermissionException(context, Concurrent.newUnmodifiableSet(this.getStructure().botPermissions()));
-                }
-
-                // Process Parameter Checks
-                if (context instanceof SlashCommandContext slashCommandContext)
-                    this.handleParameterChecks(slashCommandContext);
-
-                // Process Command
-                return this.process(context);
-            }))
-            .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
-                ExceptionContext.of(
-                    this.getDiscordBot(),
-                    context,
-                    throwable
-                )
-            ))
-        ));
-    }
 
     @Getter
     @RequiredArgsConstructor
