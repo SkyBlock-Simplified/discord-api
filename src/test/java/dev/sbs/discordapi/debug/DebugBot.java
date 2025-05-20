@@ -3,7 +3,6 @@ package dev.sbs.discordapi.debug;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.DiscordConfig;
@@ -19,6 +18,10 @@ import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
 
 public final class DebugBot extends DiscordBot {
+
+    private DebugBot(@NotNull DiscordConfig discordConfig) {
+        super(discordConfig);
+    }
 
     public static void main(final String[] args) {
         DiscordConfig discordConfig = DiscordConfig.builder()
@@ -37,15 +40,12 @@ public final class DebugBot extends DiscordBot {
             .withLogLevel(Level.INFO)
             .build();
 
-        DebugBot debugBot = new DebugBot();
-        debugBot.login(discordConfig);
+        new DebugBot(discordConfig);
     }
 
     @Override
     protected void onGatewayConnected(@NotNull GatewayDiscordClient gatewayDiscordClient) {
-        SystemUtil.getEnv("HYPIXEL_API_KEY")
-            .map(StringUtil::toUUID)
-            .ifPresent(value -> SimplifiedApi.getKeyManager().add("HYPIXEL_API_KEY", value));
+        SimplifiedApi.getKeyManager().add(SystemUtil.getEnvPair("HYPIXEL_API_KEY"));
     }
 
 }
