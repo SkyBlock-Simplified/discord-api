@@ -1,11 +1,36 @@
 package dev.sbs.discordapi.response.component;
 
+import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import discord4j.core.object.entity.Message;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.stream.Stream;
+
 public interface Component {
+
+    /**
+     * Gets a flattened stream of {@link Component Components}.
+     *
+     * @return All components belonging to this component.
+     */
+    default @NotNull Stream<Component> flattenComponents() {
+        if (this instanceof LayoutComponent layoutComponent) {
+            return layoutComponent.getComponents()
+                .stream()
+                .flatMap(component -> {
+                    Stream<Component> selfStream = Stream.of(component);
+
+                    if (component instanceof LayoutComponent)
+                        return Stream.concat(selfStream, component.flattenComponents());
+                    else
+                        return selfStream;
+                });
+        }
+
+        return Stream.of(this);
+    }
 
     @NotNull discord4j.core.object.component.MessageComponent getD4jComponent();
 
