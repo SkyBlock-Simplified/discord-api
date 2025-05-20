@@ -89,7 +89,7 @@ public interface Response {
         return FormResponse.builder();
     }
 
-    static @NotNull TreeResponse.TreeResponseBuilder builder() {
+    static @NotNull TreeResponse.TreeBuilder builder() {
         return TreeResponse.builder();
     }
 

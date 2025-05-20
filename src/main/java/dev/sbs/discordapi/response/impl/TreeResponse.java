@@ -80,11 +80,11 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
     @Getter(AccessLevel.NONE)
     private ConcurrentList<TopLevelComponent> cachedPageComponents = Concurrent.newUnmodifiableList();
 
-    public static @NotNull TreeResponseBuilder builder() {
-        return new TreeResponseBuilder();
+    public static @NotNull TreeBuilder builder() {
+        return new TreeBuilder();
     }
 
-    public static @NotNull TreeResponseBuilder from(@NotNull TreeResponse response) {
+    public static @NotNull TreeBuilder from(@NotNull TreeResponse response) {
         return builder()
             .withUniqueId(response.getUniqueId())
             .withPages(response.getPages())
@@ -304,12 +304,12 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull TreeResponseBuilder mutate() {
+    public @NotNull TreeBuilder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class TreeResponseBuilder extends Builder<TreePage> {
+    public static class TreeBuilder extends Builder<TreePage> {
 
         // Current Page/Item History
         private Optional<String> defaultPage = Optional.empty();
@@ -320,7 +320,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * Recursively disable all interactable components from all {@link Page Pages} in {@link TreeResponse}.
          */
         @Override
-        public TreeResponseBuilder disableAllComponents() {
+        public TreeBuilder disableAllComponents() {
             super.pages.forEach(page -> this.editPage(page.mutate().disableComponents(true).build()));
             return this;
         }
@@ -331,7 +331,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param page The page to edit.
          */
         @Override
-        public TreeResponseBuilder editPage(@NotNull TreePage page) {
+        public TreeBuilder editPage(@NotNull TreePage page) {
             super.pages.stream()
                 .filter(existingPage -> existingPage.getOption().getValue().equals(page.getOption().getValue()))
                 .findFirst()
@@ -344,7 +344,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * Sets the {@link TreeResponse} should be ephemeral.
          */
         @Override
-        public TreeResponseBuilder isEphemeral() {
+        public TreeBuilder isEphemeral() {
             return this.isEphemeral(true);
         }
 
@@ -354,7 +354,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param value True if ephemeral.
          */
         @Override
-        public TreeResponseBuilder isEphemeral(boolean value) {
+        public TreeBuilder isEphemeral(boolean value) {
             super.ephemeral = value;
             return this;
         }
@@ -363,7 +363,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * Sets the {@link TreeResponse} to render paging components.
          */
         @Override
-        public TreeResponseBuilder isRenderingPagingComponents() {
+        public TreeBuilder isRenderingPagingComponents() {
             return this.isRenderingPagingComponents(true);
         }
 
@@ -373,7 +373,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param value True if rendering page components.
          */
         @Override
-        public TreeResponseBuilder isRenderingPagingComponents(boolean value) {
+        public TreeBuilder isRenderingPagingComponents(boolean value) {
             super.renderingPagingComponents = value;
             return this;
         }
@@ -384,7 +384,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param interaction The interaction function.
          */
         @Override
-        public TreeResponseBuilder onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
+        public TreeBuilder onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
             return this.onCreate(Optional.ofNullable(interaction));
         }
 
@@ -394,7 +394,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param interaction The interaction function.
          */
         @Override
-        public TreeResponseBuilder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
+        public TreeBuilder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
             super.interaction = interaction;
             return this;
         }
@@ -405,7 +405,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param allowedMentions An {@link AllowedMentions} object that defines which mentions should be allowed in the response.
          */
         @Override
-        public TreeResponseBuilder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
+        public TreeBuilder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
             super.allowedMentions = allowedMentions;
             return this;
         }
@@ -417,7 +417,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param inputStream The stream of attachment data.
          */
         @Override
-        public TreeResponseBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
+        public TreeBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
             return this.withAttachment(name, inputStream, false);
         }
 
@@ -429,7 +429,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param spoiler True if the attachment should be a spoiler.
          */
         @Override
-        public TreeResponseBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
+        public TreeBuilder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
             return this.withAttachments(
                 Attachment.builder()
                     .isSpoiler(spoiler)
@@ -445,7 +445,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param attachments Variable number of attachments to add.
          */
         @Override
-        public TreeResponseBuilder withAttachments(@NotNull Attachment... attachments) {
+        public TreeBuilder withAttachments(@NotNull Attachment... attachments) {
             Arrays.stream(attachments)
                 .filter(attachment -> !super.attachments.contains(SearchFunction.combine(Attachment::getMediaData, MediaData::getName), attachment.getMediaData().getName()))
                 .forEach(super.attachments::add);
@@ -459,7 +459,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param attachments Collection of attachments to add.
          */
         @Override
-        public TreeResponseBuilder withAttachments(@NotNull Iterable<Attachment> attachments) {
+        public TreeBuilder withAttachments(@NotNull Iterable<Attachment> attachments) {
             attachments.forEach(attachment -> {
                 if (!super.attachments.contains(SearchFunction.combine(Attachment::getMediaData, MediaData::getName), attachment.getMediaData().getName()))
                     super.attachments.add(attachment);
@@ -473,7 +473,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          *
          * @param pageIdentifier The page identifier to load.
          */
-        public TreeResponseBuilder withDefaultPage(@Nullable String pageIdentifier) {
+        public TreeBuilder withDefaultPage(@Nullable String pageIdentifier) {
             return this.withDefaultPage(Optional.ofNullable(pageIdentifier));
         }
 
@@ -482,17 +482,17 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          *
          * @param pageIdentifier The page identifier to load.
          */
-        public TreeResponseBuilder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
+        public TreeBuilder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
             this.defaultPage = pageIdentifier;
             return this;
         }
 
-        private TreeResponseBuilder withItemPage(int currentItemPage) {
+        private TreeBuilder withItemPage(int currentItemPage) {
             this.currentItemPage = currentItemPage;
             return this;
         }
 
-        private TreeResponseBuilder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
+        private TreeBuilder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
             this.pageHistory = pageHistory;
             return this;
         }
@@ -503,7 +503,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param throwable The throwable exception stack trace to add.
          */
         @Override
-        public TreeResponseBuilder withException(@NotNull Throwable throwable) {
+        public TreeBuilder withException(@NotNull Throwable throwable) {
             super.attachments.add(
                 Attachment.builder()
                     .withName("stacktrace-%s.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now()))
@@ -520,7 +520,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param files Variable number of files to add.
          */
         @Override
-        public TreeResponseBuilder withFiles(@NotNull File... files) {
+        public TreeBuilder withFiles(@NotNull File... files) {
             return this.withFiles(Arrays.asList(files));
         }
 
@@ -530,7 +530,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param files Collection of files to add.
          */
         @Override
-        public TreeResponseBuilder withFiles(@NotNull Iterable<File> files) {
+        public TreeBuilder withFiles(@NotNull Iterable<File> files) {
             List<File> fileList = List.class.isAssignableFrom(files.getClass()) ? (List<File>) files : StreamSupport.stream(files.spliterator(), false).toList();
 
             fileList.stream()
@@ -555,7 +555,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param pages Variable number of pages to add.
          */
         @Override
-        public TreeResponseBuilder withPages(@NotNull TreePage... pages) {
+        public TreeBuilder withPages(@NotNull TreePage... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
@@ -565,19 +565,19 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param pages Collection of pages to add.
          */
         @Override
-        public TreeResponseBuilder withPages(@NotNull Iterable<TreePage> pages) {
+        public TreeBuilder withPages(@NotNull Iterable<TreePage> pages) {
             super.withPages(pages);
             return this;
         }
 
         @Override
-        public TreeResponseBuilder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
+        public TreeBuilder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
             super.reactorScheduler = reactorScheduler;
             return this;
         }
 
         @Override
-        public TreeResponseBuilder withReactorScheduler(@NotNull ExecutorService executorService) {
+        public TreeBuilder withReactorScheduler(@NotNull ExecutorService executorService) {
             super.reactorScheduler = Schedulers.fromExecutorService(executorService);
             return this;
         }
@@ -588,7 +588,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param messageContext The message to reference.
          */
         @Override
-        public TreeResponseBuilder withReference(@NotNull MessageContext<?> messageContext) {
+        public TreeBuilder withReference(@NotNull MessageContext<?> messageContext) {
             return this.withReference(messageContext.getMessageId());
         }
 
@@ -598,7 +598,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param messageId The message to reference.
          */
         @Override
-        public TreeResponseBuilder withReference(@Nullable Snowflake messageId) {
+        public TreeBuilder withReference(@Nullable Snowflake messageId) {
             return this.withReference(Optional.ofNullable(messageId));
         }
 
@@ -608,7 +608,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param messageId The message to reference.
          */
         @Override
-        public TreeResponseBuilder withReference(@NotNull Mono<Snowflake> messageId) {
+        public TreeBuilder withReference(@NotNull Mono<Snowflake> messageId) {
             return this.withReference(messageId.blockOptional());
         }
 
@@ -618,7 +618,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param messageId The message to reference.
          */
         @Override
-        public TreeResponseBuilder withReference(@NotNull Optional<Snowflake> messageId) {
+        public TreeBuilder withReference(@NotNull Optional<Snowflake> messageId) {
             super.referenceId = messageId;
             return this;
         }
@@ -633,7 +633,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param timeToLive How long the response should live without interaction in seconds.
          */
         @Override
-        public TreeResponseBuilder withTimeToLive(int timeToLive) {
+        public TreeBuilder withTimeToLive(int timeToLive) {
             super.timeToLive = NumberUtil.ensureRange(timeToLive, 5, 300);
             return this;
         }
@@ -644,7 +644,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          * @param uniqueId Unique ID to assign to {@link TreeResponse}.
          */
         @Override
-        public TreeResponseBuilder withUniqueId(@NotNull UUID uniqueId) {
+        public TreeBuilder withUniqueId(@NotNull UUID uniqueId) {
             super.uniqueId = uniqueId;
             return this;
         }
