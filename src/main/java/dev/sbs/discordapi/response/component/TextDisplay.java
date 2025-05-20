@@ -2,7 +2,7 @@ package dev.sbs.discordapi.response.component;
 
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.v2.SectionComponent;
 import lombok.AccessLevel;
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextDisplay implements Component, TopLevelMessageComponent, ContainerComponent, SectionComponent {
+public final class TextDisplay implements Component, TopLevelComponent, ContainerComponent, SectionComponent {
 
     private final @NotNull String content;
 

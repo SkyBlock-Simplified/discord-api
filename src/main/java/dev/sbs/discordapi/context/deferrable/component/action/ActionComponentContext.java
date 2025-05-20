@@ -13,7 +13,7 @@ public interface ActionComponentContext extends ComponentContext {
     default Mono<Void> modify(@NotNull ActionComponent actionComponent) {
         return Mono.just(this.getResponse())
             .doOnNext(response -> response.mutate().editPage(
-                response.getHistoryHandler()
+                    response.getHistoryHandler()
                     .getCurrentPage()
                     .mutate()
                     .editComponent(actionComponent)

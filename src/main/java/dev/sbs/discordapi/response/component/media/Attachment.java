@@ -4,7 +4,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import discord4j.core.spec.MessageCreateFields;
 import lombok.AccessLevel;
@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Attachment implements Component, TopLevelMessageComponent, ContainerComponent {
+public final class Attachment implements Component, TopLevelComponent, ContainerComponent {
 
     private final @NotNull MediaData mediaData;
     private final long fileId;

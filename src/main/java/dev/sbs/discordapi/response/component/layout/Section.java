@@ -7,7 +7,7 @@ import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.v2.SectionComponent;
@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Section implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
+public final class Section implements LayoutComponent, TopLevelComponent, ContainerComponent {
 
     private final @NotNull AccessoryComponent accessory;
     private final @NotNull ConcurrentList<SectionComponent> components;
