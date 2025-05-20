@@ -10,6 +10,11 @@ public interface Paging<T> {
 
     int getTotalPages();
 
+    /**
+     * Changes the current top-level page to the provided page.
+     *
+     * @param identifier The page value.
+     */
     void gotoPage(@NotNull T identifier);
 
     void gotoNextPage();

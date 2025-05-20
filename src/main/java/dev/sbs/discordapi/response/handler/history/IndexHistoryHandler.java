@@ -5,7 +5,6 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
-import dev.sbs.discordapi.exception.DiscordException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -104,15 +103,6 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
     @Override
     public int getTotalPages() {
         return this.getItems().size();
-    }
-
-    /**
-     * Changes the current {@link P page} to a top-level page using the given identifier.
-     *
-     * @param identifier The page option value.
-     */
-    public void locatePage(@NotNull I identifier) {
-        this.gotoPage(this.getPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate page identified by '%s'.", identifier)));
     }
 
     public void gotoPage(int index) {

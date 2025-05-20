@@ -120,15 +120,6 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
     }
 
     /**
-     * Changes the current {@link P page} to a top-level page using the given identifier.
-     *
-     * @param identifier The page option value.
-     */
-    public void locatePage(@NotNull I identifier) {
-        this.gotoPage(this.getPage(identifier).orElseThrow(() -> new DiscordException("Unable to locate page identified by '%s'.", identifier)));
-    }
-
-    /**
      * Changes the current {@link P page} to a top-level page.
      *
      * @param page The page value.
