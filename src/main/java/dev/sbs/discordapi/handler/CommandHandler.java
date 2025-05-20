@@ -59,13 +59,12 @@ public final class CommandHandler extends DiscordReference {
         super(discordBot);
 
         this.getLog().info("Validating Commands");
-        ConcurrentList<DiscordCommand> initializedCommands = this.validateCommands(discordBot, commands);
+        this.loadedCommands = this.validateCommands(discordBot, commands);
 
-        this.getLog().info("Retrieving Commands");
-        this.getLog().debug("Filtering Slash Commands");
+        this.getLog().info("Filtering Commands");
         this.slashCommands = this.retrieveTypedCommands(
             SlashCommandContext.class,
-            initializedCommands,
+            this.loadedCommands,
             (commandEntry, compareEntry) -> Objects.equals(
                 commandEntry.getStructure().parent(),
                 compareEntry.getStructure().parent()
@@ -75,25 +74,17 @@ public final class CommandHandler extends DiscordReference {
             ) && commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
 
-        this.getLog().debug("Filtering User Commands");
         this.userCommands = this.retrieveTypedCommands(
             UserCommandContext.class,
-            initializedCommands,
+            this.loadedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
 
-        this.getLog().debug("Filtering Message Commands");
         this.messageCommands = this.retrieveTypedCommands(
             MessageCommandContext.class,
-            initializedCommands,
+            this.loadedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
-
-        ConcurrentList<DiscordCommand> commandTree = Concurrent.newList();
-        commandTree.addAll(this.slashCommands);
-        commandTree.addAll(this.userCommands);
-        commandTree.addAll(this.messageCommands);
-        this.loadedCommands = commandTree.toUnmodifiableList();
     }
 
     public static Builder builder(@NotNull DiscordBot discordBot) {
