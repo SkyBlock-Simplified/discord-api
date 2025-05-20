@@ -42,7 +42,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.impl.form.QuestionPage;
+import dev.sbs.discordapi.response.page.impl.form.FormPage;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -70,7 +70,6 @@ import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -109,7 +108,7 @@ import java.util.function.Function;
  *         <li>Implementations
  *         <ul>
  *             <li>{@link Response}</li>
- *             <li>{@link QuestionPage}</li>
+ *             <li>{@link FormPage}</li>
  *             <li>{@link Followup Followups}</li>
  *         </ul></li>
  *         <li>Components
@@ -130,32 +129,32 @@ import java.util.function.Function;
 public abstract class DiscordBot {
 
     private final @NotNull Scheduler scheduler = new Scheduler();
-    private DiscordConfig config;
+    private final @NotNull DiscordConfig config;
 
     // Handlers
     private final @NotNull ExceptionHandler exceptionHandler;
     private final @NotNull ResponseHandler responseHandler;
-    private ShardHandler shardHandler;
-    private CommandHandler commandHandler;
+    private final @NotNull ShardHandler shardHandler;
+    private final @NotNull CommandHandler commandHandler;
 
     // Connection
-    private DiscordClient client;
-    private GatewayDiscordClient gateway;
+    private final @NotNull DiscordClient client;
+    private final @NotNull GatewayDiscordClient gateway;
 
     protected void setEmojiHandler(@NotNull Function<String, Optional<Emoji>> locator) {
         EmojiHandler.setLocator(locator);
     }
 
-    protected DiscordBot() {
+    @SuppressWarnings("unchecked")
+    protected DiscordBot(@NotNull DiscordConfig config) {
         this.exceptionHandler = new ExceptionHandler(this);
         this.responseHandler = new ResponseHandler();
-        Configurator.setRootLevel(Level.WARN);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void login(@NotNull DiscordConfig config) {
         this.config = config;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
+
+        this.commandHandler = CommandHandler.builder(this)
+            .withCommands(this.getConfig().getCommands())
+            .build();
 
         log.info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(this.getConfig().getToken())
@@ -250,14 +249,8 @@ public abstract class DiscordBot {
                         eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
                     });
 
-                    log.info("Registering Commands");
-                    Mono<Void> commands = (this.commandHandler = CommandHandler.builder(this)
-                        .withCommands(this.getConfig().getCommands())
-                        .build())
-                        .updateApplicationCommands();
-
                     log.info("Logged in as {}", this.getSelf().getUsername());
-                    return Mono.when(eventListeners).and(commands);
+                    return Mono.when(eventListeners).and(this.commandHandler.updateApplicationCommands());
                 })
             )
             .login()
