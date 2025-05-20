@@ -6,7 +6,7 @@ import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
-import dev.sbs.discordapi.response.page.Subpages;
+import dev.sbs.discordapi.response.handler.Subpages;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

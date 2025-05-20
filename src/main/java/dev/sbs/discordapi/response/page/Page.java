@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.page;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
@@ -66,9 +67,11 @@ public interface Page {
 
     abstract class Builder implements dev.sbs.api.util.builder.Builder<Page> {
 
+        @BuildFlag(nonNull = true)
         protected SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         protected ConcurrentList<LayoutComponent> components = Concurrent.newList();
         protected ConcurrentList<Emoji> reactions = Concurrent.newList();
+        @BuildFlag(nonNull = true)
         protected ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
 
         /**
