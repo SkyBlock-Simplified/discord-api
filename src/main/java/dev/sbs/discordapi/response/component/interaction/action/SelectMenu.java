@@ -14,6 +14,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.EventComponent;
 import dev.sbs.discordapi.response.component.type.ToggleableComponent;
+import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -688,20 +689,21 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
     @Getter
     @RequiredArgsConstructor
+    @SuppressWarnings("unchecked")
     public enum PageType {
 
         NONE(__ -> Mono.empty()),
-        PAGE(context -> context.consumeResponse(response -> {
+        PAGE_SELECTOR(context -> context.consumeResponse(response -> {
             String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
-            response.getHistoryHandler().gotoSubPage(selectedValue);
+            response.getHistoryHandler().gotoTopLevelPage(selectedValue);
         })),
-        SUBPAGE(context -> context.consumeResponse(response -> {
+        SUBPAGE_SELECTOR(context -> context.consumeResponse(response -> {
             String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
 
             if (selectedValue.equals("BACK"))
                 response.getHistoryHandler().gotoPreviousPage();
             else
-                response.getHistoryHandler().locatePage(selectedValue);
+                ((TreeHistoryHandler<?, String>) response.getHistoryHandler()).gotoSubPage(selectedValue);
         })),
         ITEM(context -> context.consumeResponse(response -> {
             /*
