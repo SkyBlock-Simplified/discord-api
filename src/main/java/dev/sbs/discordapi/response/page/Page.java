@@ -11,15 +11,14 @@ import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.ToggleableComponent;
 import dev.sbs.discordapi.response.handler.history.HistoryHandler;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
-import dev.sbs.discordapi.response.page.impl.ContainerPage;
-import dev.sbs.discordapi.response.page.impl.LegacyPage;
-import dev.sbs.discordapi.response.page.impl.form.QuestionPage;
+import dev.sbs.discordapi.response.page.impl.TreePage;
+import dev.sbs.discordapi.response.page.impl.form.FormPage;
+import dev.sbs.discordapi.response.page.item.Item;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -35,46 +34,47 @@ public interface Page {
 
     @NotNull ConcurrentList<Emoji> getReactions();
 
-    @NotNull PageBuilder mutate();
+    @NotNull Builder mutate();
 
     // Builders
 
-    static @NotNull ContainerPage.Builder builder() {
-        return ContainerPage.builder();
+    static @NotNull FormPage.QuestionBuilder form() {
+        return FormPage.builder();
     }
 
-    static @NotNull QuestionPage.Builder form() {
-        return QuestionPage.builder();
+    static @NotNull TreePage.TreePageBuilder builder() {
+        return TreePage.builder();
     }
 
-    static @NotNull LegacyPage.Builder legacy() {
-        return LegacyPage.builder();
+    static @NotNull FormPage.QuestionBuilder from(@NotNull FormPage formPage) {
+        return FormPage.from(formPage);
     }
 
-    static @NotNull ContainerPage.Builder from(@NotNull ContainerPage page) {
-        return ContainerPage.from(page);
+    static @NotNull TreePage.TreePageBuilder from(@NotNull TreePage treePage) {
+        return TreePage.from(treePage);
     }
 
-    static @NotNull QuestionPage.Builder from(@NotNull QuestionPage questionPage) {
-        return QuestionPage.from(questionPage);
+    // Accessors
+
+    default boolean hasItems() {
+        return this.getItemHandler().getItems().notEmpty();
     }
 
-    static @NotNull LegacyPage.Builder from(@NotNull LegacyPage page) {
-        return LegacyPage.from(page);
+    default boolean hasNoItems() {
+        return !this.hasItems();
     }
 
-    abstract class PageBuilder implements dev.sbs.api.util.builder.Builder<Page> {
+    abstract class Builder implements dev.sbs.api.util.builder.Builder<Page> {
 
         protected SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
-        protected final ConcurrentList<LayoutComponent> components = Concurrent.newList();
-        protected final ConcurrentList<Emoji> reactions = Concurrent.newList();
-
-        //private ItemHandler<?> itemHandler = ItemHandler.builder(Item.class).build();
+        protected ConcurrentList<LayoutComponent> components = Concurrent.newList();
+        protected ConcurrentList<Emoji> reactions = Concurrent.newList();
+        protected ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
 
         /**
          * Clear all but preservable components from {@link Page}.
          */
-        public PageBuilder disableComponents() {
+        public Builder disableComponents() {
             return this.disableComponents(false);
         }
 
@@ -83,7 +83,7 @@ public interface Page {
          *
          * @param recursive True to recursively clear components.
          */
-        public PageBuilder disableComponents(boolean recursive) {
+        public Builder disableComponents(boolean recursive) {
             this.components.forEach(this::toggleComponents);
             return this;
         }
@@ -104,12 +104,20 @@ public interface Page {
             return component;
         }
 
-        public PageBuilder clearReaction(@NotNull Emoji emoji) {
+        /**
+         * Remove the {@link Emoji Reaction} from the {@link Page}.
+         *
+         * @param emoji Emoji to remove.
+         */
+        public Builder clearReaction(@NotNull Emoji emoji) {
             this.reactions.remove(emoji);
             return this;
         }
 
-        public PageBuilder clearReactions() {
+        /**
+         * Remove all reactions from the {@link Page}.
+         */
+        public Builder clearReactions() {
             this.reactions.clear();
             return this;
         }
@@ -119,20 +127,8 @@ public interface Page {
          *
          * @param actionComponent The component to edit.
          */
-        public PageBuilder editComponent(@NotNull ActionComponent actionComponent) {
-            // TODO: Recursive component search
-            this.components.forEach(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(actionComponent.getClass()::isInstance)
-                .map(actionComponent.getClass()::cast)
-                .filter(innerComponent -> innerComponent.getIdentifier().equals(actionComponent.getIdentifier()))
-                .findFirst()
-                .ifPresent(innerComponent -> layoutComponent.getComponents().set(
-                    layoutComponent.getComponents().indexOf(innerComponent),
-                    actionComponent
-                ))
-            );
-
+        public Builder editComponent(@NotNull ActionComponent actionComponent) {
+            this.components.forEach(layoutComponent -> layoutComponent.modifyComponent(actionComponent));
             return this;
         }
 
@@ -146,12 +142,8 @@ public interface Page {
          */
         public final <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
-                .flatMap(layoutComponent -> layoutComponent.getComponents()
-                    .stream()
-                    .filter(tClass::isInstance)
-                    .map(tClass::cast)
-                    .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-                )
+                .map(layoutComponent -> layoutComponent.findComponent(tClass, function, value))
+                .flatMap(Optional::stream)
                 .findFirst();
         }
 
@@ -160,7 +152,7 @@ public interface Page {
          *
          * @param components Variable number of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull LayoutComponent... components) {
+        public Builder withComponents(@NotNull LayoutComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -169,44 +161,80 @@ public interface Page {
          *
          * @param components Collection of layout components to add.
          */
-        public PageBuilder withComponents(@NotNull Iterable<LayoutComponent> components) {
+        public Builder withComponents(@NotNull Iterable<LayoutComponent> components) {
             components.forEach(this.components::add);
             return this;
         }
-
-        public PageBuilder withDescription(@Nullable String description) {
+        
+        /**
+         * {@link SelectMenu.Option.Builder#withDescription(String)}
+         */
+        public Builder withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
         }
 
-        public PageBuilder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+        /**
+         * {@link SelectMenu.Option.Builder#withDescription(String, Object...)}
+         */
+        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
         }
 
-        public PageBuilder withDescription(@NotNull Optional<String> description) {
+        /**
+         * {@link SelectMenu.Option.Builder#withDescription(Optional)}
+         */
+        public Builder withDescription(@NotNull Optional<String> description) {
             this.optionBuilder.withDescription(description);
             return this;
         }
 
-        public PageBuilder withEmoji(@Nullable Emoji emoji) {
+        /**
+         * {@link SelectMenu.Option.Builder#withEmoji(Emoji)}
+         */
+        public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
-        public PageBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
+        /**
+         * {@link SelectMenu.Option.Builder#withEmoji(Optional)}
+         */
+        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.optionBuilder.withEmoji(emoji);
             return this;
         }
 
-        public PageBuilder withLabel(@NotNull String label) {
+        /**
+         * Sets the item data to be used with the {@link TreePage}.
+         *
+         * @param itemHandler The item data for the page.
+         */
+        public Builder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
+            this.itemHandler = itemHandler;
+            return this;
+        }
+
+        /**
+         * {@link SelectMenu.Option.Builder#withLabel(String)}
+         */
+        public Builder withLabel(@NotNull String label) {
             this.optionBuilder.withLabel(label);
             return this;
         }
 
-        public PageBuilder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+        /**
+         * {@link SelectMenu.Option.Builder#withLabel(String, Object...)}
+         */
+        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
             this.optionBuilder.withLabel(label, args);
             return this;
         }
 
-        public PageBuilder withOption(@NotNull SelectMenu.Option option) {
+        /**
+         * Sets the {@link SelectMenu.Option} that defines the {@link Page}.
+         *
+         * @param option The option to set.
+         */
+        public Builder withOption(@NotNull SelectMenu.Option option) {
             this.optionBuilder = SelectMenu.Option.from(option);
             return this;
         }
@@ -216,7 +244,7 @@ public interface Page {
          *
          * @param reactions The reactions to add to the response.
          */
-        public PageBuilder withReactions(@NotNull Emoji... reactions) {
+        public Builder withReactions(@NotNull Emoji... reactions) {
             return this.withReactions(Arrays.asList(reactions));
         }
 
@@ -225,17 +253,23 @@ public interface Page {
          *
          * @param reactions The reactions to add to the response.
          */
-        public PageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
+        public Builder withReactions(@NotNull Iterable<Emoji> reactions) {
             reactions.forEach(this.reactions::add);
             return this;
         }
 
-        public PageBuilder withValue(@NotNull String value) {
+        /**
+         * {@link SelectMenu.Option.Builder#withValue(String)}
+         */
+        public Builder withValue(@NotNull String value) {
             this.optionBuilder.withValue(value);
             return this;
         }
 
-        public PageBuilder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
+        /**
+         * {@link SelectMenu.Option.Builder#withLabel(String, Object...)}
+         */
+        public Builder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
             this.optionBuilder.withValue(value, args);
             return this;
         }
