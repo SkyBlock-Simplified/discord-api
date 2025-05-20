@@ -10,6 +10,7 @@ import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
+import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.Page;
@@ -24,26 +25,26 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 @Getter
-@RequiredArgsConstructor
-public class ContainerPage implements Page, Subpages<ContainerPage> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class TreePage implements Page, Subpages<TreePage> {
 
-    // Page Details
     private final @NotNull SelectMenu.Option option;
     private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull ConcurrentList<Emoji> reactions;
     private final @NotNull ItemHandler<?> itemHandler;
     private final @NotNull TreeHistoryHandler<PageItem, String> historyHandler;
+    private final @NotNull ConcurrentList<TreePage> pages;
 
-    // Container Details
-    private final @NotNull ConcurrentList<ContainerPage> pages;
+    // Legacy
+    private final @NotNull Optional<String> content;
+    private final @NotNull ConcurrentList<Embed> embeds;
 
-    public static @NotNull Builder builder() {
-        return new Builder();
+    public static @NotNull TreePageBuilder builder() {
+        return new TreePageBuilder();
     }
 
     @Override
@@ -52,24 +53,18 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        ContainerPage page = (ContainerPage) o;
+        TreePage page = (TreePage) o;
 
         return new EqualsBuilder()
             .append(this.getOption(), page.getOption())
+            .append(this.getContent(), page.getContent())
             .append(this.getPages(), page.getPages())
+            .append(this.getEmbeds(), page.getEmbeds())
             .append(this.getComponents(), page.getComponents())
             .append(this.getReactions(), page.getReactions())
             .append(this.getItemHandler(), page.getItemHandler())
             .append(this.getHistoryHandler(), page.getHistoryHandler())
             .build();
-    }
-
-    public final boolean hasItems() {
-        return this.getItemHandler().getItems().notEmpty();
-    }
-
-    public final boolean hasNoItems() {
-        return !this.hasItems();
     }
 
     /**
@@ -83,29 +78,29 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
     public <S, T extends ActionComponent> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
         return this.getComponents()
             .stream()
-            .flatMap(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(tClass::isInstance)
-                .map(tClass::cast)
-                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-            )
+            .map(layoutComponent -> layoutComponent.findComponent(tClass, function, value))
+            .flatMap(Optional::stream)
             .findFirst();
     }
 
-    public static @NotNull Builder from(@NotNull ContainerPage page) {
-        return new Builder()
+    public static @NotNull TreePageBuilder from(@NotNull TreePage page) {
+        return new TreePageBuilder()
             .withOption(page.getOption())
-            .withPages(page.getPages())
             .withComponents(page.getComponents())
             .withReactions(page.getReactions())
-            .withItemHandler(page.getItemHandler());
+            .withItemHandler(page.getItemHandler())
+            .withPages(page.getPages())
+            .withContent(page.getContent())
+            .withEmbeds(page.getEmbeds());
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
             .appendSuper(super.hashCode())
+            .append(this.getContent())
             .append(this.getPages())
+            .append(this.getEmbeds())
             .append(this.getComponents())
             .append(this.getReactions())
             .append(this.getItemHandler())
@@ -114,31 +109,33 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
     }
 
     @Override
-    public @NotNull Builder mutate() {
+    public @NotNull TreePageBuilder mutate() {
         return from(this);
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class Builder extends PageBuilder {
+    public static class TreePageBuilder extends Builder {
 
-        private final ConcurrentList<ContainerPage> pages = Concurrent.newList();
+        private Optional<String> content = Optional.empty();
+        private final ConcurrentList<TreePage> pages = Concurrent.newList();
+        private final ConcurrentList<Embed> embeds = Concurrent.newList();
         private ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
 
         /**
-         * Clear all but preservable components from {@link ContainerPage}.
+         * Clear all but preservable components from {@link TreePage}.
          */
         @Override
-        public Builder disableComponents() {
+        public TreePageBuilder disableComponents() {
             return this.disableComponents(false);
         }
 
         /**
-         * Clear all but preservable components from {@link ContainerPage}.
+         * Clear all but preservable components from {@link TreePage}.
          *
          * @param recursive True to recursively clear components.
          */
         @Override
-        public Builder disableComponents(boolean recursive) {
+        public TreePageBuilder disableComponents(boolean recursive) {
             super.disableComponents(recursive);
 
             if (recursive)
@@ -150,41 +147,41 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
         }
 
         /**
-         * Clear all pages from the {@link ContainerPage}.
+         * Clear all pages from the {@link TreePage}.
          */
-        public Builder clearPages() {
+        public TreePageBuilder clearPages() {
             this.pages.clear();
             return this;
         }
 
         @Override
-        public Builder clearReaction(@NotNull Emoji emoji) {
+        public TreePageBuilder clearReaction(@NotNull Emoji emoji) {
             super.clearReaction(emoji);
             return this;
         }
 
         @Override
-        public Builder clearReactions() {
+        public TreePageBuilder clearReactions() {
             super.clearReactions();
             return this;
         }
 
         /**
-         * Edits an existing {@link ContainerPage} at the given index.
+         * Edits an existing {@link TreePage} at the given index.
          *
          * @param pageBuilder The page builder to edit with.
          */
-        public Builder editPage(@NotNull Function<Builder, Builder> pageBuilder) {
+        public TreePageBuilder editPage(@NotNull Function<TreePageBuilder, TreePageBuilder> pageBuilder) {
             return this.editPage(0, pageBuilder);
         }
 
         /**
-         * Edits an existing {@link ContainerPage} at the given index.
+         * Edits an existing {@link TreePage} at the given index.
          *
          * @param index       The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
-        public Builder editPage(int index, @NotNull Function<Builder, Builder> pageBuilder) {
+        public TreePageBuilder editPage(int index, @NotNull Function<TreePageBuilder, TreePageBuilder> pageBuilder) {
             if (index < this.pages.size())
                 this.pages.set(index, pageBuilder.apply(this.pages.get(index).mutate()).build());
 
@@ -192,11 +189,11 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
         }
 
         /**
-         * Updates an existing {@link ContainerPage}.
+         * Updates an existing {@link TreePage}.
          *
          * @param page The page to edit.
          */
-        public Builder editPage(@NotNull ContainerPage page) {
+        public TreePageBuilder editPage(@NotNull TreePage page) {
             this.pages.stream()
                 .filter(existingPage -> existingPage.getOption().getUniqueId().equals(page.getOption().getUniqueId()))
                 .findFirst()
@@ -206,129 +203,177 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
         }
 
         /**
-         * Add {@link LayoutComponent LayoutComponents} to the {@link ContainerPage}.
+         * Add {@link LayoutComponent LayoutComponents} to the {@link TreePage}.
          *
          * @param components Variable number of layout components to add.
          */
         @Override
-        public Builder withComponents(@NotNull LayoutComponent... components) {
+        public TreePageBuilder withComponents(@NotNull LayoutComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
         /**
-         * Add {@link LayoutComponent LayoutComponents} to the {@link ContainerPage}.
+         * Add {@link LayoutComponent LayoutComponents} to the {@link TreePage}.
          *
          * @param components Collection of layout components to add.
          */
         @Override
-        public Builder withComponents(@NotNull Iterable<LayoutComponent> components) {
+        public TreePageBuilder withComponents(@NotNull Iterable<LayoutComponent> components) {
             super.withComponents(components);
             return this;
         }
 
-        @Override
-        public Builder withDescription(@Nullable String description) {
-            return this.withDescription(Optional.ofNullable(description));
+        /**
+         * Sets the content text to add to the {@link TreePage}.
+         *
+         * @param content The text to add to the page.
+         */
+        public TreePageBuilder withContent(@Nullable String content) {
+            return this.withContent(Optional.ofNullable(content));
         }
 
-        @Override
-        public Builder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
-            return this.withDescription(StringUtil.formatNullable(description, args));
+        /**
+         * Sets the content text to add to the {@link TreePage}.
+         *
+         * @param content The text to add to the page.
+         * @param args The arguments to format the content with.
+         */
+        public TreePageBuilder withContent(@Nullable @PrintFormat String content, @Nullable Object... args) {
+            return this.withContent(StringUtil.formatNullable(content, args));
         }
 
-        @Override
-        public Builder withDescription(@NotNull Optional<String> description) {
-            super.withDescription(description);
+        /**
+         * Sets the content text to add to the {@link TreePage}.
+         *
+         * @param content The text to add to the page.
+         */
+        public TreePageBuilder withContent(@NotNull Optional<String> content) {
+            this.content = content;
             return this;
         }
 
         @Override
-        public Builder withEmoji(@Nullable Emoji emoji) {
+        public TreePageBuilder withDescription(@Nullable String description) {
+            return this.withDescription(Optional.ofNullable(description));
+        }
+
+        @Override
+        public TreePageBuilder withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
+            return this.withDescription(StringUtil.formatNullable(description, args));
+        }
+
+        @Override
+        public TreePageBuilder withDescription(@NotNull Optional<String> description) {
+            super.withDescription(description);
+            return this;
+        }
+
+        /**
+         * Add {@link Embed Embeds} to the {@link TreePage}.
+         *
+         * @param embeds Variable number of embeds to add.
+         */
+        public TreePageBuilder withEmbeds(@NotNull Embed... embeds) {
+            return this.withEmbeds(Arrays.asList(embeds));
+        }
+
+        /**
+         * Add {@link Embed Embeds} to the {@link TreePage}.
+         *
+         * @param embeds Collection of embeds to add.
+         */
+        public TreePageBuilder withEmbeds(@NotNull Iterable<Embed> embeds) {
+            embeds.forEach(this.embeds::add);
+            return this;
+        }
+
+        @Override
+        public TreePageBuilder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
         @Override
-        public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
+        public TreePageBuilder withEmoji(@NotNull Optional<Emoji> emoji) {
             super.withEmoji(emoji);
             return this;
         }
 
         /**
-         * Sets the item data to be used with the {@link ContainerPage}.
+         * Sets the item data to be used with the {@link TreePage}.
          *
          * @param itemHandler The item data for the page.
          */
-        public Builder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
+        public TreePageBuilder withItemHandler(@NotNull ItemHandler<?> itemHandler) {
             this.itemHandler = itemHandler;
             return this;
         }
 
         @Override
-        public Builder withLabel(@NotNull String label) {
+        public TreePageBuilder withLabel(@NotNull String label) {
             super.withLabel(label);
             return this;
         }
 
         @Override
-        public Builder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+        public TreePageBuilder withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
             super.withLabel(label, args);
             return this;
         }
 
         @Override
-        public Builder withOption(@NotNull SelectMenu.Option option) {
+        public TreePageBuilder withOption(@NotNull SelectMenu.Option option) {
             super.withOption(option);
             return this;
         }
 
         /**
-         * Add sub {@link ContainerPage Pages} to the {@link ContainerPage}.
+         * Add sub {@link TreePage Pages} to the {@link TreePage}.
          *
          * @param subPages Variable number of pages to add.
          */
-        public Builder withPages(@NotNull ContainerPage... subPages) {
+        public TreePageBuilder withPages(@NotNull TreePage... subPages) {
             return this.withPages(Arrays.asList(subPages));
         }
 
         /**
-         * Add sub {@link ContainerPage Pages} to the {@link ContainerPage}.
+         * Add sub {@link TreePage Pages} to the {@link TreePage}.
          *
          * @param subPages Collection of pages to add.
          */
-        public Builder withPages(@NotNull Iterable<ContainerPage> subPages) {
+        public TreePageBuilder withPages(@NotNull Iterable<TreePage> subPages) {
             subPages.forEach(this.pages::add);
             return this;
         }
 
         /**
-         * Sets the reactions to add to the {@link ContainerPage}.
+         * Sets the reactions to add to the {@link TreePage}.
          *
          * @param reactions The reactions to add to the response.
          */
         @Override
-        public Builder withReactions(@NotNull Emoji... reactions) {
+        public TreePageBuilder withReactions(@NotNull Emoji... reactions) {
             return this.withReactions(Arrays.asList(reactions));
         }
 
         /**
-         * Sets the reactions to add to the {@link ContainerPage}.
+         * Sets the reactions to add to the {@link TreePage}.
          *
          * @param reactions The reactions to add to the response.
          */
         @Override
-        public Builder withReactions(@NotNull Iterable<Emoji> reactions) {
+        public TreePageBuilder withReactions(@NotNull Iterable<Emoji> reactions) {
             super.withReactions(reactions);
             return this;
         }
 
         @Override
-        public Builder withValue(@NotNull String value) {
+        public TreePageBuilder withValue(@NotNull String value) {
             super.withLabel(value);
             return this;
         }
 
         @Override
-        public Builder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
+        public TreePageBuilder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
             super.withLabel(value, args);
             return this;
         }
@@ -336,16 +381,16 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
         /**
          * Build using the configured fields.
          *
-         * @return A built {@link ContainerPage}.
+         * @return A built {@link TreePage}.
          */
         @Override
-        public @NotNull ContainerPage build() {
+        public @NotNull TreePage build() {
             Reflection.validateFlags(this);
 
             // Prevent Empty Rows
             this.components.removeIf(layoutComponent -> layoutComponent.getComponents().isEmpty());
 
-            return new ContainerPage(
+            return new TreePage(
                 this.optionBuilder.build(),
                 this.components.toUnmodifiableList(),
                 this.reactions.toUnmodifiableList(),
@@ -361,7 +406,9 @@ public class ContainerPage implements Page, Subpages<ContainerPage> {
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withTransformer(page -> page.getOption().getValue())
                     .build(),
-                this.pages.toUnmodifiableList()
+                this.pages.toUnmodifiableList(),
+                this.content,
+                this.embeds.toUnmodifiableList()
             );
         }
 

@@ -12,7 +12,7 @@ import dev.sbs.discordapi.response.component.layout.ActionRow;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.impl.LegacyPage;
+import dev.sbs.discordapi.response.page.impl.TreePage;
 import dev.sbs.discordapi.response.page.item.AuthorItem;
 import dev.sbs.discordapi.response.page.item.DescriptionItem;
 import dev.sbs.discordapi.response.page.item.FooterItem;
@@ -42,11 +42,11 @@ public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
-            Response.legacy()
+            Response.builder()
                 .withTimeToLive(60)
                 .isEphemeral()
                 .withPages(
-                    LegacyPage.builder()
+                    TreePage.builder()
                         .withEmbeds(
                             Embed.builder()
                                 .withTitle("Embed Management")

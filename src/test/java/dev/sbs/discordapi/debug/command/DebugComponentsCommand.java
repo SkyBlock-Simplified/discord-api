@@ -12,7 +12,6 @@ import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.Attachment;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -94,13 +93,10 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                     .withLabel("Santa upload")
                                     .withDeferEdit()
                                     .onInteract(context -> context.edit(
-                                        response -> response
-                                            .mutate()
-                                            .withAttachments(
-                                                Attachment.of(
-                                                    "test2.txt",
-                                                    new ByteArrayInputStream("santa test".getBytes())
-                                                )
+                                        response -> response.mutate()
+                                            .withAttachment(
+                                                "test2.txt",
+                                                new ByteArrayInputStream("santa test".getBytes())
                                             )
                                             .editCurrentPage(builder -> builder.withContent("santa!!"))
                                             .build()
