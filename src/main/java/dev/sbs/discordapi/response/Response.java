@@ -117,6 +117,12 @@ public interface Response {
         //    components.add(TextDisplay.of(content.get()));
     }
 
+    default @NotNull ConcurrentList<Message.Flag> getCurrentFlags() {
+        ConcurrentList<Message.Flag> flags = Concurrent.newList();
+        flags.addIf(this::isComponentsV2, Message.Flag.IS_COMPONENTS_V2);
+        return flags;
+    }
+
     default boolean isComponentsV2() {
         return this.getCurrentComponents()
             .flatMap(Component::flattenComponents)
@@ -181,6 +187,7 @@ public interface Response {
 
     default @NotNull MessageCreateSpec getD4jCreateSpec() {
         return MessageCreateSpec.builder()
+            .flags(this.getCurrentFlags())
             .nonce(this.getUniqueId().toString().substring(0, 25))
             .allowedMentions(this.getAllowedMentions())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
@@ -196,7 +203,9 @@ public interface Response {
 
     default @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
         return MessageCreateMono.of(channel)
+            .withFlags(this.getCurrentFlags())
             .withNonce(this.getUniqueId().toString().substring(0, 25))
+            .withFlags()
             .withAllowedMentions(this.getAllowedMentions())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
             .withFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -210,6 +219,7 @@ public interface Response {
 
     default @NotNull MessageEditSpec getD4jEditSpec() {
         return MessageEditSpec.builder()
+            .addAllFlags(this.getCurrentFlags())
             .addAllFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllComponents(
                 this.getCurrentComponents()
