@@ -7,7 +7,6 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -49,38 +48,20 @@ public final class TreePage implements Page, Subpages<TreePage> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
-        TreePage page = (TreePage) o;
+        TreePage treePage = (TreePage) o;
 
         return new EqualsBuilder()
-            .append(this.getOption(), page.getOption())
-            .append(this.getContent(), page.getContent())
-            .append(this.getPages(), page.getPages())
-            .append(this.getEmbeds(), page.getEmbeds())
-            .append(this.getComponents(), page.getComponents())
-            .append(this.getReactions(), page.getReactions())
-            .append(this.getItemHandler(), page.getItemHandler())
-            .append(this.getHistoryHandler(), page.getHistoryHandler())
+            .append(this.getOption(), treePage.getOption())
+            .append(this.getComponents(), treePage.getComponents())
+            .append(this.getReactions(), treePage.getReactions())
+            .append(this.getItemHandler(), treePage.getItemHandler())
+            .append(this.getHistoryHandler(), treePage.getHistoryHandler())
+            .append(this.getPages(), treePage.getPages())
+            .append(this.getContent(), treePage.getContent())
+            .append(this.getEmbeds(), treePage.getEmbeds())
             .build();
-    }
-
-    /**
-     * Finds an existing {@link ActionComponent}.
-     *
-     * @param tClass   The component type to match.
-     * @param function The method reference to match with.
-     * @param value    The value to match with.
-     * @return The matching component, if it exists.
-     */
-    public <S, T extends ActionComponent> Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
-        return this.getComponents()
-            .stream()
-            .map(layoutComponent -> layoutComponent.findComponent(tClass, function, value))
-            .flatMap(Optional::stream)
-            .findFirst();
     }
 
     public static @NotNull TreePageBuilder from(@NotNull TreePage page) {
@@ -97,14 +78,14 @@ public final class TreePage implements Page, Subpages<TreePage> {
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
-            .append(this.getContent())
-            .append(this.getPages())
-            .append(this.getEmbeds())
+            .append(this.getOption())
             .append(this.getComponents())
             .append(this.getReactions())
             .append(this.getItemHandler())
             .append(this.getHistoryHandler())
+            .append(this.getPages())
+            .append(this.getContent())
+            .append(this.getEmbeds())
             .build();
     }
 
