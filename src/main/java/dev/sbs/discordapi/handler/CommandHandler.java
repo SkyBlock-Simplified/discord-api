@@ -275,6 +275,11 @@ public final class CommandHandler extends DiscordReference {
     }
 
     public Mono<Void> updateApplicationCommands() {
+        return this.updateGlobalApplicationCommands()
+            .then(this.updateGuildApplicationCommands());
+    }
+
+    public Mono<Void> updateGlobalApplicationCommands() {
         return this.getDiscordBot()
             .getGateway()
             .getRestClient()
@@ -286,25 +291,32 @@ public final class CommandHandler extends DiscordReference {
             .doOnNext(commandData -> this.getCommandReferences(commandData.name(), DiscordCommand.Type.of(commandData.type().toOptional().orElse(-1)))
                 .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
             )
-            .thenMany(
-                Flux.fromIterable(this.getLoadedCommands())
-                    .map(DiscordCommand::getStructure)
-                    .map(Structure::guildId)
-                    .filter(guildId -> guildId > 0)
-                    .distinct()
-                    .flatMap(guildId -> this.getDiscordBot()
-                        .getGateway()
-                        .getRestClient()
-                        .getApplicationService()
-                        .bulkOverwriteGuildApplicationCommand(
-                            this.getDiscordBot().getClientId().asLong(),
-                            guildId,
-                            this.buildCommandRequests(guildId)
-                        )
-                        .doOnNext(commandData -> this.getCommandReferences(commandData.name(), DiscordCommand.Type.of(commandData.type().toOptional().orElse(-1)))
-                            .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
-                        )
-                    )
+            .then();
+    }
+
+    public Mono<Void> updateGuildApplicationCommands() {
+        return Flux.fromIterable(this.getLoadedCommands())
+            .filter(command -> command.getStructure().guildId() > 0)
+            .map(DiscordCommand::getStructure)
+            .map(Structure::guildId)
+            .filter(guildId -> guildId > 0)
+            .distinct()
+            .flatMap(this::updateGuildApplicationCommands)
+            .then();
+    }
+
+    public Mono<Void> updateGuildApplicationCommands(long guildId) {
+        return this.getDiscordBot()
+            .getGateway()
+            .getRestClient()
+            .getApplicationService()
+            .bulkOverwriteGuildApplicationCommand(
+                this.getDiscordBot().getClientId().asLong(),
+                guildId,
+                this.buildCommandRequests(guildId)
+            )
+            .doOnNext(commandData -> this.getCommandReferences(commandData.name(), DiscordCommand.Type.of(commandData.type().toOptional().orElse(-1)))
+                .forEach(command -> this.commandIds.put(command.getClass(), commandData.id().asLong()))
             )
             .then();
     }

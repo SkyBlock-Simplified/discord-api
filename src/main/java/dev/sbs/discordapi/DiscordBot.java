@@ -48,6 +48,7 @@ import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.guild.GuildCreateEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -237,6 +238,10 @@ public abstract class DiscordBot {
                         eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
                         eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
 
+                        eventDispatcher.on(GuildCreateEvent.class, guildCreateEvent -> this.getCommandHandler()
+                            .updateGuildApplicationCommands(guildCreateEvent.getGuild().getId().asLong())
+                        ),
+
                         eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
                             this.onGatewayDisconnected();
                             this.getScheduler().shutdownNow();
@@ -250,7 +255,7 @@ public abstract class DiscordBot {
                     });
 
                     log.info("Logged in as {}", this.getSelf().getUsername());
-                    return Mono.when(eventListeners).and(this.commandHandler.updateApplicationCommands());
+                    return Mono.when(eventListeners).and(this.getCommandHandler().updateGlobalApplicationCommands());
                 })
             )
             .login()
