@@ -11,22 +11,26 @@ import java.util.stream.Stream;
 public interface Component {
 
     /**
-     * Gets a flattened stream of {@link Component Components}.
+     * Flattens the structure of components, recursively traversing through nested {@link LayoutComponent} instances
+     * and returning a stream of all components, including the current instance.
      *
-     * @return All components belonging to this component.
+     * @return A stream containing all components within the current component hierarchy, flattened into a single stream.
      */
     default @NotNull Stream<Component> flattenComponents() {
         if (this instanceof LayoutComponent layoutComponent) {
-            return layoutComponent.getComponents()
-                .stream()
-                .flatMap(component -> {
-                    Stream<Component> selfStream = Stream.of(component);
+            return Stream.concat(
+                Stream.of(this),
+                layoutComponent.getComponents()
+                    .stream()
+                    .flatMap(component -> {
+                        Stream<Component> selfStream = Stream.of(component);
 
-                    if (component instanceof LayoutComponent)
-                        return Stream.concat(selfStream, component.flattenComponents());
-                    else
-                        return selfStream;
-                });
+                        if (component instanceof LayoutComponent)
+                            return Stream.concat(selfStream, component.flattenComponents());
+                        else
+                            return selfStream;
+                    })
+            );
         }
 
         return Stream.of(this);
@@ -36,6 +40,16 @@ public interface Component {
 
     @NotNull Type getType();
 
+    /**
+     * Represents the various types of components or layout elements that can exist within a message's structure.
+     * Each type is associated with an integer value, which is used for identification and mapping.
+     * <p>
+     * Some specific types may require the use of certain flags, such as {@link Message.Flag#IS_COMPONENTS_V2},
+     * which influences their behavior or interpretation.
+     * <p>
+     * The types include common components such as buttons, select menus, text inputs, as well as more complex
+     * layout elements such as sections, containers, and media galleries.
+     */
     @Getter
     @RequiredArgsConstructor
     enum Type {
