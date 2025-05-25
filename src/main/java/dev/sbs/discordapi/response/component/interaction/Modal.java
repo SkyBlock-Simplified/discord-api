@@ -2,12 +2,15 @@ package dev.sbs.discordapi.response.component.interaction;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
@@ -19,7 +22,7 @@ import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -43,7 +46,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
-        return new Builder(UUID.randomUUID().toString());
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     /**
@@ -77,10 +80,11 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
-        return new Builder(modal.getUserIdentifier())
+        return new Builder()
+            .withIdentifier(modal.getUserIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
-            .onInteract(modal.getInteraction());
+            .onInteract(modal.interaction);
     }
 
     public @NotNull InteractionPresentModalSpec getD4jPresentSpec() {
@@ -133,11 +137,14 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         return from(this);
     }
 
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements dev.sbs.api.util.builder.Builder<Modal> {
 
-        private final String identifier;
+        @BuildFlag(nonNull = true)
+        private String identifier;
+        @BuildFlag(notEmpty = true)
         private Optional<String> title = Optional.empty();
+        @BuildFlag(notEmpty = true)
         private final ConcurrentList<LayoutComponent> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
@@ -268,6 +275,16 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         }
 
         /**
+         * Overrides the default identifier of the {@link Button}.
+         *
+         * @param identifier The identifier to use.
+         */
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
          * Sets the title of the {@link Modal}.
          *
          * @param title The title of the modal.
@@ -288,6 +305,8 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
         @Override
         public @NotNull Modal build() {
+            Reflection.validateFlags(this);
+
             return new Modal(
                 this.identifier,
                 this.title,
