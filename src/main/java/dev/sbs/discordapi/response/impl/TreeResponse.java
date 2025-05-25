@@ -95,7 +95,8 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral())
             .withPageHistory(response.getHistoryHandler().getIdentifierHistory())
-            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentIndex());
+            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentIndex())
+            .onCreate(response.getInteraction());
     }
 
     @Override
