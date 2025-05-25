@@ -69,7 +69,7 @@ public interface Response {
 
     @NotNull HistoryHandler<Page, String> getHistoryHandler();
 
-    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getInteraction();
+    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getCreateInteraction();
 
     @NotNull Scheduler getReactorScheduler();
 
@@ -287,7 +287,7 @@ public interface Response {
         protected boolean ephemeral = false;
         @BuildFlag(nonNull = true)
         protected AllowedMentions allowedMentions = AllowedMentions.suppressEveryone();
-        protected Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction = Optional.empty();
+        protected Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> createInteraction = Optional.empty();
 
         /**
          * Recursively disable all interactable components from all {@link Page Pages} in {@link Response}.
@@ -357,7 +357,7 @@ public interface Response {
          * @param interaction The interaction function.
          */
         public Builder<P> onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
-            this.interaction = interaction;
+            this.createInteraction = interaction;
             return this;
         }
 

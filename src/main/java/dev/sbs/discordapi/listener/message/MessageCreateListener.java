@@ -23,7 +23,7 @@ public class MessageCreateListener extends DiscordListener<MessageCreateEvent> {
             .singleOrEmpty()
             .doOnNext(CachedResponse::setBusy)
             .flatMap(entry -> entry.getResponse()
-                .getInteraction()
+                .getCreateInteraction()
                 .apply(MessageContext.ofCreate(
                     this.getDiscordBot(),
                     event,

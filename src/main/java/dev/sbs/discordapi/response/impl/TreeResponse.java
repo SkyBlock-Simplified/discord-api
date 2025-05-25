@@ -73,7 +73,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
     private final int timeToLive;
     private final boolean ephemeral;
     private final @NotNull ConcurrentList<Attachment> attachments;
-    private final Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction;
+    private final Function<MessageContext<MessageCreateEvent>, Mono<Void>> createInteraction;
 
     private final boolean renderingPagingComponents;
     private final @NotNull TreeHistoryHandler<TreePage, String> historyHandler;
@@ -96,7 +96,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
             .isEphemeral(response.isEphemeral())
             .withPageHistory(response.getHistoryHandler().getIdentifierHistory())
             .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentIndex())
-            .onCreate(response.getInteraction());
+            .onCreate(response.getCreateInteraction());
     }
 
     @Override
@@ -396,7 +396,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
          */
         @Override
         public TreeBuilder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
-            super.interaction = interaction;
+            super.createInteraction = interaction;
             return this;
         }
 
@@ -660,15 +660,15 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
             Reflection.validateFlags(this);
 
             TreeResponse response = new TreeResponse(
-                this.uniqueId,
-                this.referenceId,
-                this.reactorScheduler,
-                this.allowedMentions,
-                this.timeToLive,
-                this.ephemeral,
-                this.attachments,
-                this.interaction.orElse(__ -> Mono.empty()),
-                this.renderingPagingComponents,
+                super.uniqueId,
+                super.referenceId,
+                super.reactorScheduler,
+                super.allowedMentions,
+                super.timeToLive,
+                super.ephemeral,
+                super.attachments,
+                super.createInteraction.orElse(__ -> Mono.empty()),
+                super.renderingPagingComponents,
                 TreeHistoryHandler.<TreePage, String>builder()
                     .withPages(super.pages.toUnmodifiableList())
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
