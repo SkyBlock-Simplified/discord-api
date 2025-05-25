@@ -65,6 +65,22 @@ public interface Page {
         return !this.hasItems();
     }
 
+    /**
+     * Finds an existing {@link ActionComponent}.
+     *
+     * @param tClass   The component type to match.
+     * @param function The method reference to match with.
+     * @param value    The value to match with.
+     * @return The matching component, if it exists.
+     */
+    default  <S, T extends ActionComponent> @NotNull Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
+        return this.getComponents()
+            .stream()
+            .map(layoutComponent -> layoutComponent.findComponent(tClass, function, value))
+            .flatMap(Optional::stream)
+            .findFirst();
+    }
+
     abstract class Builder implements dev.sbs.api.util.builder.Builder<Page> {
 
         @BuildFlag(nonNull = true)
