@@ -7,12 +7,14 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * All supported Discord Locales.
- * <br><br>
+ *
  * @see <a href="https://discord.com/developers/docs/reference#locales">Discord Locales</a>
  */
 @Getter
 @RequiredArgsConstructor
 public enum DiscordLocale {
+
+    // l18n
 
     INDONESIAN("id", "Bahasa Indonesia"),
     DANISH("da", "Dansk"),
