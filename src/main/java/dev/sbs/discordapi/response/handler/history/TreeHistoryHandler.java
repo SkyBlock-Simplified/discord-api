@@ -218,7 +218,7 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
         @Override
         public @NotNull TreeHistoryHandler<P, I> build() {
             return new TreeHistoryHandler<>(
-                this.pages,
+                this.pages.toUnmodifiableList(),
                 this.matcher,
                 this.transformer
             );
