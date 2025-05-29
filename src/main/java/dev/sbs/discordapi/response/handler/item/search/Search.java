@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -86,7 +87,7 @@ public class Search<T> {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Search<T>> {
+    public static class Builder<T> implements ClassBuilder<Search<T>> {
 
         @BuildFlag(nonNull = true)
         private TextInput.Builder textInputBuilder = TextInput.builder().withSearchType(TextInput.SearchType.CUSTOM);

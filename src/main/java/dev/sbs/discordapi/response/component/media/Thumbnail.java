@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.response.component.media;
 
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
@@ -91,7 +92,7 @@ public class Thumbnail implements Component, AccessoryComponent {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Thumbnail> {
+    public static class Builder implements ClassBuilder<Thumbnail> {
 
         private MediaData.Builder mediaData = MediaData.builder();
         private Optional<String> description = Optional.empty();

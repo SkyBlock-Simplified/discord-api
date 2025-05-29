@@ -6,6 +6,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
@@ -75,7 +76,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T extends Model> implements dev.sbs.api.util.builder.Builder<ModelItem<T>> {
+    public static class Builder<T extends Model> implements ClassBuilder<ModelItem<T>> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;

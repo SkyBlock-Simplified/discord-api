@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.component.interaction.action;
 import dev.sbs.api.mutable.Range;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -125,7 +126,7 @@ public final class TextInput implements ActionComponent {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements dev.sbs.api.util.builder.Builder<TextInput> {
+    public static final class Builder implements ClassBuilder<TextInput> {
 
         @BuildFlag(nonNull = true, notEmpty = true)
         private String identifier;

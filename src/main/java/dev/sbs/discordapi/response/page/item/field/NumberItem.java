@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -60,7 +61,7 @@ public final class NumberItem<T extends Number> implements FieldItem<T> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T extends Number> implements dev.sbs.api.util.builder.Builder<NumberItem<T>> {
+    public static class Builder<T extends Number> implements ClassBuilder<NumberItem<T>> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;

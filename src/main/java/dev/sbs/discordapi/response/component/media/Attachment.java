@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.response.component.media;
 
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
@@ -104,7 +105,7 @@ public final class Attachment implements Component, TopLevelComponent, Container
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Attachment> {
+    public static class Builder implements ClassBuilder<Attachment> {
 
         private MediaData.Builder mediaData = MediaData.builder();
         private long fileId = 0L;

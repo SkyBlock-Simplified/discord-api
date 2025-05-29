@@ -8,6 +8,7 @@ import dev.sbs.api.mutable.Range;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import dev.sbs.discordapi.context.deferrable.command.CommandContext;
@@ -164,7 +165,7 @@ public final class Parameter {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements dev.sbs.api.util.builder.Builder<Parameter> {
+    public static final class Builder implements ClassBuilder<Parameter> {
 
         private final UUID uniqueId;
         @BuildFlag(nonNull = true, notEmpty = true)

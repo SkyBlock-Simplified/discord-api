@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.component.media;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
@@ -43,7 +44,7 @@ public class MediaGallery implements Component, TopLevelComponent, ContainerComp
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<MediaGallery> {
+    public static class Builder implements ClassBuilder<MediaGallery> {
 
         private @NotNull ConcurrentList<Thumbnail> items = Concurrent.newList();
 

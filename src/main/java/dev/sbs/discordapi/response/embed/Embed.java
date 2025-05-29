@@ -5,6 +5,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -219,7 +220,7 @@ public final class Embed {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Embed> {
+    public static class Builder implements ClassBuilder<Embed> {
 
         @BuildFlag(limit = 256)
         private Optional<String> title = Optional.empty();

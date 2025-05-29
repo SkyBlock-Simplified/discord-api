@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
@@ -149,17 +150,9 @@ public interface Response {
         );
     }
 
-    default boolean isCacheUpdateRequired() {
-        return this.getHistoryHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
-            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired();
-    }
+    boolean isCacheUpdateRequired();
 
-    default void setNoCacheUpdateRequired() {
-        this.getHistoryHandler().setCacheUpdateRequired(false);
-        this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
-        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
-    }
+    void setNoCacheUpdateRequired();
 
     default void updateAttachments(@NotNull Message message) {
         if (this.getAttachments().contains(attachment -> attachment.getMediaData().getState(), MediaData.State.LOADING)) {
@@ -272,7 +265,7 @@ public interface Response {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    abstract class Builder<P extends Page> implements dev.sbs.api.util.builder.Builder<Response> {
+    abstract class Builder<P extends Page> implements ClassBuilder<Response> {
 
         @BuildFlag(nonNull = true)
         protected UUID uniqueId = UUID.randomUUID();

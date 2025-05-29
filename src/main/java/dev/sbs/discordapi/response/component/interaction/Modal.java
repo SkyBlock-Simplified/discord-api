@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
@@ -138,7 +139,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements dev.sbs.api.util.builder.Builder<Modal> {
+    public static final class Builder implements ClassBuilder<Modal> {
 
         @BuildFlag(nonNull = true)
         private String identifier;

@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.page.item.field;
 
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -54,7 +55,7 @@ public class StringItem implements FieldItem<String> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements dev.sbs.api.util.builder.Builder<StringItem> {
+    public static final class Builder implements ClassBuilder<StringItem> {
 
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;

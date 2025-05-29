@@ -10,6 +10,7 @@ import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -291,7 +292,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class Builder<T> implements dev.sbs.api.util.builder.Builder<ItemHandler<T>> {
+    public static class Builder<T> implements ClassBuilder<ItemHandler<T>> {
 
         private final ConcurrentList<T> items = Concurrent.newList();
         private final ConcurrentList<Item> staticItems = Concurrent.newList();

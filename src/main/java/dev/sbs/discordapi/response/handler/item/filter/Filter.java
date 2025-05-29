@@ -5,6 +5,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.stream.triple.TriPredicate;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -78,7 +79,7 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Filter<T>> {
+    public static class Builder<T> implements ClassBuilder<Filter<T>> {
 
         @BuildFlag(nonNull = true)
         private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();

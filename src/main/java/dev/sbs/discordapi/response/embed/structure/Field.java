@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.embed.structure;
 import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -97,7 +98,7 @@ public final class Field {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Field> {
+    public static class Builder implements ClassBuilder<Field> {
 
         private Optional<Emoji> emoji = Optional.empty();
         @BuildFlag(limit = 256)

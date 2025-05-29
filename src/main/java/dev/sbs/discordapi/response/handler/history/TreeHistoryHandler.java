@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.handler.history;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
@@ -171,7 +172,7 @@ public class TreeHistoryHandler<P extends Subpages<P>, I> implements HistoryHand
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<P extends Subpages<P>, I> implements dev.sbs.api.util.builder.Builder<TreeHistoryHandler<P, I>> {
+    public static class Builder<P extends Subpages<P>, I> implements ClassBuilder<TreeHistoryHandler<P, I>> {
 
         private final ConcurrentList<P> pages = Concurrent.newList();
         private Optional<Function<P, I>> transformer = Optional.empty();

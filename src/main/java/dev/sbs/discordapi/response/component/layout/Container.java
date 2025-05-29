@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.component.layout;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -88,7 +89,7 @@ public final class Container implements LayoutComponent, TopLevelComponent {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Container> {
+    public static class Builder implements ClassBuilder<Container> {
 
         private Optional<Color> accent = Optional.empty();
         @BuildFlag(notEmpty = true)

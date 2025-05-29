@@ -2,6 +2,7 @@ package dev.sbs.discordapi.response.embed.structure;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -68,7 +69,7 @@ public final class Footer {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<Footer> {
+    public static class Builder implements ClassBuilder<Footer> {
 
         @BuildFlag(notEmpty = true, group = "footer", limit = 2048)
         private Optional<String> text = Optional.empty();

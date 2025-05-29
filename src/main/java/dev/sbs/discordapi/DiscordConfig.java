@@ -6,6 +6,7 @@ import dev.sbs.api.data.DataConfig;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -54,7 +55,7 @@ public final class DiscordConfig {
         return this.clientPresence.apply(shardInfo);
     }
 
-    public static class Builder implements dev.sbs.api.util.builder.Builder<DiscordConfig> {
+    public static class Builder implements ClassBuilder<DiscordConfig> {
 
         // Settings
         @BuildFlag(nonNull = true)

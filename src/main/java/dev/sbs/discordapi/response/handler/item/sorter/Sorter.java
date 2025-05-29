@@ -6,6 +6,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.collection.sort.SortOrder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -105,7 +106,7 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<T> implements dev.sbs.api.util.builder.Builder<Sorter<T>> {
+    public static class Builder<T> implements ClassBuilder<Sorter<T>> {
 
         @BuildFlag(nonNull = true)
         private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();

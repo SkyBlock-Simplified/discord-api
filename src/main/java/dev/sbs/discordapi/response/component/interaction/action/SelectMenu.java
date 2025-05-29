@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.api.util.builder.hash.EqualsBuilder;
 import dev.sbs.api.util.builder.hash.HashCodeBuilder;
@@ -190,7 +191,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements dev.sbs.api.util.builder.Builder<SelectMenu> {
+    public static final class Builder implements ClassBuilder<SelectMenu> {
 
         @BuildFlag(nonNull = true)
         private String identifier;
@@ -542,7 +543,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class Builder implements dev.sbs.api.util.builder.Builder<Option> {
+        public static final class Builder implements ClassBuilder<Option> {
 
             private final UUID uniqueId;
             private Optional<String> label = Optional.empty();

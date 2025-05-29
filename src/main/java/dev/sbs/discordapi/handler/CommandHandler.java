@@ -8,6 +8,7 @@ import dev.sbs.api.collection.stream.StreamUtil;
 import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
@@ -353,7 +354,7 @@ public final class CommandHandler extends DiscordReference {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder implements dev.sbs.api.util.builder.Builder<CommandHandler> {
+    public static class Builder implements ClassBuilder<CommandHandler> {
 
         private final DiscordBot discordBot;
         private final ConcurrentSet<Class<DiscordCommand>> commands = Concurrent.newSet();

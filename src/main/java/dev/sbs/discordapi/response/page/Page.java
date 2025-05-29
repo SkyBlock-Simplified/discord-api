@@ -3,6 +3,7 @@ package dev.sbs.discordapi.response.page;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.api.util.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.Component;
@@ -10,7 +11,6 @@ import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.ToggleableComponent;
-import dev.sbs.discordapi.response.handler.history.HistoryHandler;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.impl.TreePage;
 import dev.sbs.discordapi.response.page.impl.form.FormPage;
@@ -27,7 +27,7 @@ public interface Page {
 
     @NotNull ConcurrentList<LayoutComponent> getComponents();
 
-    @NotNull HistoryHandler<?, String> getHistoryHandler();
+    //@NotNull HistoryHandler<?, String> getHistoryHandler();
 
     @NotNull ItemHandler<?> getItemHandler();
 
@@ -81,7 +81,7 @@ public interface Page {
             .findFirst();
     }
 
-    abstract class Builder implements dev.sbs.api.util.builder.Builder<Page> {
+    abstract class Builder implements ClassBuilder<Page> {
 
         @BuildFlag(nonNull = true)
         protected SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
