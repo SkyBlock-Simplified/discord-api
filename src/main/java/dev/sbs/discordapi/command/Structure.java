@@ -45,7 +45,7 @@ public @interface Structure {
      * </ul>
      */
     @Pattern("^.{1,100}$")
-    @NotNull String description() default "";
+    @NotNull String description();
 
     /**
      * Parent data of slash command.
