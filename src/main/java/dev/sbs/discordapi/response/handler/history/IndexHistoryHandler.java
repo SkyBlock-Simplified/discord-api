@@ -3,8 +3,9 @@ package dev.sbs.discordapi.response.handler.history;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -142,7 +143,7 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Builder<P, I> implements dev.sbs.api.util.builder.Builder<IndexHistoryHandler<P, I>> {
+    public static class Builder<P, I> implements ClassBuilder<IndexHistoryHandler<P, I>> {
 
         private final ConcurrentList<P> pages = Concurrent.newList();
         private Optional<Function<P, I>> transformer = Optional.empty();

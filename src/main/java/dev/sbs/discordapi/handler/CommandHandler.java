@@ -8,7 +8,7 @@ import dev.sbs.api.collection.stream.StreamUtil;
 import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;

@@ -2,7 +2,7 @@ package dev.sbs.discordapi.response.component.media;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;

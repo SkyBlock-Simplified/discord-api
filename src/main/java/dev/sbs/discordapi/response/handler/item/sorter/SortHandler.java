@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.response.handler.item.sorter;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.Setter;

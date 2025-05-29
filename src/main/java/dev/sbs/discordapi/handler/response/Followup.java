@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.handler.response;
 
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;

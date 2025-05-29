@@ -3,7 +3,7 @@ package dev.sbs.discordapi.response.page.item.field;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.SimpleDate;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
