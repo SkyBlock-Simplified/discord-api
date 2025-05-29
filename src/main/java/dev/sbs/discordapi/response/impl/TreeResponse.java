@@ -304,6 +304,20 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
     }
 
     @Override
+    public boolean isCacheUpdateRequired() {
+        return this.getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired();
+    }
+
+    @Override
+    public void setNoCacheUpdateRequired() {
+        this.getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public @NotNull TreeBuilder mutate() {
         return from(this);
