@@ -1,12 +1,12 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.mutable.Range;
-import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
+import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.Range;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
