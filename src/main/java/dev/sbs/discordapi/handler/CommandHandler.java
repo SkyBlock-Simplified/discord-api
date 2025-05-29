@@ -1,14 +1,14 @@
 package dev.sbs.discordapi.handler;
 
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.collection.stream.StreamUtil;
-import dev.sbs.api.mutable.pair.Pair;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.stream.StreamUtil;
+import dev.sbs.api.stream.pair.Pair;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;

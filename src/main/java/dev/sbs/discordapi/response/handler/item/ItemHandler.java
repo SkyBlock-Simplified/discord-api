@@ -1,19 +1,19 @@
 package dev.sbs.discordapi.response.handler.item;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.collection.stream.StreamUtil;
-import dev.sbs.api.collection.stream.triple.TriFunction;
-import dev.sbs.api.mutable.pair.Pair;
-import dev.sbs.api.mutable.triple.Triple;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.stream.StreamUtil;
+import dev.sbs.api.stream.pair.Pair;
+import dev.sbs.api.stream.triple.TriFunction;
+import dev.sbs.api.stream.triple.Triple;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.handler.OutputHandler;
