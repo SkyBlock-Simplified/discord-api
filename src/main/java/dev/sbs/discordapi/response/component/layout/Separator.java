@@ -1,9 +1,9 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
@@ -18,8 +18,7 @@ public final class Separator implements LayoutComponent, TopLevelComponent, Cont
 
     private final @NotNull ConcurrentList<Component> components = Concurrent.newUnmodifiableList();
     private final @NotNull Size size;
-    @Getter(AccessLevel.NONE)
-    private final boolean divider;
+    private final boolean visible;
 
     @Override
     public boolean equals(Object o) {
@@ -30,7 +29,7 @@ public final class Separator implements LayoutComponent, TopLevelComponent, Cont
 
         return new EqualsBuilder()
             .append(this.getSize(), separator.getSize())
-            .append(this.hasDivider(), separator.hasDivider())
+            .append(this.isVisible(), separator.isVisible())
             .build();
     }
 
@@ -39,30 +38,26 @@ public final class Separator implements LayoutComponent, TopLevelComponent, Cont
         return Type.SEPARATOR;
     }
 
-    public boolean hasDivider() {
-        return this.divider;
-    }
-
     public static @NotNull Separator small() {
         return small(false);
     }
 
-    public static @NotNull Separator small(boolean divider) {
-        return new Separator(Size.SMALL, divider);
+    public static @NotNull Separator small(boolean visible) {
+        return new Separator(Size.SMALL, visible);
     }
 
     public static @NotNull Separator large() {
         return large(false);
     }
 
-    public static @NotNull Separator large(boolean divider) {
-        return new Separator(Size.LARGE, divider);
+    public static @NotNull Separator large(boolean visible) {
+        return new Separator(Size.LARGE, visible);
     }
 
     @Override
     public @NotNull discord4j.core.object.component.Separator getD4jComponent() {
         return discord4j.core.object.component.Separator.of(
-            this.hasDivider(),
+            this.isVisible(),
             discord4j.core.object.component.Separator.SpacingSize.of(this.getSize().getValue())
         );
     }
@@ -71,7 +66,7 @@ public final class Separator implements LayoutComponent, TopLevelComponent, Cont
     public int hashCode() {
         return new HashCodeBuilder()
             .append(this.getSize())
-            .append(this.hasDivider())
+            .append(this.isVisible())
             .build();
     }
 
