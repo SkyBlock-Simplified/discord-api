@@ -74,15 +74,15 @@ public final class Separator implements LayoutComponent, TopLevelComponent, Cont
     @RequiredArgsConstructor
     public enum Size {
 
-        SMALL(0),
-        LARGE(1);
+        SMALL(1),
+        LARGE(2);
 
         private final int value;
 
         public static @NotNull Size of(int value) {
             return switch (value) {
-                case 0 -> SMALL;
-                case 1 -> LARGE;
+                case 1 -> SMALL;
+                case 2 -> LARGE;
                 default -> throw new UnsupportedOperationException("Unknown Size: " + value);
             };
         }
