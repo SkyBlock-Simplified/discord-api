@@ -1,10 +1,10 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.client.impl.sbs.response.SkyBlockEmojisResponse;
 import dev.sbs.api.data.model.discord.emojis.EmojiModel;
 import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -158,7 +158,7 @@ public abstract class Emoji {
 
         @Override
         public @NotNull String getUrl() {
-            return String.format("https://cdn.discordapp.com/emojis/%s.webp", this.getId().asLong());
+            return String.format("https://cdn.discordapp.com/emojis/%s.%s", this.getId().asLong(), (this.isAnimated() ? "gif" : "webp"));
         }
 
     }
