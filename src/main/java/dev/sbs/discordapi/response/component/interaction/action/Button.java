@@ -1,16 +1,15 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
-import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.Modal;
@@ -425,12 +424,12 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
     public enum PageType {
 
         NONE("", __ -> Mono.empty()),
-        PREVIOUS("Previous", EmojiHandler.getEmoji("ARROW_SQUARE_PREVIOUS"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        PREVIOUS("Previous", context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .gotoPreviousPage()
         )),
-        SEARCH("Search", EmojiHandler.getEmoji("SEARCH"), context -> context.withResponse(response -> context.presentModal(
+        SEARCH("Search", context -> context.withResponse(response -> context.presentModal(
             Modal.builder()
                 .withComponents(
                     ActionRow.of(TextInput.SearchType.PAGE.build(response.getHistoryHandler().getCurrentPage().getItemHandler())),
@@ -501,20 +500,20 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
                 )
                 .build()
         ))),
-        NEXT("Next", EmojiHandler.getEmoji("ARROW_SQUARE_NEXT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        NEXT("Next", context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .gotoNextPage()
         ));
-        //LAST("Last", 1, EmojiHandler.getEmoji("ARROW_SQUARE_LAST")),
-        /*BACK("Back", EmojiHandler.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
-        SORT("Sort", EmojiHandler.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        //LAST("Last", 1, this.getEmoji("ARROW_SQUARE_LAST")),
+        /*BACK("Back", this.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
+        SORT("Sort", this.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .getSortHandler()
             .gotoNext()
         )),
-        ORDER("Order", EmojiHandler.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
+        ORDER("Order", this.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .getSortHandler()
@@ -522,17 +521,16 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         ))*/
 
         private final @NotNull String label;
-        private final @NotNull Optional<Emoji> emoji;
         private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
 
-        PageType(@NotNull String label, @NotNull Function<ButtonContext, Mono<Void>> interaction) {
-            this(label, Optional.empty(), interaction);
+        public @NotNull Button build() {
+            return this.build(Optional.empty());
         }
 
-        public @NotNull Button build() {
+        public @NotNull Button build(@NotNull Optional<Emoji> emoji) {
             return Button.builder()
                 .withStyle(Button.Style.SECONDARY)
-                .withEmoji(this.getEmoji())
+                .withEmoji(emoji)
                 .withLabel(this.getLabel())
                 .withPageType(this)
                 .setDisabled(true)
