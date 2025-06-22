@@ -33,6 +33,7 @@ public final class DebugBot extends DiscordBot {
                     .filterPackage("dev.sbs.discordapi.debug.command")
                     .getTypesOf(DiscordCommand.class)
             )
+            .withEmojis(Reflection.getResources(DebugBot.class.getClassLoader()).getResources("emojis/"))
             .withAllowedMentions(AllowedMentions.suppressEveryone())
             .withDisabledIntents(IntentSet.of(Intent.GUILD_PRESENCES))
             .withClientPresence(ClientPresence.doNotDisturb(ClientActivity.watching("debugging")))
