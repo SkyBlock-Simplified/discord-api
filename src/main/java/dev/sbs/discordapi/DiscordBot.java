@@ -36,9 +36,7 @@ import dev.sbs.discordapi.listener.deferrable.component.ModalListener;
 import dev.sbs.discordapi.listener.deferrable.component.SelectMenuListener;
 import dev.sbs.discordapi.listener.message.MessageCreateListener;
 import dev.sbs.discordapi.listener.message.MessageDeleteListener;
-import dev.sbs.discordapi.listener.message.reaction.ReactionAddListener;
 import dev.sbs.discordapi.listener.message.reaction.ReactionRemoveListener;
-import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.page.Page;
@@ -47,21 +45,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.Event;
-import discord4j.core.event.domain.guild.GuildCreateEvent;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.MessageInteractionEvent;
-import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
-import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
-import discord4j.core.event.domain.lifecycle.DisconnectEvent;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.event.domain.message.MessageDeleteEvent;
-import discord4j.core.event.domain.message.ReactionAddEvent;
-import discord4j.core.event.domain.message.ReactionRemoveEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -79,9 +63,7 @@ import reactor.util.retry.Retry;
 
 import java.net.SocketException;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 /**
  * Discord4J Framework Wrapper for Discord Bots.
@@ -115,9 +97,8 @@ import java.util.function.Function;
  *         <li>Components
  *         <ul>
  *             <li>Buttons ({@link ButtonContext Context}, {@link ButtonListener Listener})</li>
- *             <li>Modals ({@link ModalContext Context}, {@link ModalListener Listener})</li>
+ *             <li>Modals ({@link ModalContext Context}, {@link TextInput Text Input Context}, {@link ModalListener Listener})</li>
  *             <li>Select Menus ({@link SelectMenuContext Context}, {@link OptionContext Option Context}, {@link SelectMenuListener Listener})</li>
- *             <li>Text Inputs ({@link TextInput Context})</li>
  *         </ul></li>
  *         <li>Messages ({@link MessageCreateListener Create Listener}, {@link MessageDeleteListener Delete Listener})</li>
  *         <li>Reactions ({@link ReactionContext Context}, {@link ReactionRemoveListener Add Listener}, {@link ReactionRemoveListener Remove Listener})
@@ -134,21 +115,19 @@ public abstract class DiscordBot {
 
     // Handlers
     private final @NotNull ExceptionHandler exceptionHandler;
+    private final @NotNull EmojiHandler emojiHandler;
     private final @NotNull ResponseHandler responseHandler;
-    private final @NotNull ShardHandler shardHandler;
     private final @NotNull CommandHandler commandHandler;
+    private final @NotNull ShardHandler shardHandler;
 
     // Connection
     private final @NotNull DiscordClient client;
     private final @NotNull GatewayDiscordClient gateway;
 
-    protected void setEmojiHandler(@NotNull Function<String, Optional<Emoji>> locator) {
-        EmojiHandler.setLocator(locator);
-    }
-
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig config) {
         this.exceptionHandler = new ExceptionHandler(this);
+        this.emojiHandler = new EmojiHandler(this);
         this.responseHandler = new ResponseHandler();
         this.config = config;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
@@ -218,44 +197,29 @@ public abstract class DiscordBot {
                     }), 0, 1, TimeUnit.SECONDS);
 
                     log.info("Registering Event Listeners");
-                    ConcurrentList<Publisher<Void>> eventListeners = Concurrent.newList(
-                        // Commands
-                        eventDispatcher.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)),
-                        eventDispatcher.on(MessageInteractionEvent.class, new MessageCommandListener(this)),
-                        eventDispatcher.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)),
-                        eventDispatcher.on(UserInteractionEvent.class, new UserCommandListener(this)),
+                    ConcurrentList<Publisher<Void>> eventListeners = Reflection.getResources()
+                        .filterPackage(DiscordListener.class)
+                        .getSubtypesOf(DiscordListener.class)
+                        .stream()
+                        .map(lClass -> Reflection.of(lClass).newInstance(this))
+                        .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
+                        .collect(Concurrent.toList());
 
-                        // Components
-                        eventDispatcher.on(ButtonInteractionEvent.class, new ButtonListener(this)),
-                        eventDispatcher.on(ModalSubmitInteractionEvent.class, new ModalListener(this)),
-                        eventDispatcher.on(SelectMenuInteractionEvent.class, new SelectMenuListener(this)),
+                    log.info("Registering Emojis");
+                    this.emojiHandler.reload();
+                    Mono<Void> emojis = this.emojiHandler.upload();
 
-                        // Messages
-                        eventDispatcher.on(MessageCreateEvent.class, new MessageCreateListener(this)),
-                        eventDispatcher.on(MessageDeleteEvent.class, new MessageDeleteListener(this)),
-
-                        // Reactions
-                        eventDispatcher.on(ReactionAddEvent.class, new ReactionAddListener(this)),
-                        eventDispatcher.on(ReactionRemoveEvent.class, new ReactionRemoveListener(this)),
-
-                        eventDispatcher.on(GuildCreateEvent.class, guildCreateEvent -> this.getCommandHandler()
-                            .updateGuildApplicationCommands(guildCreateEvent.getGuild().getId().asLong())
-                        ),
-
-                        eventDispatcher.on(DisconnectEvent.class, disconnectEvent -> Mono.fromRunnable(() -> {
-                            this.onGatewayDisconnected();
-                            this.getScheduler().shutdownNow();
-                            SimplifiedApi.getSessionManager().disconnect();
-                        }))
-                    );
-
-                    this.getConfig().getListeners().forEach(listenerClass -> {
-                        DiscordListener<? super Event> discordListener = (DiscordListener<? super Event>) Reflection.of(listenerClass).newInstance(this);
-                        eventListeners.add(eventDispatcher.on(discordListener.getEventClass(), discordListener::apply));
-                    });
+                    this.getConfig()
+                        .getListeners()
+                        .stream()
+                        .map(lClass -> Reflection.of(lClass).newInstance(this))
+                        .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
+                        .forEach(eventListeners::add);
 
                     log.info("Logged in as {}", this.getSelf().getUsername());
-                    return Mono.when(eventListeners).and(this.getCommandHandler().updateGlobalApplicationCommands());
+                    return Mono.when(eventListeners)
+                        .and(this.getCommandHandler().updateGlobalApplicationCommands())
+                        .and(emojis);
                 })
             )
             .login()
