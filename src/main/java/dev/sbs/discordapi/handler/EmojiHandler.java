@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.reflection.info.ResourceInfo;
 import dev.sbs.api.util.StringUtil;
@@ -23,7 +24,7 @@ import java.util.function.Function;
 public final class EmojiHandler extends DiscordReference {
 
     private final @NotNull ConcurrentSet<ResourceEmoji> resourceEmojis;
-    private @NotNull ConcurrentSet<Emoji> emojis = Concurrent.newSet();
+    private @NotNull ConcurrentList<Emoji> emojis = Concurrent.newList();
 
     public EmojiHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);
@@ -43,7 +44,7 @@ public final class EmojiHandler extends DiscordReference {
             .flatMapMany(ApplicationInfo::getEmojis)
             .toStream()
             .map(Emoji::of)
-            .collect(Concurrent.toUnmodifiableSet());
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     public Mono<Void> upload() {
