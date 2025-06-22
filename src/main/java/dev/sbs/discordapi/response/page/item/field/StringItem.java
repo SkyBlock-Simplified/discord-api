@@ -1,9 +1,8 @@
 package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
@@ -47,7 +46,7 @@ public class StringItem implements FieldItem<String> {
 
     @Override
     public @NotNull String getRenderValue() {
-        return this.getValue().orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
+        return this.getValue().orElse("***null***");
     }
 
     public @NotNull Builder mutate() {

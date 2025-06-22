@@ -1,11 +1,10 @@
 package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
@@ -53,7 +52,7 @@ public final class NumberItem<T extends Number> implements FieldItem<T> {
     public @NotNull String getRenderValue() {
         return this.getValue()
             .map(T::toString)
-            .orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
+            .orElse("***null***");
     }
 
     public @NotNull Builder<T> mutate() {

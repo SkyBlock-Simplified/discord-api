@@ -1,14 +1,13 @@
 package dev.sbs.discordapi.response.page.item.field;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.embed.structure.Field;
@@ -68,7 +67,7 @@ public final class ModelItem<T extends Model> implements FieldItem<T> {
     public @NotNull String getRenderValue() {
         return this.getValue()
             .map(this.getValueFunction())
-            .orElse(EmojiHandler.getEmoji("TEXT_NULL").map(Emoji::asFormat).orElse("***null***"));
+            .orElse("***null***");
     }
 
     public @NotNull Builder<T> mutate() {
