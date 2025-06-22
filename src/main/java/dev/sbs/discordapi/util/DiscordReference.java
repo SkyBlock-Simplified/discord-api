@@ -5,6 +5,7 @@ import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.response.Emoji;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
@@ -41,6 +42,13 @@ public abstract class DiscordReference {
 
     protected final @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
         return tClass.isAnnotationPresent(aClass) ? Optional.of(tClass.getAnnotation(aClass)) : java.util.Optional.empty();
+    }
+
+    protected final @NotNull Optional<Emoji> getEmoji(@NotNull String name) {
+        return this.getDiscordBot()
+            .getEmojiHandler()
+            .getEmojis()
+            .matchFirst(emoji -> emoji.getName().equalsIgnoreCase(name));
     }
 
     protected final boolean matchesInteractionData(@NotNull DiscordCommand<?> command, @NotNull ApplicationCommandInteractionData commandData) {
