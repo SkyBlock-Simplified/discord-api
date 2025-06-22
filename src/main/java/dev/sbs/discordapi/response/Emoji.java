@@ -2,9 +2,6 @@ package dev.sbs.discordapi.response;
 
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.client.impl.sbs.response.SkyBlockEmojisResponse;
-import dev.sbs.api.data.model.discord.emojis.EmojiModel;
-import dev.sbs.api.data.model.skyblock.profiles.ProfileModel;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -14,7 +11,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -52,6 +48,14 @@ public abstract class Emoji {
 
     public abstract @NotNull String getUrl();
 
+    public static @NotNull String getUrl(long snowflake) {
+        return getUrl(snowflake, false);
+    }
+
+    public static @NotNull String getUrl(long snowflake, boolean animated) {
+        return String.format("https://cdn.discordapp.com/emojis/%s.%s", snowflake, (animated ? "gif" : "webp"));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -79,30 +83,6 @@ public abstract class Emoji {
 
     public final boolean isUnicode() {
         return this.raw.isPresent();
-    }
-
-    public static @NotNull Optional<Emoji> of(@NotNull ProfileModel profileModel) {
-        return of(profileModel.getEmoji());
-    }
-
-    public static @NotNull Optional<Emoji> of(@Nullable EmojiModel emojiModel) {
-        return of(Optional.ofNullable(emojiModel), null);
-    }
-
-    public static @NotNull Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel) {
-        return of(emojiModel, null);
-    }
-
-    public static @NotNull Optional<Emoji> of(@Nullable EmojiModel emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
-        return of(Optional.ofNullable(emojiModel), interaction);
-    }
-
-    public static @NotNull Optional<Emoji> of(@NotNull Optional<EmojiModel> emojiModel, Function<ReactionContext, Mono<Void>> interaction) {
-        return emojiModel.map(emoji -> new Custom(Snowflake.of(emoji.getEmojiId()), emoji.getKey(), emoji.isAnimated(), interaction));
-    }
-
-    public static @NotNull Emoji of(@NotNull SkyBlockEmojisResponse.Emoji emoji) {
-        return of(emoji.getId(), emoji.getName(), emoji.isAnimated());
     }
 
     public static @NotNull Emoji of(@NotNull discord4j.core.object.emoji.Emoji emoji) {
@@ -158,7 +138,7 @@ public abstract class Emoji {
 
         @Override
         public @NotNull String getUrl() {
-            return String.format("https://cdn.discordapp.com/emojis/%s.%s", this.getId().asLong(), (this.isAnimated() ? "gif" : "webp"));
+            return Emoji.getUrl(this.getId().asLong(), this.isAnimated());
         }
 
     }
