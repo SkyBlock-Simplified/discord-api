@@ -88,11 +88,11 @@ public final class CommandHandler extends DiscordReference {
         );
     }
 
-    public static Builder builder(@NotNull DiscordBot discordBot) {
+    public static @NotNull Builder builder(@NotNull DiscordBot discordBot) {
         return new Builder(discordBot);
     }
 
-    private ConcurrentList<ApplicationCommandRequest> buildCommandRequests(long guildId) {
+    private @NotNull ConcurrentList<ApplicationCommandRequest> buildCommandRequests(long guildId) {
         return Stream.concat(
                 // Handle Parent Commands
                 this.getSlashCommands()
@@ -275,12 +275,12 @@ public final class CommandHandler extends DiscordReference {
             .collect(Concurrent.toUnmodifiableList());
     }
 
-    public Mono<Void> updateApplicationCommands() {
+    public @NotNull Mono<Void> updateApplicationCommands() {
         return this.updateGlobalApplicationCommands()
             .then(this.updateGuildApplicationCommands());
     }
 
-    public Mono<Void> updateGlobalApplicationCommands() {
+    public @NotNull Mono<Void> updateGlobalApplicationCommands() {
         return this.getDiscordBot()
             .getGateway()
             .getRestClient()
@@ -295,7 +295,7 @@ public final class CommandHandler extends DiscordReference {
             .then();
     }
 
-    public Mono<Void> updateGuildApplicationCommands() {
+    public @NotNull Mono<Void> updateGuildApplicationCommands() {
         return Flux.fromIterable(this.getLoadedCommands())
             .filter(command -> command.getStructure().guildId() > 0)
             .map(DiscordCommand::getStructure)
@@ -306,7 +306,7 @@ public final class CommandHandler extends DiscordReference {
             .then();
     }
 
-    public Mono<Void> updateGuildApplicationCommands(long guildId) {
+    public @NotNull Mono<Void> updateGuildApplicationCommands(long guildId) {
         return this.getDiscordBot()
             .getGateway()
             .getRestClient()
