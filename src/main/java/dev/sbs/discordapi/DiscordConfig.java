@@ -1,13 +1,14 @@
 package dev.sbs.discordapi;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.data.DataConfig;
 import dev.sbs.api.data.model.Model;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
+import dev.sbs.api.reflection.info.ResourceInfo;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.Event;
@@ -19,7 +20,6 @@ import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,24 +28,24 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Getter
-@Setter
 @AllArgsConstructor
 @SuppressWarnings("rawtypes")
 public final class DiscordConfig {
 
     @Flag(secure = true)
-    private @NotNull String token;
-    private long mainGuildId;
-    private @NotNull Optional<Long> debugChannelId;
-    private @NotNull Optional<DataConfig<? extends Model>> dataConfig;
-    private ConcurrentSet<Class<? extends DiscordListener>> listeners;
-    private ConcurrentSet<Class<DiscordCommand>> commands;
-    private @NotNull AllowedMentions allowedMentions;
-    private @NotNull IntentSet intents;
+    private final @NotNull String token;
+    private final long mainGuildId;
+    private final @NotNull Optional<Long> debugChannelId;
+    private final @NotNull Optional<DataConfig<? extends Model>> dataConfig;
+    private final ConcurrentSet<Class<? extends DiscordListener>> listeners;
+    private final ConcurrentSet<Class<DiscordCommand>> commands;
+    private final ConcurrentSet<ResourceInfo> emojis;
+    private final @NotNull AllowedMentions allowedMentions;
+    private final @NotNull IntentSet intents;
     @Getter(AccessLevel.NONE)
-    private @NotNull Function<ShardInfo, ClientPresence> clientPresence;
-    private @NotNull MemberRequestFilter memberRequestFilter;
-    private @NotNull Level logLevel;
+    private final @NotNull Function<ShardInfo, ClientPresence> clientPresence;
+    private final @NotNull MemberRequestFilter memberRequestFilter;
+    private final @NotNull Level logLevel;
 
     public static @NotNull Builder builder() {
         return new Builder();
@@ -68,6 +68,7 @@ public final class DiscordConfig {
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
         private ConcurrentSet<Class<DiscordCommand>> commands = Concurrent.newSet();
+        private ConcurrentSet<ResourceInfo> emojis = Concurrent.newSet();
         @BuildFlag(nonNull = true)
         private AllowedMentions allowedMentions = AllowedMentions.builder().build();
         @BuildFlag(nonNull = true)
@@ -109,6 +110,16 @@ public final class DiscordConfig {
 
         public Builder withCommands(@NotNull Iterable<Class<DiscordCommand>> commands) {
             commands.forEach(this.commands::add);
+            return this;
+        }
+
+        public Builder withEmojis(@NotNull ResourceInfo... emojis) {
+            this.emojis.addAll(emojis);
+            return this;
+        }
+
+        public Builder withEmojis(@NotNull Iterable<ResourceInfo> emojis) {
+            emojis.forEach(this.emojis::add);
             return this;
         }
 
@@ -198,6 +209,7 @@ public final class DiscordConfig {
                 this.dataConfig,
                 this.listeners.toUnmodifiableSet(),
                 this.commands.toUnmodifiableSet(),
+                this.emojis.toUnmodifiableSet(),
                 this.allowedMentions,
                 this.intents,
                 this.clientPresence,
