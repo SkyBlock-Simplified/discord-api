@@ -15,12 +15,8 @@ public class DisconnectListener extends DiscordListener<DisconnectEvent> {
     }
 
     @Override
-    public Publisher<Void> apply(@NotNull DisconnectEvent guildCreateEvent) {
+    public Publisher<Void> apply(@NotNull DisconnectEvent event) {
         return Mono.fromRunnable(() -> {
-            this.getDiscordBot()
-                .getShutdownHooks()
-                .forEach(Runnable::run);
-
             this.getDiscordBot().getScheduler().shutdownNow();
             SimplifiedApi.getSessionManager().disconnectAll();
         });

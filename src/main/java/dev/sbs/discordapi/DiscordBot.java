@@ -3,7 +3,6 @@ package dev.sbs.discordapi;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.discordapi.command.DiscordCommand;
@@ -112,7 +111,6 @@ import java.util.concurrent.TimeUnit;
 public abstract class DiscordBot {
 
     private final @NotNull Scheduler scheduler = new Scheduler();
-    private final @NotNull ConcurrentSet<Runnable> shutdownHooks = Concurrent.newSet();
     private final @NotNull DiscordConfig config;
 
     // Handlers
@@ -169,7 +167,7 @@ public abstract class DiscordBot {
                             SimplifiedApi.getSessionManager().connect(dataConfig);
 
                             log.info(
-                                "Database Connected. (Initialized in {}ms, Started in {}ms",
+                                "Database Connected. (Initialized in {}ms, Started in {}ms)",
                                 SimplifiedApi.getSessionManager().getSession().getInitialization(),
                                 SimplifiedApi.getSessionManager().getSession().getStartup()
                             );
