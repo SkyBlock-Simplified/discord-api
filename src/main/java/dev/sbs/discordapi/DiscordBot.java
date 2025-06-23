@@ -126,10 +126,10 @@ public abstract class DiscordBot {
 
     @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig config) {
+        this.config = config;
         this.exceptionHandler = new ExceptionHandler(this);
         this.emojiHandler = new EmojiHandler(this);
         this.responseHandler = new ResponseHandler();
-        this.config = config;
         Configurator.setRootLevel(this.getConfig().getLogLevel());
 
         this.commandHandler = CommandHandler.builder(this)
