@@ -14,8 +14,8 @@ dependencies {
     implementation(group = "org.jetbrains", name = "annotations", version = "24.0.1")
 
     // Resource Checker Annotations
-    implementation(group = "dev.sbs", name = "simplified-annotations", version = "1.0.1")
-    annotationProcessor(group = "dev.sbs", name = "simplified-annotations", version = "1.0.1")
+    implementation(group = "dev.sbs", name = "simplified-annotations", version = "1.0.2")
+    annotationProcessor(group = "dev.sbs", name = "simplified-annotations", version = "1.0.2")
 
     // Lombok Annotations
     compileOnly(group = "org.projectlombok", name = "lombok", version = "1.18.30")
