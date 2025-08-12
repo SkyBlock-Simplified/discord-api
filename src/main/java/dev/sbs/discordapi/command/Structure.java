@@ -18,17 +18,6 @@ import java.lang.annotation.Target;
 public @interface Structure {
 
     /**
-     * Type of command.
-     *
-     * <ul>
-     *     <li>{@link DiscordCommand.Type#MESSAGE} for Message Commands</li>
-     *     <li>{@link DiscordCommand.Type#CHAT_INPUT} for Slash Commands (Default)</li>
-     *     <li>{@link DiscordCommand.Type#USER} for User Commands</li>
-     * </ul>
-     */
-    @NotNull DiscordCommand.Type type() default DiscordCommand.Type.CHAT_INPUT;
-
-    /**
      * Name of command.
      * <ul>
      *     <li>1-32 Characters</li>

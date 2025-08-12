@@ -64,7 +64,7 @@ public final class CommandHandler extends DiscordReference {
 
         this.getLog().info("Filtering Commands");
         this.slashCommands = this.retrieveTypedCommands(
-            SlashCommandContext.class,
+            DiscordCommand.Type.CHAT_INPUT,
             this.loadedCommands,
             (commandEntry, compareEntry) -> Objects.equals(
                 commandEntry.getStructure().parent(),
@@ -76,13 +76,13 @@ public final class CommandHandler extends DiscordReference {
         );
 
         this.userCommands = this.retrieveTypedCommands(
-            UserCommandContext.class,
+            DiscordCommand.Type.USER,
             this.loadedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
 
         this.messageCommands = this.retrieveTypedCommands(
-            MessageCommandContext.class,
+            DiscordCommand.Type.MESSAGE,
             this.loadedCommands,
             (commandEntry, compareEntry) -> commandEntry.getStructure().name().equalsIgnoreCase(compareEntry.getStructure().name())
         );
@@ -170,7 +170,7 @@ public final class CommandHandler extends DiscordReference {
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DiscordCommand command) {
         return ApplicationCommandRequest.builder()
-            .type(command.getStructure().type().getValue())
+            .type(command.getType().getValue())
             .name(command.getStructure().name())
             .description(command.getStructure().description())
             .nsfw(command.getStructure().nsfw())
@@ -237,9 +237,9 @@ public final class CommandHandler extends DiscordReference {
     private @NotNull ConcurrentList<DiscordCommand> getCommandReferences(@NotNull String name, @NotNull DiscordCommand.Type type) {
         return this.getLoadedCommands()
             .stream()
-            .filter(command -> command.getStructure().type() == type)
+            .filter(command -> command.getType() == type)
             .filter(command -> {
-                if (command.getStructure().type() == DiscordCommand.Type.CHAT_INPUT) {
+                if (command.getType() == DiscordCommand.Type.CHAT_INPUT) {
                     if (StringUtil.isNotEmpty(command.getStructure().parent().name()))
                         return command.getStructure().parent().name().equalsIgnoreCase(name);
                     else
@@ -252,12 +252,12 @@ public final class CommandHandler extends DiscordReference {
 
     @SuppressWarnings("all")
     private <A extends ApplicationCommandInteractionEvent, C extends CommandContext<A>> @NotNull ConcurrentList<DiscordCommand<C>> retrieveTypedCommands(
-        @NotNull Class<C> type,
+        @NotNull DiscordCommand.Type type,
         @NotNull ConcurrentList<DiscordCommand> commands,
         @NotNull BiPredicate<DiscordCommand, DiscordCommand> filter
     ) {
         return commands.stream()
-            .filter(command -> type.isAssignableFrom(command.getContextType()))
+            .filter(command -> command.getType() == type)
             .filter(command -> {
                 Optional<DiscordCommand> commandOverlap = commands.stream()
                     .filter(compareEntry -> !command.equals(compareEntry))

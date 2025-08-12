@@ -35,14 +35,14 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
 
     protected static final ConcurrentUnmodifiableList<String> NO_EXAMPLES = Concurrent.newUnmodifiableList();
     protected final @NotNull Structure structure;
-    protected final @NotNull Class<C> contextType;
+    protected final @NotNull Type type;
     private boolean processing = false;
 
     protected DiscordCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.structure = super.getAnnotation(Structure.class, this.getClass())
             .orElseThrow(() -> new CommandException("Cannot instantiate a command with no structure."));
-        this.contextType = Reflection.getSuperClass(this);
+        this.type = Type.of(Reflection.getSuperClass(this));
     }
 
     @Override
@@ -241,6 +241,17 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 case 4 -> PRIMARY_ENTRY_POINT;
                 default -> UNKNOWN;
             };
+        }
+
+        public static <C extends CommandContext<?>> @NotNull Type of(final Class<C> contextType) {
+            if (SlashCommandContext.class.isAssignableFrom(contextType))
+                return CHAT_INPUT;
+            else if (UserCommandContext.class.isAssignableFrom(contextType))
+                return USER;
+            else if (MessageCommandContext.class.isAssignableFrom(contextType))
+                return MESSAGE;
+
+            return UNKNOWN;
         }
 
     }
