@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
 
@@ -35,7 +36,8 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .singleOrEmpty()
             .switchIfEmpty(event.deferEdit().then(Mono.empty())) // Invalid User Interaction
             .doOnNext(CachedResponse::setBusy)
-            .flatMap(entry -> this.handleEvent(event, entry, entry.findFollowup(event.getMessageId())));
+            .flatMap(entry -> this.handleEvent(event, entry, entry.findFollowup(event.getMessageId())))
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     protected abstract @NotNull C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Followup> followup);
@@ -52,7 +54,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
     protected Mono<Void> handleEvent(@NotNull E event, @NotNull CachedResponse entry, @NotNull Optional<Followup> followup) {
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents())
             .concatWith(Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()))
-            .flatMap(layoutComponent -> Flux.fromIterable(layoutComponent.getComponents()))
+            .flatMap(layoutComponent -> Flux.fromStream(layoutComponent.flattenComponents()))
             .filter(UserInteractComponent.class::isInstance)
             .filter(component -> event.getCustomId().equals(((UserInteractComponent) component).getUserIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
