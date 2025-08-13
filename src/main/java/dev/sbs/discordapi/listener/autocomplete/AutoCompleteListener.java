@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.parameter.Argument;
+import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -24,7 +25,6 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
     @SuppressWarnings("all")
     public Publisher<Void> apply(@NotNull ChatInputAutoCompleteEvent event) {
         return Mono.just(event.getInteraction())
-            .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong()))
                 .filter(command -> this.matchesInteractionData(command, commandData))
@@ -33,9 +33,7 @@ public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCom
             .map(command -> (DiscordCommand<SlashCommandContext>) command)
             .flatMap(slashCommand -> event.respondWithSuggestions(
                 slashCommand.getParameters()
-                    .stream()
-                    .filter(parameter -> parameter.getName().equals(event.getFocusedOption().getName()))
-                    .findFirst()
+                    .findFirst(Parameter::getName, event.getFocusedOption().getName())
                     .map(parameter -> parameter.getAutoComplete()
                         .apply(AutoCompleteContext.of(
                             this.getDiscordBot(),
