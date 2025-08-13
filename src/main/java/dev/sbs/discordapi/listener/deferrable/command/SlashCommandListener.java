@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -27,7 +28,6 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
     @SuppressWarnings("all")
     public Publisher<Void> apply(@NotNull ChatInputInteractionEvent event) {
         return Mono.just(event.getInteraction())
-            .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong()))
                 .filter(command -> this.matchesInteractionData(command, commandData))
@@ -46,7 +46,8 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
                         .map(parameter -> new Argument(event.getInteraction(), parameter, commandOption.getValue().orElseThrow()))
                     )
                     .collect(Concurrent.toList())
-            )));
+            )))
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     private @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull DiscordCommand<?> command, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {

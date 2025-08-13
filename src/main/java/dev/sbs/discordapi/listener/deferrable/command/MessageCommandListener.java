@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public final class MessageCommandListener extends DiscordListener<MessageInteractionEvent> {
 
@@ -20,7 +21,6 @@ public final class MessageCommandListener extends DiscordListener<MessageInterac
     @SuppressWarnings("all")
     public Publisher<Void> apply(@NotNull MessageInteractionEvent event) {
         return Mono.just(event.getInteraction())
-            .filter(interaction -> interaction.getApplicationId().equals(this.getDiscordBot().getClientId())) // Validate Bot ID
             .flatMap(interaction -> Mono.justOrEmpty(interaction.getData().data().toOptional()))
             .flatMapMany(commandData -> Flux.fromIterable(this.getDiscordBot().getCommandHandler().getCommandsById(event.getCommandId().asLong())))
             .single()
@@ -31,7 +31,8 @@ public final class MessageCommandListener extends DiscordListener<MessageInterac
                     event,
                     command.getStructure()
                 )
-            ));
+            ))
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
 }
