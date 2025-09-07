@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response.component.interaction;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
@@ -239,7 +239,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                                 )
                                 .build()
                         ));
-                        case SELECT_MENU -> this.findComponent(
+                        case SELECT_MENU_STRING -> this.findComponent(
                             SelectMenu.class,
                             SelectMenu::getUserIdentifier,
                             d4jComponent.getData().customId().get()
