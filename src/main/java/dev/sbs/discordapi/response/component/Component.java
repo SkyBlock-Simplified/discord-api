@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 public interface Component {
@@ -69,7 +70,8 @@ public interface Component {
         MEDIA_GALLERY(12, true),
         FILE(13, true),
         SEPARATOR(14, true),
-        CONTAINER(17, true);
+        CONTAINER(17, true),
+        LABEL(18);
 
         private final int value;
 
@@ -83,24 +85,10 @@ public interface Component {
         }
 
         public static @NotNull Type of(int value) {
-            return switch (value) {
-                case 1 -> ACTION_ROW;
-                case 2 -> BUTTON;
-                case 3 -> SELECT_MENU;
-                case 4 -> TEXT_INPUT;
-                case 5 -> SELECT_MENU_USER;
-                case 6 -> SELECT_MENU_ROLE;
-                case 7 -> SELECT_MENU_MENTIONABLE;
-                case 8 -> SELECT_MENU_CHANNEL;
-                case 9 -> SECTION;
-                case 10 -> TEXT_DISPLAY;
-                case 11 -> THUMBNAIL;
-                case 12 -> MEDIA_GALLERY;
-                case 13 -> FILE;
-                case 14 -> SEPARATOR;
-                case 17 -> CONTAINER;
-                default -> UNKNOWN;
-            };
+            return Arrays.stream(values())
+                .filter(type -> type.getValue() == value)
+                .findFirst()
+                .orElse(UNKNOWN);
         }
 
     }
