@@ -13,9 +13,12 @@ import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
+import dev.sbs.discordapi.response.component.interaction.action.StringSelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
+import dev.sbs.discordapi.response.component.layout.Label;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.EventComponent;
+import dev.sbs.discordapi.response.component.type.LabelComponent;
 import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.spec.InteractionPresentModalSpec;
@@ -43,11 +46,21 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String userIdentifier;
     private final @NotNull Optional<String> title;
-    private final @NotNull ConcurrentList<LayoutComponent> components;
+    private final @NotNull ConcurrentList<Label> components;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
+    }
+
+    /**
+     * Searches for a {@link ActionComponent} by its identifier.
+     *
+     * @param identifier The identifier to search for.
+     * @return The matching component, if it exists.
+     */
+    public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
+        return this.findComponent(tClass, UserInteractComponent::getUserIdentifier, identifier);
     }
 
     /**
@@ -61,23 +74,11 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     public <S, A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
         return this.getComponents()
             .stream()
-            .flatMap(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(tClass::isInstance)
-                .map(tClass::cast)
-                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-            )
+            .map(Label::getComponent)
+            .filter(tClass::isInstance)
+            .map(tClass::cast)
+            .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
             .findFirst();
-    }
-
-    /**
-     * Searches for a {@link ActionComponent} by its identifier.
-     *
-     * @param identifier The identifier to search for.
-     * @return The matching component, if it exists.
-     */
-    public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, UserInteractComponent::getUserIdentifier, identifier);
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
@@ -146,7 +147,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         @BuildFlag(notEmpty = true)
         private Optional<String> title = Optional.empty();
         @BuildFlag(notEmpty = true)
-        private final ConcurrentList<LayoutComponent> components = Concurrent.newList();
+        private final ConcurrentList<Label> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -186,14 +187,12 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+        public <S, A extends LabelComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
             return this.components.stream()
-                .flatMap(layoutComponent -> layoutComponent.getComponents()
-                    .stream()
-                    .filter(tClass::isInstance)
-                    .map(tClass::cast)
-                    .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-                )
+                .map(Label::getComponent)
+                .filter(tClass::isInstance)
+                .map(tClass::cast)
+                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
                 .findFirst();
         }
 
@@ -240,7 +239,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                                 .build()
                         ));
                         case SELECT_MENU_STRING -> this.findComponent(
-                            SelectMenu.class,
+                            StringSelectMenu.class,
                             SelectMenu::getUserIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(selectMenu -> selectMenu.updateSelected(
@@ -256,21 +255,21 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         }
 
         /**
-         * Add {@link LayoutComponent LayoutComponents} to the {@link Modal}.
+         * Add {@link Label Labels} to the {@link Modal}.
          *
-         * @param components Variable number of layout components to add.
+         * @param components Variable number of components to add.
          */
         @SuppressWarnings("all")
-        public Builder withComponents(@NotNull LayoutComponent... components) {
+        public Builder withComponents(@NotNull Label... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
         /**
-         * Add {@link LayoutComponent LayoutComponents} to the {@link Modal}.
+         * Add {@link Label Labels} to the {@link Modal}.
          *
-         * @param components Collection of layout components to add.
+         * @param components Collection of components to add.
          */
-        public Builder withComponents(@NotNull Iterable<LayoutComponent> components) {
+        public Builder withComponents(@NotNull Iterable<Label> components) {
             components.forEach(this.components::add);
             return this;
         }
