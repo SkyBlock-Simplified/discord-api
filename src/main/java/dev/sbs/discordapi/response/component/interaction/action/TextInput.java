@@ -9,7 +9,8 @@ import dev.sbs.api.util.Range;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.type.v2.LabelComponent;
+import dev.sbs.discordapi.response.component.layout.Label;
+import dev.sbs.discordapi.response.component.type.LabelComponent;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
@@ -37,7 +38,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
     private final @NotNull String userIdentifier;
     private final @NotNull Style style;
-    private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> value;
     private final @NotNull Optional<String> placeholder;
     private final @NotNull SearchType searchType;
@@ -61,7 +61,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
         return new EqualsBuilder()
             .append(this.getUserIdentifier(), that.getUserIdentifier())
             .append(this.getStyle(), that.getStyle())
-            .append(this.getLabel(), that.getLabel())
             .append(this.getValue(), that.getValue())
             .append(this.getPlaceholder(), that.getPlaceholder())
             .append(this.getSearchType(), that.getSearchType())
@@ -76,7 +75,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
         return new Builder()
             .withIdentifier(textInput.getUserIdentifier())
             .withStyle(textInput.getStyle())
-            .withLabel(textInput.getLabel())
             .withValue(textInput.getValue())
             .withPlaceholder(textInput.getPlaceholder())
             .withSearchType(textInput.getSearchType())
@@ -93,7 +91,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
                 .type(MessageComponent.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
                 .customId(this.getUserIdentifier())
-                .label(Possible.of(this.getLabel()))
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
                 .minLength(this.getMinLength())
@@ -113,7 +110,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
         return new HashCodeBuilder()
             .append(this.getUserIdentifier())
             .append(this.getStyle())
-            .append(this.getLabel())
             .append(this.getValue())
             .append(this.getPlaceholder())
             .append(this.getMinLength())
@@ -133,8 +129,8 @@ public final class TextInput implements ActionComponent, LabelComponent {
         private String identifier;
         @BuildFlag(nonNull = true)
         private Style style = Style.SHORT;
-        @BuildFlag(nonNull = true, notEmpty = true)
-        private Optional<String> label = Optional.empty();
+        //@BuildFlag(nonNull = true, notEmpty = true)
+        //private Optional<String> label = Optional.empty();
         @BuildFlag(nonNull = true)
         private Optional<String> value = Optional.empty();
         @BuildFlag(nonNull = true)
@@ -182,35 +178,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
          */
         public Builder withIdentifier(@NotNull String identifier, @Nullable Object... args) {
             this.identifier = String.format(identifier, args);
-            return this;
-        }
-
-        /**
-         * Sets the label text of the {@link TextInput}.
-         *
-         * @param label The label of the field item.
-         */
-        public Builder withLabel(@Nullable String label) {
-            return this.withLabel(Optional.ofNullable(label));
-        }
-
-        /**
-         * Sets the label text of the {@link TextInput}.
-         *
-         * @param label The label of the field item.
-         * @param objects The objects used to format the label.
-         */
-        public Builder withLabel(@PrintFormat @Nullable String label, @Nullable Object... objects) {
-            return this.withLabel(StringUtil.formatNullable(label, objects));
-        }
-
-        /**
-         * Sets the label of the {@link TextInput}.
-         *
-         * @param label The label of the textinput.
-         */
-        public Builder withLabel(@NotNull Optional<String> label) {
-            this.label = label;
             return this;
         }
 
@@ -341,7 +308,6 @@ public final class TextInput implements ActionComponent, LabelComponent {
             return new TextInput(
                 this.identifier,
                 this.style,
-                this.label,
                 this.value,
                 this.placeholder,
                 this.searchType,
@@ -361,6 +327,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
         NONE((c_, t_) -> Mono.empty()),
         PAGE(
             "Go to Page",
+            "null",
             itemHandler -> String.format("Enter a number between 1 and %d.", itemHandler.getTotalPages()),
             itemHandler -> value -> {
                 if (!NumberUtil.isCreatable(value))
@@ -371,13 +338,14 @@ public final class TextInput implements ActionComponent, LabelComponent {
                 return pageRange.contains(page);
             },
             (context, textInput) -> context.consumeResponse(response -> {
-            ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
-            Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
-            itemHandler.gotoPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
-        })
+                ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
+                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
+                itemHandler.gotoPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
+            })
         ),
         INDEX(
             "Go to Index",
+            "null",
             itemHandler -> String.format("Enter a number between 0 and %d.", itemHandler.getCachedFilteredItems().size()),
             itemHandler -> value -> {
                 if (!NumberUtil.isCreatable(value))
@@ -402,7 +370,8 @@ public final class TextInput implements ActionComponent, LabelComponent {
             .search(textInput))
         );
 
-        private final @NotNull Optional<String> label;
+        private final @NotNull String title;
+        private final @NotNull Optional<String> description;
         private final @NotNull Function<ItemHandler<?>, String> placeholder;
         private final @NotNull Function<ItemHandler<?>, Predicate<String>> validator;
         private final @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction;
@@ -412,21 +381,27 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         SearchType(
-            @NotNull String name,
+            @NotNull String title,
+            @Nullable String description,
             @NotNull Function<ItemHandler<?>, String> placeholder,
             @NotNull Function<ItemHandler<?>, Predicate<String>> validator,
             @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction
         ) {
-            this(Optional.of(name), placeholder, validator, interaction);
+            this(title, Optional.ofNullable(description), placeholder, validator, interaction);
         }
 
-        public @NotNull TextInput build(@NotNull ItemHandler<?> itemHandler) {
-            return TextInput.builder()
-                .withStyle(Style.SHORT)
-                .withSearchType(this)
-                .withLabel(this.getLabel())
-                .withPlaceholder(this.getPlaceholder().apply(itemHandler))
-                .withValidator(this.getValidator().apply(itemHandler))
+        public @NotNull Label build(@NotNull ItemHandler<?> itemHandler) {
+            return Label.builder()
+                .withTitle(this.getTitle())
+                .withDescription(this.getDescription())
+                .withComponent(
+                    TextInput.builder()
+                        .withStyle(Style.SHORT)
+                        .withSearchType(this)
+                        .withPlaceholder(this.getPlaceholder().apply(itemHandler))
+                        .withValidator(this.getValidator().apply(itemHandler))
+                        .build()
+                )
                 .build();
         }
 
