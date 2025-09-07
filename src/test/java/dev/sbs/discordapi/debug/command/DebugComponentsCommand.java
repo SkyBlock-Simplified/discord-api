@@ -98,7 +98,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                 "test2.txt",
                                                 new ByteArrayInputStream("santa test".getBytes())
                                             )
-                                            .editCurrentPage(builder -> builder.withContent("santa!!"))
+                                            //.editCurrentPage(builder -> builder.withContent("santa!!"))
                                             .build()
                                     ))
                                     .build(),
@@ -107,7 +107,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                     .withEmoji(Emoji.of("\uD83D\uDC31"))
                                     .withLabel("Cat")
                                     .withDeferEdit()
-                                    .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("cat!")))
+                                    //.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("cat!")))
                                     .build(),
                                 Button.builder()
                                     .withStyle(Button.Style.SUCCESS)
@@ -126,11 +126,11 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                         .build()
                                                 )
                                             )
-                                            .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("modal: " + context.getComponent()
+                                            /*.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("modal: " + context.getComponent()
                                                 .findComponent(TextInput.class, "something")
                                                 .flatMap(TextInput::getValue)
                                                 .orElse("hurdur i'm a failure")
-                                            )))
+                                            )))*/
                                             .build()
                                     ))
                                     .build(),
@@ -154,25 +154,25 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                             .withLabel("Neigh")
                                             .withValue("value 1")
                                             .withEmoji(Emoji.of(943867165990346793L, "SKYBLOCK_ICON_HORSE"))
-                                            .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
+                                            //.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
                                             .build(),
                                         SelectMenu.Option.builder()
                                             .withLabel("Buni")
                                             .withValue("value 2")
                                             .withDescription("Looking for ores!")
                                             .withEmoji(Emoji.of(769279331875946506L, "Buni", true))
-                                            .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
+                                            //.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
                                             .build(),
                                         SelectMenu.Option.builder()
                                             .withLabel("Yes sir!")
                                             .withValue("value 3")
                                             .withEmoji(Emoji.of(837805777187241985L, "linasalute"))
-                                            .onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
+                                            //.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
                                             .build(),
                                         SelectMenu.Option.builder()
                                             .withLabel("I do nothing :)")
                                             .withValue("value 4")
-                                            .withEmoji(Emoji.of(851662312925954068L, "goosewalk", true))
+                                            //.withEmoji(Emoji.of(851662312925954068L, "goosewalk", true))
                                             .build()
                                     )
                                     .build()
@@ -190,7 +190,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                     .withContent("Followup")
                                                     .withEmbeds(
                                                         Embed.builder()
-                                                            .withIdentifier("embedder")
+                                                            //.withIdentifier("embedder")
                                                             .withDescription("Hmm")
                                                             .withFooter(
                                                                 Footer.builder()
@@ -208,7 +208,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                             .onInteract(context2 -> context2.editFollowup(
                                                                 followup -> followup.getResponse()
                                                                     .mutate()
-                                                                    .editCurrentPage(builder -> builder.editEmbed(
+                                                                    /*.editCurrentPage(builder -> builder.editEmbed(
                                                                         "embedder",
                                                                         ebuilder -> ebuilder
                                                                             .withDescription("Hmm Edit")
@@ -217,7 +217,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                                                     .withText("Herro edit")
                                                                                     .build()
                                                                             )
-                                                                    ))
+                                                                    ))*/
                                                                     .build()
                                                                 )
                                                             )
@@ -242,7 +242,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                         "followuptest",
                                         followup -> followup.getResponse()
                                             .mutate()
-                                            .editCurrentPage(builder -> builder.editEmbed(
+                                            /*.editCurrentPage(builder -> builder.editEmbed(
                                                 "embedder",
                                                 ebuilder -> ebuilder
                                                     .withDescription("Hmm Edit2")
@@ -251,7 +251,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                             .withText("Herro edit2")
                                                             .build()
                                                     )
-                                            ))
+                                            ))*/
                                             .build()
                                     ))
                                     .build(),

@@ -48,11 +48,6 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
                         .withItemHandler(
                             ItemHandler.<Test>builder()
                                 .withItems(tests)
-                                .withFilters(
-                                    Filter.<Test>builder()
-                                        .withTriPredicates((test, index, size) -> test.getIndex() < 100)
-                                        .build()
-                                )
                                 .withAmountPerPage(15)
                                 .withVariable("WORLD", "World!")
                                 .withStaticItems(
@@ -70,12 +65,20 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
                                     .isInline()
                                     .build()
                                 )
+                                // TODO: Select menu filtering, one menu per Filter
+                                .withFilters(
+                                    Filter.<Test>builder()
+                                        .withTriPredicates((test, index, size) -> test.getIndex() < 100)
+                                        .build()
+                                )
+                                // TODO: Select menu sorting, one menu per Sorter
                                 .withSorters(
                                     Sorter.<Test>builder()
                                         .withComparators(Comparator.comparingInt(Test::getIndex))
                                         .withLabel("Index")
                                         .build()
                                 )
+                                // TODO: Move title/description to Search, one menu per Search (already)
                                 .withSearch(
                                     Search.<Test>builder()
                                         .withPlaceholder("Input name.")

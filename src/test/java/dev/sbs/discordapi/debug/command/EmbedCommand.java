@@ -5,7 +5,6 @@ import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.context.deferrable.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
-import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.layout.ActionRow;
@@ -57,7 +56,7 @@ public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
                             Button.builder()
                                 .withDeferEdit()
                                 .withStyle(Button.Style.SUCCESS)
-                                .withEmoji(Emoji.of(929249819061551115L, "math_plus_math"))
+                                //.withEmoji(Emoji.of(929249819061551115L, "math_plus_math"))
                                 .withLabel("Create New")
                                 .onInteract(createContext -> createContext.followup(
                                     "create_embed",
