@@ -7,7 +7,6 @@ import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
 import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
 import dev.sbs.discordapi.response.Emoji;
@@ -41,14 +40,13 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String userIdentifier;
     private final @NotNull Style style;
-    private boolean disabled;
     private final @NotNull Optional<Emoji> emoji;
     private final @NotNull Optional<String> label;
     private final @NotNull Optional<String> url;
-    private final boolean preserved;
     private final boolean deferEdit;
     private final @NotNull PageType pageType;
     private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
+    private boolean enabled;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
@@ -65,11 +63,10 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         return new EqualsBuilder()
             .append(this.getUserIdentifier(), button.getUserIdentifier())
             .append(this.getStyle(), button.getStyle())
-            .append(this.isDisabled(), button.isDisabled())
+            .append(this.isEnabled(), button.isEnabled())
             .append(this.getEmoji(), button.getEmoji())
             .append(this.getLabel(), button.getLabel())
             .append(this.getUrl(), button.getUrl())
-            .append(this.isPreserved(), button.isPreserved())
             .append(this.isDeferEdit(), button.isDeferEdit())
             .append(this.getPageType(), button.getPageType())
             .build();
@@ -79,11 +76,10 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         return new Builder()
             .withIdentifier(button.getUserIdentifier())
             .withStyle(button.getStyle())
-            .setDisabled(button.isDisabled())
+            .setDisabled(button.isEnabled())
             .withEmoji(button.getEmoji())
             .withLabel(button.getLabel())
             .withUrl(button.getUrl())
-            .isPreserved(button.isPreserved())
             .withDeferEdit(button.isDeferEdit())
             .withPageType(button.getPageType())
             .onInteract(button.getInteraction());
@@ -100,7 +96,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             case DANGER -> discord4j.core.object.component.Button.danger(this.getUserIdentifier(), d4jReaction, label);
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
             case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getUserIdentifier(), d4jReaction, label);
-        }).disabled(this.isDisabled());
+        }).disabled(this.isEnabled());
     }
 
     @Override
@@ -113,11 +109,10 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         return new HashCodeBuilder()
             .append(this.getUserIdentifier())
             .append(this.getStyle())
-            .append(this.isDisabled())
+            .append(this.isEnabled())
             .append(this.getEmoji())
             .append(this.getLabel())
             .append(this.getUrl())
-            .append(this.isPreserved())
             .append(this.getPageType())
             .build();
     }
@@ -127,11 +122,8 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
     }
 
     @Override
-    public @NotNull Button setState(boolean enabled) {
-        if (this.getStyle() == Style.LINK)
-            this.disabled = !enabled;
-
-        return this;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -142,7 +134,6 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         @BuildFlag(nonNull = true)
         private Style style = Style.UNKNOWN;
         private boolean disabled;
-        private boolean preserved;
         private boolean deferEdit;
         @BuildFlag(nonNull = true)
         private PageType pageType = PageType.NONE;
@@ -152,23 +143,6 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         @BuildFlag(nonNull = true, group = "face")
         private Optional<String> label = Optional.empty();
         private Optional<String> url = Optional.empty();
-
-        /**
-         * Sets this {@link Button} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
-         */
-        public Builder isPreserved() {
-            return this.isPreserved(true);
-        }
-
-        /**
-         * Sets whether to preserve this {@link Button} when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
-         *
-         * @param preserved True to preserve this button.
-         */
-        public Builder isPreserved(boolean preserved) {
-            this.preserved = preserved;
-            return this;
-        }
 
         /**
          * Sets the interaction to execute when the {@link Button} is interacted with by a user.
@@ -369,14 +343,13 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             return new Button(
                 this.identifier,
                 this.style,
-                this.disabled,
                 this.emoji,
                 this.label,
                 this.url,
-                this.preserved,
                 this.deferEdit,
                 this.pageType,
-                this.interaction.orElse(NOOP_HANDLER)
+                this.interaction.orElse(NOOP_HANDLER),
+                this.disabled
             );
         }
 
@@ -419,6 +392,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
     }
 
+    // TODO: MOVE INTERACTION CODE TO BOT STARTUP ABSTRACTION
     @Getter
     @RequiredArgsConstructor
     public enum PageType {
@@ -430,6 +404,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             .gotoPreviousPage()
         )),
         SEARCH("Search", context -> context.withResponse(response -> context.presentModal(
+            // TODO: Use labels and better TextInput.SearchType
             Modal.builder()
                 .withComponents(
                     ActionRow.of(TextInput.SearchType.PAGE.build(response.getHistoryHandler().getCurrentPage().getItemHandler())),
@@ -515,7 +490,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         )),
         ORDER("Order", this.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
-            .getItemHandler()
+            .getItemHandler()so
             .getSortHandler()
             .invertOrder()
         ))*/
