@@ -58,7 +58,7 @@ public interface Component {
         UNKNOWN(-1),
         ACTION_ROW(1),
         BUTTON(2),
-        SELECT_MENU(3),
+        SELECT_MENU_STRING(3),
         TEXT_INPUT(4),
         SELECT_MENU_USER(5),
         SELECT_MENU_ROLE(6),
