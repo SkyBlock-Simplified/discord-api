@@ -1,10 +1,19 @@
 package dev.sbs.discordapi.response.component.type;
 
 import dev.sbs.discordapi.response.component.Component;
-import org.jetbrains.annotations.NotNull;
 
 public interface ToggleableComponent extends Component {
 
-    @NotNull ToggleableComponent setState(boolean enabled);
+    boolean isEnabled();
+
+    default boolean isDisabled() {
+        return !this.isEnabled();
+    }
+
+    default void setEnabled() {
+        this.setEnabled(true);
+    }
+
+    void setEnabled(boolean value);
 
 }
