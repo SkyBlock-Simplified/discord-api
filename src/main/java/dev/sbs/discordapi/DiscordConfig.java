@@ -5,7 +5,7 @@ import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.data.DataConfig;
-import dev.sbs.api.data.model.Model;
+import dev.sbs.api.data.Model;
 import dev.sbs.api.data.yaml.annotation.Flag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ResourceInfo;
