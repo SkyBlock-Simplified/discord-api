@@ -8,11 +8,11 @@ import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.Range;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.Modal;
 import dev.sbs.discordapi.response.component.layout.Label;
 import dev.sbs.discordapi.response.component.type.LabelComponent;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
-import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
@@ -88,7 +88,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
     public @NotNull discord4j.core.object.component.TextInput getD4jComponent() {
         return (discord4j.core.object.component.TextInput) discord4j.core.object.component.TextInput.fromData(
             ComponentData.builder()
-                .type(MessageComponent.Type.TEXT_INPUT.getValue())
+                .type(Component.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
                 .customId(this.getUserIdentifier())
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
@@ -367,8 +367,8 @@ public final class TextInput implements ActionComponent, LabelComponent {
             .getCurrentPage()
             .getItemHandler()
             .getSearchHandler()
-            .search(textInput))
-        );
+            .search(textInput)
+        ));
 
         private final @NotNull String title;
         private final @NotNull Optional<String> description;
