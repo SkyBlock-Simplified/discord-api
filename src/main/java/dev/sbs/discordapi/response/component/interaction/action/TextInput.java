@@ -9,6 +9,7 @@ import dev.sbs.api.util.Range;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.response.component.interaction.Modal;
+import dev.sbs.discordapi.response.component.type.v2.LabelComponent;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import discord4j.core.object.component.MessageComponent;
 import discord4j.discordjson.json.ComponentData;
@@ -31,7 +32,7 @@ import java.util.function.Predicate;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput implements ActionComponent {
+public final class TextInput implements ActionComponent, LabelComponent {
 
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
     private final @NotNull String userIdentifier;
@@ -92,7 +93,7 @@ public final class TextInput implements ActionComponent {
                 .type(MessageComponent.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
                 .customId(this.getUserIdentifier())
-                .label(this.getLabel().map(Possible::of).orElse(Possible.absent()))
+                .label(Possible.of(this.getLabel()))
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
                 .minLength(this.getMinLength())
@@ -445,7 +446,10 @@ public final class TextInput implements ActionComponent {
         private final int value;
 
         public static @NotNull Style of(int value) {
-            return Arrays.stream(values()).filter(style -> style.getValue() == value).findFirst().orElse(UNKNOWN);
+            return Arrays.stream(values())
+                .filter(style -> style.getValue() == value)
+                .findFirst()
+                .orElse(UNKNOWN);
         }
 
     }
