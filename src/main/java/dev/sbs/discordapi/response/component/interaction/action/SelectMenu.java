@@ -1,21 +1,17 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.api.builder.annotation.BuildFlag;
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.type.EventComponent;
 import dev.sbs.discordapi.response.component.type.ToggleableComponent;
-import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -32,50 +29,32 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-@Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, ToggleableComponent {
+public interface SelectMenu extends ActionComponent, EventComponent<SelectMenuContext>, ToggleableComponent {
 
-    private final @NotNull String userIdentifier;
-    private boolean disabled;
-    private final @NotNull Optional<String> placeholder;
-    private final @NotNull Optional<Integer> minValue;
-    private final @NotNull Optional<Integer> maxValue;
-    private final boolean placeholderUsingSelectedOption;
-    private final @NotNull ConcurrentList<Option> options;
-    private final boolean preserved;
-    private final boolean deferEdit;
-    private final @NotNull PageType pageType;
+    @NotNull Optional<String> getPlaceholder();
+
+    int getMinValues();
+
+    int getMaxValues();
+
+    boolean isPlaceholderShowingSelectedOption();
+
+    boolean isDeferEdit();
+
+    @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> getUserInteraction();
+
+
+    @NotNull ConcurrentList<Option> getOptions();
+
     @Getter(AccessLevel.NONE)
     private final @NotNull ConcurrentList<Option> selected = Concurrent.newList();
-    @Getter(AccessLevel.NONE)
-    private final @NotNull Optional<Function<SelectMenuContext, Mono<Void>>> interaction;
 
-    public static @NotNull Builder builder() {
-        return new Builder().withIdentifier(UUID.randomUUID().toString());
+    static @NotNull StringSelectMenu.StringBuilder string() {
+        return StringSelectMenu.builder();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        SelectMenu that = (SelectMenu) o;
-
-        return new EqualsBuilder()
-            .append(this.isDisabled(), that.isDisabled())
-            .append(this.isPlaceholderUsingSelectedOption(), that.isPlaceholderUsingSelectedOption())
-            .append(this.isPreserved(), that.isPreserved())
-            .append(this.isDeferEdit(), that.isDeferEdit())
-            .append(this.getUserIdentifier(), that.getUserIdentifier())
-            .append(this.getPlaceholder(), that.getPlaceholder())
-            .append(this.getMinValue(), that.getMinValue())
-            .append(this.getMaxValue(), that.getMaxValue())
-            .append(this.getOptions(), that.getOptions())
-            .append(this.getPageType(), that.getPageType())
-            .append(this.getSelected(), that.getSelected())
-            .build();
+    static @NotNull EntitySelectMenu.Builder entity() {
+        return EntitySelectMenu.builder();
     }
 
     /**
@@ -85,27 +64,14 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
      * @param value The value to match with.
      * @return The matching option, if it exists.
      */
-    public <S> Optional<Option> findOption(@NotNull Function<Option, S> function, S value) {
-        return this.options.stream()
+    default <S> Optional<Option> findOption(@NotNull Function<Option, S> function, S value) {
+        return this.getOptions().stream()
             .filter(option -> Objects.equals(function.apply(option), value))
             .findFirst();
     }
 
-    public static @NotNull Builder from(@NotNull SelectMenu selectMenu) {
-        return new Builder()
-            .withIdentifier(selectMenu.getUserIdentifier())
-            .setDisabled(selectMenu.isDisabled())
-            .withPlaceholder(selectMenu.getPlaceholder())
-            .withMinValue(selectMenu.getMinValue())
-            .withMaxValue(selectMenu.getMaxValue())
-            .withPlaceholderUsesSelectedOption(selectMenu.isPlaceholderUsingSelectedOption())
-            .withOptions(selectMenu.getOptions())
-            .isPreserved(selectMenu.isDisabled())
-            .onInteract(selectMenu.interaction);
-    }
-
     @Override
-    public @NotNull discord4j.core.object.component.SelectMenu getD4jComponent() {
+    default @NotNull discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
                 this.getUserIdentifier(),
                 this.getOptions()
@@ -114,16 +80,16 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
                     .collect(Concurrent.toList())
             )
             .withPlaceholder(this.getPlaceholder().orElse(""))
-            .withMinValues(this.getMinValue().orElse(1))
-            .withMaxValues(this.getMaxValue().orElse(1))
+            .withMinValues(this.getMinValues())
+            .withMaxValues(this.getMaxValues())
             .disabled(this.isDisabled());
     }
 
     @Override
-    public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
+    default @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
         return selectMenuContext -> Mono.just(selectMenuContext)
             //.doOnNext(context -> this.updateSelected(context.getEvent().getValues()))
-            .flatMap(context -> Mono.justOrEmpty(this.interaction)
+            .flatMap(context -> Mono.justOrEmpty(this.getUserInteraction())
                 .flatMap(interaction -> interaction.apply(context))
                 .thenReturn(context)
             )
@@ -138,48 +104,17 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         return this.selected.toUnmodifiableList();
     }
 
-    @Override
-    public @NotNull Type getType() {
-        return Type.SELECT_MENU; // TODO: Support subtypes
-    }
+    @NotNull Builder mutate();
 
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder()
-            .appendSuper(super.hashCode())
-            .append(this.getUserIdentifier())
-            .append(this.isDisabled())
-            .append(this.getPlaceholder())
-            .append(this.getMinValue())
-            .append(this.getMaxValue())
-            .append(this.isPlaceholderUsingSelectedOption())
-            .append(this.getOptions())
-            .append(this.isPreserved())
-            .append(this.isDeferEdit())
-            .append(this.getPageType())
-            .append(this.getSelected())
-            .build();
-    }
-
-    public @NotNull Builder mutate() {
-        return from(this);
-    }
-
-    @Override
-    public @NotNull SelectMenu setState(boolean enabled) {
-        this.disabled = !enabled;
-        return this;
-    }
-
-    public @NotNull SelectMenu updateSelected() {
+    default @NotNull SelectMenu updateSelected() {
         return this.updateSelected(Concurrent.newList());
     }
 
-    public @NotNull SelectMenu updateSelected(@NotNull String... values) {
+    default @NotNull SelectMenu updateSelected(@NotNull String... values) {
         return this.updateSelected(Arrays.asList(values));
     }
 
-    public @NotNull SelectMenu updateSelected(@NotNull List<String> values) {
+    default @NotNull SelectMenu updateSelected(@NotNull List<String> values) {
         this.selected.clear();
         this.selected.addAll(
             values.stream()
@@ -191,22 +126,21 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Builder implements ClassBuilder<SelectMenu> {
+    abstract class Builder implements ClassBuilder<SelectMenu> {
 
         @BuildFlag(nonNull = true)
-        private String identifier;
-        private boolean disabled;
-        private Optional<String> placeholder = Optional.empty();
-        private boolean placeholderUsingSelectedOption;
-        private Optional<Integer> minValue = Optional.empty();
-        private Optional<Integer> maxValue = Optional.empty();
+        protected String identifier;
+        protected boolean enabled;
+        protected Optional<String> placeholder = Optional.empty();
+        protected boolean placeholderShowingSelectedOption;
+        @Range(from = 0, to = Option.MAX_ALLOWED)
+        protected int minValues = 1;
+        @Range(from = 1, to = Option.MAX_ALLOWED)
+        protected int maxValues = 1;
         @BuildFlag(limit = Option.MAX_ALLOWED)
-        private final ConcurrentList<Option> options = Concurrent.newList();
-        private boolean preserved;
-        private boolean deferEdit;
-        @BuildFlag(nonNull = true)
-        private PageType pageType = PageType.NONE;
-        private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
+        protected final ConcurrentList<Option> options = Concurrent.newList();
+        protected boolean deferEdit;
+        protected Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
          * Updates an existing {@link Option}.
@@ -232,31 +166,14 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
          * @param value The value to match with.
          * @return The matching option, if it exists.
          */
-        public <S> Optional<Option> findOption(@NotNull Function<Option, S> function, S value) {
+        public final <S> Optional<Option> findOption(@NotNull Function<Option, S> function, S value) {
             return this.options.stream()
                 .filter(option -> Objects.equals(function.apply(option), value))
                 .findFirst();
         }
 
         /**
-         * Sets this {@link SelectMenu} as preserved when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
-         */
-        public Builder isPreserved() {
-            return this.isPreserved(true);
-        }
-
-        /**
-         * Sets whether to preserve this {@link SelectMenu} when a {@link Response} is removed from {@link DiscordBot#getResponseHandler()}.
-         *
-         * @param preserved True to preserve this select menu.
-         */
-        public Builder isPreserved(boolean preserved) {
-            this.preserved = preserved;
-            return this;
-        }
-
-        /**
-         * Sets the interaction to execute when the {@link SelectMenu} is interacted with by a user.
+         * Sets the interaction to execute when the {@link StringSelectMenu} is interacted with by a user.
          *
          * @param interaction The interaction function.
          */
@@ -265,7 +182,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the interaction to execute when the {@link SelectMenu} is interacted with by a user.
+         * Sets the interaction to execute when the {@link StringSelectMenu} is interacted with by a user.
          *
          * @param interaction The interaction function.
          */
@@ -275,31 +192,30 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the {@link SelectMenu} as disabled.
+         * Sets the {@link StringSelectMenu} as disabled.
          */
         public Builder setDisabled() {
             return this.setDisabled(true);
         }
 
         /**
-         * Sets if the {@link SelectMenu} should be disabled.
+         * Sets if the {@link StringSelectMenu} should be disabled.
          *
-         * @param disabled True to disable the select menu.
+         * @param value True to disable the select menu.
          */
-        public Builder setDisabled(boolean disabled) {
-            this.disabled = disabled;
-            return this;
+        public Builder setDisabled(boolean value) {
+            return this.setEnabled(!value);
         }
 
         /**
-         * Sets this {@link SelectMenu} as deferred when interacting.
+         * Sets this {@link StringSelectMenu} as deferred when interacting.
          */
         public Builder withDeferEdit() {
             return this.withDeferEdit(true);
         }
 
         /**
-         * Sets whether this {@link SelectMenu} is deferred when interacting.
+         * Sets whether this {@link StringSelectMenu} is deferred when interacting.
          *
          * @param deferEdit True to defer interaction.
          */
@@ -309,23 +225,24 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the {@link SelectMenu} as enabled.
+         * Sets the {@link StringSelectMenu} as enabled.
          */
         public Builder setEnabled() {
             return this.setEnabled(true);
         }
 
         /**
-         * Sets if the {@link SelectMenu} should be enabled.
+         * Sets if the {@link StringSelectMenu} should be enabled.
          *
          * @param value True to enable the button.
          */
         public Builder setEnabled(boolean value) {
-            return this.setDisabled(!value);
+            this.enabled = value;
+            return this;
         }
 
         /**
-         * Overrides the default identifier of the {@link SelectMenu}.
+         * Overrides the default identifier of the {@link StringSelectMenu}.
          *
          * @param identifier The identifier to use.
          */
@@ -335,7 +252,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Overrides the default identifier of the {@link SelectMenu}.
+         * Overrides the default identifier of the {@link StringSelectMenu}.
          *
          * @param identifier The identifier to use.
          * @param args The objects used to format the identifier.
@@ -346,7 +263,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Add {@link Option Options} to the {@link SelectMenu}.
+         * Add {@link Option Options} to the {@link StringSelectMenu}.
          *
          * @param options Variable number of options to add.
          */
@@ -355,7 +272,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Add {@link Option Options} {@link SelectMenu}.
+         * Add {@link Option Options} {@link StringSelectMenu}.
          *
          * @param options Collection of options to add.
          */
@@ -365,17 +282,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the page type of the {@link SelectMenu}.
-         *
-         * @param pageType The page type of the select menu.
-         */
-        public Builder withPageType(@NotNull PageType pageType) {
-            this.pageType = pageType;
-            return this;
-        }
-
-        /**
-         * Sets the placeholder text to show on the {@link SelectMenu}.
+         * Sets the placeholder text to show on the {@link StringSelectMenu}.
          *
          * @param placeholder The placeholder text to use.
          */
@@ -384,7 +291,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the placeholder text to show on the {@link SelectMenu}.
+         * Sets the placeholder text to show on the {@link StringSelectMenu}.
          *
          * @param placeholder The placeholder text to use.
          */
@@ -394,89 +301,55 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
-         * Sets the minimum number of options that need to be selected for the {@link SelectMenu}.
+         * Sets the minimum number of options that need to be selected for the {@link StringSelectMenu}.
          *
-         * @param minValue The minimum number of selected {@link Option Options}.
+         * @param minValues The minimum number of selected {@link Option Options}.
          */
-        public Builder withMinValue(@Nullable Integer minValue) {
-            return this.withMinValue(Optional.ofNullable(minValue));
-        }
-
-        /**
-         * Sets the minimum number of options that need to be selected for the {@link SelectMenu}.
-         *
-         * @param minValue The minimum number of selected {@link Option Options}.
-         */
-        public Builder withMinValue(@NotNull Optional<Integer> minValue) {
-            this.minValue = minValue;
+        public Builder withMinValues(int minValues) {
+            this.minValues = minValues;
             return this;
         }
 
         /**
-         * Sets the maximum number of options that need to be selected for the {@link SelectMenu}.
+         * Sets the maximum number of options that need to be selected for the {@link StringSelectMenu}.
          *
-         * @param maxValue The maximum number of selected {@link Option Options}.
+         * @param maxValues The maximum number of selected {@link Option Options}.
          */
-        public Builder withMaxValue(@Nullable Integer maxValue) {
-            return this.withMaxValue(Optional.ofNullable(maxValue));
-        }
-
-        /**
-         * Sets the maximum number of options that need to be selected for the {@link SelectMenu}.
-         *
-         * @param maxValue The maximum number of selected {@link Option Options}.
-         */
-        public Builder withMaxValue(@NotNull Optional<Integer> maxValue) {
-            this.maxValue = maxValue;
+        public Builder withMaxValues(int maxValues) {
+            this.maxValues = maxValues;
             return this;
         }
 
         /**
-         * Sets the {@link SelectMenu} to override it's placeholder with the selected {@link Option}.
+         * Sets the {@link StringSelectMenu} to override its placeholder with the selected {@link Option}.
          */
-        public Builder withPlaceholderUsesSelectedOption() {
-            return this.withPlaceholderUsesSelectedOption(true);
+        public Builder withPlaceholderShowingSelectedOption() {
+            return this.withPlaceholderShowingSelectedOption(true);
         }
 
         /**
-         * Sets if the {@link SelectMenu} should override it's placeholder with the selected {@link Option}.
+         * Sets if the {@link StringSelectMenu} should override its placeholder with the selected {@link Option}.
          *
-         * @param value True to override placeholder with selected option.
+         * @param value True to override the placeholder with the selected option.
          */
-        public Builder withPlaceholderUsesSelectedOption(boolean value) {
-            this.placeholderUsingSelectedOption = value;
+        public Builder withPlaceholderShowingSelectedOption(boolean value) {
+            this.placeholderShowingSelectedOption = value;
             return this;
         }
 
         /**
          * Build using the configured fields.
          *
-         * @return A built {@link SelectMenu} component.
+         * @return A built {@link StringSelectMenu} component.
          */
         @Override
-        public @NotNull SelectMenu build() {
-            Reflection.validateFlags(this);
-
-            return new SelectMenu(
-                this.identifier,
-                this.disabled,
-                this.placeholder,
-                this.minValue,
-                this.maxValue,
-                this.placeholderUsingSelectedOption,
-                this.options,
-                this.preserved,
-                this.deferEdit,
-                this.pageType,
-                this.interaction
-            );
-        }
+        public abstract @NotNull SelectMenu build();
 
     }
 
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Option {
+    final class Option {
 
         public static final int MAX_ALLOWED = 25;
         private static final Function<OptionContext, Mono<Void>> NOOP_HANDLER = __ -> Mono.empty();
@@ -487,7 +360,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         private final @NotNull Optional<Emoji> emoji;
         private final @NotNull Function<OptionContext, Mono<Void>> interaction;
 
-        public static Builder builder() {
+        public static @NotNull Builder builder() {
             return new Builder(UUID.randomUUID());
         }
 
@@ -507,7 +380,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
                 .build();
         }
 
-        public static Builder from(@NotNull Option option) {
+        public static @NotNull Builder from(@NotNull Option option) {
             return new Builder(option.getUniqueId())
                 .withLabel(option.getLabel())
                 .withValue(option.getValue())
@@ -527,7 +400,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
                 .build();
         }
 
-        public discord4j.core.object.component.SelectMenu.Option getD4jOption(boolean selected) {
+        public @NotNull discord4j.core.object.component.SelectMenu.Option getD4jOption(boolean selected) {
             discord4j.core.object.component.SelectMenu.Option d4jOption = discord4j.core.object.component.SelectMenu.Option.of(this.getLabel(), this.getValue())
                 .withDescription(this.getDescription().orElse(""))
                 .withDefault(selected);
@@ -538,7 +411,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             return d4jOption;
         }
 
-        public Builder mutate() {
+        public @NotNull Builder mutate() {
             return from(this);
         }
 
@@ -557,7 +430,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
              * <br><br>
              * This only executes if the enclosing {@link SelectMenu} is limited to 1 {@link Option}.
              * <br><br>
-             * See {@link SelectMenu#getMinValue()} and {@link SelectMenu#getMaxValue()}.
+             * See {@link SelectMenu#getMinValues()} and {@link SelectMenu#getMaxValues()}.
              *
              * @param interaction The interaction consumer.
              */
@@ -570,7 +443,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
              * <br><br>
              * This only executes if the enclosing {@link SelectMenu} is limited to 1 {@link Option}.
              * <br><br>
-             * See {@link SelectMenu#getMinValue()} and {@link SelectMenu#getMaxValue()}.
+             * See {@link SelectMenu#getMinValues()} and {@link SelectMenu#getMaxValues()}.
              *
              * @param interaction The interaction consumer.
              */
@@ -686,41 +559,6 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
         }
         
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    @SuppressWarnings("unchecked")
-    public enum PageType {
-
-        NONE(__ -> Mono.empty()),
-        PAGE_SELECTOR(context -> context.consumeResponse(response -> {
-            String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
-            response.getHistoryHandler().gotoTopLevelPage(selectedValue);
-        })),
-        SUBPAGE_SELECTOR(context -> context.consumeResponse(response -> {
-            String selectedValue = context.getSelected().getFirst().orElseThrow().getValue();
-
-            if (selectedValue.equals("BACK"))
-                response.getHistoryHandler().gotoPreviousPage();
-            else
-                ((TreeHistoryHandler<?, String>) response.getHistoryHandler()).gotoSubPage(selectedValue);
-        })),
-        ITEM(context -> context.consumeResponse(response -> {
-            /*
-             TODO
-                Build a viewer that converts the item list
-                into something that either lists data about an item
-                or a sub-list from PageItem
-
-             TODO
-                Viewer will need the ability to enable editing
-                and code to do something on save
-             */
-        }));
-
-        private final @NotNull Function<SelectMenuContext, Mono<Void>> interaction;
-
     }
 
 }
