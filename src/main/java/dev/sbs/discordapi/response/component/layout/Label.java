@@ -8,7 +8,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.LabelComponent;
-import discord4j.core.object.component.ICanBeUsedInLabelComponent;
+import discord4j.discordjson.json.ComponentData;
+import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -46,11 +47,20 @@ public final class Label implements LayoutComponent {
 
     @Override
     public @NotNull discord4j.core.object.component.Label getD4jComponent() {
-        return discord4j.core.object.component.Label.of(
+        return (discord4j.core.object.component.Label) discord4j.core.object.component.Label.fromData(
+            ComponentData.builder()
+                .type(Component.Type.LABEL.getValue())
+                .label(Possible.of(this.getTitle()).map(Optional::of))
+                .description(Possible.of(this.getDescription()))
+                .component(this.getComponent().getD4jComponent().getData())
+                .build()
+        );
+
+        /*return discord4j.core.object.component.Label.of(
             this.getTitle(),
             this.getDescription().orElse(null),
             ICanBeUsedInLabelComponent.class.cast(this.getComponent().getD4jComponent())
-        );
+        );*/
     }
 
     @Override
