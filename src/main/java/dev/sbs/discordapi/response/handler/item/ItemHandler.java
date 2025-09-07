@@ -417,19 +417,19 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         /**
          * Add custom search options for the {@link Item FieldItems}.
          *
-         * @param searchers A variable amount of searchers.
+         * @param search A variable amount of searchers.
          */
-        public Builder<T> withSearch(@NotNull Search<T>... searchers) {
-            return this.withSearch(Arrays.asList(searchers));
+        public Builder<T> withSearch(@NotNull Search<T>... search) {
+            return this.withSearch(Arrays.asList(search));
         }
 
         /**
          * Add custom search options for the {@link Item FieldItems}.
          *
-         * @param searchers A variable amount of searchers.
+         * @param search A variable amount of searchers.
          */
-        public Builder<T> withSearch(@NotNull Iterable<Search<T>> searchers) {
-            searchers.forEach(this.searchers::add);
+        public Builder<T> withSearch(@NotNull Iterable<Search<T>> search) {
+            search.forEach(this.searchers::add);
             return this;
         }
 
