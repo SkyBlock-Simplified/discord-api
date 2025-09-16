@@ -13,7 +13,6 @@ import dev.sbs.discordapi.context.exception.ExceptionContext;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.interaction.action.StringSelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.Label;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
@@ -239,7 +238,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                                 .build()
                         ));
                         case SELECT_MENU_STRING -> this.findComponent(
-                            StringSelectMenu.class,
+                            SelectMenu.class,
                             SelectMenu::getUserIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent(selectMenu -> selectMenu.updateSelected(
