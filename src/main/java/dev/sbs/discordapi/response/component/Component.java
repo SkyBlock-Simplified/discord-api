@@ -37,7 +37,7 @@ public interface Component {
         return Stream.of(this);
     }
 
-    @NotNull discord4j.core.object.component.MessageComponent getD4jComponent();
+    @NotNull discord4j.core.object.component.BaseMessageComponent getD4jComponent();
 
     @NotNull Type getType();
 
