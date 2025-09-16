@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response.component.media;
 
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
+import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
 import lombok.AccessLevel;

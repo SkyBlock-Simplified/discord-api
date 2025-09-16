@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.component.type.v2;
+package dev.sbs.discordapi.response.component.type;
 
 import dev.sbs.discordapi.response.component.Component;
 
