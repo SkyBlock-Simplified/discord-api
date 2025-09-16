@@ -132,10 +132,6 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             );
     }
 
-    public @NotNull ConcurrentList<Option> getSelected() {
-        return this.selected.toUnmodifiableList();
-    }
-
     @Override
     public @NotNull Component.Type getType() {
         return this.getMenuType().getInternalType();

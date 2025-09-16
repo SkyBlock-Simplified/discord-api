@@ -157,8 +157,7 @@ public final class CommandHandler extends DiscordReference {
                     )
             )
             .map(ApplicationCommandRequest.class::cast)
-            .collect(Concurrent.toList())
-            .toUnmodifiableList();
+            .collect(Concurrent.toUnmodifiableList());
     }
 
     private @NotNull ImmutableApplicationCommandRequest.Builder buildParentCommand(@NotNull Structure.Parent parent) {
