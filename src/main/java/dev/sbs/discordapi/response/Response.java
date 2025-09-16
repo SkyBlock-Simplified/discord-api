@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.component.Component;
@@ -13,14 +13,13 @@ import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.media.Attachment;
 import dev.sbs.discordapi.response.component.media.MediaData;
-import dev.sbs.discordapi.response.component.type.TopLevelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.handler.history.HistoryHandler;
 import dev.sbs.discordapi.response.impl.FormResponse;
 import dev.sbs.discordapi.response.impl.TreeResponse;
 import dev.sbs.discordapi.response.page.Page;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.component.TopLevelMessageComponent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
@@ -66,7 +65,7 @@ public interface Response {
 
     long getBuildTime();
 
-    @NotNull ConcurrentList<TopLevelComponent> getCachedPageComponents();
+    @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents();
 
     @NotNull HistoryHandler<Page, String> getHistoryHandler();
 
@@ -108,7 +107,7 @@ public interface Response {
         ).filter(Attachment::isPendingUpload);
     }
 
-    default @NotNull Stream<TopLevelComponent> getCurrentComponents() {
+    default @NotNull Stream<TopLevelMessageComponent> getCurrentComponents() {
         return Stream.concat(this.getCachedPageComponents().stream(), this.getHistoryHandler().getCurrentPage().getComponents().stream());
 
         // Content TextDisplay
@@ -187,8 +186,7 @@ public interface Response {
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             )
             .build();
@@ -204,8 +202,7 @@ public interface Response {
             .withFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .withComponents(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             );
     }
@@ -216,8 +213,7 @@ public interface Response {
             .addAllFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllComponents(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             )
             .build();
@@ -230,8 +226,7 @@ public interface Response {
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             )
             .build();
@@ -244,8 +239,7 @@ public interface Response {
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .components(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             )
             .build();
@@ -257,8 +251,7 @@ public interface Response {
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .componentsOrNull(
                 this.getCurrentComponents()
-                    .map(Component::getD4jComponent)
-                    .map(TopLevelMessageComponent.class::cast)
+                    .map(TopLevelMessageComponent::getD4jComponent)
                     .collect(Concurrent.toList())
             )
             .build();
