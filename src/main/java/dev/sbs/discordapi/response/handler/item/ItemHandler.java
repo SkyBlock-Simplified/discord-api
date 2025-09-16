@@ -176,6 +176,8 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
                 )
                 .map(Triple::getLeft)
                 .collect(Concurrent.toUnmodifiableList());
+
+            this.variables.put("TOTAL_SIZE", this.getItems().size());
         }
 
         return this.cachedFilteredItems;
