@@ -1,14 +1,14 @@
 package dev.sbs.discordapi.response.component.layout;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.TopLevelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.v2.SectionComponent;
@@ -25,7 +25,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Section implements LayoutComponent, TopLevelComponent, ContainerComponent {
+public final class Section implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
 
     private final @NotNull AccessoryComponent accessory;
     private final @NotNull ConcurrentList<SectionComponent> components;

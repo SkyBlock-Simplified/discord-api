@@ -3,14 +3,14 @@ package dev.sbs.discordapi.response.component.layout;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-public interface LayoutComponent extends TopLevelComponent, Component {
+public interface LayoutComponent extends TopLevelMessageComponent {
 
     @NotNull ConcurrentList<Component> getComponents();
 

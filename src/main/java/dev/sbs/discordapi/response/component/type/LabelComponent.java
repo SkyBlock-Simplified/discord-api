@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.component.type;
 
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.Component;
 
-public interface LabelComponent extends ActionComponent {
+public interface LabelComponent extends Component {
 
 }

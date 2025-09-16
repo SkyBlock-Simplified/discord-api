@@ -1,13 +1,13 @@
 package dev.sbs.discordapi.response.component.layout;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.discordapi.response.component.type.TopLevelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.response.component.type.v2.ContainerComponent;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import lombok.AccessLevel;
@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Container implements LayoutComponent, TopLevelComponent {
+public final class Container implements LayoutComponent, TopLevelMessageComponent {
 
     private final @NotNull Optional<Color> accent;
     private final @NotNull ConcurrentList<ContainerComponent> components;
