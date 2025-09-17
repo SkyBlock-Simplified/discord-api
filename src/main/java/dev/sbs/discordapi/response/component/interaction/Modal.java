@@ -1,10 +1,14 @@
 package dev.sbs.discordapi.response.component.interaction;
 
 import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.stream.pair.Pair;
+import dev.sbs.api.stream.pair.PairOptional;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.command.exception.input.InputException;
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
@@ -15,9 +19,9 @@ import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.component.layout.Label;
-import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.component.type.EventComponent;
 import dev.sbs.discordapi.response.component.type.LabelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.spec.InteractionPresentModalSpec;
@@ -45,39 +49,25 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
     private final @NotNull String userIdentifier;
     private final @NotNull Optional<String> title;
-    private final @NotNull ConcurrentList<Label> components;
+    private final @NotNull ConcurrentList<TopLevelModalComponent> components;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
-    /**
-     * Searches for a {@link ActionComponent} by its identifier.
-     *
-     * @param identifier The identifier to search for.
-     * @return The matching component, if it exists.
-     */
-    public <A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull String identifier) {
-        return this.findComponent(tClass, UserInteractComponent::getUserIdentifier, identifier);
-    }
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
 
-    /**
-     * Finds an existing {@link ActionComponent}.
-     *
-     * @param tClass The component type to match.
-     * @param function The method reference to match with.
-     * @param value The value to match with.
-     * @return The matching component, if it exists.
-     */
-    public <S, A extends ActionComponent> @NotNull Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
-        return this.getComponents()
-            .stream()
-            .map(Label::getComponent)
-            .filter(tClass::isInstance)
-            .map(tClass::cast)
-            .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-            .findFirst();
+        Modal modal = (Modal) o;
+
+        return new EqualsBuilder()
+            .append(this.getUserIdentifier(), modal.getUserIdentifier())
+            .append(this.getTitle(), modal.getTitle())
+            .append(this.getComponents(), modal.getComponents())
+            .append(this.interaction, modal.interaction)
+            .build();
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
@@ -92,16 +82,23 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         return InteractionPresentModalSpec.builder()
             .customId(this.getUserIdentifier())
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
-            .components(this.getComponents().stream().map(LayoutComponent::getD4jComponent).collect(Concurrent.toList()))
+            .components(
+                this.getComponents()
+                    .stream()
+                    .map(TopLevelModalComponent::getD4jComponent)
+                    .collect(Concurrent.toList())
+            )
             .build();
     }
 
     @Override
     public @NotNull Function<ModalContext, Mono<Void>> getInteraction() {
         return modalContext -> Flux.fromIterable(modalContext.getComponent().getComponents())
-            .map(LayoutComponent::getComponents)
-            .map(ConcurrentList::getFirst)
-            .flatMap(Mono::justOrEmpty)
+            .filter(Label.class::isInstance)
+            .map(Label.class::cast)
+            .map(Label::getComponent)
+            .next()
+            //.flatMap(Mono::justOrEmpty)
             .map(TextInput.class::cast)
             .filter(textInput -> textInput.getValue().isPresent())
             .flatMap(textInput -> {
@@ -124,9 +121,19 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
             })
             // Search Checks Top-Most
             .filter(textInput -> textInput.getSearchType() != TextInput.SearchType.NONE)
-            .next()
+            //.next()
             .switchIfEmpty(this.interaction.apply(modalContext).then(Mono.empty()))
             .flatMap(textInput -> textInput.getSearchType().getInteraction().apply(modalContext, textInput));
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getUserIdentifier())
+            .append(this.getTitle())
+            .append(this.getComponents())
+            .append(this.interaction)
+            .build();
     }
 
     @Override
@@ -146,7 +153,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         @BuildFlag(notEmpty = true)
         private Optional<String> title = Optional.empty();
         @BuildFlag(notEmpty = true)
-        private final ConcurrentList<Label> components = Concurrent.newList();
+        private final ConcurrentList<TopLevelModalComponent> components = Concurrent.newList();
         private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
@@ -158,27 +165,6 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         }
 
         /**
-         * Updates an existing {@link ActionComponent}.
-         *
-         * @param actionComponent The component to edit.
-         */
-        public Builder editComponent(@NotNull ActionComponent actionComponent) {
-            this.components.forEach(layoutComponent -> layoutComponent.getComponents()
-                .stream()
-                .filter(actionComponent.getClass()::isInstance)
-                .map(actionComponent.getClass()::cast)
-                .filter(innerComponent -> innerComponent.getUserIdentifier().equals(actionComponent.getUserIdentifier()))
-                .findFirst()
-                .ifPresent(innerComponent -> layoutComponent.getComponents().set(
-                    layoutComponent.getComponents().indexOf(innerComponent),
-                    actionComponent
-                ))
-            );
-
-            return this;
-        }
-
-        /**
          * Finds an existing {@link ActionComponent}.
          *
          * @param tClass The component type to match.
@@ -186,13 +172,16 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
          * @param value The value to match with.
          * @return The matching component, if it exists.
          */
-        public <S, A extends LabelComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
-            return this.components.stream()
-                .map(Label::getComponent)
-                .filter(tClass::isInstance)
-                .map(tClass::cast)
-                .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
-                .findFirst();
+        private <S, A extends LabelComponent> PairOptional<Label, A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
+            return PairOptional.of(
+                this.components.stream()
+                    .filter(Label.class::isInstance)
+                    .map(Label.class::cast)
+                    .filter(label -> tClass.isInstance(label.getComponent()))
+                    .filter(label -> Objects.equals(function.apply(tClass.cast(label.getComponent())), value))
+                    .map(label -> Pair.of(label, tClass.cast(label.getComponent())))
+                    .findFirst()
+            );
         }
 
         /**
@@ -227,21 +216,24 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                             TextInput.class,
                             TextInput::getUserIdentifier,
                             d4jComponent.getData().customId().get()
-                        ).ifPresent(textInput -> this.editComponent(
-                            textInput.mutate()
-                                .withValue(
-                                    d4jComponent.getData()
-                                        .value()
-                                        .toOptional()
-                                        .map(StringUtil::stripToNull)
-                                )
-                                .build()
-                        ));
+                        ).ifPresent((label, textInput) -> label.mutate()
+                            .withComponent(
+                                textInput.mutate()
+                                    .withValue(
+                                        d4jComponent.getData()
+                                            .value()
+                                            .toOptional()
+                                            .map(StringUtil::stripToNull)
+                                    )
+                                    .build()
+                            )
+                            .build()
+                        );
                         case SELECT_MENU_STRING -> this.findComponent(
                             SelectMenu.class,
                             SelectMenu::getUserIdentifier,
                             d4jComponent.getData().customId().get()
-                        ).ifPresent(selectMenu -> selectMenu.updateSelected(
+                        ).ifPresent((label, selectMenu) -> selectMenu.updateSelected(
                             d4jComponent.getData()
                                 .values()
                                 .toOptional()
@@ -259,7 +251,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
          * @param components Variable number of components to add.
          */
         @SuppressWarnings("all")
-        public Builder withComponents(@NotNull Label... components) {
+        public Builder withComponents(@NotNull TopLevelModalComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
@@ -268,7 +260,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
          *
          * @param components Collection of components to add.
          */
-        public Builder withComponents(@NotNull Iterable<Label> components) {
+        public Builder withComponents(@NotNull Iterable<TopLevelModalComponent> components) {
             components.forEach(this.components::add);
             return this;
         }
