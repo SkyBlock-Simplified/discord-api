@@ -1,13 +1,14 @@
 package dev.sbs.discordapi.response.component.layout;
 
 import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.collection.concurrent.Concurrent;
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.LabelComponent;
+import dev.sbs.discordapi.response.component.type.TopLevelModalComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;
@@ -23,7 +24,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Label implements LayoutComponent {
+public final class Label implements TopLevelModalComponent {
 
     private final @NotNull String title;
     private final @NotNull Optional<String> description;
@@ -33,16 +34,24 @@ public final class Label implements LayoutComponent {
         return new Builder();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Label label = (Label) o;
+
+        return new EqualsBuilder()
+            .append(this.getTitle(), label.getTitle())
+            .append(this.getDescription(), label.getDescription())
+            .append(this.getComponent(), label.getComponent())
+            .build();
+    }
+
     public static @NotNull Builder from(@NotNull Label label) {
         return builder()
             .withTitle(label.getTitle())
             .withDescription(label.getDescription())
             .withComponent(label.getComponent());
-    }
-
-    @Override
-    public @NotNull ConcurrentList<Component> getComponents() {
-        return Concurrent.newUnmodifiableList(this.getComponent());
     }
 
     @Override
@@ -55,17 +64,20 @@ public final class Label implements LayoutComponent {
                 .component(this.getComponent().getD4jComponent().getData())
                 .build()
         );
-
-        /*return discord4j.core.object.component.Label.of(
-            this.getTitle(),
-            this.getDescription().orElse(null),
-            ICanBeUsedInLabelComponent.class.cast(this.getComponent().getD4jComponent())
-        );*/
     }
 
     @Override
     public @NotNull Type getType() {
         return Type.LABEL;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+            .append(this.getTitle())
+            .append(this.getDescription())
+            .append(this.getComponent())
+            .build();
     }
 
     public @NotNull Builder mutate() {
