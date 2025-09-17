@@ -12,7 +12,6 @@ import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.SectionComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
-import discord4j.core.object.component.IAccessoryComponent;
 import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -56,7 +55,7 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
     @Override
     public @NotNull discord4j.core.object.component.Section getD4jComponent() {
         return discord4j.core.object.component.Section.of(
-            (IAccessoryComponent) this.getAccessory().getD4jComponent(),
+            this.getAccessory().getD4jComponent(),
             this.getComponents()
                 .stream()
                 .map(SectionComponent::getD4jComponent)
