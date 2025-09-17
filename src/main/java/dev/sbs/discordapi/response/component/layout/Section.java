@@ -11,7 +11,6 @@ import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.SectionComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,10 +20,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Section implements LayoutComponent, TopLevelMessageComponent, ContainerComponent {
+public final class Section implements LayoutComponent, ContainerComponent {
 
     private final @NotNull AccessoryComponent accessory;
     private final @NotNull ConcurrentList<SectionComponent> components;
@@ -44,6 +44,17 @@ public final class Section implements LayoutComponent, TopLevelMessageComponent,
             .append(this.getAccessory(), section.getAccessory())
             .append(this.getComponents(), section.getComponents())
             .build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NotNull Stream<Component> flattenComponents() {
+        return Stream.concat(
+            LayoutComponent.super.flattenComponents(),
+            Stream.of(this.getAccessory())
+        );
     }
 
     public static @NotNull Builder from(@NotNull Section section) {

@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -45,6 +46,17 @@ public final class Label implements TopLevelModalComponent {
             .append(this.getDescription(), label.getDescription())
             .append(this.getComponent(), label.getComponent())
             .build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NotNull Stream<Component> flattenComponents() {
+        return Stream.concat(
+            TopLevelModalComponent.super.flattenComponents(),
+            this.getComponent().flattenComponents()
+        );
     }
 
     public static @NotNull Builder from(@NotNull Label label) {

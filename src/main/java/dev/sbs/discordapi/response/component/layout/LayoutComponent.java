@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public interface LayoutComponent extends TopLevelMessageComponent {
 
@@ -30,6 +31,16 @@ public interface LayoutComponent extends TopLevelMessageComponent {
             .map(tClass::cast)
             .filter(innerComponent -> Objects.equals(function.apply(innerComponent), value))
             .findFirst();
+    }
+
+    @Override
+    default @NotNull Stream<Component> flattenComponents() {
+        return Stream.concat(
+            TopLevelMessageComponent.super.flattenComponents(),
+            this.getComponents()
+                .stream()
+                .flatMap(Component::flattenComponents)
+        );
     }
 
     /**

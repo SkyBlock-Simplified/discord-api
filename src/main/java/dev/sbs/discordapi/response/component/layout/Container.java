@@ -8,7 +8,6 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,7 +22,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Container implements LayoutComponent, TopLevelMessageComponent {
+public final class Container implements LayoutComponent {
 
     private final @NotNull Optional<Color> accent;
     private final @NotNull ConcurrentList<ContainerComponent> components;

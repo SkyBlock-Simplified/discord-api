@@ -18,22 +18,6 @@ public interface Component {
      * @return A stream containing all components within the current component hierarchy, flattened into a single stream.
      */
     default @NotNull Stream<Component> flattenComponents() {
-        if (this instanceof LayoutComponent layoutComponent) {
-            return Stream.concat(
-                Stream.of(this),
-                layoutComponent.getComponents()
-                    .stream()
-                    .flatMap(component -> {
-                        Stream<Component> selfStream = Stream.of(component);
-
-                        if (component instanceof LayoutComponent)
-                            return Stream.concat(selfStream, component.flattenComponents());
-                        else
-                            return selfStream;
-                    })
-            );
-        }
-
         return Stream.of(this);
     }
 
