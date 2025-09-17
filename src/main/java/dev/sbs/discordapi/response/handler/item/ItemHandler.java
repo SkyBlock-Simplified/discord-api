@@ -126,7 +126,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             // Load Filtered Items
             ConcurrentList<T> filteredItems = this.getFilteredItems();
             ConcurrentList<FieldItem<?>> filteredFieldItems = filteredItems.indexedStream()
-                .map(this.getTransformer())
+                .mapToObj(this.getTransformer())
                 .filter(Objects::nonNull)
                 .collect(Concurrent.toUnmodifiableList());
 
