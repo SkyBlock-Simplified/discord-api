@@ -3,7 +3,10 @@ package dev.sbs.discordapi.response.component.layout;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
+import dev.sbs.discordapi.response.component.type.AccessoryComponent;
+import dev.sbs.discordapi.response.component.type.LabelComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -50,10 +53,17 @@ public interface LayoutComponent extends TopLevelMessageComponent {
      */
     default <T extends ActionComponent> void modifyComponent(@NotNull T actionComponent) {
         this.getComponents().forEach(component -> {
-            if (component instanceof LayoutComponent layoutComponent)
-                layoutComponent.modifyComponent(actionComponent);
-            else if (component instanceof ActionComponent innerComponent) {
-                if (innerComponent.getUserIdentifier().equals(actionComponent.getUserIdentifier())) {
+            if (component instanceof LayoutComponent layoutComponent) {
+                if (component instanceof Section section) {
+                    if (section.getAccessory() instanceof UserInteractComponent userInteractComponent)
+                        section.mutate().withAccessory((AccessoryComponent) actionComponent).build();
+                } else
+                    layoutComponent.modifyComponent(actionComponent);
+            } else if (component instanceof Label label) {
+                if (label.getComponent().getIdentifier().equals(actionComponent.getIdentifier()))
+                    label.mutate().withComponent((LabelComponent) actionComponent).build();
+            } else if (component instanceof ActionComponent innerComponent) {
+                if (innerComponent.getIdentifier().equals(actionComponent.getIdentifier())) {
                     this.getComponents().set(
                         this.getComponents().indexOf(innerComponent),
                         actionComponent

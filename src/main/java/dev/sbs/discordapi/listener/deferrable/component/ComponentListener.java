@@ -56,7 +56,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .concatWith(Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()))
             .flatMap(tlmComponent -> Flux.fromStream(tlmComponent.flattenComponents()))
             .filter(UserInteractComponent.class::isInstance)
-            .filter(component -> event.getCustomId().equals(((UserInteractComponent) component).getUserIdentifier())) // Validate Component ID
+            .filter(component -> event.getCustomId().equals(((UserInteractComponent) component).getIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
             .map(this.componentClass::cast)
             .singleOrEmpty()

@@ -4,6 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 public interface UserInteractComponent {
 
-    @NotNull String getUserIdentifier();
+    @NotNull String getIdentifier();
 
 }

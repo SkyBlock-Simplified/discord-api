@@ -3,7 +3,6 @@ package dev.sbs.discordapi.response.component.media;
 import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import lombok.AccessLevel;
@@ -15,7 +14,7 @@ import java.util.Arrays;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class MediaGallery implements Component, TopLevelMessageComponent, ContainerComponent {
+public class MediaGallery implements TopLevelMessageComponent, ContainerComponent {
 
     private final @NotNull ConcurrentList<Thumbnail> items;
 

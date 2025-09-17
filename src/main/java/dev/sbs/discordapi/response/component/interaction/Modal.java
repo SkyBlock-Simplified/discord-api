@@ -47,7 +47,7 @@ import java.util.function.Function;
 public final class Modal implements EventComponent<ModalContext>, UserInteractComponent {
 
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    private final @NotNull String userIdentifier;
+    private final @NotNull String identifier;
     private final @NotNull Optional<String> title;
     private final @NotNull ConcurrentList<TopLevelModalComponent> components;
     private final @NotNull Function<ModalContext, Mono<Void>> interaction;
@@ -63,7 +63,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         Modal modal = (Modal) o;
 
         return new EqualsBuilder()
-            .append(this.getUserIdentifier(), modal.getUserIdentifier())
+            .append(this.getIdentifier(), modal.getIdentifier())
             .append(this.getTitle(), modal.getTitle())
             .append(this.getComponents(), modal.getComponents())
             .append(this.interaction, modal.interaction)
@@ -72,7 +72,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
     public static @NotNull Builder from(@NotNull Modal modal) {
         return new Builder()
-            .withIdentifier(modal.getUserIdentifier())
+            .withIdentifier(modal.getIdentifier())
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
             .onInteract(modal.interaction);
@@ -80,7 +80,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
     public @NotNull InteractionPresentModalSpec getD4jPresentSpec() {
         return InteractionPresentModalSpec.builder()
-            .customId(this.getUserIdentifier())
+            .customId(this.getIdentifier())
             .title(this.getTitle().map(Possible::of).orElse(Possible.absent()))
             .components(
                 this.getComponents()
@@ -129,7 +129,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getUserIdentifier())
+            .append(this.getIdentifier())
             .append(this.getTitle())
             .append(this.getComponents())
             .append(this.interaction)
@@ -214,7 +214,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                     switch (d4jComponent.getType()) {
                         case TEXT_INPUT -> this.findComponent(
                             TextInput.class,
-                            TextInput::getUserIdentifier,
+                            TextInput::getIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent((label, textInput) -> label.mutate()
                             .withComponent(
@@ -231,7 +231,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                         );
                         case SELECT_MENU_STRING -> this.findComponent(
                             SelectMenu.class,
-                            SelectMenu::getUserIdentifier,
+                            SelectMenu::getIdentifier,
                             d4jComponent.getData().customId().get()
                         ).ifPresent((label, selectMenu) -> selectMenu.updateSelected(
                             d4jComponent.getData()

@@ -36,7 +36,7 @@ import java.util.function.Function;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, LabelComponent, ToggleableComponent {
 
-    private final @NotNull String userIdentifier;
+    private final @NotNull String identifier;
     private final @NotNull Optional<String> placeholder;
     private final int minValues;
     private final int maxValues;
@@ -67,7 +67,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             .append(this.isDeferEdit(), that.isDeferEdit())
             .append(this.isRequired(), that.isRequired())
             .append(this.isEnabled(), that.isEnabled())
-            .append(this.getUserIdentifier(), that.getUserIdentifier())
+            .append(this.getIdentifier(), that.getIdentifier())
             .append(this.getPlaceholder(), that.getPlaceholder())
             .append(this.getOptions(), that.getOptions())
             .append(this.userInteraction, that.userInteraction)
@@ -91,7 +91,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
     public static @NotNull Builder from(@NotNull SelectMenu selectMenu) {
         return new Builder()
-            .withIdentifier(selectMenu.getUserIdentifier())
+            .withIdentifier(selectMenu.getIdentifier())
             .setDisabled(selectMenu.isEnabled())
             .withPlaceholder(selectMenu.getPlaceholder())
             .withMinValues(selectMenu.getMinValues())
@@ -105,7 +105,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     @Override
     public @NotNull discord4j.core.object.component.SelectMenu getD4jComponent() {
         return discord4j.core.object.component.SelectMenu.of(
-                this.getUserIdentifier(),
+                this.getIdentifier(),
                 this.getOptions()
                     .stream()
                     .map(option -> option.getD4jOption(this.getSelected().contains(option)))
@@ -140,7 +140,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     @Override
     public int hashCode() {
         return new HashCodeBuilder()
-            .append(this.getUserIdentifier())
+            .append(this.getIdentifier())
             .append(this.getPlaceholder())
             .append(this.getMinValues())
             .append(this.getMaxValues())

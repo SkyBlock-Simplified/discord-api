@@ -4,7 +4,6 @@ import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
@@ -21,7 +20,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Thumbnail implements Component, AccessoryComponent {
+public class Thumbnail implements AccessoryComponent {
 
     private final @NotNull MediaData mediaData;
     private final @NotNull Optional<String> description;

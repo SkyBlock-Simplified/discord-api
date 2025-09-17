@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.response.handler.item.search;
 
-import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
@@ -36,7 +36,7 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
         if (this.notEmpty()) {
             this.pending = this.getItems()
                 .stream()
-                .filter(search -> search.getTextInput().getUserIdentifier().equals(textInput.getUserIdentifier()))
+                .filter(search -> search.getTextInput().getIdentifier().equals(textInput.getIdentifier()))
                 .findFirst();
 
             if (this.getPending().isPresent()) {
