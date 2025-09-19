@@ -55,7 +55,8 @@ public interface Component {
         FILE(13, true),
         SEPARATOR(14, true),
         CONTAINER(17, true),
-        LABEL(18);
+        LABEL(18),
+        FILE_UPLOAD(19);
 
         private final int value;
 
