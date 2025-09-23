@@ -8,8 +8,9 @@ import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import discord4j.common.util.Snowflake;
-import discord4j.core.event.domain.message.MessageEvent;
+import discord4j.core.event.domain.message.ReactionUserEmojiEvent;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.User;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -17,7 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-public abstract class ReactionListener<E extends MessageEvent> extends DiscordListener<E> {
+public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends DiscordListener<E> {
 
     protected ReactionListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
@@ -29,27 +30,21 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
             .filter(this::isBotMessage) // Only Bot Messages
             .filter(this::notBot) // Ignore Other Bots
             .thenMany(Flux.fromIterable(this.getDiscordBot().getResponseHandler()))
-            .filter(entry -> entry.matchesMessage(this.getMessageId(event), this.getUserId(event))) // Validate Message & User ID
+            .filter(entry -> entry.matchesMessage(event.getMessageId(), event.getUserId())) // Validate Message & User ID
             .singleOrEmpty()
             .flatMap(entry -> {
-                final Emoji emoji = this.getEmoji(event);
+                final Emoji emoji = Emoji.of(event.getEmoji());
 
                 return Flux.fromIterable(entry.getResponse().getHistoryHandler().getCurrentPage().getReactions())
                     .filter(reaction -> reaction.equals(emoji))
                     .singleOrEmpty()
-                    .flatMap(reaction -> this.handleInteraction(event, entry, reaction, entry.findFollowup(this.getMessageId(event))))
+                    .flatMap(reaction -> this.handleInteraction(event, entry, reaction, entry.findFollowup(event.getMessageId())))
                     .then(entry.updateLastInteract())
                     .then();
             });
     }
 
     protected abstract @NotNull ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Followup> followup);
-
-    protected abstract @NotNull Snowflake getMessageId(@NotNull E event);
-
-    protected abstract @NotNull Emoji getEmoji(@NotNull E event);
-
-    protected abstract @NotNull Snowflake getUserId(@NotNull E event);
 
     private Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull Emoji reaction, @NotNull Optional<Followup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
@@ -69,12 +64,12 @@ public abstract class ReactionListener<E extends MessageEvent> extends DiscordLi
             );
     }
 
-    protected abstract boolean isBot(@NotNull E event);
-
-    protected final boolean notBot(@NotNull E event) {
-        return !this.isBot(event);
+    private boolean notBot(@NotNull E event) {
+        return !event.getUser().blockOptional().map(User::isBot).orElse(true);
     }
 
-    protected abstract boolean isBotMessage(@NotNull E event);
+    private boolean isBotMessage(@NotNull E event) {
+        return event.getMessage().blockOptional().flatMap(Message::getAuthor).map(User::isBot).orElse(false);
+    }
 
 }
