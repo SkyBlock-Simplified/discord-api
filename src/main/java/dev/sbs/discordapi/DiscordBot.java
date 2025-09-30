@@ -3,6 +3,7 @@ package dev.sbs.discordapi;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.data.DataSession;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.discordapi.command.DiscordCommand;
@@ -164,12 +165,12 @@ public abstract class DiscordBot {
                         .getDataConfig()
                         .ifPresent(dataConfig -> {
                             log.info("Creating Database Session");
-                            SimplifiedApi.getSessionManager().connect(dataConfig);
+                            DataSession<?> session = SimplifiedApi.getSessionManager().connect(dataConfig);
 
                             log.info(
                                 "Database Connected. (Initialized in {}ms, Started in {}ms)",
-                                SimplifiedApi.getSessionManager().getSession().getInitialization(),
-                                SimplifiedApi.getSessionManager().getSession().getStartup()
+                                session.getInitialization(),
+                                session.getStartup()
                             );
                             this.onDatabaseConnected();
                         });
