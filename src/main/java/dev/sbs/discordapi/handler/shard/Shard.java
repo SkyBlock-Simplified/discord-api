@@ -42,7 +42,7 @@ public class Shard extends DiscordReference {
     }
 
     @SuppressWarnings("unchecked")
-    public Mono<Void> start() {
+    public @NotNull Mono<Void> start() {
         return !this.isConnected() ? this.getClient()
             .getGatewayService()
             .getGateway()
@@ -54,11 +54,11 @@ public class Shard extends DiscordReference {
             )) : Mono.empty();
     }
 
-    public Mono<CloseStatus> stop() {
+    public @NotNull Mono<CloseStatus> stop() {
         return this.stop(true);
     }
 
-    public Mono<CloseStatus> stop(boolean allowResume) {
+    public @NotNull Mono<CloseStatus> stop(boolean allowResume) {
         return this.isConnected() ? this.getGatewayClient().close(allowResume) : Mono.empty();
     }
 
