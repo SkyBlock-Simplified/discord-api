@@ -22,7 +22,8 @@ import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
 import dev.sbs.discordapi.handler.EmojiHandler;
-import dev.sbs.discordapi.handler.ExceptionHandler;
+import dev.sbs.discordapi.handler.exception.DiscordExceptionHandler;
+import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.handler.response.ResponseHandler;
@@ -111,6 +112,8 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 public abstract class DiscordBot {
 
+    // TODO: ADD SENTRY FOR ERROR LOGGING https://sentry.io/welcome/
+
     private final @NotNull Scheduler scheduler = new Scheduler();
     private final @NotNull DiscordConfig config;
 
@@ -119,16 +122,15 @@ public abstract class DiscordBot {
     private final @NotNull EmojiHandler emojiHandler;
     private final @NotNull ResponseHandler responseHandler;
     private final @NotNull CommandHandler commandHandler;
-    private final @NotNull ShardHandler shardHandler;
+    private ShardHandler shardHandler;
 
     // Connection
-    private final @NotNull DiscordClient client;
-    private final @NotNull GatewayDiscordClient gateway;
+    private DiscordClient client;
+    private GatewayDiscordClient gateway;
 
-    @SuppressWarnings("unchecked")
     protected DiscordBot(@NotNull DiscordConfig config) {
         this.config = config;
-        this.exceptionHandler = new ExceptionHandler(this);
+        this.exceptionHandler = new DiscordExceptionHandler(this);
         this.emojiHandler = new EmojiHandler(this);
         this.responseHandler = new ResponseHandler();
         Configurator.setRootLevel(this.getConfig().getLogLevel());
@@ -136,6 +138,26 @@ public abstract class DiscordBot {
         this.commandHandler = CommandHandler.builder(this)
             .withCommands(this.getConfig().getCommands())
             .build();
+    }
+
+    /**
+     * Initializes and configures the Discord REST Client, allowing for REST-only API usage.
+     * <ul>
+     *   <li>Creates a Discord client using the token provided.</li>
+     *   <li>Sets the default allowed mentions for the client.</li>
+     *   <li>Suppresses certain client responses:
+     *     <ul>
+     *       <li>404 Not Found responses are ignored.</li>
+     *       <li>400 Bad Request responses for reaction creation are suppressed.</li>
+     *     </ul>
+     *   </li>
+     *   <li>Implements retry logic for network exceptions such as {@code SocketException}
+     *       or {@code NativeIoException}, with exponential backoff up to 10 retries.</li>
+     * </ul>
+     */
+    protected final void createClient() {
+        if (this.client != null)
+            throw new IllegalStateException("Discord Client already initialized");
 
         log.info("Creating Discord Client");
         this.client = DiscordClientBuilder.create(this.getConfig().getToken())
@@ -148,6 +170,39 @@ public abstract class DiscordBot {
                     .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
             )
             .build();
+
+        this.onClientCreated(this.client);
+    }
+
+    /**
+     * Establish a connection to the Discord Gateway, enabling real-time events, presence, voice, etc.
+     * <ul>
+     *   <li>Initializes the Discord Gateway with specified intents, client presence, and member request filters.</li>
+     *   <li>Handles the {@link ConnectEvent} to initialize additional components and perform post-connection setup:
+     *     <ul>
+     *       <li>Calls the {@code onGatewayConnected} method upon a successful connection.</li>
+     *       <li>If a database configuration is present, establishes a database session and calls {@code onDatabaseConnected}.</li>
+     *       <li>Schedules a periodic task to clean up inactive cached responses and update message states.</li>
+     *       <li>Registers event listeners dynamically by scanning resources and loading implementations of
+     *           {@code DiscordListener} or user-defined listeners from the configuration.</li>
+     *       <li>Registers and uploads custom emojis using the configured emoji handler.</li>
+     *       <li>Updates global application commands through the command handler.</li>
+     *     </ul>
+     *   </li>
+     *   <li>Logs the bot's username after successfully logging in.</li>
+     * </ul>
+     * <p>
+     * Waits for manual gateway termination to remain online and operational indefinitely.
+     *
+     * @throws DiscordGatewayException If unable to connect to the Discord Gateway.
+     */
+    @SuppressWarnings("unchecked")
+    protected final void connectGateway() throws DiscordGatewayException {
+        if (this.client == null)
+            throw new IllegalStateException("Discord Client not initialized");
+
+        if (this.gateway != null)
+            throw new IllegalStateException("Discord Gateway already connected");
 
         log.info("Connecting to Discord Gateway");
         this.gateway = this.getClient()
@@ -231,6 +286,20 @@ public abstract class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
+    public final @NotNull DiscordClient getClient() {
+        if (this.client == null)
+            throw new IllegalStateException("Discord Client not initialized");
+
+        return this.client;
+    }
+
+    public final @NotNull GatewayDiscordClient getGateway() {
+        if (this.gateway == null)
+            throw new IllegalStateException("Discord Gateway not connected");
+
+        return this.gateway;
+    }
+
     public final @NotNull Snowflake getClientId() {
         return this.getGateway().getSelfId();
     }
@@ -248,6 +317,25 @@ public abstract class DiscordBot {
             .blockOptional()
             .orElseThrow(() -> new DiscordGatewayException("Unable to locate self in gateway."));
     }
+
+    public @NotNull ShardHandler getShardHandler() {
+        return shardHandler;
+    }
+
+    /**
+     * Initializes the Discord Client and connects to the Discord Gateway.
+     * <ul>
+     *   <li>Calls {@link #createClient} to create and configure the Discord Client.</li>
+     *   <li>Calls {@link #connectGateway} to establish a connection to the Discord Gateway.</li>
+     * </ul>
+     */
+    protected final void login() {
+        this.createClient();
+        this.connectGateway();
+    }
+
+    @SuppressWarnings("unused")
+    protected void onClientCreated(@NotNull DiscordClient discordClient) { }
 
     protected void onDatabaseConnected() { }
 
