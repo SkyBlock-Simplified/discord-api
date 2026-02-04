@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.handler;
+package dev.sbs.discordapi.handler.exception;
 
 import dev.sbs.api.client.exception.ApiException;
 import dev.sbs.api.collection.concurrent.Concurrent;
@@ -26,7 +26,6 @@ import dev.sbs.discordapi.response.embed.structure.Author;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.embed.structure.Footer;
 import dev.sbs.discordapi.response.page.impl.TreePage;
-import dev.sbs.discordapi.util.DiscordReference;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.GuildChannel;
@@ -41,9 +40,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class ExceptionHandler extends DiscordReference {
+public class DiscordExceptionHandler extends ExceptionHandler {
 
-    public ExceptionHandler(@NotNull DiscordBot discordBot) {
+    public DiscordExceptionHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
@@ -362,46 +361,46 @@ public final class ExceptionHandler extends DiscordReference {
             exceptionContext.reply(userErrorResponse);
 
         Mono<T> mono = reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
-            // Log to debug channel when it's not an expected reactive user error
-            Mono.just(this.getDiscordBot().getMainGuild())
-                .flatMap(guild -> guild.getChannelById(Snowflake.of(
-                    this.getDiscordBot()
-                        .getConfig()
-                        .getDebugChannelId()
-                        .orElse(-1L)
-                )))
-                .ofType(MessageChannel.class)
-                .flatMap(messageChannel -> {
-                    // Get Message ID
-                    Optional<Snowflake> messageId;
+                // Log to debug channel when it's not an expected reactive user error
+                Mono.just(this.getDiscordBot().getMainGuild())
+                    .flatMap(guild -> guild.getChannelById(Snowflake.of(
+                        this.getDiscordBot()
+                            .getConfig()
+                            .getDebugChannelId()
+                            .orElse(-1L)
+                    )))
+                    .ofType(MessageChannel.class)
+                    .flatMap(messageChannel -> {
+                        // Get Message ID
+                        Optional<Snowflake> messageId;
 
-                    if (exceptionContext.getEventContext() instanceof MessageContext)
-                        messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
-                    else
-                        messageId = this.getDiscordBot()
-                            .getResponseHandler()
-                            .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
-                            .map(CachedResponse::getMessageId);
+                        if (exceptionContext.getEventContext() instanceof MessageContext)
+                            messageId = Optional.of(((MessageContext<?>) exceptionContext.getEventContext()).getMessageId());
+                        else
+                            messageId = this.getDiscordBot()
+                                .getResponseHandler()
+                                .findFirst(entry -> entry.getResponse().getUniqueId(), userErrorResponse.getUniqueId())
+                                .map(CachedResponse::getMessageId);
 
-                    // Build Exception Response
-                    Response logResponse = Response.builder()
-                        .withException(exceptionContext.getException())
-                        .withPages(
-                            TreePage.builder()
-                                .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
-                                .build()
-                        )
-                        .build();
+                        // Build Exception Response
+                        Response logResponse = Response.builder()
+                            .withException(exceptionContext.getException())
+                            .withPages(
+                                TreePage.builder()
+                                    .withEmbeds(this.buildDeveloperError(exceptionContext, defaultError, messageId))
+                                    .build()
+                            )
+                            .build();
 
-                    return Mono.just(messageChannel)
-                        .publishOn(logResponse.getReactorScheduler())
-                        .flatMap(logResponse::getD4jCreateMono)
-                        .doOnNext(__ -> messageId.ifPresent(id -> this.getDiscordBot()
-                            .getResponseHandler()
-                            .removeIf(entry -> entry.getMessageId().equals(id))
-                        ))
-                        .then(Mono.empty());
-                })
+                        return Mono.just(messageChannel)
+                            .publishOn(logResponse.getReactorScheduler())
+                            .flatMap(logResponse::getD4jCreateMono)
+                            .doOnNext(__ -> messageId.ifPresent(id -> this.getDiscordBot()
+                                .getResponseHandler()
+                                .removeIf(entry -> entry.getMessageId().equals(id))
+                            ))
+                            .then(Mono.empty());
+                    })
             ))
             .then(Mono.empty());
 
