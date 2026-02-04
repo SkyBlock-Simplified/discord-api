@@ -253,6 +253,15 @@ public abstract class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
+    /**
+     * Initializes and configures the Discord REST client and establishes a connection to the Discord Gateway,
+     * enabling real-time events, presence, voice, etc.
+     *
+     * @throws IllegalStateException If the login or connection steps encounter issues, such as
+     *                                a duplicate client initialization or an invalid token configuration.
+     * @throws DiscordClientException If the Discord REST client fails to retrieve the self-user's details.
+     * @throws DiscordGatewayException If the Discord Gateway connection cannot be established.
+     */
     protected final void initialize() {
         this.login();
         this.connect();
