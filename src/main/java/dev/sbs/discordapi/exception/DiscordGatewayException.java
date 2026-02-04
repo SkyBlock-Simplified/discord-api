@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link DiscordGatewayException DiscordGatewayExceptions} are thrown when the {@link DiscordBot} could not locate something in the {@link GatewayDiscordClient}.
+ * {@link DiscordGatewayException DiscordGatewayExceptions} are thrown when the {@link DiscordBot} could not connect to the {@link GatewayDiscordClient}.
  */
 public class DiscordGatewayException extends DiscordException {
 
