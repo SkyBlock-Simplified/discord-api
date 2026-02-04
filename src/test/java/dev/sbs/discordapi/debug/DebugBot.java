@@ -23,6 +23,12 @@ public final class DebugBot extends DiscordBot {
         super(discordConfig);
     }
 
+    private static DebugBot create(@NotNull DiscordConfig discordConfig) {
+        DebugBot debugBot = new DebugBot(discordConfig);
+        debugBot.initialize();
+        return debugBot;
+    }
+
     public static void main(final String[] args) {
         DiscordConfig discordConfig = DiscordConfig.builder()
             .withToken(SystemUtil.getEnv("DISCORD_TOKEN"))
@@ -41,7 +47,7 @@ public final class DebugBot extends DiscordBot {
             .withLogLevel(Level.INFO)
             .build();
 
-        new DebugBot(discordConfig);
+        DebugBot.create(discordConfig);
     }
 
     @Override

@@ -19,6 +19,7 @@ import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
+import dev.sbs.discordapi.exception.DiscordClientException;
 import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
 import dev.sbs.discordapi.handler.EmojiHandler;
@@ -49,8 +50,8 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.discordjson.json.UserData;
 import discord4j.rest.request.RouteMatcher;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
@@ -122,11 +123,14 @@ public abstract class DiscordBot {
     private final @NotNull EmojiHandler emojiHandler;
     private final @NotNull ResponseHandler responseHandler;
     private final @NotNull CommandHandler commandHandler;
-    private ShardHandler shardHandler;
 
-    // Connection
+    // REST
     private DiscordClient client;
+    private UserData self;
+
+    // Gateway
     private GatewayDiscordClient gateway;
+    private ShardHandler shardHandler;
 
     protected DiscordBot(@NotNull DiscordConfig config) {
         this.config = config;
@@ -138,40 +142,6 @@ public abstract class DiscordBot {
         this.commandHandler = CommandHandler.builder(this)
             .withCommands(this.getConfig().getCommands())
             .build();
-    }
-
-    /**
-     * Initializes and configures the Discord REST Client, allowing for REST-only API usage.
-     * <ul>
-     *   <li>Creates a Discord client using the token provided.</li>
-     *   <li>Sets the default allowed mentions for the client.</li>
-     *   <li>Suppresses certain client responses:
-     *     <ul>
-     *       <li>404 Not Found responses are ignored.</li>
-     *       <li>400 Bad Request responses for reaction creation are suppressed.</li>
-     *     </ul>
-     *   </li>
-     *   <li>Implements retry logic for network exceptions such as {@code SocketException}
-     *       or {@code NativeIoException}, with exponential backoff up to 10 retries.</li>
-     * </ul>
-     */
-    protected final void createClient() {
-        if (this.client != null)
-            throw new IllegalStateException("Discord Client already initialized");
-
-        log.info("Creating Discord Client");
-        this.client = DiscordClientBuilder.create(this.getConfig().getToken())
-            .setDefaultAllowedMentions(this.getConfig().getAllowedMentions())
-            .onClientResponse(ResponseFunction.emptyIfNotFound()) // Suppress 404 Not Found
-            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Suppress (Reaction Add) 400 Bad Request
-            .onClientResponse(ResponseFunction.retryWhen( // Retry Network Exceptions
-                RouteMatcher.any(),
-                Retry.backoff(10, Duration.ofSeconds(2))
-                    .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
-            )
-            .build();
-
-        this.onClientCreated(this.client);
     }
 
     /**
@@ -197,10 +167,7 @@ public abstract class DiscordBot {
      * @throws DiscordGatewayException If unable to connect to the Discord Gateway.
      */
     @SuppressWarnings("unchecked")
-    protected final void connectGateway() throws DiscordGatewayException {
-        if (this.client == null)
-            throw new IllegalStateException("Discord Client not initialized");
-
+    private void connect() throws DiscordGatewayException {
         if (this.gateway != null)
             throw new IllegalStateException("Discord Gateway already connected");
 
@@ -272,7 +239,7 @@ public abstract class DiscordBot {
                         .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
                         .forEach(eventListeners::add);
 
-                    log.info("Logged in as {}", this.getSelf().getUsername());
+                    log.info("Logged in as {}", this.getSelf().username());
                     return Mono.when(eventListeners)
                         .and(this.getCommandHandler().updateGlobalApplicationCommands())
                         .and(emojis);
@@ -286,11 +253,58 @@ public abstract class DiscordBot {
         this.getGateway().onDisconnect().block(); // Stay Online
     }
 
+    protected final void initialize() {
+        this.login();
+        this.connect();
+    }
+
+    /**
+     * Initializes and configures the Discord REST Client, allowing for REST-only API usage.
+     * <ul>
+     *   <li>Creates a Discord client using the token provided.</li>
+     *   <li>Sets the default allowed mentions for the client.</li>
+     *   <li>Suppresses certain client responses:
+     *     <ul>
+     *       <li>404 Not Found responses are ignored.</li>
+     *       <li>400 Bad Request responses for reaction creation are suppressed.</li>
+     *     </ul>
+     *   </li>
+     *   <li>Implements retry logic for network exceptions such as {@code SocketException}
+     *       or {@code NativeIoException}, with exponential backoff up to 10 retries.</li>
+     * </ul>
+     */
+    private void login() {
+        if (this.client != null)
+            throw new IllegalStateException("Discord Client already initialized.");
+
+        log.info("Creating Discord Client");
+        this.client = DiscordClientBuilder.create(this.getConfig().getToken())
+            .setDefaultAllowedMentions(this.getConfig().getAllowedMentions())
+            .onClientResponse(ResponseFunction.emptyIfNotFound()) // Suppress 404 Not Found
+            .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Suppress (Reaction Add) 400 Bad Request
+            .onClientResponse(ResponseFunction.retryWhen( // Retry Network Exceptions
+                RouteMatcher.any(),
+                Retry.backoff(10, Duration.ofSeconds(2))
+                    .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
+            )
+            .build();
+
+        this.self = this.client.getSelf()
+            .blockOptional()
+            .orElseThrow(() -> new DiscordClientException("Unable to locate self."));
+
+        this.onClientCreated(this.client);
+    }
+
     public final @NotNull DiscordClient getClient() {
         if (this.client == null)
-            throw new IllegalStateException("Discord Client not initialized");
+            throw new IllegalStateException("Discord Client not initialized.");
 
         return this.client;
+    }
+
+    public final @NotNull Snowflake getClientId() {
+        return this.getClient().getCoreResources().getSelfId();
     }
 
     public final @NotNull GatewayDiscordClient getGateway() {
@@ -300,38 +314,11 @@ public abstract class DiscordBot {
         return this.gateway;
     }
 
-    public final @NotNull Snowflake getClientId() {
-        return this.getGateway().getSelfId();
-    }
-
     public final @NotNull Guild getMainGuild() {
         return this.getGateway()
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
-            .orElseThrow(() -> new DiscordGatewayException("Unable to locate main guild in gateway."));
-    }
-
-    public final @NotNull User getSelf() {
-        return this.getGateway()
-            .getSelf()
-            .blockOptional()
-            .orElseThrow(() -> new DiscordGatewayException("Unable to locate self in gateway."));
-    }
-
-    public @NotNull ShardHandler getShardHandler() {
-        return shardHandler;
-    }
-
-    /**
-     * Initializes the Discord Client and connects to the Discord Gateway.
-     * <ul>
-     *   <li>Calls {@link #createClient} to create and configure the Discord Client.</li>
-     *   <li>Calls {@link #connectGateway} to establish a connection to the Discord Gateway.</li>
-     * </ul>
-     */
-    protected final void login() {
-        this.createClient();
-        this.connectGateway();
+            .orElseThrow(() -> new DiscordGatewayException("Unable to locate main guild."));
     }
 
     @SuppressWarnings("unused")
