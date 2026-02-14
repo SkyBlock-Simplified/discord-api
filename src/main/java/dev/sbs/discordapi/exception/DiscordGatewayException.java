@@ -19,6 +19,10 @@ public class DiscordGatewayException extends DiscordException {
         super(message);
     }
 
+    public DiscordGatewayException(@NotNull String message, @NotNull Throwable cause) {
+        super(message, cause);
+    }
+
     public DiscordGatewayException(@NotNull @PrintFormat String message, @Nullable Object... args) {
         super(String.format(message, args));
     }

@@ -19,6 +19,10 @@ public class DiscordClientException extends DiscordException {
         super(message);
     }
 
+    public DiscordClientException(@NotNull String message, @NotNull Throwable cause) {
+        super(message, cause);
+    }
+
     public DiscordClientException(@NotNull @PrintFormat String message, @Nullable Object... args) {
         super(String.format(message, args));
     }
