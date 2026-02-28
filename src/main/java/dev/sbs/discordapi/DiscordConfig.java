@@ -4,9 +4,9 @@ import dev.sbs.api.builder.ClassBuilder;
 import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
-import dev.sbs.api.data.DataConfig;
-import dev.sbs.api.data.Model;
-import dev.sbs.api.data.yaml.annotation.Flag;
+import dev.sbs.api.io.yaml.annotation.Flag;
+import dev.sbs.api.persistence.Model;
+import dev.sbs.api.persistence.SessionConfig;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ResourceInfo;
 import dev.sbs.discordapi.command.DiscordCommand;
@@ -36,7 +36,7 @@ public final class DiscordConfig {
     private final @NotNull String token;
     private final long mainGuildId;
     private final @NotNull Optional<Long> debugChannelId;
-    private final @NotNull Optional<DataConfig<? extends Model>> dataConfig;
+    private final @NotNull Optional<SessionConfig<? extends Model>> dataConfig;
     private final ConcurrentSet<Class<? extends DiscordListener>> listeners;
     private final ConcurrentSet<Class<DiscordCommand>> commands;
     private final ConcurrentSet<ResourceInfo> emojis;
@@ -63,7 +63,7 @@ public final class DiscordConfig {
         @BuildFlag(nonNull = true)
         private Optional<Long> mainGuildId = Optional.empty();
         private Optional<Long> debugChannelId = Optional.empty();
-        private Optional<DataConfig<? extends Model>> dataConfig = Optional.empty();
+        private Optional<SessionConfig<? extends Model>> dataConfig = Optional.empty();
 
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
@@ -123,11 +123,11 @@ public final class DiscordConfig {
             return this;
         }
 
-        public Builder withDataConfig(@Nullable DataConfig<? extends Model> dataConfig) {
-            return this.withDataConfig(Optional.ofNullable(dataConfig));
+        public Builder withDataConfig(@Nullable SessionConfig<? extends Model> sessionConfig) {
+            return this.withDataConfig(Optional.ofNullable(sessionConfig));
         }
 
-        public Builder withDataConfig(@NotNull Optional<DataConfig<? extends Model>> dataConfig) {
+        public Builder withDataConfig(@NotNull Optional<SessionConfig<? extends Model>> dataConfig) {
             this.dataConfig = dataConfig;
             return this;
         }
