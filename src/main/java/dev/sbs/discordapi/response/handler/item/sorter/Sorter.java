@@ -1,15 +1,15 @@
 package dev.sbs.discordapi.response.handler.item.sorter;
 
+import dev.sbs.api.builder.ClassBuilder;
+import dev.sbs.api.builder.EqualsBuilder;
+import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.collection.sort.SortOrder;
+import dev.sbs.api.collection.query.SortOrder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;

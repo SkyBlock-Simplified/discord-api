@@ -5,7 +5,7 @@ import dev.sbs.api.builder.EqualsBuilder;
 import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.stream.triple.Triple;
+import dev.sbs.api.tuple.triple.Triple;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.spec.EmbedCreateFields;

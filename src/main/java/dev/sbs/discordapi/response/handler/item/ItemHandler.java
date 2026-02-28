@@ -8,10 +8,9 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.stream.StreamUtil;
-import dev.sbs.api.stream.pair.Pair;
-import dev.sbs.api.stream.triple.TriFunction;
-import dev.sbs.api.stream.triple.Triple;
+import dev.sbs.api.tuple.pair.Pair;
+import dev.sbs.api.tuple.triple.TriFunction;
+import dev.sbs.api.tuple.triple.Triple;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.embed.Embed;
@@ -200,7 +199,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
                         this.getCachedFieldItems()
                             .stream()
                             .map(FieldItem::getRenderValue)
-                            .collect(StreamUtil.toStringBuilder(true))
+                            .collect(Concurrent.toStringBuilder(true))
                             .toString()
                     )
                     .isInline(this.getFieldStyle().isInline())
