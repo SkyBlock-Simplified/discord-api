@@ -49,7 +49,7 @@ public class Shard extends DiscordReference {
             .flatMap(gatewayData -> this.getGatewayClient().execute(
                 RouteUtils.expandQuery(
                     gatewayData.url(),
-                    Reflection.of(GatewayBootstrap.class).invokeMethod(Multimap.class, this.getClient().gateway())
+                    new Reflection<>(GatewayBootstrap.class).invokeMethod(Multimap.class, this.getClient().gateway())
                 )
             )) : Mono.empty();
     }

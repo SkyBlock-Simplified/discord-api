@@ -338,7 +338,7 @@ public final class CommandHandler extends DiscordReference {
             .filter(StreamUtil.distinctByKey(Pair::getRight))
             .map(commandLink -> Pair.of(
                 commandLink.getLeft(),
-                Reflection.of(commandLink.getLeft()).newInstance(discordBot)
+                new Reflection<>(commandLink.getLeft()).newInstance(discordBot)
             ))
             .filter(commandEntry -> {
                 if (!validCommandPattern.matcher(commandEntry.getRight().getStructure().name()).matches()) {
