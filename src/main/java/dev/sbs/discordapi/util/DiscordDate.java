@@ -10,6 +10,15 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Optional;
 
+/**
+ * Represents a date in the Discord timestamp format.
+ * <p>
+ * This class extends the {@link SimpleDate} class and provides additional
+ * functionality specific to Discord's internal time representation, such as
+ * interpreting Discord Snowflakes or formatting dates for Discord-related contexts.
+ *
+ * @see <a href="https://discord.com/developers/docs/reference#snowflakes">Discord Snowflakes</a>
+ */
 public class DiscordDate extends SimpleDate {
 
     public static long DISCORD_EPOCH = 1420070400000L;
@@ -22,12 +31,20 @@ public class DiscordDate extends SimpleDate {
         super(realTime);
     }
 
-    // https://discord.com/developers/docs/reference#snowflakes
     public DiscordDate(@NotNull Snowflake snowflake) {
         super(DISCORD_EPOCH + (snowflake.asLong() >> 22));
     }
 
-    public @NotNull String toFormat(@NotNull Type type) {
+    /**
+     * Converts this object's internal real-time representation into a string formatted
+     * according to the specified {@link Type}.
+     *
+     * @param type The formatting type to be applied. This determines how the real-time value
+     *             will be structured and displayed.
+     * @return A string representing this object's real-time value, formatted according
+     *         to the specified {@link Type}.
+     */
+    public @NotNull String as(@NotNull Type type) {
         return type.toFormat(this.getRealTime());
     }
 
