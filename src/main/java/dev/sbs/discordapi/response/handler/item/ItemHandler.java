@@ -7,11 +7,12 @@ import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
+import dev.sbs.api.function.TriFunction;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.tuple.pair.Pair;
-import dev.sbs.api.tuple.triple.TriFunction;
 import dev.sbs.api.tuple.triple.Triple;
 import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.StreamUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
@@ -125,7 +126,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             // Load Filtered Items
             ConcurrentList<T> filteredItems = this.getFilteredItems();
             ConcurrentList<FieldItem<?>> filteredFieldItems = filteredItems.indexedStream()
-                .mapToObj(this.getTransformer())
+                .collapseToSingle(this.getTransformer())
                 .filter(Objects::nonNull)
                 .collect(Concurrent.toUnmodifiableList());
 
@@ -199,7 +200,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
                         this.getCachedFieldItems()
                             .stream()
                             .map(FieldItem::getRenderValue)
-                            .collect(Concurrent.toStringBuilder(true))
+                            .collect(StreamUtil.toStringBuilder(true))
                             .toString()
                     )
                     .isInline(this.getFieldStyle().isInline())
