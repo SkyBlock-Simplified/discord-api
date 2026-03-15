@@ -3,7 +3,7 @@ package dev.sbs.discordapi;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.persistence.Session;
+import dev.sbs.api.persistence.JpaSession;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.discordapi.command.DiscordCommand;
@@ -184,10 +184,10 @@ public abstract class DiscordBot {
                     this.onGatewayConnected(gatewayDiscordClient);
 
                     this.getConfig()
-                        .getDataConfig()
-                        .ifPresent(dataConfig -> {
+                        .getJpaConfig()
+                        .ifPresent(jpaConfig -> {
                             log.info("Creating Database Session");
-                            Session<?> session = SimplifiedApi.getSessionManager().connect(dataConfig);
+                            JpaSession session = SimplifiedApi.getSessionManager().connect(jpaConfig);
 
                             log.info(
                                 "Database Connected. (Initialized in {}ms, Started in {}ms)",

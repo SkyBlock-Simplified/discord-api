@@ -5,8 +5,7 @@ import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.io.yaml.annotation.Flag;
-import dev.sbs.api.persistence.Model;
-import dev.sbs.api.persistence.SessionConfig;
+import dev.sbs.api.persistence.JpaConfig;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ResourceInfo;
 import dev.sbs.discordapi.command.DiscordCommand;
@@ -36,7 +35,7 @@ public final class DiscordConfig {
     private final @NotNull String token;
     private final long mainGuildId;
     private final @NotNull Optional<Long> debugChannelId;
-    private final @NotNull Optional<SessionConfig<? extends Model>> dataConfig;
+    private final @NotNull Optional<JpaConfig> jpaConfig;
     private final ConcurrentSet<Class<? extends DiscordListener>> listeners;
     private final ConcurrentSet<Class<DiscordCommand>> commands;
     private final ConcurrentSet<ResourceInfo> emojis;
@@ -63,7 +62,7 @@ public final class DiscordConfig {
         @BuildFlag(nonNull = true)
         private Optional<Long> mainGuildId = Optional.empty();
         private Optional<Long> debugChannelId = Optional.empty();
-        private Optional<SessionConfig<? extends Model>> dataConfig = Optional.empty();
+        private Optional<JpaConfig> jpaConfig = Optional.empty();
 
         // Collections
         private ConcurrentSet<Class<? extends DiscordListener>> listeners = Concurrent.newSet();
@@ -123,12 +122,12 @@ public final class DiscordConfig {
             return this;
         }
 
-        public Builder withDataConfig(@Nullable SessionConfig<? extends Model> sessionConfig) {
-            return this.withDataConfig(Optional.ofNullable(sessionConfig));
+        public Builder withJpaConfig(@Nullable JpaConfig jpaConfig) {
+            return this.withJpaConfig(Optional.ofNullable(jpaConfig));
         }
 
-        public Builder withDataConfig(@NotNull Optional<SessionConfig<? extends Model>> dataConfig) {
-            this.dataConfig = dataConfig;
+        public Builder withJpaConfig(@NotNull Optional<JpaConfig> jpaConfig) {
+            this.jpaConfig = jpaConfig;
             return this;
         }
 
@@ -206,7 +205,7 @@ public final class DiscordConfig {
                 this.token.orElseThrow(),
                 this.mainGuildId.orElseThrow(),
                 this.debugChannelId,
-                this.dataConfig,
+                this.jpaConfig,
                 this.listeners.toUnmodifiableSet(),
                 this.commands.toUnmodifiableSet(),
                 this.emojis.toUnmodifiableSet(),
