@@ -1,21 +1,18 @@
-package dev.sbs.discordapi.response.component.interaction.action;
+package dev.sbs.discordapi.component.interaction;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
-import dev.sbs.discordapi.context.deferrable.component.action.ButtonContext;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.layout.ActionRow;
+import dev.sbs.discordapi.component.type.AccessoryComponent;
+import dev.sbs.discordapi.component.type.EventComponent;
+import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.context.component.ButtonContext;
+import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.layout.ActionRow;
-import dev.sbs.discordapi.response.component.type.EventComponent;
-import dev.sbs.discordapi.response.component.type.ToggleableComponent;
-import dev.sbs.discordapi.response.component.type.v2.AccessoryComponent;
 import dev.sbs.discordapi.response.handler.item.search.Search;
 import dev.sbs.discordapi.response.handler.item.sorter.Sorter;
 import dev.sbs.discordapi.response.page.Page;
@@ -29,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -38,7 +36,7 @@ import java.util.function.Function;
 public final class Button implements ActionComponent, AccessoryComponent, EventComponent<ButtonContext>, ToggleableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-    private final @NotNull String userIdentifier;
+    private final @NotNull String identifier;
     private final @NotNull Style style;
     private final @NotNull Optional<Emoji> emoji;
     private final @NotNull Optional<String> label;
@@ -60,21 +58,19 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
         Button button = (Button) o;
 
-        return new EqualsBuilder()
-            .append(this.getUserIdentifier(), button.getUserIdentifier())
-            .append(this.getStyle(), button.getStyle())
-            .append(this.isEnabled(), button.isEnabled())
-            .append(this.getEmoji(), button.getEmoji())
-            .append(this.getLabel(), button.getLabel())
-            .append(this.getUrl(), button.getUrl())
-            .append(this.isDeferEdit(), button.isDeferEdit())
-            .append(this.getPageType(), button.getPageType())
-            .build();
+        return Objects.equals(this.getIdentifier(), button.getIdentifier())
+            && Objects.equals(this.getStyle(), button.getStyle())
+            && this.isEnabled() == button.isEnabled()
+            && Objects.equals(this.getEmoji(), button.getEmoji())
+            && Objects.equals(this.getLabel(), button.getLabel())
+            && Objects.equals(this.getUrl(), button.getUrl())
+            && this.isDeferEdit() == button.isDeferEdit()
+            && Objects.equals(this.getPageType(), button.getPageType());
     }
 
     public static @NotNull Builder from(@NotNull Button button) {
         return new Builder()
-            .withIdentifier(button.getUserIdentifier())
+            .withIdentifier(button.getIdentifier())
             .withStyle(button.getStyle())
             .setDisabled(button.isEnabled())
             .withEmoji(button.getEmoji())
@@ -91,11 +87,11 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         String label = this.getLabel().orElse(null);
 
         return (switch (this.getStyle()) {
-            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getUserIdentifier(), d4jReaction, label);
-            case SUCCESS -> discord4j.core.object.component.Button.success(this.getUserIdentifier(), d4jReaction, label);
-            case DANGER -> discord4j.core.object.component.Button.danger(this.getUserIdentifier(), d4jReaction, label);
+            case PRIMARY -> discord4j.core.object.component.Button.primary(this.getIdentifier(), d4jReaction, label);
+            case SUCCESS -> discord4j.core.object.component.Button.success(this.getIdentifier(), d4jReaction, label);
+            case DANGER -> discord4j.core.object.component.Button.danger(this.getIdentifier(), d4jReaction, label);
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
-            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getUserIdentifier(), d4jReaction, label);
+            case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
         }).disabled(this.isEnabled());
     }
 
@@ -106,15 +102,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getUserIdentifier())
-            .append(this.getStyle())
-            .append(this.isEnabled())
-            .append(this.getEmoji())
-            .append(this.getLabel())
-            .append(this.getUrl())
-            .append(this.getPageType())
-            .build();
+        return Objects.hash(this.getIdentifier(), this.getStyle(), this.isEnabled(), this.getEmoji(), this.getLabel(), this.getUrl(), this.getPageType());
     }
 
     public @NotNull Builder mutate() {

@@ -1,8 +1,8 @@
-package dev.sbs.discordapi.response.component.media;
+package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.response.component.type.AccessoryComponent;
+import dev.sbs.discordapi.component.type.AccessoryComponent;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
 import lombok.AccessLevel;

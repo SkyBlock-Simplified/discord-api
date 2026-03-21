@@ -1,6 +1,6 @@
-package dev.sbs.discordapi.response.component.type;
+package dev.sbs.discordapi.component.type;
 
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
+import dev.sbs.discordapi.context.component.ComponentContext;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

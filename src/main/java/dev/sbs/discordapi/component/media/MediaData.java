@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.component.media;
+package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;

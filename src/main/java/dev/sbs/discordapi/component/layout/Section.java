@@ -1,14 +1,14 @@
-package dev.sbs.discordapi.response.component.layout;
+package dev.sbs.discordapi.component.layout;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.AccessoryComponent;
-import dev.sbs.discordapi.response.component.type.ContainerComponent;
-import dev.sbs.discordapi.response.component.type.SectionComponent;
+import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.type.AccessoryComponent;
+import dev.sbs.discordapi.component.type.ContainerComponent;
+import dev.sbs.discordapi.component.type.SectionComponent;
 import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import lombok.AccessLevel;
 import lombok.Getter;

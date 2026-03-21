@@ -1,12 +1,12 @@
-package dev.sbs.discordapi.response.component.layout;
+package dev.sbs.discordapi.component.layout;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.LabelComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelModalComponent;
+import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
 import lombok.AccessLevel;

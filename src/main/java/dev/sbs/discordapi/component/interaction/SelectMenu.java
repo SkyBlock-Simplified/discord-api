@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.component.interaction.action;
+package dev.sbs.discordapi.component.interaction;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -6,13 +6,13 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
-import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
+import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.type.EventComponent;
+import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.context.component.OptionContext;
+import dev.sbs.discordapi.context.component.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.type.EventComponent;
-import dev.sbs.discordapi.response.component.type.LabelComponent;
-import dev.sbs.discordapi.response.component.type.ToggleableComponent;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

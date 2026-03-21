@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.component.type;
+package dev.sbs.discordapi.component.type;
 
 import org.jetbrains.annotations.NotNull;
 

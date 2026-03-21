@@ -1,12 +1,12 @@
-package dev.sbs.discordapi.response.component.layout;
+package dev.sbs.discordapi.component.layout;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
-import dev.sbs.discordapi.response.component.type.AccessoryComponent;
-import dev.sbs.discordapi.response.component.type.LabelComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
-import dev.sbs.discordapi.response.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.interaction.ActionComponent;
+import dev.sbs.discordapi.component.type.AccessoryComponent;
+import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

@@ -1,6 +1,6 @@
-package dev.sbs.discordapi.response.component;
+package dev.sbs.discordapi.component;
 
-import dev.sbs.discordapi.response.component.layout.LayoutComponent;
+import dev.sbs.discordapi.component.layout.LayoutComponent;
 import discord4j.core.object.entity.Message;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

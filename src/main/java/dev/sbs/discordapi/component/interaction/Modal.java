@@ -1,28 +1,22 @@
-package dev.sbs.discordapi.response.component.interaction;
+package dev.sbs.discordapi.component.interaction;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.tuple.pair.Pair;
 import dev.sbs.api.tuple.pair.PairOptional;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.command.exception.input.InputException;
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
-import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.interaction.action.TextInput;
-import dev.sbs.discordapi.response.component.layout.Label;
-import dev.sbs.discordapi.response.component.type.EventComponent;
-import dev.sbs.discordapi.response.component.type.LabelComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelModalComponent;
-import dev.sbs.discordapi.response.component.type.UserInteractComponent;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.command.exception.InputException;
+import dev.sbs.discordapi.component.layout.Label;
+import dev.sbs.discordapi.component.type.EventComponent;
+import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.TopLevelModalComponent;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.component.ComponentContext;
+import dev.sbs.discordapi.context.component.ModalContext;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
@@ -62,12 +56,10 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
         Modal modal = (Modal) o;
 
-        return new EqualsBuilder()
-            .append(this.getIdentifier(), modal.getIdentifier())
-            .append(this.getTitle(), modal.getTitle())
-            .append(this.getComponents(), modal.getComponents())
-            .append(this.interaction, modal.interaction)
-            .build();
+        return Objects.equals(this.getIdentifier(), modal.getIdentifier())
+            && Objects.equals(this.getTitle(), modal.getTitle())
+            && Objects.equals(this.getComponents(), modal.getComponents())
+            && Objects.equals(this.interaction, modal.interaction);
     }
 
     public static @NotNull Builder from(@NotNull Modal modal) {
@@ -128,12 +120,7 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getIdentifier())
-            .append(this.getTitle())
-            .append(this.getComponents())
-            .append(this.interaction)
-            .build();
+        return Objects.hash(this.getIdentifier(), this.getTitle(), this.getComponents(), this.interaction);
     }
 
     @Override

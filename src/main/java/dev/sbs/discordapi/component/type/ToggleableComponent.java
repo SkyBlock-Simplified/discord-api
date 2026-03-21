@@ -1,6 +1,6 @@
-package dev.sbs.discordapi.response.component.type;
+package dev.sbs.discordapi.component.type;
 
-import dev.sbs.discordapi.response.component.Component;
+import dev.sbs.discordapi.component.Component;
 
 public interface ToggleableComponent extends Component {
 

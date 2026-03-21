@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.response.component.media;
+package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.response.component.type.ContainerComponent;
-import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.type.ContainerComponent;
+import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

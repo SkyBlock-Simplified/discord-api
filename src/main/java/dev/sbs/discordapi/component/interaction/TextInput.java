@@ -1,17 +1,14 @@
-package dev.sbs.discordapi.response.component.interaction.action;
+package dev.sbs.discordapi.component.interaction;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
+import dev.sbs.api.math.Range;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.util.Range;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
-import dev.sbs.discordapi.response.component.Component;
-import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.layout.Label;
-import dev.sbs.discordapi.response.component.type.LabelComponent;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.layout.Label;
+import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
@@ -25,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -36,7 +34,7 @@ import java.util.function.Predicate;
 public final class TextInput implements ActionComponent, LabelComponent {
 
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
-    private final @NotNull String userIdentifier;
+    private final @NotNull String identifier;
     private final @NotNull Style style;
     private final @NotNull Optional<String> value;
     private final @NotNull Optional<String> placeholder;
@@ -58,22 +56,20 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
         TextInput that = (TextInput) o;
 
-        return new EqualsBuilder()
-            .append(this.getUserIdentifier(), that.getUserIdentifier())
-            .append(this.getStyle(), that.getStyle())
-            .append(this.getValue(), that.getValue())
-            .append(this.getPlaceholder(), that.getPlaceholder())
-            .append(this.getSearchType(), that.getSearchType())
-            .append(this.getValidator(), that.getValidator())
-            .append(this.getMinLength(), that.getMinLength())
-            .append(this.getMaxLength(), that.getMaxLength())
-            .append(this.isRequired(), that.isRequired())
-            .build();
+        return Objects.equals(this.getIdentifier(), that.getIdentifier())
+            && Objects.equals(this.getStyle(), that.getStyle())
+            && Objects.equals(this.getValue(), that.getValue())
+            && Objects.equals(this.getPlaceholder(), that.getPlaceholder())
+            && Objects.equals(this.getSearchType(), that.getSearchType())
+            && Objects.equals(this.getValidator(), that.getValidator())
+            && this.getMinLength() == that.getMinLength()
+            && this.getMaxLength() == that.getMaxLength()
+            && this.isRequired() == that.isRequired();
     }
 
     public static @NotNull Builder from(@NotNull TextInput textInput) {
         return new Builder()
-            .withIdentifier(textInput.getUserIdentifier())
+            .withIdentifier(textInput.getIdentifier())
             .withStyle(textInput.getStyle())
             .withValue(textInput.getValue())
             .withPlaceholder(textInput.getPlaceholder())
@@ -90,7 +86,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
             ComponentData.builder()
                 .type(Component.Type.TEXT_INPUT.getValue())
                 .style(this.getStyle().getValue())
-                .customId(this.getUserIdentifier())
+                .customId(this.getIdentifier())
                 .value(this.getValue().map(Possible::of).orElse(Possible.absent()))
                 .placeholder(this.getPlaceholder().map(Possible::of).orElse(Possible.absent()))
                 .minLength(this.getMinLength())
@@ -107,15 +103,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getUserIdentifier())
-            .append(this.getStyle())
-            .append(this.getValue())
-            .append(this.getPlaceholder())
-            .append(this.getMinLength())
-            .append(this.getMaxLength())
-            .append(this.isRequired())
-            .build();
+        return Objects.hash(this.getIdentifier(), this.getStyle(), this.getValue(), this.getPlaceholder(), this.getMinLength(), this.getMaxLength(), this.isRequired());
     }
 
     public @NotNull Builder mutate() {
