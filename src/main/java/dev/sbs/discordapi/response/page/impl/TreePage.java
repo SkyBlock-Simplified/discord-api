@@ -4,18 +4,15 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.util.builder.hash.EqualsBuilder;
-import dev.sbs.api.util.builder.hash.HashCodeBuilder;
+import dev.sbs.discordapi.component.interaction.SelectMenu;
+import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.handler.Subpages;
 import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.item.Item;
-import dev.sbs.discordapi.response.page.item.field.PageItem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -35,8 +33,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
     private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull ConcurrentList<Emoji> reactions;
     private final @NotNull ItemHandler<?> itemHandler;
-    private final @NotNull TreeHistoryHandler<PageItem, String> historyHandler;
-    private final @NotNull ConcurrentList<TreePage> pages;
+    private final @NotNull TreeHistoryHandler<TreePage, String> historyHandler;
 
     // Legacy
     private final @NotNull Optional<String> content;
@@ -52,16 +49,14 @@ public final class TreePage implements Page, Subpages<TreePage> {
 
         TreePage treePage = (TreePage) o;
 
-        return new EqualsBuilder()
-            .append(this.getOption(), treePage.getOption())
-            .append(this.getComponents(), treePage.getComponents())
-            .append(this.getReactions(), treePage.getReactions())
-            .append(this.getItemHandler(), treePage.getItemHandler())
-            .append(this.getHistoryHandler(), treePage.getHistoryHandler())
-            .append(this.getPages(), treePage.getPages())
-            .append(this.getContent(), treePage.getContent())
-            .append(this.getEmbeds(), treePage.getEmbeds())
-            .build();
+        return Objects.equals(this.getOption(), treePage.getOption())
+            && Objects.equals(this.getComponents(), treePage.getComponents())
+            && Objects.equals(this.getReactions(), treePage.getReactions())
+            && Objects.equals(this.getItemHandler(), treePage.getItemHandler())
+            && Objects.equals(this.getHistoryHandler(), treePage.getHistoryHandler())
+            && Objects.equals(this.getPages(), treePage.getPages())
+            && Objects.equals(this.getContent(), treePage.getContent())
+            && Objects.equals(this.getEmbeds(), treePage.getEmbeds());
     }
 
     public static @NotNull TreePageBuilder from(@NotNull TreePage page) {
@@ -76,17 +71,13 @@ public final class TreePage implements Page, Subpages<TreePage> {
     }
 
     @Override
+    public @NotNull ConcurrentList<TreePage> getPages() {
+        return this.getHistoryHandler().getItems();
+    }
+
+    @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getOption())
-            .append(this.getComponents())
-            .append(this.getReactions())
-            .append(this.getItemHandler())
-            .append(this.getHistoryHandler())
-            .append(this.getPages())
-            .append(this.getContent())
-            .append(this.getEmbeds())
-            .build();
+        return Objects.hash(this.getOption(), this.getComponents(), this.getReactions(), this.getItemHandler(), this.getHistoryHandler(), this.getPages(), this.getContent(), this.getEmbeds());
     }
 
     @Override
@@ -376,18 +367,11 @@ public final class TreePage implements Page, Subpages<TreePage> {
                 this.components.toUnmodifiableList(),
                 this.reactions.toUnmodifiableList(),
                 this.itemHandler,
-                TreeHistoryHandler.<PageItem, String>builder()
-                    .withPages(
-                        this.itemHandler.getCachedFieldItems()
-                            .stream()
-                            .filter(PageItem.class::isInstance)
-                            .map(PageItem.class::cast)
-                            .collect(Concurrent.toList())
-                    )
+                TreeHistoryHandler.<TreePage, String>builder()
+                    .withPages(this.pages)
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withTransformer(page -> page.getOption().getValue())
                     .build(),
-                this.pages.toUnmodifiableList(),
                 this.content,
                 this.embeds.toUnmodifiableList()
             );

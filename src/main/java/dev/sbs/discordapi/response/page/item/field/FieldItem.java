@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response.page.item.field;
 
-import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.page.item.Item;
 import org.jetbrains.annotations.NotNull;
 
