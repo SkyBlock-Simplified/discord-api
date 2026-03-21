@@ -1,13 +1,13 @@
 package dev.sbs.discordapi;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
 import dev.sbs.api.io.yaml.annotation.Flag;
 import dev.sbs.api.persistence.JpaConfig;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.reflection.info.ResourceInfo;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.Event;
