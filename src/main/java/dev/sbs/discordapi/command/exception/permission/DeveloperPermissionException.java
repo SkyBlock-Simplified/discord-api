@@ -1,10 +1,13 @@
 package dev.sbs.discordapi.command.exception.permission;
 
 /**
- * {@link DeveloperPermissionException UserPermissionExceptions} are thrown when the user lacks permissions to continue.
+ * Thrown when a non-developer attempts to run a developer-only command.
  */
 public class DeveloperPermissionException extends PermissionException {
 
+    /**
+     * Constructs a new {@code DeveloperPermissionException} with a default message.
+     */
     public DeveloperPermissionException() {
         super("Only the bot developer can run this command.");
     }

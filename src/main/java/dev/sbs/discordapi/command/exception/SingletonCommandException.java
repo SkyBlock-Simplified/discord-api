@@ -1,10 +1,13 @@
 package dev.sbs.discordapi.command.exception;
 
 /**
- * {@link SingletonCommandException SingletonCommandExceptions} are thrown when a command has already been executed by another user.
+ * Thrown when a singleton command is already being executed by another user.
  */
 public final class SingletonCommandException extends CommandException {
 
+    /**
+     * Constructs a new {@code SingletonCommandException} with a default message.
+     */
     public SingletonCommandException() {
         super("This command is currently running.");
     }
