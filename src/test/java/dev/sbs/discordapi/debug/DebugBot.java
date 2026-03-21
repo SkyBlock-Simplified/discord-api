@@ -5,7 +5,7 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.DiscordConfig;
+import dev.sbs.discordapi.handler.DiscordConfig;
 import dev.sbs.discordapi.command.DiscordCommand;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;

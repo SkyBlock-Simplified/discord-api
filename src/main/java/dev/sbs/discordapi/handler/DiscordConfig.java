@@ -1,4 +1,4 @@
-package dev.sbs.discordapi;
+package dev.sbs.discordapi.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;

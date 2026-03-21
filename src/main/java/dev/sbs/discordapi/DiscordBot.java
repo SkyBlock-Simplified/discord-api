@@ -23,6 +23,7 @@ import dev.sbs.discordapi.context.message.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordClientException;
 import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
+import dev.sbs.discordapi.handler.DiscordConfig;
 import dev.sbs.discordapi.handler.EmojiHandler;
 import dev.sbs.discordapi.handler.exception.DiscordExceptionHandler;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
