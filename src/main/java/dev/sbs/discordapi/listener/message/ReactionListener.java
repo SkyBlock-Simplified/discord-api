@@ -1,8 +1,8 @@
-package dev.sbs.discordapi.listener.message.reaction;
+package dev.sbs.discordapi.listener.message;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
-import dev.sbs.discordapi.context.reaction.ReactionContext;
+import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.message.ReactionContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.listener.DiscordListener;

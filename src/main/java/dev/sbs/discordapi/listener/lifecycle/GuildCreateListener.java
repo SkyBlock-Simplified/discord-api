@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.listener.guild;
+package dev.sbs.discordapi.listener.lifecycle;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.listener.DiscordListener;

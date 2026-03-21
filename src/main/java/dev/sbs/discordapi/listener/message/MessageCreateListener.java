@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.listener.message;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.MessageContext;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.message.MessageCreateEvent;

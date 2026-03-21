@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.listener.gateway;
+package dev.sbs.discordapi.listener.lifecycle;
 
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.discordapi.DiscordBot;
@@ -18,7 +18,7 @@ public class DisconnectListener extends DiscordListener<DisconnectEvent> {
     public Publisher<Void> apply(@NotNull DisconnectEvent event) {
         return Mono.fromRunnable(() -> {
             SimplifiedApi.getSessionManager().disconnect();
-            this.getDiscordBot().getScheduler().shutdownNow();
+            this.getDiscordBot().getScheduler().shutdown();
         });
     }
 

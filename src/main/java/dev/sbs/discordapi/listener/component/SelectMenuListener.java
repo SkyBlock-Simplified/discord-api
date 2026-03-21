@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.listener.deferrable.component;
+package dev.sbs.discordapi.listener.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
+import dev.sbs.discordapi.component.interaction.SelectMenu;
+import dev.sbs.discordapi.context.component.SelectMenuContext;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 

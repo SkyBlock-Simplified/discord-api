@@ -1,15 +1,15 @@
-package dev.sbs.discordapi.listener.deferrable.component;
+package dev.sbs.discordapi.listener.component;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.component.type.EventComponent;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.type.EventComponent;
-import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;

@@ -1,11 +1,11 @@
-package dev.sbs.discordapi.listener.deferrable.component;
+package dev.sbs.discordapi.listener.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.component.interaction.Modal;
+import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
