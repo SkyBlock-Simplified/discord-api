@@ -1,11 +1,11 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.MessageContext;
 import dev.sbs.discordapi.response.component.Component;

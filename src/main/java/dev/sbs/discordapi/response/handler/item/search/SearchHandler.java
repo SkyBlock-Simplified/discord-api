@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.response.handler.item.search;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.interaction.action.TextInput;
 import dev.sbs.discordapi.response.handler.OutputHandler;
@@ -9,6 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -25,11 +24,9 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
 
         SearchHandler<?> that = (SearchHandler<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getPending(), that.getPending())
-            .append(this.getItems(), that.getItems())
-            .build();
+        return this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
+            && Objects.equals(this.getPending(), that.getPending())
+            && Objects.equals(this.getItems(), that.getItems());
     }
 
     public void search(@NotNull TextInput textInput) {
@@ -48,11 +45,7 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getItems())
-            .append(this.getPending())
-            .append(this.isCacheUpdateRequired())
-            .build();
+        return Objects.hash(this.getItems(), this.getPending(), this.isCacheUpdateRequired());
     }
 
     @Override

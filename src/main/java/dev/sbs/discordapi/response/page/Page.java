@@ -1,10 +1,10 @@
 package dev.sbs.discordapi.response.page;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;

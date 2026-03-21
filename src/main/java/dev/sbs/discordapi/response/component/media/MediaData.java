@@ -3,10 +3,8 @@ package dev.sbs.discordapi.response.component.media;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.core.object.component.UnfurledMediaItem;
 import discord4j.core.spec.MessageCreateFields;
@@ -19,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,18 +46,16 @@ public final class MediaData {
 
         MediaData mediaData = (MediaData) o;
 
-        return new EqualsBuilder()
-            .append(this.getComponentId(), mediaData.getComponentId())
-            .append(this.getName(), mediaData.getName())
-            .append(this.isSpoiler(), mediaData.isSpoiler())
-            .append(this.getUrl(), mediaData.getUrl())
-            .append(this.getUploadStream(), mediaData.getUploadStream())
-            .append(this.getProxyUrl(), mediaData.getProxyUrl())
-            .append(this.getWidth(), mediaData.getWidth())
-            .append(this.getHeight(), mediaData.getHeight())
-            .append(this.getContentType(), mediaData.getContentType())
-            .append(this.getState(), mediaData.getState())
-            .build();
+        return this.getComponentId() == mediaData.getComponentId()
+            && Objects.equals(this.getName(), mediaData.getName())
+            && this.isSpoiler() == mediaData.isSpoiler()
+            && Objects.equals(this.getUrl(), mediaData.getUrl())
+            && Objects.equals(this.getUploadStream(), mediaData.getUploadStream())
+            && Objects.equals(this.getProxyUrl(), mediaData.getProxyUrl())
+            && this.getWidth() == mediaData.getWidth()
+            && this.getHeight() == mediaData.getHeight()
+            && Objects.equals(this.getContentType(), mediaData.getContentType())
+            && Objects.equals(this.getState(), mediaData.getState());
     }
 
     public static @NotNull Builder from(@NotNull MediaData mediaData) {
@@ -93,18 +90,7 @@ public final class MediaData {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getComponentId())
-            .append(this.getName())
-            .append(this.isSpoiler())
-            .append(this.getUrl())
-            .append(this.getUploadStream())
-            .append(this.getProxyUrl())
-            .append(this.getWidth())
-            .append(this.getHeight())
-            .append(this.getContentType())
-            .append(this.getState())
-            .build();
+        return Objects.hash(this.getComponentId(), this.getName(), this.isSpoiler(), this.getUrl(), this.getUploadStream(), this.getProxyUrl(), this.getWidth(), this.getHeight(), this.getContentType(), this.getState());
     }
 
     public boolean isPendingUpload() {

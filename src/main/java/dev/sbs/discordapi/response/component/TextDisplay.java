@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.response.component;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.SectionComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
@@ -12,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -26,9 +26,7 @@ public final class TextDisplay implements ContainerComponent, SectionComponent, 
 
         TextDisplay textDisplay = (TextDisplay) o;
 
-        return new EqualsBuilder()
-            .append(this.getContent(), textDisplay.getContent())
-            .build();
+        return Objects.equals(this.getContent(), textDisplay.getContent());
     }
 
     @Override
@@ -51,9 +49,7 @@ public final class TextDisplay implements ContainerComponent, SectionComponent, 
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getContent())
-            .build();
+        return Objects.hash(this.getContent());
     }
 
 }

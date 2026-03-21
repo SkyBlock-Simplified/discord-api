@@ -1,9 +1,5 @@
 package dev.sbs.discordapi.response.handler.item;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
@@ -14,6 +10,8 @@ import dev.sbs.api.tuple.triple.Triple;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StreamUtil;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.structure.Field;
 import dev.sbs.discordapi.response.handler.OutputHandler;
@@ -76,24 +74,22 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
         ItemHandler<?> that = (ItemHandler<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.getItems(), that.getItems())
-            .append(this.getStaticItems(), that.getStaticItems())
-            .append(this.getVariables(), that.getVariables())
-            .append(this.getFieldStyle(), that.getFieldStyle())
-            .append(this.getTransformer(), that.getTransformer())
-            .append(this.getListTitle(), that.getListTitle())
-            .append(this.isEditorEnabled(), that.isEditorEnabled())
-            .append(this.getAmountPerPage(), that.getAmountPerPage())
-            .append(this.getSortHandler(), that.getSortHandler())
-            .append(this.getFilterHandler(), that.getFilterHandler())
-            .append(this.getSearchHandler(), that.getSearchHandler())
-            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getCurrentIndex(), that.getCurrentIndex())
-            .append(this.getCachedFilteredItems(), that.getCachedFilteredItems())
-            .append(this.getCachedFieldItems(), that.getCachedFieldItems())
-            .append(this.getCachedStaticItems(), that.getCachedStaticItems())
-            .build();
+        return Objects.equals(this.getItems(), that.getItems())
+            && Objects.equals(this.getStaticItems(), that.getStaticItems())
+            && Objects.equals(this.getVariables(), that.getVariables())
+            && Objects.equals(this.getFieldStyle(), that.getFieldStyle())
+            && Objects.equals(this.getTransformer(), that.getTransformer())
+            && Objects.equals(this.getListTitle(), that.getListTitle())
+            && this.isEditorEnabled() == that.isEditorEnabled()
+            && this.getAmountPerPage() == that.getAmountPerPage()
+            && Objects.equals(this.getSortHandler(), that.getSortHandler())
+            && Objects.equals(this.getFilterHandler(), that.getFilterHandler())
+            && Objects.equals(this.getSearchHandler(), that.getSearchHandler())
+            && this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
+            && this.getCurrentIndex() == that.getCurrentIndex()
+            && Objects.equals(this.getCachedFilteredItems(), that.getCachedFilteredItems())
+            && Objects.equals(this.getCachedFieldItems(), that.getCachedFieldItems())
+            && Objects.equals(this.getCachedStaticItems(), that.getCachedStaticItems());
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull ItemHandler<T> itemHandler) {
@@ -245,24 +241,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getItems())
-            .append(this.getStaticItems())
-            .append(this.getVariables())
-            .append(this.getFieldStyle())
-            .append(this.getTransformer())
-            .append(this.getListTitle())
-            .append(this.isEditorEnabled())
-            .append(this.getAmountPerPage())
-            .append(this.getSortHandler())
-            .append(this.getFilterHandler())
-            .append(this.getSearchHandler())
-            .append(this.isCacheUpdateRequired())
-            .append(this.getCurrentIndex())
-            .append(this.getCachedFilteredItems())
-            .append(this.getCachedFieldItems())
-            .append(this.getCachedStaticItems())
-            .build();
+        return Objects.hash(this.getItems(), this.getStaticItems(), this.getVariables(), this.getFieldStyle(), this.getTransformer(), this.getListTitle(), this.isEditorEnabled(), this.getAmountPerPage(), this.getSortHandler(), this.getFilterHandler(), this.getSearchHandler(), this.isCacheUpdateRequired(), this.getCurrentIndex(), this.getCachedFilteredItems(), this.getCachedFieldItems(), this.getCachedStaticItems());
     }
 
     public boolean hasNextItemPage() {

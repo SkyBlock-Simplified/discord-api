@@ -1,11 +1,9 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.LabelComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelModalComponent;
@@ -20,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -41,11 +40,9 @@ public final class Label implements TopLevelModalComponent {
 
         Label label = (Label) o;
 
-        return new EqualsBuilder()
-            .append(this.getTitle(), label.getTitle())
-            .append(this.getDescription(), label.getDescription())
-            .append(this.getComponent(), label.getComponent())
-            .build();
+        return Objects.equals(this.getTitle(), label.getTitle())
+            && Objects.equals(this.getDescription(), label.getDescription())
+            && Objects.equals(this.getComponent(), label.getComponent());
     }
 
     /**
@@ -85,11 +82,7 @@ public final class Label implements TopLevelModalComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getTitle())
-            .append(this.getDescription())
-            .append(this.getComponent())
-            .build();
+        return Objects.hash(this.getTitle(), this.getDescription(), this.getComponent());
     }
 
     public @NotNull Builder mutate() {

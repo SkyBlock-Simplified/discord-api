@@ -1,12 +1,10 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.Component;
 import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
@@ -19,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -40,10 +39,8 @@ public final class Section implements LayoutComponent, ContainerComponent {
 
         Section section = (Section) o;
 
-        return new EqualsBuilder()
-            .append(this.getAccessory(), section.getAccessory())
-            .append(this.getComponents(), section.getComponents())
-            .build();
+        return Objects.equals(this.getAccessory(), section.getAccessory())
+            && Objects.equals(this.getComponents(), section.getComponents());
     }
 
     /**
@@ -82,10 +79,7 @@ public final class Section implements LayoutComponent, ContainerComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getAccessory())
-            .append(this.getComponents())
-            .build();
+        return Objects.hash(this.getAccessory(), this.getComponents());
     }
 
     public @NotNull Builder mutate() {

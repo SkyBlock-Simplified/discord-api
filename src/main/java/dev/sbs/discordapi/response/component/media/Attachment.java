@@ -1,9 +1,7 @@
 package dev.sbs.discordapi.response.component.media;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import discord4j.core.spec.MessageCreateFields;
@@ -16,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -36,11 +35,9 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
 
         Attachment that = (Attachment) o;
 
-        return new EqualsBuilder()
-            .append(this.getMediaData(), that.getMediaData())
-            .append(this.getFileId(), that.getFileId())
-            .append(this.getSize(), that.getSize())
-            .build();
+        return Objects.equals(this.getMediaData(), that.getMediaData())
+            && this.getFileId() == that.getFileId()
+            && this.getSize() == that.getSize();
     }
 
     public static @NotNull Builder from(@NotNull Attachment attachment) {
@@ -78,9 +75,7 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getMediaData())
-            .build();
+        return Objects.hash(this.getMediaData());
     }
 
     public boolean isPendingUpload() {

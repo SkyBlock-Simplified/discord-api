@@ -1,14 +1,12 @@
 package dev.sbs.discordapi.response.handler.item.filter;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.function.TriPredicate;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -22,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -51,11 +50,9 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
 
         Filter<?> filter = (Filter<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.getOption(), filter.getOption())
-            .append(this.getPredicates(), filter.getPredicates())
-            .append(this.isEnabled(), filter.isEnabled())
-            .build();
+        return Objects.equals(this.getOption(), filter.getOption())
+            && Objects.equals(this.getPredicates(), filter.getPredicates())
+            && this.isEnabled() == filter.isEnabled();
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Filter<T> filter) {
@@ -67,11 +64,7 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getOption())
-            .append(this.getPredicates())
-            .append(this.isEnabled())
-            .build();
+        return Objects.hash(this.getOption(), this.getPredicates(), this.isEnabled());
     }
 
     public @NotNull Builder<T> mutate() {

@@ -2,10 +2,8 @@ package dev.sbs.discordapi.response.embed.structure;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -37,11 +36,9 @@ public final class Footer {
 
         Footer footer = (Footer) o;
 
-        return new EqualsBuilder()
-            .append(this.getText(), footer.getText())
-            .append(this.getIconUrl(), footer.getIconUrl())
-            .append(this.getTimestamp(), footer.getTimestamp())
-            .build();
+        return Objects.equals(this.getText(), footer.getText())
+            && Objects.equals(this.getIconUrl(), footer.getIconUrl())
+            && Objects.equals(this.getTimestamp(), footer.getTimestamp());
     }
 
     public static @NotNull Builder from(@NotNull Footer footer) {
@@ -53,11 +50,7 @@ public final class Footer {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getText())
-            .append(this.getIconUrl())
-            .append(this.getTimestamp())
-            .build();
+        return Objects.hash(this.getText(), this.getIconUrl(), this.getTimestamp());
     }
 
     public @NotNull EmbedCreateFields.Footer getD4jFooter() {

@@ -1,13 +1,13 @@
 package dev.sbs.discordapi.response.handler.item.filter;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 @Getter
 @RequiredArgsConstructor
@@ -22,18 +22,13 @@ public class FilterHandler<T> implements OutputHandler<Filter<T>> {
 
         FilterHandler<?> that = (FilterHandler<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getItems(), that.getItems())
-            .build();
+        return this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
+            && Objects.equals(this.getItems(), that.getItems());
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getItems())
-            .append(this.isCacheUpdateRequired())
-            .build();
+        return Objects.hash(this.getItems(), this.isCacheUpdateRequired());
     }
 
 }

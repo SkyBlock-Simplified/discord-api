@@ -2,10 +2,8 @@ package dev.sbs.discordapi.response.embed.structure;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,6 +13,7 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -36,11 +35,9 @@ public final class Author {
 
         Author author = (Author) o;
 
-        return new EqualsBuilder()
-            .append(this.getName(), author.getName())
-            .append(this.getUrl(), author.getUrl())
-            .append(this.getIconUrl(), author.getIconUrl())
-            .build();
+        return Objects.equals(this.getName(), author.getName())
+            && Objects.equals(this.getUrl(), author.getUrl())
+            && Objects.equals(this.getIconUrl(), author.getIconUrl());
     }
 
     public @NotNull EmbedCreateFields.Author getD4jAuthor() {
@@ -49,11 +46,7 @@ public final class Author {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getName())
-            .append(this.getUrl())
-            .append(this.getIconUrl())
-            .build();
+        return Objects.hash(this.getName(), this.getUrl(), this.getIconUrl());
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)

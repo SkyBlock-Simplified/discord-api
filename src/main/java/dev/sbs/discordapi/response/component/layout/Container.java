@@ -1,12 +1,10 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import lombok.AccessLevel;
@@ -18,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -39,11 +38,9 @@ public final class Container implements LayoutComponent {
 
         Container container = (Container) o;
 
-        return new EqualsBuilder()
-            .append(this.getAccent(), container.getAccent())
-            .append(this.getComponents(), container.getComponents())
-            .append(this.isSpoiler(), container.isSpoiler())
-            .build();
+        return Objects.equals(this.getAccent(), container.getAccent())
+            && Objects.equals(this.getComponents(), container.getComponents())
+            && this.isSpoiler() == container.isSpoiler();
     }
 
     public static @NotNull Builder from(@NotNull Container container) {
@@ -76,11 +73,7 @@ public final class Container implements LayoutComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getAccent())
-            .append(this.getComponents())
-            .append(this.isSpoiler())
-            .build();
+        return Objects.hash(this.getAccent(), this.getComponents(), this.isSpoiler());
     }
 
     public @NotNull Builder mutate() {

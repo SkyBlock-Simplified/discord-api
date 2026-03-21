@@ -1,13 +1,11 @@
 package dev.sbs.discordapi.response.component.interaction.action;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.context.deferrable.component.action.OptionContext;
 import dev.sbs.discordapi.context.deferrable.component.action.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
@@ -60,20 +58,18 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
         SelectMenu that = (SelectMenu) o;
 
-        return new EqualsBuilder()
-            .append(this.getMinValues(), that.getMinValues())
-            .append(this.getMaxValues(), that.getMaxValues())
-            .append(this.isPlaceholderShowingSelectedOption(), that.isPlaceholderShowingSelectedOption())
-            .append(this.isDeferEdit(), that.isDeferEdit())
-            .append(this.isRequired(), that.isRequired())
-            .append(this.isEnabled(), that.isEnabled())
-            .append(this.getIdentifier(), that.getIdentifier())
-            .append(this.getPlaceholder(), that.getPlaceholder())
-            .append(this.getOptions(), that.getOptions())
-            .append(this.userInteraction, that.userInteraction)
-            .append(this.getMenuType(), that.getMenuType())
-            .append(this.getSelected(), that.getSelected())
-            .build();
+        return this.getMinValues() == that.getMinValues()
+            && this.getMaxValues() == that.getMaxValues()
+            && this.isPlaceholderShowingSelectedOption() == that.isPlaceholderShowingSelectedOption()
+            && this.isDeferEdit() == that.isDeferEdit()
+            && this.isRequired() == that.isRequired()
+            && this.isEnabled() == that.isEnabled()
+            && Objects.equals(this.getIdentifier(), that.getIdentifier())
+            && Objects.equals(this.getPlaceholder(), that.getPlaceholder())
+            && Objects.equals(this.getOptions(), that.getOptions())
+            && Objects.equals(this.userInteraction, that.userInteraction)
+            && Objects.equals(this.getMenuType(), that.getMenuType())
+            && Objects.equals(this.getSelected(), that.getSelected());
     }
 
     /**
@@ -126,7 +122,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
                 .thenReturn(context)
             )
             .filter(context -> context.getEvent().getValues().size() == 1)
-            .flatMap(context -> Mono.justOrEmpty(this.getSelected().getFirst())
+            .flatMap(context -> Mono.justOrEmpty(this.getSelected().findFirst())
                 .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)))
                 .switchIfEmpty(context.deferEdit())
             );
@@ -139,20 +135,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getIdentifier())
-            .append(this.getPlaceholder())
-            .append(this.getMinValues())
-            .append(this.getMaxValues())
-            .append(this.isPlaceholderShowingSelectedOption())
-            .append(this.getOptions())
-            .append(this.isDeferEdit())
-            .append(this.isRequired())
-            .append(this.userInteraction)
-            .append(this.getMenuType())
-            .append(this.getSelected())
-            .append(this.isEnabled())
-            .build();
+        return Objects.hash(this.getIdentifier(), this.getPlaceholder(), this.getMinValues(), this.getMaxValues(), this.isPlaceholderShowingSelectedOption(), this.getOptions(), this.isDeferEdit(), this.isRequired(), this.userInteraction, this.getMenuType(), this.getSelected(), this.isEnabled());
     }
 
     public @NotNull Builder mutate() {
@@ -484,13 +467,11 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
             Option option = (Option) o;
 
-            return new EqualsBuilder()
-                .append(this.getUniqueId(), option.getUniqueId())
-                .append(this.getLabel(), option.getLabel())
-                .append(this.getValue(), option.getValue())
-                .append(this.getDescription(), option.getDescription())
-                .append(this.getEmoji(), option.getEmoji())
-                .build();
+            return Objects.equals(this.getUniqueId(), option.getUniqueId())
+                && Objects.equals(this.getLabel(), option.getLabel())
+                && Objects.equals(this.getValue(), option.getValue())
+                && Objects.equals(this.getDescription(), option.getDescription())
+                && Objects.equals(this.getEmoji(), option.getEmoji());
         }
 
         public static @NotNull Builder from(@NotNull Option option) {
@@ -504,13 +485,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder()
-                .append(this.getUniqueId())
-                .append(this.getLabel())
-                .append(this.getValue())
-                .append(this.getDescription())
-                .append(this.getEmoji())
-                .build();
+            return Objects.hash(this.getUniqueId(), this.getLabel(), this.getValue(), this.getDescription(), this.getEmoji());
         }
 
         public @NotNull discord4j.core.object.component.SelectMenu.Option getD4jOption(boolean selected) {

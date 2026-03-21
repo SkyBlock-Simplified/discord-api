@@ -1,9 +1,7 @@
 package dev.sbs.discordapi.response.component.media;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.type.AccessoryComponent;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
@@ -16,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -35,10 +34,8 @@ public class Thumbnail implements AccessoryComponent {
 
         Thumbnail thumbnail = (Thumbnail) o;
 
-        return new EqualsBuilder()
-            .append(this.getMediaData(), thumbnail.getMediaData())
-            .append(this.getDescription(), thumbnail.getDescription())
-            .build();
+        return Objects.equals(this.getMediaData(), thumbnail.getMediaData())
+            && Objects.equals(this.getDescription(), thumbnail.getDescription());
     }
 
     public static @NotNull Builder from(@NotNull Thumbnail thumbnail) {
@@ -72,10 +69,7 @@ public class Thumbnail implements AccessoryComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getMediaData())
-            .append(this.getDescription())
-            .build();
+        return Objects.hash(this.getMediaData(), this.getDescription());
     }
 
     public boolean isPendingUpload() {

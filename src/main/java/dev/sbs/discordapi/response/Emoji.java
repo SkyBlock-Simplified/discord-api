@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.context.reaction.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
@@ -13,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -63,22 +62,15 @@ public abstract class Emoji {
 
         Emoji emoji = (Emoji) o;
 
-        return new EqualsBuilder()
-            .append(this.getId(), emoji.getId())
-            .append(this.getName(), emoji.getName())
-            .append(this.isAnimated(), emoji.isAnimated())
-            .append(this.getRaw(), emoji.getRaw())
-            .build();
+        return Objects.equals(this.getId(), emoji.getId())
+            && Objects.equals(this.getName(), emoji.getName())
+            && this.isAnimated() == emoji.isAnimated()
+            && Objects.equals(this.getRaw(), emoji.getRaw());
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getId())
-            .append(this.getName())
-            .append(this.isAnimated())
-            .append(this.getRaw())
-            .build();
+        return Objects.hash(this.getId(), this.getName(), this.isAnimated(), this.getRaw());
     }
 
     public final boolean isUnicode() {

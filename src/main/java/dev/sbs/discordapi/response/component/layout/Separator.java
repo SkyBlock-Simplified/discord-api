@@ -1,13 +1,13 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.component.type.ContainerComponent;
 import dev.sbs.discordapi.response.component.type.TopLevelMessageComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -23,10 +23,8 @@ public final class Separator implements TopLevelMessageComponent, ContainerCompo
 
         Separator separator = (Separator) o;
 
-        return new EqualsBuilder()
-            .append(this.getSize(), separator.getSize())
-            .append(this.isVisible(), separator.isVisible())
-            .build();
+        return Objects.equals(this.getSize(), separator.getSize())
+            && this.isVisible() == separator.isVisible();
     }
 
     @Override
@@ -60,10 +58,7 @@ public final class Separator implements TopLevelMessageComponent, ContainerCompo
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getSize())
-            .append(this.isVisible())
-            .build();
+        return Objects.hash(this.getSize(), this.isVisible());
     }
 
     @Getter

@@ -3,9 +3,7 @@ package dev.sbs.discordapi.response.handler.history;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.NumberUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.builder.ClassBuilder;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -55,13 +54,11 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
 
         IndexHistoryHandler<?, ?> that = (IndexHistoryHandler<?, ?>) o;
 
-        return new EqualsBuilder()
-            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getItems(), that.getItems())
-            .append(this.getMatcher(), that.getMatcher())
-            .append(this.getTransformer(), that.getTransformer())
-            .append(this.getHistory(), that.getHistory())
-            .build();
+        return this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
+            && Objects.equals(this.getItems(), that.getItems())
+            && Objects.equals(this.getMatcher(), that.getMatcher())
+            && Objects.equals(this.getTransformer(), that.getTransformer())
+            && Objects.equals(this.getHistory(), that.getHistory());
     }
 
     @Override
@@ -133,13 +130,7 @@ public class IndexHistoryHandler<P, I> implements HistoryHandler<P, I> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getItems())
-            .append(this.getMatcher())
-            .append(this.getTransformer())
-            .append(this.isCacheUpdateRequired())
-            .append(this.getHistory())
-            .build();
+        return Objects.hash(this.getItems(), this.getMatcher(), this.getTransformer(), this.isCacheUpdateRequired(), this.getHistory());
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)

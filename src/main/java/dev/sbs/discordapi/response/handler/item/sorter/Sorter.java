@@ -1,15 +1,13 @@
 package dev.sbs.discordapi.response.handler.item.sorter;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
 import dev.sbs.api.collection.query.SortOrder;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.component.interaction.action.Button;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
@@ -26,6 +24,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -62,7 +61,7 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
 
         // Reverse Results
         if (reversed)
-            copy = copy.inverse();
+            copy = copy.reversed();
 
         return copy;
     }
@@ -78,11 +77,9 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
 
         Sorter<?> sorter = (Sorter<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.getOption(), sorter.getOption())
-            .append(this.getComparators(), sorter.getComparators())
-            .append(this.getOrder(), sorter.getOrder())
-            .build();
+        return Objects.equals(this.getOption(), sorter.getOption())
+            && Objects.equals(this.getComparators(), sorter.getComparators())
+            && Objects.equals(this.getOrder(), sorter.getOrder());
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Sorter<T> sorter) {
@@ -94,11 +91,7 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getOption())
-            .append(this.getComparators())
-            .append(this.getOrder())
-            .build();
+        return Objects.hash(this.getOption(), this.getComparators(), this.getOrder());
     }
 
     public @NotNull Builder<T> mutate() {

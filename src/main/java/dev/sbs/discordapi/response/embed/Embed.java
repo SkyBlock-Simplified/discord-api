@@ -5,10 +5,8 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.component.TextDisplay;
 import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
 import dev.sbs.discordapi.response.component.layout.Container;
@@ -40,6 +38,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
@@ -69,17 +68,15 @@ public final class Embed {
 
         Embed embed = (Embed) o;
 
-        return new EqualsBuilder()
-            .append(this.getColor(), embed.getColor())
-            .append(this.getAuthor(), embed.getAuthor())
-            .append(this.getTitle(), embed.getTitle())
-            .append(this.getUrl(), embed.getUrl())
-            .append(this.getThumbnailUrl(), embed.getThumbnailUrl())
-            .append(this.getDescription(), embed.getDescription())
-            .append(this.getImageUrl(), embed.getImageUrl())
-            .append(this.getFooter(), embed.getFooter())
-            .append(this.getFields(), embed.getFields())
-            .build();
+        return Objects.equals(this.getColor(), embed.getColor())
+            && Objects.equals(this.getAuthor(), embed.getAuthor())
+            && Objects.equals(this.getTitle(), embed.getTitle())
+            && Objects.equals(this.getUrl(), embed.getUrl())
+            && Objects.equals(this.getThumbnailUrl(), embed.getThumbnailUrl())
+            && Objects.equals(this.getDescription(), embed.getDescription())
+            && Objects.equals(this.getImageUrl(), embed.getImageUrl())
+            && Objects.equals(this.getFooter(), embed.getFooter())
+            && Objects.equals(this.getFields(), embed.getFields());
     }
 
     public static @NotNull Builder from(@NotNull Embed embed) {
@@ -202,17 +199,7 @@ public final class Embed {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getColor())
-            .append(this.getAuthor())
-            .append(this.getTitle())
-            .append(this.getUrl())
-            .append(this.getThumbnailUrl())
-            .append(this.getDescription())
-            .append(this.getImageUrl())
-            .append(this.getFooter())
-            .append(this.getFields())
-            .build();
+        return Objects.hash(this.getColor(), this.getAuthor(), this.getTitle(), this.getUrl(), this.getThumbnailUrl(), this.getDescription(), this.getImageUrl(), this.getFooter(), this.getFields());
     }
 
     public @NotNull Builder mutate() {

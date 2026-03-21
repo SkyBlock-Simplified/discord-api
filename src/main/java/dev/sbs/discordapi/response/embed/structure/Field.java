@@ -1,12 +1,10 @@
 package dev.sbs.discordapi.response.embed.structure;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.tuple.triple.Triple;
 import dev.sbs.api.util.StringUtil;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.Emoji;
 import discord4j.core.spec.EmbedCreateFields;
 import lombok.AccessLevel;
@@ -17,6 +15,7 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -48,12 +47,10 @@ public final class Field {
 
         Field field = (Field) o;
 
-        return new EqualsBuilder()
-            .append(this.getName(), field.getName())
-            .append(this.getValue(), field.getValue())
-            .append(this.isInline(), field.isInline())
-            .append(this.getEmoji(), field.getEmoji())
-            .build();
+        return Objects.equals(this.getName(), field.getName())
+            && Objects.equals(this.getValue(), field.getValue())
+            && this.isInline() == field.isInline()
+            && Objects.equals(this.getEmoji(), field.getEmoji());
     }
 
     public static @NotNull Builder from(@NotNull Field field) {
@@ -85,12 +82,7 @@ public final class Field {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getName())
-            .append(this.getValue())
-            .append(this.isInline())
-            .append(this.getEmoji())
-            .build();
+        return Objects.hash(this.getName(), this.getValue(), this.isInline(), this.getEmoji());
     }
 
     public @NotNull Builder mutate() {

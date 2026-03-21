@@ -1,7 +1,5 @@
 package dev.sbs.discordapi.response.component.layout;
 
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
@@ -12,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -26,9 +25,7 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
 
         ActionRow actionRow = (ActionRow) o;
 
-        return new EqualsBuilder()
-            .append(this.getComponents(), actionRow.getComponents())
-            .build();
+        return Objects.equals(this.getComponents(), actionRow.getComponents());
     }
 
     @Override
@@ -48,9 +45,7 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getComponents())
-            .build();
+        return Objects.hash(this.getComponents());
     }
 
     public static @NotNull ActionRow of(@NotNull ActionComponent... components) {

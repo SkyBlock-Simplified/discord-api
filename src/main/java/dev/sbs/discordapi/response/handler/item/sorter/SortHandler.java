@@ -1,13 +1,12 @@
 package dev.sbs.discordapi.response.handler.item.sorter;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -29,22 +28,15 @@ public class SortHandler<T> implements OutputHandler<Sorter<T>> {
 
         SortHandler<?> that = (SortHandler<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.getCurrentSorterIndex(), that.getCurrentSorterIndex())
-            .append(this.isReversed(), that.isReversed())
-            .append(this.isCacheUpdateRequired(), that.isCacheUpdateRequired())
-            .append(this.getItems(), that.getItems())
-            .build();
+        return this.getCurrentSorterIndex() == that.getCurrentSorterIndex()
+            && this.isReversed() == that.isReversed()
+            && this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
+            && Objects.equals(this.getItems(), that.getItems());
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getItems())
-            .append(this.getCurrentSorterIndex())
-            .append(this.isReversed())
-            .append(this.isCacheUpdateRequired())
-            .build();
+        return Objects.hash(this.getItems(), this.getCurrentSorterIndex(), this.isReversed(), this.isCacheUpdateRequired());
     }
 
     public @NotNull Optional<Sorter<T>> getCurrent() {
