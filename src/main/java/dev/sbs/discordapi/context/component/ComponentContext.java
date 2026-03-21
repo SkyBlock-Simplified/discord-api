@@ -1,13 +1,11 @@
-package dev.sbs.discordapi.context.deferrable.component;
+package dev.sbs.discordapi.context.component;
 
-import dev.sbs.discordapi.context.MessageContext;
-import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
-import dev.sbs.discordapi.context.deferrable.component.action.ActionComponentContext;
-import dev.sbs.discordapi.context.deferrable.component.modal.ModalContext;
+import dev.sbs.discordapi.component.interaction.Modal;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.context.DeferrableInteractionContext;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.Modal;
-import dev.sbs.discordapi.response.component.type.UserInteractComponent;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;

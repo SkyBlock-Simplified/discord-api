@@ -1,7 +1,8 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.message;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.handler.response.BaseEntry;
 import dev.sbs.discordapi.handler.response.CachedResponse;

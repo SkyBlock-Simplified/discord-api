@@ -1,8 +1,7 @@
-package dev.sbs.discordapi.context.deferrable;
+package dev.sbs.discordapi.context;
 
-import dev.sbs.discordapi.context.InteractionContext;
-import dev.sbs.discordapi.context.deferrable.command.CommandContext;
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
+import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;

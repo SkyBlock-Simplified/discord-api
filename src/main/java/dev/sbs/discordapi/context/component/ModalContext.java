@@ -1,10 +1,9 @@
-package dev.sbs.discordapi.context.deferrable.component.modal;
+package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
+import dev.sbs.discordapi.component.interaction.Modal;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.Modal;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;

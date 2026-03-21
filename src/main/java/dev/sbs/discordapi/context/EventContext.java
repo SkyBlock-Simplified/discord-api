@@ -1,7 +1,9 @@
 package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.exception.ExceptionContext;
+import dev.sbs.discordapi.context.command.TypingContext;
+import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.message.ReactionContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.handler.response.ResponseHandler;
 import dev.sbs.discordapi.response.Response;
@@ -34,8 +36,8 @@ import java.util.function.Function;
  * <ul>
  *   <li><b>{@code EventContext}</b> - this interface (root)</li>
  *   <li><b>{@link MessageContext}</b> - message-based events with followup support</li>
- *   <li><b>{@link dev.sbs.discordapi.context.TypingContext TypingContext}</b> - events carrying command structure metadata</li>
- *   <li><b>{@link dev.sbs.discordapi.context.reaction.ReactionContext ReactionContext}</b> - reaction add/remove events</li>
+ *   <li><b>{@link TypingContext TypingContext}</b> - events carrying command structure metadata</li>
+ *   <li><b>{@link ReactionContext ReactionContext}</b> - reaction add/remove events</li>
  *   <li><b>{@link ExceptionContext}</b> - exception-wrapping decorator</li>
  *   <li><b>{@link InteractionContext}</b> - Discord interaction events</li>
  * </ul>

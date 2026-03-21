@@ -1,9 +1,9 @@
-package dev.sbs.discordapi.context.deferrable.component.action;
+package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.component.interaction.Button;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.context.deferrable.command;
+package dev.sbs.discordapi.context.command;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Structure;

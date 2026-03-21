@@ -1,8 +1,7 @@
-package dev.sbs.discordapi.context.exception;
+package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.deferrable.command.CommandContext;
+import dev.sbs.discordapi.context.command.CommandContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;

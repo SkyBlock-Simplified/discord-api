@@ -1,7 +1,6 @@
 package dev.sbs.discordapi.context;
 
-import dev.sbs.discordapi.context.autocomplete.AutoCompleteContext;
-import dev.sbs.discordapi.context.deferrable.DeferrableInteractionContext;
+import dev.sbs.discordapi.context.command.AutoCompleteContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.entity.Guild;

@@ -1,8 +1,7 @@
-package dev.sbs.discordapi.context.deferrable.component.action;
+package dev.sbs.discordapi.context.component;
 
-import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
+import dev.sbs.discordapi.component.interaction.ActionComponent;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

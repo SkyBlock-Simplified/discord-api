@@ -1,7 +1,8 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.command;
 
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
+import dev.sbs.discordapi.context.EventContext;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>
  * Implemented by context types that participate in command routing, such as
- * {@link dev.sbs.discordapi.context.autocomplete.AutoCompleteContext AutoCompleteContext}
+ * {@link AutoCompleteContext AutoCompleteContext}
  * and the deferrable command contexts.
  *
  * @param <T> the Discord4J {@link Event} type wrapped by this context

@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.context.deferrable.command;
+package dev.sbs.discordapi.context.command;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;

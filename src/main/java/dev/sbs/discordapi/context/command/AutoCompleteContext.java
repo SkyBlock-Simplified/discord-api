@@ -1,11 +1,10 @@
-package dev.sbs.discordapi.context.autocomplete;
+package dev.sbs.discordapi.context.command;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.context.InteractionContext;
-import dev.sbs.discordapi.context.TypingContext;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
