@@ -13,7 +13,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import dev.sbs.discordapi.response.handler.Paging;
 import dev.sbs.discordapi.response.handler.item.filter.Filter;

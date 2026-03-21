@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.response.handler.item.search;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.component.interaction.action.TextInput;
+import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

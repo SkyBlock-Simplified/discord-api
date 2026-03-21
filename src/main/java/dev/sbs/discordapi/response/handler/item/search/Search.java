@@ -1,15 +1,13 @@
 package dev.sbs.discordapi.response.handler.item.search;
 
-import dev.sbs.api.builder.ClassBuilder;
-import dev.sbs.api.builder.EqualsBuilder;
-import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.builder.annotation.BuildFlag;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.interaction.action.TextInput;
+import dev.sbs.api.util.builder.BuildFlag;
+import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.interaction.Button;
+import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.response.handler.item.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
@@ -24,6 +22,7 @@ import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -57,10 +56,8 @@ public class Search<T> {
 
         Search<?> search = (Search<?>) o;
 
-        return new EqualsBuilder()
-            .append(this.getTextInput(), search.getTextInput())
-            .append(this.getPredicates(), search.getPredicates())
-            .build();
+        return Objects.equals(this.getTextInput(), search.getTextInput())
+            && Objects.equals(this.getPredicates(), search.getPredicates());
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Search<T> searcher) {
@@ -72,10 +69,7 @@ public class Search<T> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-            .append(this.getTextInput())
-            .append(this.getPredicates())
-            .build();
+        return Objects.hash(this.getTextInput(), this.getPredicates());
     }
 
     public @NotNull Builder<T> mutate() {

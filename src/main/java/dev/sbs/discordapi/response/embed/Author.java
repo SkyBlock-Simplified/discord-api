@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.embed.structure;
+package dev.sbs.discordapi.response.embed;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;

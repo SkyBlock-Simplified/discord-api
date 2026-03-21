@@ -1,6 +1,6 @@
 package dev.sbs.discordapi.response;
 
-import dev.sbs.discordapi.context.reaction.ReactionContext;
+import dev.sbs.discordapi.context.message.ReactionContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.emoji.CustomEmoji;
