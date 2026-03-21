@@ -191,8 +191,8 @@ public abstract class DiscordBot {
 
                             log.info(
                                 "Database Connected. (Initialized in {}ms, Started in {}ms)",
-                                session.getInitialization(),
-                                session.getStartup()
+                                session.getInitialization().getDurationMillis(),
+                                session.getRepositoryCache().getDurationMillis()
                             );
                             this.onDatabaseConnected();
                         });
