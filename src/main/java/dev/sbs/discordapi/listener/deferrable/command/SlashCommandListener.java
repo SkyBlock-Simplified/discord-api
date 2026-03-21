@@ -63,7 +63,7 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             commandTree.add(command.getStructure().parent().name().toLowerCase());
 
         // Invert
-        commandTree = commandTree.inverse();
+        commandTree = commandTree.reversed();
 
         // Remove Parent
         commandTree.removeFirst();
