@@ -46,8 +46,8 @@ fun Project.optionalProject(path: String, fallbackDependency: String): Any =
 
 tasks {
     withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
     }
     test {
         useJUnitPlatform()
