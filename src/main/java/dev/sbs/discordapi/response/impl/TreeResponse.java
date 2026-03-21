@@ -2,22 +2,21 @@ package dev.sbs.discordapi.response.impl;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.api.collection.search.SearchFunction;
+import dev.sbs.api.collection.query.SearchFunction;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.MessageContext;
-import dev.sbs.discordapi.handler.EmojiHandler;
+import dev.sbs.discordapi.component.interaction.Button;
+import dev.sbs.discordapi.component.interaction.SelectMenu;
+import dev.sbs.discordapi.component.layout.ActionRow;
+import dev.sbs.discordapi.component.media.Attachment;
+import dev.sbs.discordapi.component.media.MediaData;
+import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.component.interaction.action.Button;
-import dev.sbs.discordapi.response.component.interaction.action.SelectMenu;
-import dev.sbs.discordapi.response.component.layout.ActionRow;
-import dev.sbs.discordapi.response.component.media.Attachment;
-import dev.sbs.discordapi.response.component.media.MediaData;
-import dev.sbs.discordapi.response.component.type.TopLevelComponent;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.embed.structure.Field;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.handler.Subpages;
 import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
 import dev.sbs.discordapi.response.page.Page;
@@ -78,7 +77,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
     private final boolean renderingPagingComponents;
     private final @NotNull TreeHistoryHandler<TreePage, String> historyHandler;
     @Getter(AccessLevel.NONE)
-    private ConcurrentList<TopLevelComponent> cachedPageComponents = Concurrent.newUnmodifiableList();
+    private ConcurrentList<TopLevelMessageComponent> cachedPageComponents = Concurrent.newUnmodifiableList();
 
     public static @NotNull TreeBuilder builder() {
         return new TreeBuilder();
@@ -100,9 +99,9 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
     }
 
     @Override
-    public @NotNull ConcurrentList<TopLevelComponent> getCachedPageComponents() {
+    public @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents() {
         if (this.isRenderingPagingComponents() && this.isCacheUpdateRequired()) {
-            ConcurrentList<TopLevelComponent> pageComponents = Concurrent.newList();
+            ConcurrentList<TopLevelMessageComponent> pageComponents = Concurrent.newList();
 
             // Page List
             if (this.getPages().size() > 1 && !this.getHistoryHandler().hasPageHistory()) {
@@ -136,7 +135,7 @@ public final class TreeResponse implements Response, Subpages<TreePage> {
                         SelectMenu.Option.builder()
                             .withValue("BACK")
                             .withLabel("Back")
-                            .withEmoji(EmojiHandler.getEmoji("ARROW_LEFT"))
+                            .withEmoji(this.getEmoji("ARROW_LEFT"))
                             .build()
                     );
                 }
