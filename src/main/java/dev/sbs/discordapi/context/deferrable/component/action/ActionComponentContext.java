@@ -1,15 +1,36 @@
 package dev.sbs.discordapi.context.deferrable.component.action;
 
 import dev.sbs.discordapi.context.deferrable.component.ComponentContext;
+import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.component.interaction.action.ActionComponent;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
+/**
+ * Context for action component interactions (buttons and select menus), extending
+ * {@link ComponentContext} with the ability to modify the triggering component
+ * within the current {@link Response} page.
+ *
+ * @see ButtonContext
+ * @see SelectMenuContext
+ */
 public interface ActionComponentContext extends ComponentContext {
 
+    /**
+     * Returns the {@link ActionComponent} that triggered this interaction.
+     *
+     * @return the interacted action component
+     */
     @Override
     @NotNull ActionComponent getComponent();
 
+    /**
+     * Replaces the triggering component in the current response page with the given
+     * action component.
+     *
+     * @param actionComponent the replacement action component
+     * @return a mono completing when the component has been updated in the page
+     */
     default Mono<Void> modify(@NotNull ActionComponent actionComponent) {
         return Mono.just(this.getResponse())
             .doOnNext(response -> response.mutate().editPage(
