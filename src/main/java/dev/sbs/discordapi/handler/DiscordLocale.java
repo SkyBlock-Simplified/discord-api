@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.handler.locale;
+package dev.sbs.discordapi.handler;
 
 import dev.sbs.api.util.StringUtil;
 import lombok.Getter;
