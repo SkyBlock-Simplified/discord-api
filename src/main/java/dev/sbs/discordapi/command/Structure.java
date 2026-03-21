@@ -11,151 +11,154 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Immutable {@link DiscordCommand} api structure.
+ * Metadata annotation that defines the identity and behavior of a {@link DiscordCommand}.
+ *
+ * <p>
+ * Every concrete {@link DiscordCommand} subclass must be annotated with this type.
+ * The annotation specifies the command's name, description, permission requirements,
+ * installation contexts, and other behavioral flags consumed at registration time.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Structure {
 
     /**
-     * Name of command.
+     * The display name of this command in Discord.
+     *
      * <ul>
-     *     <li>1-32 Characters</li>
+     *     <li>Must be 1-32 characters matching {@code [\\w-]}</li>
      * </ul>
      */
     @Pattern("^[\\w-]{1,32}$")
     @NotNull String name();
 
     /**
-     * Description for slash commands.
+     * The description shown for slash commands in the Discord UI.
+     *
      * <ul>
-     *     <li>1-100 Characters</li>
-     *     <li>Empty for USER and MESSAGE commands</li>
+     *     <li>Must be 1-100 characters</li>
+     *     <li>Leave empty for {@link DiscordCommand.Type#USER USER} and
+     *         {@link DiscordCommand.Type#MESSAGE MESSAGE} commands</li>
      * </ul>
      */
     @Pattern("^.{1,100}$")
     @NotNull String description();
 
     /**
-     * Parent data of slash command.
+     * The parent subcommand grouping for slash commands.
+     *
      * <ul>
-     *     <li>Empty for USER and MESSAGE commands</li>
+     *     <li>Defaults to an empty parent (no nesting)</li>
+     *     <li>Not applicable to {@link DiscordCommand.Type#USER USER} and
+     *         {@link DiscordCommand.Type#MESSAGE MESSAGE} commands</li>
      * </ul>
      */
     @SuppressWarnings("all")
     @NotNull Parent parent() default @Parent(name = "", description = "");
 
     /**
-     * Group data of slash command.
+     * The subcommand group within a {@link #parent()} for slash commands.
+     *
      * <ul>
-     *     <li>Empty for USER and MESSAGE commands</li>
+     *     <li>Defaults to an empty group (no grouping)</li>
+     *     <li>Not applicable to {@link DiscordCommand.Type#USER USER} and
+     *         {@link DiscordCommand.Type#MESSAGE MESSAGE} commands</li>
      * </ul>
      */
     @SuppressWarnings("all")
     @NotNull Group group() default @Group(name = "", description = "");
 
     /**
-     * Guild ID of the command.
-     *
-     * <ul>
-     *     <li>Defaults to -1 for Global</li>
-     * </ul>
+     * The guild to restrict this command to, or {@code -1} for a global command.
      */
     long guildId() default -1L;
 
     /**
-     * Indicates whether the command is age-restricted.
-     * <ul>
-     *     <li>Defaults to false</li>
-     * </ul>
+     * Whether the command is age-restricted (NSFW).
      */
     boolean nsfw() default false;
 
     /**
-     * Only members of the developer team can run this command.
-     * <ul>
-     *     <li>Defaults to false</li>
-     * </ul>
+     * Whether only members of the application's developer team can invoke this command.
      */
     boolean developerOnly() default false;
 
     /**
-     * Indicates whether the command will respond ephemerally.
-     * <ul>
-     *     <li>Defaults to false</li>
-     * </ul>
+     * Whether the command's initial reply is ephemeral (visible only to the invoker).
      */
     boolean ephemeral() default false;
 
     /**
-     * Indicates whether the command can only be executed
-     * by one person at a time.
-     * <ul>
-     *     <li>Defaults to false</li>
-     * </ul>
+     * Whether the command can only be executed by one user at a time.
      */
     boolean singleton() default false;
 
     /**
-     * Users with these permissions can initially run this command.
+     * The permissions a user must have to see and invoke this command.
      *
      * <ul>
-     *     <li>Defaults to everyone</li>
+     *     <li>Defaults to no required permissions (everyone can invoke)</li>
      *     <li>Converted to a bit set using {@link PermissionSet#of}</li>
      * </ul>
      */
     @NotNull Permission[] userPermissions() default { };
 
     /**
-     * Server/Channel permissions required for this command to run.
+     * The server/channel permissions the bot must have for this command to execute.
      *
      * <ul>
-     *     <li>Defaults to nothing</li>
+     *     <li>Defaults to no required permissions</li>
      *     <li>Converted to a bit set using {@link PermissionSet#of}</li>
      * </ul>
      */
     @NotNull Permission[] botPermissions() default { };
 
     /**
-     * Installation contexts where the command is available.
+     * The installation contexts where this command is available.
      *
      * <ul>
-     *     <li>Only for globally-scoped commands</li>
-     *     <li>Defaults to Guild context</li>
+     *     <li>Only applicable to globally-scoped commands</li>
+     *     <li>Defaults to {@link DiscordCommand.Install#GUILD}</li>
      * </ul>
      */
     @NotNull DiscordCommand.Install[] integrations() default DiscordCommand.Install.GUILD;
 
     /**
-     * Access contexts where the command can be used.
+     * The access contexts where this command can be invoked.
      *
      * <ul>
-     *     <li>Only for globally-scoped commands</li>
-     *     <li>Defaults to all access types for new commands</li>
+     *     <li>Only applicable to globally-scoped commands</li>
+     *     <li>Defaults to all access types</li>
      * </ul>
      */
     @NotNull DiscordCommand.Access[] contexts() default { DiscordCommand.Access.GUILD, DiscordCommand.Access.DIRECT_MESSAGE, DiscordCommand.Access.PRIVATE_CHANNEL };
 
     /**
-     * Immutable {@link DiscordCommand} parent api structure.
+     * Metadata annotation defining the parent subcommand for a nested slash command.
+     *
+     * <p>
+     * When a {@link DiscordCommand} is nested under a parent, the parent name and
+     * description are used to register the top-level command group in Discord.
      */
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface Parent {
 
         /**
-         * Parent name of command.
+         * The parent command name.
+         *
          * <ul>
-         *     <li>1-32 Characters</li>
+         *     <li>Must be 1-32 characters matching {@code [\\w-]}</li>
          * </ul>
          */
         @Pattern("^[\\w-]{1,32}$")
         @NotNull String name();
 
         /**
-         * Parent description of command.
+         * The parent command description shown in the Discord UI.
+         *
          * <ul>
-         *     <li>1-100 Characters</li>
+         *     <li>Must be 1-100 characters</li>
          * </ul>
          */
         @Pattern("^.{1,100}$")
@@ -164,25 +167,31 @@ public @interface Structure {
     }
 
     /**
-     * Immutable {@link DiscordCommand} group api structure.
+     * Metadata annotation defining the subcommand group within a {@link Parent}.
+     *
+     * <p>
+     * Groups provide an additional level of nesting beneath a parent command,
+     * organizing related subcommands together in the Discord UI.
      */
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface Group {
 
         /**
-         * Group name of command.
+         * The group name.
+         *
          * <ul>
-         *     <li>1-32 Characters</li>
+         *     <li>Must be 1-32 characters matching {@code [\\w-]}</li>
          * </ul>
          */
         @Pattern("^[\\w-]{1,32}$")
         @NotNull String name();
 
         /**
-         * Group description of command.
+         * The group description shown in the Discord UI.
+         *
          * <ul>
-         *     <li>1-100 Characters</li>
+         *     <li>Must be 1-100 characters</li>
          * </ul>
          */
         @Pattern("^.{1,100}$")

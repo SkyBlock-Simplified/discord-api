@@ -6,15 +6,19 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * All supported Discord Locales.
+ * Enumeration of all locales supported by the Discord API for
+ * internationalization of command names, descriptions, and other
+ * user-facing strings.
+ *
+ * <p>
+ * Each constant maps a BCP 47 language tag ({@link #getShortName()})
+ * to its native display name ({@link #getNativeName()}).
  *
  * @see <a href="https://discord.com/developers/docs/reference#locales">Discord Locales</a>
  */
 @Getter
 @RequiredArgsConstructor
 public enum DiscordLocale {
-
-    // l18n
 
     INDONESIAN("id", "Bahasa Indonesia"),
     DANISH("da", "Dansk"),
@@ -47,9 +51,18 @@ public enum DiscordLocale {
     TAIWANESE("zh-TW", "繁體中文"),
     KOREAN("ko", "한국어");
 
+    /** BCP 47 language tag recognized by the Discord API. */
     private final @NotNull String shortName;
+
+    /** Display name of the locale written in its own language. */
     private final @NotNull String nativeName;
 
+    /**
+     * Returns the fully capitalized English language name derived from
+     * this constant's enum name.
+     *
+     * @return the English language name with proper capitalization
+     */
     public @NotNull String getLanguageName() {
         return StringUtil.capitalizeFully(this.name().replace("_", " "));
     }

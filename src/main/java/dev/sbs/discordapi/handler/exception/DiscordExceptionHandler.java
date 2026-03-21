@@ -40,12 +40,41 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Default {@link ExceptionHandler} implementation that renders exception
+ * details as ephemeral Discord embed messages sent to the user, and
+ * forwards developer-level error reports to a configured debug channel.
+ *
+ * <p>
+ * This handler differentiates between user-facing errors (API failures,
+ * invalid input, permission violations, disabled commands) and unexpected
+ * exceptions. User-facing errors produce a descriptive embed without
+ * logging. Unexpected exceptions produce a generic error embed for the
+ * user and a detailed developer embed logged to the debug channel,
+ * then re-emit the exception as a reactive error signal.
+ *
+ * @see ExceptionHandler
+ */
 public class DiscordExceptionHandler extends ExceptionHandler {
 
+    /**
+     * Constructs a new {@code DiscordExceptionHandler} with the given bot instance.
+     *
+     * @param discordBot the bot this handler belongs to
+     */
     public DiscordExceptionHandler(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
+    /**
+     * Builds a user-facing embed for recognized reactive exceptions such as
+     * {@link ApiException}, {@link InputException}, {@link ExpectedInputException},
+     * {@link ParameterException}, {@link PermissionException}, and
+     * {@link DisabledCommandException}.
+     *
+     * @param exceptionContext the context wrapping the exception and its originating event
+     * @return an embed describing the error, or empty if the exception is unrecognized
+     */
     private @NotNull Optional<Embed> buildReactiveUserError(@NotNull ExceptionContext<?> exceptionContext) {
         Optional<Embed> responseBuilder = Optional.empty();
 
@@ -216,6 +245,15 @@ public class DiscordExceptionHandler extends ExceptionHandler {
         return responseBuilder;
     }
 
+    /**
+     * Builds a developer-facing embed containing guild, channel, user, and
+     * error ID information for logging to the debug channel.
+     *
+     * @param exceptionContext the context wrapping the exception and its originating event
+     * @param defaultError a pair of the generated error ID and the base error embed
+     * @param messageId the Discord message snowflake of the user-facing error, if available
+     * @return a detailed embed intended for developer review
+     */
     private @NotNull Embed buildDeveloperError(ExceptionContext<?> exceptionContext, Pair<String, Embed> defaultError, Optional<Snowflake> messageId) {
         String locationValue = "DM";
         String channelValue = "N/A";
@@ -293,6 +331,13 @@ public class DiscordExceptionHandler extends ExceptionHandler {
         return logErrorBuilder.build();
     }
 
+    /**
+     * Builds the default error embed with a randomly generated error ID,
+     * exception stack trace summary, and a timestamp footer.
+     *
+     * @param exceptionContext the context wrapping the exception and its originating event
+     * @return a pair of the generated error ID and the constructed embed
+     */
     private Pair<String, Embed> buildDefaultError(ExceptionContext<?> exceptionContext) {
         String errorId = UUID.randomUUID().toString();
 
@@ -318,6 +363,7 @@ public class DiscordExceptionHandler extends ExceptionHandler {
         );
     }
 
+    /** {@inheritDoc} */
     public <T> @NotNull Mono<T> handleException(@NotNull ExceptionContext<?> exceptionContext) {
         // Build Default Error Embed
         Pair<String, Embed> defaultError = this.buildDefaultError(exceptionContext);
