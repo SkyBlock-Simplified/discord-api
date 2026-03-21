@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.command.exception.permission;
+package dev.sbs.discordapi.command.exception;
 
 /**
  * Thrown when a non-developer attempts to run a developer-only command.

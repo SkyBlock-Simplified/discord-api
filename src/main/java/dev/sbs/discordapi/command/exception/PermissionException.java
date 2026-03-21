@@ -1,6 +1,5 @@
-package dev.sbs.discordapi.command.exception.permission;
+package dev.sbs.discordapi.command.exception;
 
-import dev.sbs.discordapi.command.exception.CommandException;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

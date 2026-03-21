@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.command.exception.input;
+package dev.sbs.discordapi.command.exception;
 
 import dev.sbs.discordapi.command.parameter.Parameter;
 import lombok.Getter;

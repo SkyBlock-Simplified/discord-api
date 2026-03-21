@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.command.exception.input;
+package dev.sbs.discordapi.command.exception;
 
 import lombok.Getter;
 import org.intellij.lang.annotations.PrintFormat;
