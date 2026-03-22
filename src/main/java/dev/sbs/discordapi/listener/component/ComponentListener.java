@@ -19,10 +19,29 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
 
+/**
+ * Abstract base for component interaction listeners, providing the shared flow of
+ * matching an incoming event to a {@link CachedResponse}, locating the interacted
+ * {@link EventComponent}, and dispatching to its registered interaction handler.
+ * <p>
+ * Concrete subclasses ({@link ButtonListener}, {@link SelectMenuListener},
+ * {@link ModalListener}) supply the appropriate {@link ComponentContext} via
+ * {@link #getContext}.
+ *
+ * @param <E> the Discord4J component interaction event type
+ * @param <C> the context type passed to the component's interaction handler
+ * @param <T> the component type this listener handles
+ */
 public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends EventComponent<C>> extends DiscordListener<E> {
 
+    /** The resolved component class, used to filter matching components from the response tree. */
     private final Class<T> componentClass;
 
+    /**
+     * Constructs a new {@code ComponentListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     protected ComponentListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
         this.componentClass = Reflection.getSuperClass(this, 2);
@@ -40,16 +59,25 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * Creates the typed context for the given component interaction.
+     *
+     * @param event the Discord4J interaction event
+     * @param cachedMessage the cached response containing the component
+     * @param component the matched component
+     * @param followup the matched followup, if the interaction targets one
+     * @return the constructed context
+     */
     protected abstract @NotNull C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Followup> followup);
 
     /**
-     * Finds interacted component to pass to {@link #handleInteraction}.
-     * <br><br>
-     * Override for special handling.
+     * Locates the interacted component within the response tree and delegates
+     * to {@link #handleInteraction}. Override for special handling (e.g. modals).
      *
-     * @param event Discord4J instance of ComponentInteractionEvent.
-     * @param entry Matched response cache entry.
-     * @param followup Matched followup cache entry.
+     * @param event the Discord4J interaction event
+     * @param entry the matched response cache entry
+     * @param followup the matched followup, if the interaction targets one
+     * @return a reactive pipeline completing when the interaction is handled
      */
     protected Mono<Void> handleEvent(@NotNull E event, @NotNull CachedResponse entry, @NotNull Optional<Followup> followup) {
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents())
@@ -65,6 +93,16 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
             .then();
     }
 
+    /**
+     * Executes the component's registered interaction handler within an error-handling
+     * pipeline, then edits the response if it was modified.
+     *
+     * @param event the Discord4J interaction event
+     * @param entry the matched response cache entry
+     * @param component the matched component
+     * @param followup the matched followup, if the interaction targets one
+     * @return a reactive pipeline completing when the interaction is handled
+     */
     protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull T component, @NotNull Optional<Followup> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
 

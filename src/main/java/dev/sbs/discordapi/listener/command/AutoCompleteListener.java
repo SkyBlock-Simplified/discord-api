@@ -15,8 +15,17 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Listener for slash command autocomplete interactions, resolving the focused
+ * {@link Parameter} and responding with suggestion choices from its autocomplete handler.
+ */
 public final class AutoCompleteListener extends DiscordListener<ChatInputAutoCompleteEvent> {
 
+    /**
+     * Constructs a new {@code AutoCompleteListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public AutoCompleteListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

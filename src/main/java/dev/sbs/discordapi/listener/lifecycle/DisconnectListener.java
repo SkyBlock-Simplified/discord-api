@@ -8,8 +8,17 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+/**
+ * Listener for gateway disconnect events, shutting down the {@link SimplifiedApi}
+ * session manager and the bot's scheduler on disconnection.
+ */
 public class DisconnectListener extends DiscordListener<DisconnectEvent> {
 
+    /**
+     * Constructs a new {@code DisconnectListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public DisconnectListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

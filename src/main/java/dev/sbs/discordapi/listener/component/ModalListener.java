@@ -12,8 +12,20 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+/**
+ * Listener for {@link Modal} submit interactions, matching the submitted modal
+ * against the user's active modal and delegating to its registered handler.
+ * <p>
+ * Overrides {@link #handleEvent} to resolve the modal from the
+ * {@link CachedResponse}'s per-user modal cache rather than the component tree.
+ */
 public final class ModalListener extends ComponentListener<ModalSubmitInteractionEvent, ModalContext, Modal> {
 
+    /**
+     * Constructs a new {@code ModalListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public ModalListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

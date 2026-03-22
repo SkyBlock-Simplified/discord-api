@@ -10,8 +10,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+/**
+ * Listener for reaction add events, constructing a {@link ReactionContext} with
+ * {@link ReactionContext.Type#ADD} and delegating to the emoji's interaction handler.
+ */
 public final class ReactionAddListener extends ReactionListener<ReactionAddEvent> {
 
+    /**
+     * Constructs a new {@code ReactionAddListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public ReactionAddListener(DiscordBot discordBot) {
         super(discordBot);
     }

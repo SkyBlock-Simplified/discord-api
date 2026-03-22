@@ -11,8 +11,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+/**
+ * Listener for message context menu command interactions, resolving the target
+ * {@link DiscordCommand} and delegating to {@link DiscordCommand#apply} with
+ * a {@link MessageCommandContext}.
+ */
 public final class MessageCommandListener extends DiscordListener<MessageInteractionEvent> {
 
+    /**
+     * Constructs a new {@code MessageCommandListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public MessageCommandListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

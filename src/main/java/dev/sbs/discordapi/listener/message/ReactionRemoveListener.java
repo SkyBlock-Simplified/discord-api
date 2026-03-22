@@ -10,8 +10,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+/**
+ * Listener for reaction remove events, constructing a {@link ReactionContext} with
+ * {@link ReactionContext.Type#REMOVE} and delegating to the emoji's interaction handler.
+ */
 public final class ReactionRemoveListener extends ReactionListener<ReactionRemoveEvent> {
 
+    /**
+     * Constructs a new {@code ReactionRemoveListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public ReactionRemoveListener(DiscordBot discordBot) {
         super(discordBot);
     }

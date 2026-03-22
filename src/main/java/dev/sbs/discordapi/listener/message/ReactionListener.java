@@ -18,8 +18,24 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+/**
+ * Abstract base for reaction event listeners, providing the shared flow of
+ * validating that the reaction targets a bot message from a non-bot user,
+ * matching it against a {@link CachedResponse}'s registered reactions, and
+ * dispatching to the reaction's interaction handler.
+ * <p>
+ * Concrete subclasses ({@link ReactionAddListener}, {@link ReactionRemoveListener})
+ * supply the {@link ReactionContext} with the appropriate {@link ReactionContext.Type}.
+ *
+ * @param <E> the Discord4J reaction event type
+ */
 public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends DiscordListener<E> {
 
+    /**
+     * Constructs a new {@code ReactionListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     protected ReactionListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
@@ -44,8 +60,27 @@ public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends
             });
     }
 
+    /**
+     * Creates the typed context for the given reaction interaction.
+     *
+     * @param event the Discord4J reaction event
+     * @param cachedMessage the cached response the reaction belongs to
+     * @param reaction the matched emoji
+     * @param followup the matched followup, if the reaction targets one
+     * @return the constructed context
+     */
     protected abstract @NotNull ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Followup> followup);
 
+    /**
+     * Executes the reaction's registered interaction handler within an error-handling
+     * pipeline, then edits the response if it was modified.
+     *
+     * @param event the Discord4J reaction event
+     * @param entry the matched response cache entry
+     * @param reaction the matched emoji
+     * @param followup the matched followup, if the reaction targets one
+     * @return a reactive pipeline completing when the interaction is handled
+     */
     private Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull Emoji reaction, @NotNull Optional<Followup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
             .flatMap(context -> Mono.just(entry)
@@ -64,10 +99,22 @@ public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends
             );
     }
 
+    /**
+     * Returns {@code true} if the reacting user is not a bot.
+     *
+     * @param event the reaction event
+     * @return {@code true} if the user is not a bot
+     */
     private boolean notBot(@NotNull E event) {
         return !event.getUser().blockOptional().map(User::isBot).orElse(true);
     }
 
+    /**
+     * Returns {@code true} if the message that was reacted to was authored by a bot.
+     *
+     * @param event the reaction event
+     * @return {@code true} if the message author is a bot
+     */
     private boolean isBotMessage(@NotNull E event) {
         return event.getMessage().blockOptional().flatMap(Message::getAuthor).map(User::isBot).orElse(false);
     }

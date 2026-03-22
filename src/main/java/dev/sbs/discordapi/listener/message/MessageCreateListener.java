@@ -9,8 +9,17 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
+/**
+ * Listener for message create events from bot users, matching the message to a
+ * {@link CachedResponse} and invoking its registered create interaction handler.
+ */
 public class MessageCreateListener extends DiscordListener<MessageCreateEvent> {
 
+    /**
+     * Constructs a new {@code MessageCreateListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public MessageCreateListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

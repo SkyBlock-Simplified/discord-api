@@ -10,8 +10,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+/**
+ * Listener for {@link Button} component interactions, constructing a
+ * {@link ButtonContext} and delegating to the button's registered handler.
+ */
 public final class ButtonListener extends ComponentListener<ButtonInteractionEvent, ButtonContext, Button> {
 
+    /**
+     * Constructs a new {@code ButtonListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public ButtonListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

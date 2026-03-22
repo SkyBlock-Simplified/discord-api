@@ -10,8 +10,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+/**
+ * Listener for {@link SelectMenu} component interactions, updating the menu's
+ * selected values and constructing a {@link SelectMenuContext} for the handler.
+ */
 public final class SelectMenuListener extends ComponentListener<SelectMenuInteractionEvent, SelectMenuContext, SelectMenu> {
 
+    /**
+     * Constructs a new {@code SelectMenuListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public SelectMenuListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }

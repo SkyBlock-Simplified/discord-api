@@ -18,8 +18,18 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
+/**
+ * Listener for slash command interactions, resolving the target {@link DiscordCommand},
+ * extracting {@link Argument} values from the event options, and delegating to
+ * {@link DiscordCommand#apply}.
+ */
 public final class SlashCommandListener extends DiscordListener<ChatInputInteractionEvent> {
 
+    /**
+     * Constructs a new {@code SlashCommandListener} for the given bot.
+     *
+     * @param discordBot the bot instance
+     */
     public SlashCommandListener(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
@@ -50,6 +60,14 @@ public final class SlashCommandListener extends DiscordListener<ChatInputInterac
             .subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * Walks the subcommand/group tree to extract the leaf-level option data
+     * for the given command.
+     *
+     * @param command the matched command
+     * @param commandOptions the top-level interaction options
+     * @return the resolved leaf options
+     */
     private @NotNull ConcurrentList<ApplicationCommandInteractionOption> getActualOptionData(@NotNull DiscordCommand<?> command, @NotNull List<ApplicationCommandInteractionOption> commandOptions) {
         ConcurrentList<ApplicationCommandInteractionOption> options = Concurrent.newList(commandOptions);
 
