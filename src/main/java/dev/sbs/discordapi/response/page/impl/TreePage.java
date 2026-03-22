@@ -150,7 +150,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
         /**
          * Edits an existing {@link TreePage} at the given index.
          *
-         * @param index       The page index to edit.
+         * @param index The page index to edit.
          * @param pageBuilder The page builder to edit with.
          */
         public TreePageBuilder editPage(int index, @NotNull Function<TreePageBuilder, TreePageBuilder> pageBuilder) {
@@ -208,7 +208,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
          * Sets the content text to add to the {@link TreePage}.
          *
          * @param content The text to add to the page.
-         * @param args The arguments to format the content with.
+         * @param args the arguments to format the content with.
          */
         public TreePageBuilder withContent(@Nullable @PrintFormat String content, @Nullable Object... args) {
             return this.withContent(StringUtil.formatNullable(content, args));

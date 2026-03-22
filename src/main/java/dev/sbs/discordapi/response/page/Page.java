@@ -68,9 +68,9 @@ public interface Page {
     /**
      * Finds an existing {@link ActionComponent}.
      *
-     * @param tClass   The component type to match.
+     * @param tClass The component type to match.
      * @param function The method reference to match with.
-     * @param value    The value to match with.
+     * @param value The value to match with.
      * @return The matching component, if it exists.
      */
     default  <S, T extends ActionComponent> @NotNull Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
@@ -151,9 +151,9 @@ public interface Page {
         /**
          * Finds an existing {@link ActionComponent}.
          *
-         * @param tClass   The component type to match.
+         * @param tClass The component type to match.
          * @param function The method reference to match with.
-         * @param value    The value to match with.
+         * @param value The value to match with.
          * @return The matching component, if it exists.
          */
         public final <S, A extends ActionComponent> Optional<A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {

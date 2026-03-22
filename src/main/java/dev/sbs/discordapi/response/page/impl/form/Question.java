@@ -142,7 +142,7 @@ public class Question<T> {
          * using the provided format and optional arguments.
          *
          * @param identifier the identifier to set, formatted as a string, must not be null
-         * @param args       the optional arguments to include in the formatted identifier, can be null
+         * @param args the optional arguments to include in the formatted identifier, can be null
          * @return the updated builder instance
          */
         public Builder<T> withIdentifier(@NotNull @PrintFormat String identifier, @Nullable Object... args) {
@@ -166,7 +166,7 @@ public class Question<T> {
          * is null, it will be handled as an empty {@link Optional}.
          *
          * @param description the description to set, formatted as a string, can be null
-         * @param args        the optional arguments to include in the formatted description, can be null
+         * @param args the optional arguments to include in the formatted description, can be null
          * @return the updated builder instance
          */
         public Builder<T> withDescription(@Nullable @PrintFormat String description, @Nullable Object... args) {
@@ -199,7 +199,7 @@ public class Question<T> {
          * Sets the title for the builder with a formatted string.
          *
          * @param title the title to set, formatted as a string, must not be null
-         * @param args  the optional arguments to include in the formatted title, may be null
+         * @param args the optional arguments to include in the formatted title, may be null
          * @return the updated builder instance
          */
         public Builder<T> withTitle(@NotNull @PrintFormat String title, @Nullable Object... args) {
