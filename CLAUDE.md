@@ -23,10 +23,10 @@ The debug bot (`src/test/.../debug/DebugBot.java`) can be run directly to test c
 
 ## Architecture Overview
 
-This module is a **framework layer on top of Discord4J** that provides a builder-driven, reactive API for building Discord bots. The core flow is:
+This module is a **framework layer on top of Discord4J** that provides a builder-driven, reactive API for building Discord bots. Entry point: `DiscordBot` (sole class in root `discordapi` package). Configuration via `DiscordConfig` (in `handler/`).
 
 ```
-DiscordBot (abstract) → DiscordConfig (builder) → initialize() → login() + connect()
+DiscordBot (abstract) → DiscordConfig (handler/) → initialize() → login() + connect()
     ├── CommandHandler    — registers & routes commands
     ├── ResponseHandler   — caches active Response messages (ConcurrentList<CachedResponse>)
     ├── EmojiHandler      — manages custom emoji upload/lookup
@@ -71,26 +71,19 @@ Page (interface)
 └── FormPage  — form/question pages for sequential input
 ```
 
-### Component Hierarchy
+### Component System (top-level `component/` package)
+
+Components are a top-level package (`component/`), independent of `response/`. They are quality-of-life builders for their Discord4J counterparts and can be constructed independently.
 
 ```
-Component (interface)
-├── LayoutComponent (abstract) — contains child components
-│   ├── ActionRow     — row of buttons/select menus/text inputs
-│   ├── Container     — v2 container component
-│   ├── Section       — v2 section with text + accessory
-│   ├── Separator     — v2 separator
-│   └── Label         — v2 label
-├── ActionComponent (abstract) — interactive components
-│   ├── Button        — clickable button with styles, PageType for paging controls
-│   ├── SelectMenu    — dropdown with Option entries, PageType for page/subpage/item selection
-│   └── TextInput     — modal text field
-├── TextDisplay       — v2 text display
-├── Thumbnail         — v2 thumbnail media
-├── Attachment        — file attachment
-├── MediaGallery      — v2 media gallery
-├── FileUpload        — v2 file upload
-└── Modal             — modal dialog containing ActionRows of TextInputs
+component/                — Component (interface), TextDisplay
+component/interaction/    — ActionComponent, Button, SelectMenu, TextInput, Modal
+component/layout/         — LayoutComponent, ActionRow, Container, Section, Separator, Label
+component/media/          — Attachment, FileUpload, MediaData, MediaGallery, Thumbnail
+component/type/           — capability interfaces for type filtering:
+    AccessoryComponent, ContainerComponent, EventComponent, LabelComponent,
+    SectionComponent, ToggleableComponent, TopLevelMessageComponent,
+    TopLevelModalComponent, UserInteractComponent
 ```
 
 Components support Discord's Components V2 flag (`IS_COMPONENTS_V2`) — detected automatically when v2 component types are present.
@@ -100,19 +93,12 @@ Components support Discord's Components V2 flag (`IS_COMPONENTS_V2`) — detecte
 Every event gets a typed context wrapping the Discord4J event:
 
 ```
-EventContext
-└── InteractionContext
-    ├── AutoCompleteContext
-    └── DeferrableInteractionContext
-        ├── CommandContext
-        │   ├── SlashCommandContext
-        │   ├── UserCommandContext
-        │   └── MessageCommandContext
-        └── ComponentContext
-            ├── ActionComponentContext
-            │   ├── ButtonContext
-            │   └── SelectMenuContext (→ OptionContext)
-            └── ModalContext
+context/                  — EventContext, InteractionContext, DeferrableInteractionContext, ExceptionContext
+context/command/          — CommandContext, SlashCommandContext, UserCommandContext,
+                            MessageCommandContext, AutoCompleteContext, TypingContext
+context/component/        — ComponentContext, ActionComponentContext, ButtonContext,
+                            SelectMenuContext, OptionContext, ModalContext
+context/message/          — MessageContext, ReactionContext
 ```
 
 Contexts provide: `reply()`, `edit()`, `followup()`, `presentModal()`, `deleteFollowup()`, and access to the cached `Response`/`CachedResponse`.
