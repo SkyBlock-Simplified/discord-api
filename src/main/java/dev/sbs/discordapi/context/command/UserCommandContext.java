@@ -28,20 +28,12 @@ public interface UserCommandContext extends CommandContext<UserInteractionEvent>
     @Override
     @NotNull Structure getStructure();
 
-    /**
-     * Returns the resolved {@link User} that was targeted by this user command.
-     *
-     * @return the targeted user
-     */
+    /** The resolved {@link User} that was targeted by this user command. */
     default @NotNull User getTargetUser() {
         return this.getEvent().getResolvedUser();
     }
 
-    /**
-     * Returns the snowflake identifier of the targeted user.
-     *
-     * @return the target user id
-     */
+    /** The snowflake identifier of the targeted user. */
     default @NotNull Snowflake getTargetUserId() {
         return this.getEvent().getTargetId();
     }

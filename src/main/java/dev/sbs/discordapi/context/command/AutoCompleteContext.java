@@ -28,11 +28,7 @@ import java.util.UUID;
  */
 public interface AutoCompleteContext extends InteractionContext<ChatInputAutoCompleteEvent>, TypingContext<ChatInputAutoCompleteEvent> {
 
-    /**
-     * Returns the {@link Argument} that is currently being autocompleted by the user.
-     *
-     * @return the focused argument
-     */
+    /** The {@link Argument} that is currently being autocompleted by the user. */
     @NotNull Argument getArgument();
 
     /** {@inheritDoc} */

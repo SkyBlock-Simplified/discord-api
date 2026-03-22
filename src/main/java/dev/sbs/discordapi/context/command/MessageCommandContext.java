@@ -28,20 +28,12 @@ public interface MessageCommandContext extends CommandContext<MessageInteraction
     @Override
     @NotNull Structure getStructure();
 
-    /**
-     * Returns the resolved {@link Message} that was targeted by this message command.
-     *
-     * @return the targeted message
-     */
+    /** The resolved {@link Message} that was targeted by this message command. */
     default @NotNull Message getTargetMessage() {
         return this.getEvent().getResolvedMessage();
     }
 
-    /**
-     * Returns the snowflake identifier of the targeted message.
-     *
-     * @return the target message id
-     */
+    /** The snowflake identifier of the targeted message. */
     default @NotNull Snowflake getTargetMessageId() {
         return this.getEvent().getTargetId();
     }

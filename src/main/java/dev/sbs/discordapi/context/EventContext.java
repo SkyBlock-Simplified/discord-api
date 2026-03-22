@@ -59,76 +59,36 @@ public interface EventContext<T extends Event> {
             .publishOn(response.getReactorScheduler());
     }
 
-    /**
-     * Returns the {@link MessageChannel} in which this event occurred.
-     *
-     * @return a {@link Mono} emitting the message channel
-     */
+    /** The {@link MessageChannel} in which this event occurred. */
     Mono<MessageChannel> getChannel();
 
-    /**
-     * Returns the {@link Snowflake} identifier of the channel in which this event occurred.
-     *
-     * @return the channel snowflake id
-     */
+    /** The {@link Snowflake} identifier of the channel in which this event occurred. */
     @NotNull Snowflake getChannelId();
 
-    /**
-     * Returns the {@link DiscordBot} instance that received this event.
-     *
-     * @return the bot instance
-     */
+    /** The {@link DiscordBot} instance that received this event. */
     @NotNull DiscordBot getDiscordBot();
 
-    /**
-     * Returns the underlying Discord4J {@link Event} wrapped by this context.
-     *
-     * @return the raw event
-     */
+    /** The underlying Discord4J {@link Event} wrapped by this context. */
     @NotNull T getEvent();
 
-    /**
-     * Returns the {@link Guild} associated with this event, if the event occurred in a guild channel.
-     *
-     * @return a {@link Mono} emitting the guild, or empty if this is a private channel event
-     */
+    /** The {@link Guild} associated with this event, if the event occurred in a guild channel. */
     Mono<Guild> getGuild();
 
-    /**
-     * Returns the {@link Snowflake} identifier of the guild, if the event occurred in a guild channel.
-     *
-     * @return an {@link Optional} containing the guild id, or empty for private channels
-     */
+    /** The {@link Snowflake} identifier of the guild, if the event occurred in a guild channel. */
     Optional<Snowflake> getGuildId();
 
-    /**
-     * Returns the {@link User} who triggered this event.
-     *
-     * @return the interacting user
-     */
+    /** The {@link User} who triggered this event. */
     @NotNull User getInteractUser();
 
-    /**
-     * Returns the {@link Snowflake} identifier of the user who triggered this event.
-     *
-     * @return the interacting user's snowflake id
-     */
+    /** The {@link Snowflake} identifier of the user who triggered this event. */
     @NotNull Snowflake getInteractUserId();
 
-    /**
-     * Returns the {@link PrivateChannel} (DM channel) for the interacting user.
-     *
-     * @return a {@link Mono} emitting the user's private channel
-     */
+    /** The {@link PrivateChannel} (DM channel) for the interacting user. */
     default Mono<PrivateChannel> getInteractUserPrivateChannel() {
         return this.getInteractUser().getPrivateChannel();
     }
 
-    /**
-     * Returns the unique {@link UUID} identifying the {@link Response} associated with this context.
-     *
-     * @return the response identifier
-     */
+    /** The unique {@link UUID} identifying the {@link Response} associated with this context. */
     @NotNull UUID getResponseId();
 
     /**

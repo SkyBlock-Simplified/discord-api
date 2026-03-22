@@ -26,19 +26,11 @@ import java.util.function.Function;
  */
 public interface ButtonContext extends ActionComponentContext {
 
-    /**
-     * Returns the underlying {@link ButtonInteractionEvent}.
-     *
-     * @return the button interaction event
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull ButtonInteractionEvent getEvent();
 
-    /**
-     * Returns the {@link Button} that was clicked to trigger this interaction.
-     *
-     * @return the clicked button
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull Button getComponent();
 

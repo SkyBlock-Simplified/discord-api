@@ -30,27 +30,15 @@ import java.util.function.Function;
  */
 public interface OptionContext extends ActionComponentContext {
 
-    /**
-     * Returns the underlying {@link SelectMenuInteractionEvent} from the parent select menu.
-     *
-     * @return the select menu interaction event
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull SelectMenuInteractionEvent getEvent();
 
-    /**
-     * Returns the parent {@link SelectMenu} containing the selected option.
-     *
-     * @return the parent select menu
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull SelectMenu getComponent();
 
-    /**
-     * Returns the specific {@link SelectMenu.Option} this context represents.
-     *
-     * @return the selected option
-     */
+    /** The specific {@link SelectMenu.Option} this context represents. */
     @NotNull SelectMenu.Option getOption();
 
     /**

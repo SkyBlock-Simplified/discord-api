@@ -37,11 +37,7 @@ public interface SlashCommandContext extends CommandContext<ChatInputInteraction
         return this.getArguments().findFirst(argument -> argument.getParameter().getName(), name);
     }
 
-    /**
-     * Returns the list of resolved arguments provided by the user for this command invocation.
-     *
-     * @return the resolved command arguments
-     */
+    /** The list of resolved arguments provided by the user for this command invocation. */
     @NotNull ConcurrentList<Argument> getArguments();
 
     /**

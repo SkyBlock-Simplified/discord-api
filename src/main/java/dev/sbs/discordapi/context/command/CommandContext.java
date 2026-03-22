@@ -21,20 +21,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface CommandContext<T extends ApplicationCommandInteractionEvent> extends DeferrableInteractionContext<T>, TypingContext<T> {
 
-    /**
-     * Returns the snowflake identifier of the invoked application command.
-     *
-     * @return the command id
-     */
+    /** The snowflake identifier of the invoked application command. */
     default @NotNull Snowflake getCommandId() {
         return this.getEvent().getCommandId();
     }
 
-    /**
-     * Returns the {@link DiscordCommand.Type} derived from the underlying event's command type.
-     *
-     * @return the resolved command type
-     */
+    /** {@inheritDoc} */
     @Override
     default @NotNull DiscordCommand.Type getType() {
         return DiscordCommand.Type.of(this.getEvent().getCommandType().getValue());

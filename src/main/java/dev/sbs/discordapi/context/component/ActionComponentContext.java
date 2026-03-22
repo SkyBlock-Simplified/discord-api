@@ -15,11 +15,7 @@ import reactor.core.publisher.Mono;
  */
 public interface ActionComponentContext extends ComponentContext {
 
-    /**
-     * Returns the {@link ActionComponent} that triggered this interaction.
-     *
-     * @return the interacted action component
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull ActionComponent getComponent();
 

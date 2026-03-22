@@ -126,11 +126,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
         return DeferrableInteractionContext.super.getChannel();
     }
 
-    /**
-     * Returns the interactive component that triggered this interaction.
-     *
-     * @return the interacted component
-     */
+    /** The interactive component that triggered this interaction. */
     @NotNull UserInteractComponent getComponent();
 
     /** {@inheritDoc} */

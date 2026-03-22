@@ -50,19 +50,10 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         return this.getEventContext().getEvent();
     }
 
-    /**
-     * Returns the original {@link EventContext} that was being processed when the
-     * exception occurred.
-     *
-     * @return the wrapped event context
-     */
+    /** The original {@link EventContext} that was being processed when the exception occurred. */
     @NotNull EventContext<T> getEventContext();
 
-    /**
-     * Returns the {@link Throwable} that was caught during event processing.
-     *
-     * @return the caught exception
-     */
+    /** The {@link Throwable} that was caught during event processing. */
     @NotNull Throwable getException();
 
     /** {@inheritDoc} */
@@ -95,12 +86,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         return this.getEventContext().reply(response);
     }
 
-    /**
-     * Returns a human-readable title describing the category of the exception, such as
-     * {@code "Command Exception"} or {@code "Event Reply Exception"}.
-     *
-     * @return the exception title
-     */
+    /** A human-readable title describing the category of the exception. */
     @NotNull String getTitle();
 
     /**

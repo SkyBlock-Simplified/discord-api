@@ -76,11 +76,7 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
         return this.getEvent().deferReply(InteractionCallbackSpec.builder().ephemeral(ephemeral).build());
     }
 
-    /**
-     * Returns the initial reply {@link Message} for this interaction.
-     *
-     * @return a {@link Mono} emitting the reply message
-     */
+    /** The initial reply {@link Message} for this interaction. */
     default Mono<Message> getReply() {
         return this.getEvent().getReply();
     }

@@ -327,11 +327,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getMessage().flatMap(Message::getChannel);
     }
 
-    /**
-     * Returns the default {@link Followup} associated with this context, if one exists.
-     *
-     * @return an {@link Optional} containing the default followup, or empty if none is present
-     */
+    /** The default {@link Followup} associated with this context, if one exists. */
     @NotNull Optional<Followup> getFollowup();
 
     /**
@@ -344,34 +340,18 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getResponseCacheEntry().findFollowup(identifier);
     }
 
-    /**
-     * Returns the Discord {@link Message} associated with this context.
-     *
-     * @return a {@link Mono} emitting the message
-     */
+    /** The Discord {@link Message} associated with this context. */
     Mono<Message> getMessage();
 
-    /**
-     * Returns the {@link Snowflake} identifier of the message associated with this context.
-     *
-     * @return the message snowflake id
-     */
+    /** The {@link Snowflake} identifier of the message associated with this context. */
     Snowflake getMessageId();
 
-    /**
-     * Returns the cached {@link Response} from the response handler.
-     *
-     * @return the active response
-     */
+    /** The cached {@link Response} from the response handler. */
     default @NotNull Response getResponse() {
         return this.getResponseCacheEntry().getResponse();
     }
 
-    /**
-     * Returns the {@link CachedResponse} entry for this context's response id.
-     *
-     * @return the cached response entry
-     */
+    /** The {@link CachedResponse} entry for this context's response id. */
     default @NotNull CachedResponse getResponseCacheEntry() {
         return this.getDiscordBot()
             .getResponseHandler()

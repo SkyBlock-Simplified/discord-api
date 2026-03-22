@@ -24,20 +24,11 @@ import java.util.UUID;
  */
 public interface ModalContext extends ComponentContext {
 
-    /**
-     * Returns the underlying {@link ModalSubmitInteractionEvent}.
-     *
-     * @return the modal submit interaction event
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull ModalSubmitInteractionEvent getEvent();
 
-    /**
-     * Returns the submitted {@link Modal} with its components updated to reflect
-     * the user's input values.
-     *
-     * @return the submitted modal with updated component values
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull Modal getComponent();
 

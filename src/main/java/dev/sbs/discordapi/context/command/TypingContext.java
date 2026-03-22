@@ -22,19 +22,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface TypingContext<T extends Event> extends EventContext<T> {
 
-    /**
-     * Returns the {@link Structure} annotation metadata for the command associated with
-     * this event.
-     *
-     * @return the command structure
-     */
+    /** The {@link Structure} annotation metadata for the command associated with this event. */
     @NotNull Structure getStructure();
 
-    /**
-     * Returns the {@link DiscordCommand.Type} of the command associated with this event.
-     *
-     * @return the command type
-     */
+    /** The {@link DiscordCommand.Type} of the command associated with this event. */
     @NotNull DiscordCommand.Type getType();
 
 }

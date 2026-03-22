@@ -36,19 +36,10 @@ import java.util.UUID;
  */
 public interface ReactionContext extends MessageContext<ReactionUserEmojiEvent> {
 
-    /**
-     * Returns the {@link Emoji} that was added or removed.
-     *
-     * @return the reaction emoji
-     */
+    /** The {@link Emoji} that was added or removed. */
     @NotNull Emoji getEmoji();
 
-    /**
-     * Returns the {@link Type} of reaction event - either {@link Type#ADD} or
-     * {@link Type#REMOVE}.
-     *
-     * @return the reaction type
-     */
+    /** The {@link Type} of reaction event - either {@link Type#ADD} or {@link Type#REMOVE}. */
     @NotNull ReactionContext.Type getType();
 
     /** {@inheritDoc} */

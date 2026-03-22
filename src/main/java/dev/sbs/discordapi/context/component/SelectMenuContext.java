@@ -31,27 +31,15 @@ import java.util.function.Function;
  */
 public interface SelectMenuContext extends ActionComponentContext {
 
-    /**
-     * Returns the underlying {@link SelectMenuInteractionEvent}.
-     *
-     * @return the select menu interaction event
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull SelectMenuInteractionEvent getEvent();
 
-    /**
-     * Returns the {@link SelectMenu} that was interacted with to trigger this context.
-     *
-     * @return the interacted select menu
-     */
+    /** {@inheritDoc} */
     @Override
     @NotNull SelectMenu getComponent();
 
-    /**
-     * Returns the list of currently selected options from the select menu.
-     *
-     * @return the selected options
-     */
+    /** The list of currently selected options from the select menu. */
     default @NotNull ConcurrentList<SelectMenu.Option> getSelected() {
         return this.getComponent().getSelected();
     }
