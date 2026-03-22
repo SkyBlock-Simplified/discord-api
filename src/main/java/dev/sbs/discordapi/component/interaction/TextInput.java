@@ -29,21 +29,60 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * An immutable text input field component for use within a {@link Modal}.
+ * <p>
+ * Text inputs accept user-provided text in either a single-line ({@link Style#SHORT})
+ * or multi-line ({@link Style#PARAGRAPH}) format. A {@link SearchType} can be assigned
+ * to provide built-in search and navigation behavior for {@link ItemHandler}-backed
+ * responses. An optional {@link #getValidator() validator} predicate controls whether
+ * submitted values are accepted.
+ * <p>
+ * Instances are created via {@link #builder()} and can be copied for modification
+ * via {@link #mutate()}.
+ *
+ * @see Modal
+ * @see SearchType
+ * @see Style
+ */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TextInput implements ActionComponent, LabelComponent {
 
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
+
+    /** The unique identifier for this text input. */
     private final @NotNull String identifier;
+
+    /** The visual style of this text input. */
     private final @NotNull Style style;
+
+    /** The optional pre-filled value. */
     private final @NotNull Optional<String> value;
+
+    /** The optional placeholder text shown when the input is empty. */
     private final @NotNull Optional<String> placeholder;
+
+    /** The built-in search behavior assigned to this text input. */
     private final @NotNull SearchType searchType;
+
+    /** The validator predicate applied to submitted values. */
     private final @NotNull Predicate<String> validator;
+
+    /** The minimum character length required. */
     private final int minLength;
+
+    /** The maximum character length allowed. */
     private final int maxLength;
+
+    /** Whether this text input must be filled before the modal can be submitted. */
     private final boolean required;
 
+    /**
+     * Creates a new builder with a random identifier.
+     *
+     * @return a new {@link Builder} instance
+     */
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
@@ -67,6 +106,12 @@ public final class TextInput implements ActionComponent, LabelComponent {
             && this.isRequired() == that.isRequired();
     }
 
+    /**
+     * Creates a pre-filled builder from the given text input.
+     *
+     * @param textInput the text input to copy fields from
+     * @return a pre-filled {@link Builder} instance
+     */
     public static @NotNull Builder from(@NotNull TextInput textInput) {
         return new Builder()
             .withIdentifier(textInput.getIdentifier())
@@ -80,6 +125,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
             .isRequired(textInput.isRequired());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.TextInput getD4jComponent() {
         return (discord4j.core.object.component.TextInput) discord4j.core.object.component.TextInput.fromData(
@@ -96,6 +142,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Type getType() {
         return Type.TEXT_INPUT;
@@ -106,10 +153,18 @@ public final class TextInput implements ActionComponent, LabelComponent {
         return Objects.hash(this.getIdentifier(), this.getStyle(), this.getValue(), this.getPlaceholder(), this.getMinLength(), this.getMaxLength(), this.isRequired());
     }
 
+    /**
+     * Creates a pre-filled builder from this instance for modification.
+     *
+     * @return a pre-filled {@link Builder} instance
+     */
     public @NotNull Builder mutate() {
         return from(this);
     }
 
+    /**
+     * A builder for constructing {@link TextInput} instances.
+     */
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements ClassBuilder<TextInput> {
 
@@ -132,16 +187,16 @@ public final class TextInput implements ActionComponent, LabelComponent {
         private Optional<Predicate<String>> validator = Optional.empty();
 
         /**
-         * Sets this {@link TextInput} as required when submitting a {@link Modal}.
+         * Sets the {@link TextInput} as required when submitting a {@link Modal}.
          */
         public Builder isRequired() {
             return this.isRequired(true);
         }
 
         /**
-         * Sets whether this {@link TextInput} is required when submitting a {@link Modal}.
+         * Sets whether the {@link TextInput} is required when submitting a {@link Modal}.
          *
-         * @param required True to require this textinput.
+         * @param required {@code true} to require this text input
          */
         public Builder isRequired(boolean required) {
             this.required = required;
@@ -149,9 +204,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Overrides the default identifier of the {@link TextInput}.
+         * Sets the identifier of the {@link TextInput}, overriding the default random UUID.
          *
-         * @param identifier The identifier to use.
+         * @param identifier the identifier to use
          */
         public Builder withIdentifier(@NotNull String identifier) {
             this.identifier = identifier;
@@ -159,10 +214,10 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Overrides the default identifier of the {@link TextInput}.
+         * Sets the identifier of the {@link TextInput} using a format string, overriding the default random UUID.
          *
-         * @param identifier The identifier to use.
-         * @param args Objects used to format the identifier.
+         * @param identifier the format string for the identifier
+         * @param args the format arguments
          */
         public Builder withIdentifier(@NotNull String identifier, @Nullable Object... args) {
             this.identifier = String.format(identifier, args);
@@ -170,9 +225,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the minimum length required in the {@link TextInput}.
+         * Sets the minimum character length required in the {@link TextInput}.
          *
-         * @param minLength The minimum length required.
+         * @param minLength the minimum length, clamped to the range 0 - 4000
          */
         public Builder withMinLength(int minLength) {
             this.minLength = NumberUtil.ensureRange(minLength, 0, 4000);
@@ -180,9 +235,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the maximum length required in the {@link TextInput}.
+         * Sets the maximum character length allowed in the {@link TextInput}.
          *
-         * @param maxLength The maximum length required.
+         * @param maxLength the maximum length, clamped to the range 1 - 4000
          */
         public Builder withMaxLength(int maxLength) {
             this.maxLength = NumberUtil.ensureRange(maxLength, 1, 4000);
@@ -190,28 +245,28 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the placeholder text of the {@link TextInput}.
+         * Sets the placeholder text shown when the {@link TextInput} is empty.
          *
-         * @param placeholder The placeholder text of the textinput.
+         * @param placeholder the placeholder text, or {@code null} to clear
          */
         public Builder withPlaceholder(@Nullable String placeholder) {
             return this.withPlaceholder(Optional.ofNullable(placeholder));
         }
 
         /**
-         * Sets the placeholder text of the {@link TextInput}.
+         * Sets the placeholder text shown when the {@link TextInput} is empty, using a format string.
          *
-         * @param placeholder The placeholder text of the textinput.
-         * @param args The objects used to format the placeholder.
+         * @param placeholder the format string for the placeholder
+         * @param args the format arguments
          */
         public Builder withPlaceholder(@PrintFormat @Nullable String placeholder, @Nullable Object... args) {
             return this.withPlaceholder(StringUtil.formatNullable(placeholder, args));
         }
 
         /**
-         * Sets the placeholder text of the {@link TextInput}.
+         * Sets the placeholder text shown when the {@link TextInput} is empty.
          *
-         * @param placeholder The placeholder text of the textinput.
+         * @param placeholder the optional placeholder text
          */
         public Builder withPlaceholder(@NotNull Optional<String> placeholder) {
             this.placeholder = placeholder;
@@ -219,9 +274,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the search type of the {@link TextInput}.
+         * Sets the {@link SearchType} controlling built-in search behavior.
          *
-         * @param searchType The search type of the text input.
+         * @param searchType the search type to assign
          */
         public Builder withSearchType(@NotNull SearchType searchType) {
             this.searchType = searchType;
@@ -229,9 +284,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the {@link Style} of the {@link TextInput}.
+         * Sets the visual {@link Style} of the {@link TextInput}.
          *
-         * @param style The style of the textinput.
+         * @param style the text input style
          */
         public Builder withStyle(@NotNull Style style) {
             this.style = style;
@@ -239,18 +294,18 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets a custom validator for this {@link TextInput}.
+         * Sets a custom validator predicate for the {@link TextInput}.
          *
-         * @param validator Custom validator.
+         * @param validator the validator predicate, or {@code null} for no validation
          */
         public Builder withValidator(@Nullable Predicate<String> validator) {
             return this.withValidator(Optional.ofNullable(validator));
         }
 
         /**
-         * Sets a custom validator for this {@link TextInput}.
+         * Sets a custom validator predicate for the {@link TextInput}.
          *
-         * @param validator Custom validator.
+         * @param validator the optional validator predicate
          */
         public Builder withValidator(@NotNull Optional<Predicate<String>> validator) {
             this.validator = validator;
@@ -258,28 +313,28 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Sets the value of the {@link TextInput}.
+         * Sets the pre-filled value of the {@link TextInput}.
          *
-         * @param value The label of the textinput.
+         * @param value the pre-filled text, or {@code null} to clear
          */
         public Builder withValue(@Nullable String value) {
             return this.withValue(Optional.ofNullable(value));
         }
 
         /**
-         * Sets the value of the {@link TextInput}.
+         * Sets the pre-filled value of the {@link TextInput} using a format string.
          *
-         * @param value The label of the textinput.
-         * @param args The objects used to format the value.
+         * @param value the format string for the value
+         * @param args the format arguments
          */
         public Builder withValue(@PrintFormat @Nullable String value, @Nullable Object... args) {
             return this.withValue(StringUtil.formatNullable(value, args));
         }
 
         /**
-         * Sets the value of the {@link TextInput}.
+         * Sets the pre-filled value of the {@link TextInput}.
          *
-         * @param value The label of the textinput.
+         * @param value the optional pre-filled text
          */
         public Builder withValue(@NotNull Optional<String> value) {
             this.value = value;
@@ -287,9 +342,9 @@ public final class TextInput implements ActionComponent, LabelComponent {
         }
 
         /**
-         * Build using the configured fields.
+         * Builds a new {@link TextInput} from the configured fields.
          *
-         * @return A built {@link SelectMenu} component.
+         * @return a new {@link TextInput} instance
          */
         @Override
         public @NotNull TextInput build() {
@@ -308,11 +363,19 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
     }
 
+    /**
+     * Built-in search behaviors for modal text input fields.
+     * <p>
+     * Each constant provides a title, description, placeholder function, validator function,
+     * and an interaction handler that operates on the current page's {@link ItemHandler}.
+     */
     @Getter
     @RequiredArgsConstructor
     public enum SearchType {
 
+        /** No-op search type with no navigation behavior. */
         NONE((c_, t_) -> Mono.empty()),
+        /** Navigates to a specific page number within the paginated results. */
         PAGE(
             "Go to Page",
             "null",
@@ -331,6 +394,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
                 itemHandler.gotoPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
             })
         ),
+        /** Navigates to a specific item index within the paginated results. */
         INDEX(
             "Go to Index",
             "null",
@@ -350,6 +414,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
                 itemHandler.gotoPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
             })
         ),
+        /** Delegates to the item handler's search handler for custom search logic. */
         CUSTOM((context, textInput) -> context.consumeResponse(response -> context.getResponse()
             .getHistoryHandler()
             .getCurrentPage()
@@ -358,10 +423,19 @@ public final class TextInput implements ActionComponent, LabelComponent {
             .search(textInput)
         ));
 
+        /** The display title for this search type. */
         private final @NotNull String title;
+
+        /** The optional description shown alongside the text input. */
         private final @NotNull Optional<String> description;
+
+        /** Generates placeholder text based on the current item handler state. */
         private final @NotNull Function<ItemHandler<?>, String> placeholder;
+
+        /** Generates a validator predicate based on the current item handler state. */
         private final @NotNull Function<ItemHandler<?>, Predicate<String>> validator;
+
+        /** The interaction handler invoked when the modal containing this search type is submitted. */
         private final @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction;
 
         SearchType(@NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction) {
@@ -378,6 +452,12 @@ public final class TextInput implements ActionComponent, LabelComponent {
             this(title, Optional.ofNullable(description), placeholder, validator, interaction);
         }
 
+        /**
+         * Builds a {@link Label} wrapping a configured {@link TextInput} for the given item handler.
+         *
+         * @param itemHandler the item handler used to generate placeholder and validator
+         * @return a new {@link Label} containing the configured text input
+         */
         public @NotNull Label build(@NotNull ItemHandler<?> itemHandler) {
             return Label.builder()
                 .withTitle(this.getTitle())
@@ -395,19 +475,29 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
     }
 
+    /**
+     * Visual style of a {@link TextInput}.
+     */
     @Getter
     @RequiredArgsConstructor
     public enum Style {
 
+        /** Fallback for unrecognized style values. */
         UNKNOWN(-1),
+        /** Single-line text input. */
         SHORT(1),
+        /** Multi-line text area. */
         PARAGRAPH(2);
 
-        /**
-         * The Discord TextInput Integer value for this style.
-         */
+        /** The Discord integer value for this style. */
         private final int value;
 
+        /**
+         * Returns the constant matching the given value, or {@code UNKNOWN} if unrecognized.
+         *
+         * @param value the Discord integer value
+         * @return the matching {@link Style}
+         */
         public static @NotNull Style of(int value) {
             return Arrays.stream(values())
                 .filter(style -> style.getValue() == value)

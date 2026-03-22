@@ -31,21 +31,59 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
+/**
+ * An immutable interactive button component rendered within a Discord message.
+ * <p>
+ * Buttons appear inside an {@link ActionRow} and support multiple visual {@link Style styles}
+ * including primary, secondary, success, danger, and link. Each button may display an
+ * {@link Emoji}, a text label, or both. A {@link PageType} can be assigned to provide
+ * built-in pagination behavior for item-handler-backed responses.
+ * <p>
+ * Instances are created via {@link #builder()} and can be copied for modification
+ * via {@link #mutate()}.
+ *
+ * @see ActionRow
+ * @see Style
+ * @see PageType
+ */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Button implements ActionComponent, AccessoryComponent, EventComponent<ButtonContext>, ToggleableComponent {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
+
+    /** The unique identifier for this button. */
     private final @NotNull String identifier;
+
+    /** The visual style of this button. */
     private final @NotNull Style style;
+
+    /** The optional emoji displayed on this button. */
     private final @NotNull Optional<Emoji> emoji;
+
+    /** The optional text label displayed on this button. */
     private final @NotNull Optional<String> label;
+
+    /** The optional URL opened when a {@link Style#LINK} button is clicked. */
     private final @NotNull Optional<String> url;
+
+    /** Whether the interaction is automatically deferred as an edit. */
     private final boolean deferEdit;
+
+    /** The built-in pagination behavior assigned to this button. */
     private final @NotNull PageType pageType;
+
+    /** The interaction handler invoked when this button is clicked. */
     private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
+
+    /** Whether this button is currently enabled. */
     private boolean enabled;
 
+    /**
+     * Creates a new builder with a random identifier.
+     *
+     * @return a new {@link Builder} instance
+     */
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
@@ -68,6 +106,12 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             && Objects.equals(this.getPageType(), button.getPageType());
     }
 
+    /**
+     * Creates a pre-filled builder from the given button.
+     *
+     * @param button the button to copy fields from
+     * @return a pre-filled {@link Builder} instance
+     */
     public static @NotNull Builder from(@NotNull Button button) {
         return new Builder()
             .withIdentifier(button.getIdentifier())
@@ -81,6 +125,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             .onInteract(button.getInteraction());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.Button getD4jComponent() {
         discord4j.core.object.emoji.Emoji d4jReaction = this.getEmoji().map(Emoji::getD4jReaction).orElse(null);
@@ -95,6 +140,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }).disabled(this.isEnabled());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Type getType() {
         return Type.BUTTON;
@@ -105,15 +151,24 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         return Objects.hash(this.getIdentifier(), this.getStyle(), this.isEnabled(), this.getEmoji(), this.getLabel(), this.getUrl(), this.getPageType());
     }
 
+    /**
+     * Creates a pre-filled builder from this instance for modification.
+     *
+     * @return a pre-filled {@link Builder} instance
+     */
     public @NotNull Builder mutate() {
         return from(this);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * A builder for constructing {@link Button} instances.
+     */
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Builder implements ClassBuilder<Button> {
 
@@ -133,18 +188,18 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         private Optional<String> url = Optional.empty();
 
         /**
-         * Sets the interaction to execute when the {@link Button} is interacted with by a user.
+         * Sets the interaction handler invoked when the {@link Button} is clicked.
          *
-         * @param interaction The interaction function.
+         * @param interaction the interaction function, or {@code null} for the default no-op handler
          */
         public Builder onInteract(@Nullable Function<ButtonContext, Mono<Void>> interaction) {
             return this.onInteract(Optional.ofNullable(interaction));
         }
 
         /**
-         * Sets the interaction to execute when the {@link Button} is interacted with by a user.
+         * Sets the interaction handler invoked when the {@link Button} is clicked.
          *
-         * @param interaction The interaction function.
+         * @param interaction the optional interaction function
          */
         public Builder onInteract(@NotNull Optional<Function<ButtonContext, Mono<Void>>> interaction) {
             this.interaction = interaction;
@@ -159,9 +214,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets if the {@link Button} should be enabled.
+         * Sets whether the {@link Button} is enabled.
          *
-         * @param value True to enable the button.
+         * @param value {@code true} to enable the button
          */
         public Builder setEnabled(boolean value) {
             return this.setDisabled(!value);
@@ -175,9 +230,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets if the {@link Button} should be disabled.
+         * Sets whether the {@link Button} is disabled.
          *
-         * @param value True to disable the button.
+         * @param value {@code true} to disable the button
          */
         public Builder setDisabled(boolean value) {
             this.disabled = value;
@@ -185,16 +240,16 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets this {@link Button} as deferred when interacting.
+         * Sets the {@link Button} to automatically defer interactions as edits.
          */
         public Builder withDeferEdit() {
             return this.withDeferEdit(true);
         }
 
         /**
-         * Sets whether this {@link Button} is deferred when interacting.
+         * Sets whether the {@link Button} automatically defers interactions as edits.
          *
-         * @param value True to defer interaction.
+         * @param value {@code true} to defer interactions
          */
         public Builder withDeferEdit(boolean value) {
             this.deferEdit = value;
@@ -202,9 +257,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Overrides the default identifier of the {@link Button}.
+         * Sets the identifier of the {@link Button}, overriding the default random UUID.
          *
-         * @param identifier The identifier to use.
+         * @param identifier the identifier to use
          */
         public Builder withIdentifier(@NotNull String identifier) {
             this.identifier = identifier;
@@ -212,10 +267,10 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Overrides the default identifier of the {@link Button}.
+         * Sets the identifier of the {@link Button} using a format string, overriding the default random UUID.
          *
-         * @param identifier The identifier to use.
-         * @param args The objects used to format the identifier.
+         * @param identifier the format string for the identifier
+         * @param args the format arguments
          */
         public Builder withIdentifier(@PrintFormat @NotNull String identifier, @Nullable Object... args) {
             this.identifier = String.format(identifier, args);
@@ -223,28 +278,28 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets the label text of the {@link Button}.
+         * Sets the text label displayed on the {@link Button}.
          *
-         * @param label The label of the button.
+         * @param label the label text, or {@code null} to clear
          */
         public Builder withLabel(@Nullable String label) {
             return this.withLabel(Optional.ofNullable(label));
         }
 
         /**
-         * Sets the label text of the {@link Button}.
+         * Sets the text label displayed on the {@link Button} using a format string.
          *
-         * @param label The label of the button.
-         * @param args The objects used to format the url.
+         * @param label the format string for the label
+         * @param args the format arguments
          */
         public Builder withLabel(@PrintFormat @Nullable String label, @Nullable Object... args) {
             return this.withLabel(StringUtil.formatNullable(label, args));
         }
 
         /**
-         * Sets the label text of the {@link Button}.
+         * Sets the text label displayed on the {@link Button}.
          *
-         * @param label The label of the button.
+         * @param label the optional label text
          */
         public Builder withLabel(@NotNull Optional<String> label) {
             this.label = label;
@@ -252,18 +307,18 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets the {@link Emoji} used in the {@link Button}.
+         * Sets the {@link Emoji} displayed on the {@link Button}.
          *
-         * @param emoji The emoji of the button.
+         * @param emoji the emoji to display, or {@code null} to clear
          */
         public Builder withEmoji(@Nullable Emoji emoji) {
             return this.withEmoji(Optional.ofNullable(emoji));
         }
 
         /**
-         * Sets the {@link Emoji} used in the {@link Button}.
+         * Sets the {@link Emoji} displayed on the {@link Button}.
          *
-         * @param emoji The emoji of the button.
+         * @param emoji the optional emoji to display
          */
         public Builder withEmoji(@NotNull Optional<Emoji> emoji) {
             this.emoji = emoji;
@@ -271,9 +326,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets the page type of the {@link Button}.
+         * Sets the {@link PageType} controlling built-in pagination behavior.
          *
-         * @param pageType The page type of the button.
+         * @param pageType the page type to assign
          */
         public Builder withPageType(@NotNull PageType pageType) {
             this.pageType = pageType;
@@ -281,9 +336,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets the {@link Style} of the {@link Button}.
+         * Sets the visual {@link Style} of the {@link Button}.
          *
-         * @param style The style of the button.
+         * @param style the button style
          */
         public Builder withStyle(@NotNull Style style) {
             this.style = style;
@@ -291,28 +346,28 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Sets the {@link Button} url for a given LINK {@link Style}.
+         * Sets the URL opened when a {@link Style#LINK} button is clicked.
          *
-         * @param url The url to open.
+         * @param url the url to open, or {@code null} to clear
          */
         public Builder withUrl(@Nullable String url) {
             return this.withUrl(Optional.ofNullable(url));
         }
 
         /**
-         * Sets the {@link Button} url for a given LINK {@link Style}.
+         * Sets the URL opened when a {@link Style#LINK} button is clicked, using a format string.
          *
-         * @param url The url to open.
-         * @param args The objects used to format the url.
+         * @param url the format string for the url
+         * @param args the format arguments
          */
         public Builder withUrl(@PrintFormat @Nullable String url, @Nullable Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
         /**
-         * Sets the {@link Button} url for a given LINK {@link Style}.
+         * Sets the URL opened when a {@link Style#LINK} button is clicked.
          *
-         * @param url The url to open.
+         * @param url the optional url to open
          */
         public Builder withUrl(@NotNull Optional<String> url) {
             this.url = url;
@@ -320,9 +375,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
         }
 
         /**
-         * Build using the configured fields.
+         * Builds a new {@link Button} from the configured fields.
          *
-         * @return A built {@link SelectMenu} component.
+         * @return a new {@link Button} instance
          */
         @Override
         public @NotNull Button build() {
@@ -343,34 +398,35 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
     }
 
+    /**
+     * Visual style of a {@link Button}.
+     */
     @Getter
     @RequiredArgsConstructor
     public enum Style {
 
+        /** Fallback for unrecognized style values. */
         UNKNOWN(-1),
-        /**
-         * Blue
-         */
+        /** Blue-colored button. */
         PRIMARY(1),
-        /**
-         * Gray
-         */
+        /** Gray-colored button. */
         SECONDARY(2),
-        /**
-         * Green
-         */
+        /** Green-colored button. */
         SUCCESS(3),
-        /**
-         * Red
-         */
+        /** Red-colored button. */
         DANGER(4),
+        /** Non-interactive link that opens a URL. */
         LINK(5);
 
-        /**
-         * The Discord Button Integer value for this style.
-         */
+        /** The Discord integer value for this style. */
         private final int value;
 
+        /**
+         * Returns the constant matching the given value, or {@code UNKNOWN} if unrecognized.
+         *
+         * @param value the Discord integer value
+         * @return the matching {@link Style}
+         */
         public static @NotNull Style of(int value) {
             return Arrays.stream(values())
                 .filter(style -> style.getValue() == value)
@@ -380,17 +436,26 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
 
     }
 
+    /**
+     * Built-in button behaviors for paginated item navigation.
+     * <p>
+     * Each constant encapsulates a label and an interaction handler that operates
+     * on the current page's item handler via the {@link Response} history.
+     */
     // TODO: MOVE INTERACTION CODE TO BOT STARTUP ABSTRACTION
     @Getter
     @RequiredArgsConstructor
     public enum PageType {
 
+        /** No-op page type with no navigation behavior. */
         NONE("", __ -> Mono.empty()),
+        /** Navigates to the previous page. */
         PREVIOUS("Previous", context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
             .gotoPreviousPage()
         )),
+        /** Presents a search modal with page and index text inputs. */
         SEARCH("Search", context -> context.withResponse(response -> context.presentModal(
             // TODO: Use labels and better TextInput.SearchType
             Modal.builder()
@@ -412,7 +477,9 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
                 .withTitle("Search")
                 .build()
         ))),
+        /** Reserved index-based navigation placeholder. */
         INDEX("Index", __ -> Mono.empty()),
+        /** Presents a filter follow-up response with sort and filter select menus. */
         FILTER("Filter", context -> context.withResponse(response -> context.followup(
             Response.builder()
                 .withPages(
@@ -463,6 +530,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
                 )
                 .build()
         ))),
+        /** Navigates to the next page. */
         NEXT("Next", context -> context.consumeResponse(response -> response.getHistoryHandler()
             .getCurrentPage()
             .getItemHandler()
@@ -483,13 +551,27 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
             .invertOrder()
         ))*/
 
+        /** The display label for this page type's button. */
         private final @NotNull String label;
+
+        /** The interaction handler invoked when this page type's button is clicked. */
         private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
 
+        /**
+         * Builds a {@link Button} with this page type's behavior and no emoji.
+         *
+         * @return a new {@link Button} configured with this page type
+         */
         public @NotNull Button build() {
             return this.build(Optional.empty());
         }
 
+        /**
+         * Builds a {@link Button} with this page type's behavior.
+         *
+         * @param emoji the optional emoji to display on the button
+         * @return a new {@link Button} configured with this page type
+         */
         public @NotNull Button build(@NotNull Optional<Emoji> emoji) {
             return Button.builder()
                 .withStyle(Button.Style.SECONDARY)

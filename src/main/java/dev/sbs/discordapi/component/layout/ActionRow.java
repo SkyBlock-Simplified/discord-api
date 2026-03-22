@@ -12,10 +12,23 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * An immutable layout component that arranges {@link ActionComponent ActionComponents} in a
+ * horizontal row.
+ *
+ * <p>
+ * Instances are created via the {@link #of(ActionComponent...)} or
+ * {@link #of(Iterable)} factory methods. The resulting row holds an unmodifiable
+ * list of action components.
+ *
+ * @see LayoutComponent
+ * @see ContainerComponent
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ActionRow implements LayoutComponent, ContainerComponent {
 
+    /** The action components arranged in this row. */
     private final @NotNull ConcurrentList<ActionComponent> components;
 
     @Override
@@ -28,6 +41,7 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
         return Objects.equals(this.getComponents(), actionRow.getComponents());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.ActionRow getD4jComponent() {
         return discord4j.core.object.component.ActionRow.of(
@@ -38,6 +52,7 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Type getType() {
         return Type.ACTION_ROW;
@@ -48,10 +63,22 @@ public final class ActionRow implements LayoutComponent, ContainerComponent {
         return Objects.hash(this.getComponents());
     }
 
+    /**
+     * Creates an {@link ActionRow} containing the given action components.
+     *
+     * @param components the action components to include
+     * @return a new action row
+     */
     public static @NotNull ActionRow of(@NotNull ActionComponent... components) {
         return of(Arrays.asList(components));
     }
 
+    /**
+     * Creates an {@link ActionRow} containing the action components from the given iterable.
+     *
+     * @param components the action components to include
+     * @return a new action row
+     */
     public static @NotNull ActionRow of(@NotNull Iterable<ActionComponent> components) {
         ConcurrentList<ActionComponent> componentList = Concurrent.newList();
         components.forEach(componentList::add);

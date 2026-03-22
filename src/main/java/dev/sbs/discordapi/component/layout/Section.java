@@ -21,13 +21,37 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * An immutable layout component that combines {@link SectionComponent SectionComponents} with
+ * a required {@link AccessoryComponent} such as a {@link dev.sbs.discordapi.component.media.Thumbnail}
+ * or {@link dev.sbs.discordapi.component.interaction.Button}.
+ *
+ * <p>
+ * Instances are created via the {@link Builder} obtained from {@link #builder()}, or
+ * duplicated for modification via {@link #mutate()}.
+ *
+ * <p>
+ * {@link #flattenComponents()} includes the accessory in the flattened stream alongside
+ * the section's child components.
+ *
+ * @see LayoutComponent
+ * @see ContainerComponent
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Section implements LayoutComponent, ContainerComponent {
 
+    /** The accessory component displayed alongside this section's content. */
     private final @NotNull AccessoryComponent accessory;
+
+    /** The section components held by this section. */
     private final @NotNull ConcurrentList<SectionComponent> components;
 
+    /**
+     * Creates a new builder.
+     *
+     * @return a new builder
+     */
     public static @NotNull Builder builder() {
         return new Builder();
     }
@@ -45,6 +69,10 @@ public final class Section implements LayoutComponent, ContainerComponent {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * Includes the {@link #getAccessory() accessory} in addition to the child components
+     * and this section itself.
      */
     @Override
     public @NotNull Stream<Component> flattenComponents() {
@@ -54,12 +82,19 @@ public final class Section implements LayoutComponent, ContainerComponent {
         );
     }
 
+    /**
+     * Creates a pre-filled builder from the given instance.
+     *
+     * @param section the section to copy values from
+     * @return a pre-filled builder
+     */
     public static @NotNull Builder from(@NotNull Section section) {
         return builder()
             .withAccessory(section.getAccessory())
             .withComponents(section.getComponents());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.Section getD4jComponent() {
         return discord4j.core.object.component.Section.of(
@@ -72,6 +107,7 @@ public final class Section implements LayoutComponent, ContainerComponent {
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Component.Type getType() {
         return Component.Type.SECTION;
@@ -82,10 +118,16 @@ public final class Section implements LayoutComponent, ContainerComponent {
         return Objects.hash(this.getAccessory(), this.getComponents());
     }
 
+    /**
+     * Creates a pre-filled builder from this instance for modification.
+     *
+     * @return a pre-filled builder
+     */
     public @NotNull Builder mutate() {
         return from(this);
     }
 
+    /** A builder for constructing {@link Section} instances. */
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements ClassBuilder<Section> {
 
@@ -95,11 +137,12 @@ public final class Section implements LayoutComponent, ContainerComponent {
 
         /**
          * Sets the {@link AccessoryComponent} for the {@link Section}.
-         * <ul>
-         *     <li>This must be provided</li>
-         * </ul>
          *
-         * @param accessory The accessory to set for the section.
+         * <p>
+         * This field is required and must be provided before building.
+         *
+         * @param accessory the accessory component to display alongside the section content
+         * @return this builder
          */
         public Builder withAccessory(@NotNull AccessoryComponent accessory) {
             this.accessory = Optional.of(accessory);
@@ -107,24 +150,31 @@ public final class Section implements LayoutComponent, ContainerComponent {
         }
 
         /**
-         * Add {@link SectionComponent SectionComponents} to the {@link Section}.
+         * Adds {@link SectionComponent SectionComponents} to the {@link Section}.
          *
-         * @param components Variable number of section components to add.
+         * @param components the section components to add
+         * @return this builder
          */
         public Builder withComponents(@NotNull SectionComponent... components) {
             return this.withComponents(Arrays.asList(components));
         }
 
         /**
-         * Add {@link SectionComponent SectionComponents} to the {@link Section}.
+         * Adds {@link SectionComponent SectionComponents} to the {@link Section}.
          *
-         * @param components Collection of section components to add.
+         * @param components the section components to add
+         * @return this builder
          */
         public Builder withComponents(@NotNull Iterable<SectionComponent> components) {
             components.forEach(this.components::add);
             return this;
         }
 
+        /**
+         * Builds a new {@link Section} from the configured fields.
+         *
+         * @return a new section
+         */
         @Override
         public @NotNull Section build() {
             Reflection.validateFlags(this);

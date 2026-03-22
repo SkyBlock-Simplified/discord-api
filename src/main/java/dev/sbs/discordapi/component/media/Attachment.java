@@ -17,14 +17,35 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * An immutable file attachment component wrapping {@link MediaData} with a Discord file ID
+ * and file size.
+ * <p>
+ * Implements {@link TopLevelMessageComponent} and {@link ContainerComponent}, allowing it
+ * to be used as a top-level message component or nested within a container. Delegates
+ * media configuration to a nested {@link MediaData.Builder} during construction.
+ *
+ * @see MediaData
+ * @see FileUpload
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Attachment implements TopLevelMessageComponent, ContainerComponent {
 
+    /** The underlying media metadata. */
     private final @NotNull MediaData mediaData;
+
+    /** The Discord file snowflake ID. */
     private final long fileId;
+
+    /** The file size in bytes. */
     private final long size;
 
+    /**
+     * Creates a new builder.
+     *
+     * @return a new {@link Builder}
+     */
     public static @NotNull Builder builder() {
         return new Builder();
     }
@@ -40,6 +61,12 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
             && this.getSize() == that.getSize();
     }
 
+    /**
+     * Creates a pre-filled builder from the given attachment.
+     *
+     * @param attachment the attachment to copy from
+     * @return a pre-filled {@link Builder}
+     */
     public static @NotNull Builder from(@NotNull Attachment attachment) {
         return builder()
             .withMediaData(attachment.getMediaData())
@@ -47,6 +74,12 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
             .withSize(attachment.getSize());
     }
 
+    /**
+     * Creates a builder initialized from the given D4J attachment entity.
+     *
+     * @param d4jAttachment the D4J attachment to initialize from
+     * @return a {@link Builder} populated with the attachment's data
+     */
     public static @NotNull Builder from(@NotNull discord4j.core.object.entity.Attachment d4jAttachment) {
         return builder()
             .withName(d4jAttachment.getFilename())
@@ -55,6 +88,7 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
             .mutate(d4jAttachment);
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.File getD4jComponent() {
         return discord4j.core.object.component.File.of(
@@ -64,10 +98,18 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
         );
     }
 
+    /**
+     * Converts this attachment to a Discord4J {@link MessageCreateFields.File} for upload.
+     *
+     * @return a D4J file suitable for message creation
+     * @throws dev.sbs.discordapi.exception.DiscordException if no upload stream is present
+     * @see MediaData#getD4jFile()
+     */
     public @NotNull MessageCreateFields.File getD4jFile() {
         return this.getMediaData().getD4jFile();
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Type getType() {
         return Type.FILE;
@@ -78,14 +120,25 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
         return Objects.hash(this.getMediaData());
     }
 
+    /**
+     * Returns {@code true} if this attachment has upload data pending.
+     */
     public boolean isPendingUpload() {
         return this.getMediaData().isPendingUpload();
     }
 
+    /**
+     * Creates a pre-filled builder from this instance for modification.
+     */
     public @NotNull Builder mutate() {
         return from(this);
     }
 
+    /**
+     * Creates a pre-filled builder updated with data from the given D4J attachment entity.
+     *
+     * @param d4jAttachment the D4J attachment to update from
+     */
     public @NotNull Builder mutate(@NotNull discord4j.core.object.entity.Attachment d4jAttachment) {
         return from(this)
             .withMediaData(this.getMediaData().mutate(d4jAttachment))
@@ -93,11 +146,22 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
             .withSize(d4jAttachment.getSize());
     }
 
+    /**
+     * Creates a pre-filled builder updated with data from the given D4J file component.
+     *
+     * @param d4jFile the D4J file component to update from
+     */
     public @NotNull Builder mutate(@NotNull discord4j.core.object.component.File d4jFile) {
         return from(this)
             .withMediaData(this.getMediaData().mutate(d4jFile.getFile()));
     }
 
+    /**
+     * A builder for constructing {@link Attachment} instances.
+     * <p>
+     * Media-related configuration (name, URL, upload stream, spoiler) is delegated to
+     * a nested {@link MediaData.Builder}.
+     */
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements ClassBuilder<Attachment> {
 
@@ -106,31 +170,36 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
         private long size = 0;
 
         /**
-         * Sets the {@link Attachment} as a spoiler.
+         * Sets the spoiler flag to {@code true}.
          */
         public Builder isSpoiler() {
             return this.isSpoiler(true);
         }
 
         /**
-         * Sets the {@link Attachment} as a spoiler.
+         * Sets the spoiler flag.
          *
-         * @param value True if spoiler.
+         * @param value {@code true} to mark as a spoiler
          */
         public Builder isSpoiler(boolean value) {
             this.mediaData.isSpoiler(value);
             return this;
         }
 
+        /**
+         * Sets the Discord file snowflake ID.
+         *
+         * @param id the file ID
+         */
         public Builder withFileId(long id) {
             this.fileId = id;
             return this;
         }
 
         /**
-         * Sets the name of the {@link Attachment}.
+         * Sets the file name.
          *
-         * @param name The name of the attachment.
+         * @param name the file name
          */
         public Builder withName(@NotNull String name) {
             this.mediaData.withName(name);
@@ -138,34 +207,39 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
         }
 
         /**
-         * Sets the name of the {@link Attachment}.
+         * Sets the file name using a format string.
          *
-         * @param name The name of the attachment.
-         * @param args The arguments to format the name with.
+         * @param name the format string for the file name
+         * @param args the format arguments
          */
         public Builder withName(@NotNull @PrintFormat String name, @Nullable Object... args) {
             this.mediaData.withName(String.format(name, args));
             return this;
         }
 
+        /**
+         * Sets the file size in bytes.
+         *
+         * @param size the file size
+         */
         public Builder withSize(long size) {
             this.size = size;
             return this;
         }
 
         /**
-         * Sets the upload data of the {@link Attachment}.
+         * Sets the upload stream for pending file data.
          *
-         * @param uploadStream The stream of attachment data.
+         * @param uploadStream the input stream, or {@code null} to clear
          */
         public Builder withStream(@Nullable InputStream uploadStream) {
             return this.withStream(Optional.ofNullable(uploadStream));
         }
 
         /**
-         * Sets the upload data of the {@link Attachment}.
+         * Sets the upload stream for pending file data.
          *
-         * @param uploadStream The stream of attachment data.
+         * @param uploadStream the input stream
          */
         public Builder withStream(@NotNull Optional<InputStream> uploadStream) {
             this.mediaData.withStream(uploadStream);
@@ -173,28 +247,28 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
         }
 
         /**
-         * Sets the url of the {@link Attachment}.
+         * Sets the media URL.
          *
-         * @param url The url of the attachment.
+         * @param url the URL, or {@code null} to clear
          */
         public Builder withUrl(@Nullable String url) {
             return this.withUrl(Optional.ofNullable(url));
         }
 
         /**
-         * Sets the url of the {@link Attachment}.
+         * Sets the media URL using a format string.
          *
-         * @param url The url of the attachment.
-         * @param args The arguments to format the url with.
+         * @param url the format string for the URL
+         * @param args the format arguments
          */
         public Builder withUrl(@Nullable @PrintFormat String url, @Nullable Object... args) {
             return this.withUrl(StringUtil.formatNullable(url, args));
         }
 
         /**
-         * Sets the url of the {@link Attachment}.
+         * Sets the media URL.
          *
-         * @param url The url of the attachment.
+         * @param url the URL
          */
         public Builder withUrl(@NotNull Optional<String> url) {
             this.mediaData.withUrl(url);
@@ -211,6 +285,9 @@ public final class Attachment implements TopLevelMessageComponent, ContainerComp
             return this;
         }
 
+        /**
+         * Builds a new {@link Attachment} from the configured fields.
+         */
         @Override
         public @NotNull Attachment build() {
             return new Attachment(

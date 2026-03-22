@@ -14,19 +14,32 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+/**
+ * A top-level message component that contains child {@link Component Components}.
+ *
+ * <p>
+ * Provides recursive traversal of the component tree via {@link #flattenComponents()},
+ * targeted lookup via {@link #findComponent(Class, Function, Object)}, and in-place
+ * replacement via {@link #modifyComponent(ActionComponent)}.
+ */
 public interface LayoutComponent extends TopLevelMessageComponent {
 
+    /** The child components held by this layout. */
     @NotNull ConcurrentList<Component> getComponents();
 
+    /** {@inheritDoc} */
     @NotNull discord4j.core.object.component.LayoutComponent getD4jComponent();
 
     /**
-     * Finds an existing {@link ActionComponent}.
+     * Finds the first {@link ActionComponent} of the given type whose extracted property
+     * matches the specified value.
      *
-     * @param tClass   The component type to match.
-     * @param function The method reference to match with.
-     * @param value    The value to match with.
-     * @return The matching component, if it exists.
+     * @param tClass the action component subtype to search for
+     * @param function the property extractor applied to each candidate
+     * @param value the value to match against the extracted property
+     * @param <S> the property type
+     * @param <T> the action component subtype
+     * @return an {@link Optional} containing the matching component, or empty if none is found
      */
     default <S, T extends ActionComponent> @NotNull Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
         return this.flattenComponents()
@@ -36,6 +49,12 @@ public interface LayoutComponent extends TopLevelMessageComponent {
             .findFirst();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Recursively flattens this layout and all nested child components into a single stream.
+     */
     @Override
     default @NotNull Stream<Component> flattenComponents() {
         return Stream.concat(
@@ -47,9 +66,16 @@ public interface LayoutComponent extends TopLevelMessageComponent {
     }
 
     /**
-     * Modifies an existing {@link ActionComponent}.
+     * Replaces an existing {@link ActionComponent} in the component tree with the given
+     * replacement, matched by {@linkplain UserInteractComponent#getIdentifier() identifier}.
      *
-     * @param actionComponent The component to replace.
+     * <p>
+     * The replacement walks the tree recursively through nested {@link LayoutComponent}
+     * instances, {@link Section} accessories, and {@link Label} wrapped components.
+     *
+     * @param actionComponent the replacement component whose identifier determines which
+     *                        existing component is replaced
+     * @param <T> the action component subtype
      */
     default <T extends ActionComponent> void modifyComponent(@NotNull T actionComponent) {
         this.getComponents().forEach(component -> {

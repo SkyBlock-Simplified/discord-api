@@ -12,21 +12,44 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+/**
+ * An immutable layout component displaying multiple {@link Thumbnail} items in a gallery grid.
+ * <p>
+ * Implements {@link TopLevelMessageComponent} and {@link ContainerComponent}, allowing it
+ * to be used as a top-level message component or nested within a container. Each gallery
+ * item is converted to a D4J {@link discord4j.core.object.component.MediaGalleryItem} via
+ * {@link Thumbnail#getD4jGalleryItem()}.
+ *
+ * @see Thumbnail
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class MediaGallery implements TopLevelMessageComponent, ContainerComponent {
 
+    /** The thumbnail items displayed in the gallery. */
     private final @NotNull ConcurrentList<Thumbnail> items;
 
+    /**
+     * Creates a new builder.
+     *
+     * @return a new {@link Builder}
+     */
     public static @NotNull Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Creates a pre-filled builder from the given media gallery.
+     *
+     * @param mediaGallery the media gallery to copy from
+     * @return a pre-filled {@link Builder}
+     */
     public static @NotNull Builder from(@NotNull MediaGallery mediaGallery) {
         return builder()
             .withItems(mediaGallery.getItems());
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull discord4j.core.object.component.MediaGallery getD4jComponent() {
         return discord4j.core.object.component.MediaGallery.of(
@@ -37,30 +60,52 @@ public class MediaGallery implements TopLevelMessageComponent, ContainerComponen
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public @NotNull Type getType() {
         return Type.MEDIA_GALLERY;
     }
 
+    /**
+     * A builder for constructing {@link MediaGallery} instances.
+     */
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements ClassBuilder<MediaGallery> {
 
         private @NotNull ConcurrentList<Thumbnail> items = Concurrent.newList();
 
+        /**
+         * Adds a single thumbnail item to the gallery.
+         *
+         * @param thumbnail the thumbnail to add
+         */
         public Builder withItem(@NotNull Thumbnail thumbnail) {
             this.items.add(thumbnail);
             return this;
         }
 
+        /**
+         * Adds multiple thumbnail items to the gallery.
+         *
+         * @param items the thumbnails to add
+         */
         public Builder withItems(@NotNull Thumbnail... items) {
             return this.withItems(Arrays.asList(items));
         }
 
+        /**
+         * Adds multiple thumbnail items from the given iterable to the gallery.
+         *
+         * @param items the thumbnails to add
+         */
         public Builder withItems(@NotNull Iterable<Thumbnail> items) {
             items.forEach(this.items::add);
             return this;
         }
 
+        /**
+         * Builds a new {@link MediaGallery} from the configured fields.
+         */
         public @NotNull MediaGallery build() {
             return new MediaGallery(this.items);
         }
