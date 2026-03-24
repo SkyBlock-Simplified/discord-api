@@ -225,7 +225,7 @@ public abstract class DiscordBot {
                         .filterPackage(DiscordListener.class)
                         .getSubtypesOf(DiscordListener.class)
                         .stream()
-                        .map(lClass -> new Reflection<>(lClass).newInstance(this))
+                        .map(lClass -> (DiscordListener<?>) new Reflection<>(lClass).newInstance(this))
                         .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
                         .collect(Concurrent.toList());
 
