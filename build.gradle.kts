@@ -6,6 +6,12 @@ plugins {
 group = "dev.sbs"
 version = "0.1.0"
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
 repositories {
     mavenCentral()
     maven(url = "https://central.sonatype.com/repository/maven-snapshots")
@@ -33,10 +39,6 @@ dependencies {
 }
 
 tasks {
-    withType<JavaCompile> {
-        sourceCompatibility = "21"
-        targetCompatibility = "21"
-    }
     test {
         useJUnitPlatform()
     }
