@@ -6,6 +6,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.persistence.JpaSession;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
+import dev.sbs.api.util.LogUtil;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Argument;
@@ -59,7 +60,6 @@ import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -138,7 +138,7 @@ public abstract class DiscordBot {
         this.exceptionHandler = new DiscordExceptionHandler(this);
         this.emojiHandler = new EmojiHandler(this);
         this.responseHandler = new ResponseHandler();
-        Configurator.setRootLevel(this.getConfig().getLogLevel());
+        LogUtil.setRootLevel(this.getConfig().getLogLevel());
 
         this.commandHandler = CommandHandler.builder(this)
             .withCommands(this.getConfig().getCommands())
