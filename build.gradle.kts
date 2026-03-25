@@ -1,7 +1,10 @@
 plugins {
-    id("java")
+    id("java-library")
     id("application")
 }
+
+group = "dev.sbs"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -10,39 +13,24 @@ repositories {
 }
 
 dependencies {
-    // IntelliJ Annotations
-    implementation(group = "org.jetbrains", name = "annotations", version = "24.0.1")
-
-    // Resource Checker Annotations
-    implementation(group = "dev.sbs", name = "simplified-annotations", version = "1.0.4")
-    annotationProcessor(group = "dev.sbs", name = "simplified-annotations", version = "1.0.4")
+    // Simplified Annotations
+    annotationProcessor(libs.simplified.annotations)
 
     // Lombok Annotations
-    compileOnly(group = "org.projectlombok", name = "lombok", version = "1.18.30")
-    annotationProcessor(group = "org.projectlombok", name = "lombok", version = "1.18.30")
-    testCompileOnly(group = "org.projectlombok", name = "lombok", version = "1.18.30")
-    testAnnotationProcessor(group = "org.projectlombok", name = "lombok", version = "1.18.30")
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+    testCompileOnly(libs.lombok)
+    testAnnotationProcessor(libs.lombok)
 
     // Tests
-    testImplementation(group = "org.hamcrest", name = "hamcrest", version = "2.2")
-    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.0")
-    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.10.0")
-
-    // Logging
-    implementation(group = "org.apache.logging.log4j", name = "log4j-core", version = "2.20.0")
-    implementation(group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version = "2.20.0")
+    testImplementation(libs.hamcrest)
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
 
     // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
-    implementation(group = "com.discord4j", name = "discord4j-core", version = "3.3.1")
-    implementation(optionalProject(":api", "com.github.skyblock-simplified:api:master-SNAPSHOT"))
+    api(libs.discord4j)
+    api("dev.sbs:api:0.1.0")
 }
-
-fun Project.optionalProject(path: String, fallbackDependency: String): Any =
-    if (project.rootProject.findProject(path) != null) {
-        project(path)
-    } else {
-        fallbackDependency
-    }
 
 tasks {
     withType<JavaCompile> {
