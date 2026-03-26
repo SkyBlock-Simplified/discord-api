@@ -266,10 +266,8 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
          * @param event the modal submit interaction event
          */
         public Builder updateComponents(@NotNull ModalSubmitInteractionEvent event) {
-            event.getComponents()
+            event.getComponents(discord4j.core.object.component.LayoutComponent.class)
                 .stream()
-                .filter(discord4j.core.object.component.LayoutComponent.class::isInstance)
-                .map(discord4j.core.object.component.LayoutComponent.class::cast)
                 .map(discord4j.core.object.component.LayoutComponent::getChildren)
                 .flatMap(List::stream)
                 .forEach(d4jComponent -> {
