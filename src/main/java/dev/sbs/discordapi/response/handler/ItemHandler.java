@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.handler.item;
+package dev.sbs.discordapi.response.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -14,15 +14,8 @@ import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
-import dev.sbs.discordapi.response.handler.OutputHandler;
-import dev.sbs.discordapi.response.handler.Paging;
-import dev.sbs.discordapi.response.handler.item.filter.Filter;
-import dev.sbs.discordapi.response.handler.item.filter.FilterHandler;
-import dev.sbs.discordapi.response.handler.item.search.Search;
-import dev.sbs.discordapi.response.handler.item.search.SearchHandler;
-import dev.sbs.discordapi.response.handler.item.sorter.SortHandler;
-import dev.sbs.discordapi.response.handler.item.sorter.Sorter;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import dev.sbs.discordapi.response.page.item.field.StringItem;

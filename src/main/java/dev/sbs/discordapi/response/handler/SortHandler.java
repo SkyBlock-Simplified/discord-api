@@ -1,7 +1,6 @@
-package dev.sbs.discordapi.response.handler.item.sorter;
+package dev.sbs.discordapi.response.handler;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
-import dev.sbs.discordapi.response.handler.OutputHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;

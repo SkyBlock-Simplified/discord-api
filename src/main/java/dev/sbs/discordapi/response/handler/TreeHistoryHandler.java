@@ -1,11 +1,11 @@
-package dev.sbs.discordapi.response.handler.history;
+package dev.sbs.discordapi.response.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.exception.DiscordException;
-import dev.sbs.discordapi.response.handler.Subpages;
+import dev.sbs.discordapi.response.page.Subpages;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -14,9 +14,7 @@ import dev.sbs.discordapi.component.media.Attachment;
 import dev.sbs.discordapi.component.media.MediaData;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.response.handler.history.HistoryHandler;
-import dev.sbs.discordapi.response.impl.FormResponse;
-import dev.sbs.discordapi.response.impl.TreeResponse;
+import dev.sbs.discordapi.response.handler.HistoryHandler;
 import dev.sbs.discordapi.response.page.Page;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
@@ -136,12 +134,13 @@ public interface Response {
      *
      * @param buttonBuilder The button to edit.
      */
+    @SuppressWarnings("unchecked")
     default <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.Builder, Button.Builder> buttonBuilder) {
         this.getCachedPageComponents().forEach(topLevelComponent -> topLevelComponent.flattenComponents()
             .filter(LayoutComponent.class::isInstance)
             .map(LayoutComponent.class::cast)
             .forEach(layoutComponent -> layoutComponent.findComponent(Button.class, function, value)
-                .ifPresent(button -> layoutComponent.getComponents().set(
+                .ifPresent(button -> ((ConcurrentList<Component>) layoutComponent.getComponents()).set(
                     layoutComponent.getComponents().indexOf(button),
                     buttonBuilder.apply(button.mutate()).build()
                 ))
