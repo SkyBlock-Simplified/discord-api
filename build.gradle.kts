@@ -36,6 +36,7 @@ dependencies {
     // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
     api(libs.discord4j)
     api("dev.sbs:api:0.1.0")
+    implementation(libs.sentry)
 }
 
 tasks {

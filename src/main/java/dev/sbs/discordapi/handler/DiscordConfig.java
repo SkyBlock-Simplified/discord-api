@@ -34,7 +34,9 @@ public final class DiscordConfig {
     @Flag(secure = true)
     private final @NotNull String token;
     private final long mainGuildId;
-    private final @NotNull Optional<Long> debugChannelId;
+    private final @NotNull Optional<Long> logChannelId;
+    @Flag(secure = true)
+    private final @NotNull Optional<String> sentryDsn;
     private final @NotNull Optional<JpaConfig> jpaConfig;
     private final ConcurrentSet<Class<? extends DiscordListener>> listeners;
     private final ConcurrentSet<Class<DiscordCommand>> commands;
@@ -61,7 +63,9 @@ public final class DiscordConfig {
         private Optional<String> token = Optional.empty();
         @BuildFlag(nonNull = true)
         private Optional<Long> mainGuildId = Optional.empty();
-        private Optional<Long> debugChannelId = Optional.empty();
+        private Optional<Long> logChannelId = Optional.empty();
+        @Flag(secure = true)
+        private Optional<String> sentryDsn = Optional.empty();
         private Optional<JpaConfig> jpaConfig = Optional.empty();
 
         // Collections
@@ -131,12 +135,21 @@ public final class DiscordConfig {
             return this;
         }
 
-        public Builder withDebugChannelId(long debugChannelId) {
-            return this.withDebugChannelId(Optional.of(debugChannelId));
+        public Builder withLogChannelId(long debugChannelId) {
+            return this.withLogChannelId(Optional.of(debugChannelId));
         }
 
-        public Builder withDebugChannelId(Optional<Long> debugChannelId) {
-            this.debugChannelId = debugChannelId;
+        public Builder withLogChannelId(Optional<Long> debugChannelId) {
+            this.logChannelId = debugChannelId;
+            return this;
+        }
+
+        public Builder withSentryDsn(@NotNull String sentryDsn) {
+            return this.withSentryDsn(Optional.of(sentryDsn));
+        }
+
+        public Builder withSentryDsn(@NotNull Optional<String> sentryDsn) {
+            this.sentryDsn = sentryDsn;
             return this;
         }
 
@@ -204,7 +217,8 @@ public final class DiscordConfig {
             return new DiscordConfig(
                 this.token.orElseThrow(),
                 this.mainGuildId.orElseThrow(),
-                this.debugChannelId,
+                this.logChannelId,
+                this.sentryDsn,
                 this.jpaConfig,
                 this.listeners.toUnmodifiableSet(),
                 this.commands.toUnmodifiableSet(),
