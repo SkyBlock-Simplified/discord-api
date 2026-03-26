@@ -25,12 +25,13 @@ import dev.sbs.discordapi.response.embed.Author;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.embed.Footer;
-import dev.sbs.discordapi.response.page.impl.TreePage;
+import dev.sbs.discordapi.response.page.TreePage;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.rest.util.Permission;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
@@ -55,15 +56,21 @@ import java.util.UUID;
  *
  * @see ExceptionHandler
  */
-public class DiscordExceptionHandler extends ExceptionHandler {
+@Getter
+public final class DiscordExceptionHandler extends ExceptionHandler {
+
+    private final @NotNull Snowflake logChannel;
 
     /**
-     * Constructs a new {@code DiscordExceptionHandler} with the given bot instance.
+     * Constructs a new {@code DiscordExceptionHandler} with the given bot instance
+     * and debug channel identifier.
      *
      * @param discordBot the bot this handler belongs to
+     * @param logChannelId the channel to log developer error reports to
      */
-    public DiscordExceptionHandler(@NotNull DiscordBot discordBot) {
+    public DiscordExceptionHandler(@NotNull DiscordBot discordBot, long logChannelId) {
         super(discordBot);
+        this.logChannel = Snowflake.of(logChannelId);
     }
 
     /**
@@ -409,12 +416,7 @@ public class DiscordExceptionHandler extends ExceptionHandler {
         Mono<T> mono = reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
                 // Log to debug channel when it's not an expected reactive user error
                 Mono.just(this.getDiscordBot().getMainGuild())
-                    .flatMap(guild -> guild.getChannelById(Snowflake.of(
-                        this.getDiscordBot()
-                            .getConfig()
-                            .getDebugChannelId()
-                            .orElse(-1L)
-                    )))
+                    .flatMap(guild -> guild.getChannelById(this.getLogChannel()))
                     .ofType(MessageChannel.class)
                     .flatMap(messageChannel -> {
                         // Get Message ID
