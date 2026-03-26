@@ -9,6 +9,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.command.exception.InputException;
+import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
@@ -38,20 +39,24 @@ import java.util.function.Function;
 
 /**
  * An immutable modal dialog presented to a user as a pop-up form.
+ *
  * <p>
  * Modals contain {@link TopLevelModalComponent} instances - typically {@link Label Labels}
  * wrapping {@link TextInput} or {@link SelectMenu} components. When submitted, the computed
  * {@link #getInteraction()} validates {@link TextInput} values against their validators and
  * dispatches to {@link TextInput.SearchType} handlers before falling back to the modal-level
  * interaction handler.
+ *
  * <p>
- * Unlike {@link Button} and {@link SelectMenu}, a modal is not a
- * {@link dev.sbs.discordapi.component.Component Component} itself;
- * it is presented via {@link #getD4jPresentSpec()} rather than embedded in a message layout.
+ * Unlike {@link Button} and {@link SelectMenu}, a modal is not a {@link Component Component}
+ * itself; it is presented via {@link #getD4jPresentSpec()} rather than embedded in a message
+ * layout.
+ *
  * <p>
  * Instances are created via {@link #builder()} and can be copied for modification
  * via {@link #mutate()}.
  *
+ * @see TopLevelModalComponent
  * @see TextInput
  * @see Label
  */
@@ -120,7 +125,8 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
             .components(
                 this.getComponents()
                     .stream()
-                    .map(TopLevelModalComponent::getD4jComponent)
+                    .map(Component::getD4jComponent)
+                    .map(discord4j.core.object.component.TopLevelModalComponent.class::cast)
                     .collect(Concurrent.toList())
             )
             .build();

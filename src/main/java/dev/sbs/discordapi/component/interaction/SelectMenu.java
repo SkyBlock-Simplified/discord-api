@@ -10,6 +10,7 @@ import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.context.component.OptionContext;
 import dev.sbs.discordapi.context.component.SelectMenuContext;
 import dev.sbs.discordapi.response.Emoji;
@@ -49,7 +50,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, LabelComponent, ToggleableComponent {
+public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, LabelComponent, ToggleableComponent, TopLevelModalComponent {
 
     /** The unique identifier for this select menu. */
     private final @NotNull String identifier;

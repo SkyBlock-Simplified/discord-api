@@ -1,5 +1,7 @@
 package dev.sbs.discordapi.component;
 
+import dev.sbs.discordapi.component.layout.Container;
+import dev.sbs.discordapi.component.layout.Section;
 import dev.sbs.discordapi.component.type.ContainerComponent;
 import dev.sbs.discordapi.component.type.SectionComponent;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
@@ -18,18 +20,15 @@ import java.util.Objects;
  *
  * <p>
  * Renders plain or formatted text content within a message. This component can be placed
- * inside a {@link dev.sbs.discordapi.component.layout.Container Container}, within a
- * {@link dev.sbs.discordapi.component.layout.Section Section}, or at the top level of
- * both messages and modals.
+ * inside a {@link Container Container}, within a {@link Section Section}, or at the top
+ * level of both messages and modals.
  *
  * <p>
  * Instances are created via the {@link #of(String)} or {@link #of(String, Object...)}
  * factory methods. Equality is determined solely by {@link #getContent() content}.
  *
- * @see ContainerComponent
- * @see SectionComponent
- * @see TopLevelMessageComponent
- * @see TopLevelModalComponent
+ * @see Container
+ * @see Section
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
