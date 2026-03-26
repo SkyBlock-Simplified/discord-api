@@ -3,6 +3,7 @@ package dev.sbs.discordapi.component.media;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.layout.Container;
 import dev.sbs.discordapi.component.type.ContainerComponent;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
 import lombok.AccessLevel;
@@ -14,13 +15,14 @@ import java.util.Arrays;
 
 /**
  * An immutable layout component displaying multiple {@link Thumbnail} items in a gallery grid.
+ *
  * <p>
- * Implements {@link TopLevelMessageComponent} and {@link ContainerComponent}, allowing it
- * to be used as a top-level message component or nested within a container. Each gallery
- * item is converted to a D4J {@link discord4j.core.object.component.MediaGalleryItem} via
- * {@link Thumbnail#getD4jGalleryItem()}.
+ * Can be used as a top-level message component or nested within a {@link Container}. Each
+ * gallery item is converted to a D4J {@link discord4j.core.object.component.MediaGalleryItem}
+ * via {@link Thumbnail#getD4jGalleryItem()}.
  *
  * @see Thumbnail
+ * @see Container
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -45,8 +47,7 @@ public class MediaGallery implements TopLevelMessageComponent, ContainerComponen
      * @return a pre-filled {@link Builder}
      */
     public static @NotNull Builder from(@NotNull MediaGallery mediaGallery) {
-        return builder()
-            .withItems(mediaGallery.getItems());
+        return builder().withItems(mediaGallery.getItems());
     }
 
     /** {@inheritDoc} */

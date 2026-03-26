@@ -2,6 +2,7 @@ package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.layout.Section;
 import dev.sbs.discordapi.component.type.AccessoryComponent;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
@@ -19,14 +20,15 @@ import java.util.Optional;
 
 /**
  * An immutable media component displaying an image with an optional description.
+ *
  * <p>
- * Implements {@link AccessoryComponent}, allowing it to be used as an accessory
- * within a {@link dev.sbs.discordapi.component.layout.Section}. Wraps {@link MediaData}
- * for underlying media metadata and provides conversion to both a D4J
+ * Can be used as an accessory within a {@link Section}. Wraps {@link MediaData} for
+ * underlying media metadata and provides conversion to both a D4J
  * {@link discord4j.core.object.component.Thumbnail} component and a
  * {@link MediaGalleryItem} for use inside a {@link MediaGallery}.
  *
  * @see MediaData
+ * @see Section
  * @see MediaGallery
  */
 @Getter

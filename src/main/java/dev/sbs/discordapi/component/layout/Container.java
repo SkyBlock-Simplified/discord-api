@@ -27,7 +27,7 @@ import java.util.Optional;
  * Instances are created via the {@link Builder} obtained from {@link #builder()}, or
  * duplicated for modification via {@link #mutate()}.
  *
- * @see LayoutComponent
+ * @see ContainerComponent
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

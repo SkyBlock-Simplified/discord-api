@@ -6,6 +6,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.interaction.Button;
+import dev.sbs.discordapi.component.media.Thumbnail;
 import dev.sbs.discordapi.component.type.AccessoryComponent;
 import dev.sbs.discordapi.component.type.ContainerComponent;
 import dev.sbs.discordapi.component.type.SectionComponent;
@@ -23,8 +25,7 @@ import java.util.stream.Stream;
 
 /**
  * An immutable layout component that combines {@link SectionComponent SectionComponents} with
- * a required {@link AccessoryComponent} such as a {@link dev.sbs.discordapi.component.media.Thumbnail}
- * or {@link dev.sbs.discordapi.component.interaction.Button}.
+ * a required {@link AccessoryComponent} such as a {@link Thumbnail} or {@link Button}.
  *
  * <p>
  * Instances are created via the {@link Builder} obtained from {@link #builder()}, or
@@ -34,8 +35,8 @@ import java.util.stream.Stream;
  * {@link #flattenComponents()} includes the accessory in the flattened stream alongside
  * the section's child components.
  *
- * @see LayoutComponent
- * @see ContainerComponent
+ * @see SectionComponent
+ * @see AccessoryComponent
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

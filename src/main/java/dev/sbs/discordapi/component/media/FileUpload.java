@@ -2,7 +2,9 @@ package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import discord4j.core.spec.MessageCreateFields;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,21 +17,26 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * An immutable file upload component wrapping {@link MediaData} with min/max value
  * constraints, a required flag, a Discord file ID, and file size.
+ *
  * <p>
- * Implements {@link LabelComponent}, allowing it to be wrapped in a
- * {@link dev.sbs.discordapi.component.layout.Label} for use in modal contexts.
- * Delegates media configuration to a nested {@link MediaData.Builder} during construction.
+ * Can be wrapped in a {@link Label} for use in modal contexts. Delegates media
+ * configuration to a nested {@link MediaData.Builder} during construction.
  *
  * @see MediaData
+ * @see Label
  * @see Attachment
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class FileUpload implements LabelComponent {
+public final class FileUpload implements LabelComponent, TopLevelModalComponent {
+
+    /** The unique identifier for this file upload. */
+    private final @NotNull String identifier;
 
     /** The minimum number of values accepted. */
     private final int minValues;
@@ -55,7 +62,7 @@ public final class FileUpload implements LabelComponent {
      * @return a new {@link Builder}
      */
     public static @NotNull Builder builder() {
-        return new Builder();
+        return new Builder().withIdentifier(UUID.randomUUID().toString());
     }
 
     @Override
@@ -76,7 +83,8 @@ public final class FileUpload implements LabelComponent {
      * @return a pre-filled {@link Builder}
      */
     public static @NotNull Builder from(@NotNull FileUpload attachment) {
-        return builder()
+        return new Builder()
+            .withIdentifier(attachment.getIdentifier())
             .withMediaData(attachment.getMediaData())
             .withFileId(attachment.getFileId())
             .withSize(attachment.getSize());
@@ -173,9 +181,60 @@ public final class FileUpload implements LabelComponent {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder implements ClassBuilder<FileUpload> {
 
+        private String identifier;
+        private int minValues = 1;
+        private int maxValues = 1;
+        private boolean required;
         private MediaData.Builder mediaData = MediaData.builder();
         private long fileId = 0L;
         private long size = 0;
+
+        /**
+         * Sets the identifier of the {@link FileUpload}, overriding the default random UUID.
+         *
+         * @param identifier the identifier to use
+         */
+        public Builder withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        /**
+         * Sets the minimum number of values accepted.
+         *
+         * @param minValues the minimum value count
+         */
+        public Builder withMinValues(int minValues) {
+            this.minValues = minValues;
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of values accepted.
+         *
+         * @param maxValues the maximum value count
+         */
+        public Builder withMaxValues(int maxValues) {
+            this.maxValues = maxValues;
+            return this;
+        }
+
+        /**
+         * Sets the {@link FileUpload} as required.
+         */
+        public Builder setRequired() {
+            return this.setRequired(true);
+        }
+
+        /**
+         * Sets whether the {@link FileUpload} is required.
+         *
+         * @param value {@code true} to require a file
+         */
+        public Builder setRequired(boolean value) {
+            this.required = value;
+            return this;
+        }
 
         /**
          * Sets the spoiler flag to {@code true}.
@@ -299,6 +358,10 @@ public final class FileUpload implements LabelComponent {
         @Override
         public @NotNull FileUpload build() {
             return new FileUpload(
+                this.identifier,
+                this.minValues,
+                this.maxValues,
+                this.required,
                 this.mediaData.build(),
                 this.fileId,
                 this.size

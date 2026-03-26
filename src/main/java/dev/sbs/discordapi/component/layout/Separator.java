@@ -16,8 +16,7 @@ import java.util.Objects;
  * Separators are created via the {@link #small()} or {@link #large()} factory methods,
  * with an optional visibility flag controlling whether the divider line is rendered.
  *
- * @see TopLevelMessageComponent
- * @see ContainerComponent
+ * @see Container
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

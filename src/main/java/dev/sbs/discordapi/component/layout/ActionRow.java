@@ -4,6 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.component.interaction.ActionComponent;
 import dev.sbs.discordapi.component.type.ContainerComponent;
+import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,11 @@ import java.util.Objects;
  * {@link #of(Iterable)} factory methods. The resulting row holds an unmodifiable
  * list of action components.
  *
- * @see LayoutComponent
- * @see ContainerComponent
+ * @see ActionComponent
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ActionRow implements LayoutComponent, ContainerComponent {
+public final class ActionRow implements ContainerComponent, LayoutComponent, TopLevelModalComponent {
 
     /** The action components arranged in this row. */
     private final @NotNull ConcurrentList<ActionComponent> components;

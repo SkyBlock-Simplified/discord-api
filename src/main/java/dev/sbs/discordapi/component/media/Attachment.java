@@ -2,6 +2,7 @@ package dev.sbs.discordapi.component.media;
 
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.layout.Container;
 import dev.sbs.discordapi.component.type.ContainerComponent;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
 import discord4j.core.spec.MessageCreateFields;
@@ -20,12 +21,13 @@ import java.util.Optional;
 /**
  * An immutable file attachment component wrapping {@link MediaData} with a Discord file ID
  * and file size.
+ *
  * <p>
- * Implements {@link TopLevelMessageComponent} and {@link ContainerComponent}, allowing it
- * to be used as a top-level message component or nested within a container. Delegates
- * media configuration to a nested {@link MediaData.Builder} during construction.
+ * Can be used as a top-level message component or nested within a {@link Container}.
+ * Delegates media configuration to a nested {@link MediaData.Builder} during construction.
  *
  * @see MediaData
+ * @see Container
  * @see FileUpload
  */
 @Getter
