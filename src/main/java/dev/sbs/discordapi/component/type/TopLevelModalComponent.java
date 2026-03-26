@@ -1,22 +1,20 @@
 package dev.sbs.discordapi.component.type;
 
 import dev.sbs.discordapi.component.Component;
-import org.jetbrains.annotations.NotNull;
+import dev.sbs.discordapi.component.interaction.Modal;
 
 /**
- * Capability interface for components valid at the top level of a Discord modal.
+ * Pure marker interface for components valid at the top level of a Discord modal.
  *
  * <p>
- * Top-level modal components are those that can appear directly in a modal's component
- * list without being nested inside another layout. Implementations narrow the Discord4J
- * return type to {@link discord4j.core.object.component.TopLevelModalComponent}.
+ * Top-level modal components are those that can appear directly in a {@link Modal}'s
+ * component list without being nested inside another layout. Unlike
+ * {@link TopLevelMessageComponent}, this interface does not narrow the Discord4J return
+ * type because the D4J {@code TopLevelModalComponent} is itself a pure marker that not
+ * all valid modal components extend.
  *
- * @see dev.sbs.discordapi.component.interaction.Modal
+ * @see Modal
  */
 public interface TopLevelModalComponent extends Component {
-
-    /** {@inheritDoc} */
-    @Override
-    @NotNull discord4j.core.object.component.TopLevelModalComponent getD4jComponent();
 
 }
