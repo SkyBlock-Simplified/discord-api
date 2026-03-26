@@ -1,97 +1,245 @@
-# SkyBlock Simplified Bot
+# Discord API
 
-[![Support Server Invite](https://img.shields.io/discord/652148034448261150.svg?color=7289da&label=SkyBlock%20Simplified&logo=discord&style=flat-square)](https://discord.gg/sbs)
+Builder-driven, reactive Discord bot framework for the
+[SkyBlock Simplified](https://github.com/SkyBlock-Simplified) ecosystem.
+Built on [Discord4J](https://github.com/Discord4J/Discord4J) and
+[Project Reactor](https://projectreactor.io/), it provides a structured
+command system, component builders, paginated responses, and event listener
+discovery.
 
-SkyBlock Simplified is a fast and powerful Hypixel SkyBlock Discord Bot that offers a plethora of features for users and
-servers alike.
+## Table of Contents
 
-## Setup
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Quick Example](#quick-example)
+- [Architecture](#architecture)
+  - [Entry Point](#entry-point)
+  - [Command System](#command-system)
+  - [Response System](#response-system)
+  - [Component System](#component-system)
+  - [Context Hierarchy](#context-hierarchy)
+  - [Listener System](#listener-system)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
-- Create environment variables whenever you run a new Gradle task. Look at `.env_default` as an example list
+## Features
 
-## The Math
+- **Command framework** - Slash commands, user commands, and message commands
+  via `@Structure`-annotated classes with automatic Discord registration
+- **Paginated responses** - Tree-based (`TreeResponse`) and form-based
+  (`FormResponse`) paginated message builders with subpage navigation, item
+  handlers, sort/filter/search, and auto-expiration
+- **Component builders** - Quality-of-life builders for Discord's interaction
+  components (`Button`, `SelectMenu`, `TextInput`, `Modal`) and layout
+  components (`ActionRow`, `Container`, `Section`, `Separator`), with
+  Components V2 support
+- **Context system** - Typed wrappers around Discord4J events providing
+  `reply()`, `edit()`, `followup()`, `presentModal()`, and cached response
+  access
+- **Listener discovery** - Event listeners are auto-registered via classpath
+  scanning, with support for additional runtime registration
+- **Shard management** - Built-in gateway shard handling via `ShardHandler`
 
-### Damage Per Hit
+## Getting Started
 
-Equations:
+### Prerequisites
 
-```
-damageMultiplier = (5 + weaponDamage)
-                   (1 + 0.04 (combatLevel <= 50) + 0.01 (combatLevel > 50) + enchantsBonus + weaponBonus)
-                   (armorBonus)
-intermediateExpression = (1 + critDamage / 100)
-                         (1 + strength / 100)
-damagePerHit = damageMultiplier * intermediateExpression
-```
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| [JDK](https://adoptium.net/) | **21+** | Required |
+| [Gradle](https://gradle.org/) | **8.12+** | Included via wrapper (`./gradlew`) |
+| Discord bot token | - | Create one at the [Discord Developer Portal](https://discord.com/developers/applications) |
 
-Simplify the intermediate expression:
+### Installation
 
-```
-intermediateExpression = (1 + critDamage / 100)
-                         (1 + strength / 100)
-                       = (100 + critDamage)
-                         (100 + strength)
-                         (1 / 10_000)
-```
+This module depends on the [api](../api) module. For local development, clone
+both repositories side by side:
 
-Factor out 10_000, and you're left with the basic expression which must be maximized:
-
-```
-(100 + critDamage) (100 + strength)
-```
-
-Cplex takes in up to three types of problems: constants, linear expressions, and quadratic expressions. Reformat the 
-problem for Cplex:
-
-```
-10_000 + 100 * critDamage + 100 * strength + critDamage * strength
-\____/   \______________/   \____________/   \___________________/
- const        linear            linear             quadratic
-```
-
-Rearrange as an example with three reforges with x_ij, where x=reforge count, i=which reforge, and j=the stat:
-
-```
-10_000                              | const (no variables)
-+ 100x_11 + 100x_21 + 100x_31       | linear (one variable per term)
-+ 100x_12 + 100x_22 + 100x_32       | .
-+ x_11*x_12 + x_11*x_22 + x_11*x_32 | quadratic (two variables per term)
-+ x_21*x_12 + x_21*x_22 + x_21*x_32 | .
-+ x_31*x_12 + x_31*x_22 + x_31*x_32 | .
-```
-
-Optaplanner allocates reforges to items. We must set up each reforge as an object that can be assigned. This is very
-easy to do; just sum the stats for a particular object, add 100, and multiply against the other stat + 100. However,
-this approach is ineffecient. Optaplanner supports incremental solving, meaning that if a single reforge is changed,
-only that part of the equation should be reevaluated. To support this, expand the equation into individual terms and use
-a `.join` function to connect terms. Then, use a `HundredReforgeProblemFact` to emulate the 100 + base player stat and 
-treat it as a regular item/reforge.
-
-```
-100*100 + 100x_12 + 100x_22 + 100x_32
-+ x_11*100 + x_11*x_12 + x_11*x_22 + x_11*x_32
-+ x_21*100 + x_21*x_12 + x_21*x_22 + x_21*x_32
-+ x_31*100 + x_31*x_12 + x_31*x_22 + x_31*x_32
+```bash
+git clone https://github.com/SkyBlock-Simplified/api.git
+git clone https://github.com/SkyBlock-Simplified/discord-api.git
+cd discord-api
 ```
 
-### Damage Per Second
+Build the library:
 
-Similar to damage per hit, but the equation has more variables, so Cplex can't be used. Additionally, we have to account 
-for crit chance:
+```bash
+./gradlew build
+```
+
+Run tests:
+
+```bash
+./gradlew test
+```
+
+**Required environment variables:**
 
 ```
-damageMultiplier = (5 + weaponDamage)
-                   (1 + 0.04 (combatLevel <= 50) + 0.01 (combatLevel > 50) + enchantsBonus + weaponBonus)
-                   (armorBonus)
-averageDamagePerHit = damageMultiplier (1 + str / 100) (1 + cd / 100) (1 + cc / 100) 
-                      + damageMultiplier (1 + str / 100) (1 - (1 + cc / 100))
-                    = damageMultiplier (1 + str / 100) [(1 + cd / 100) (1 + cc / 100) - (cc / 100)]
-hitsPerSecond = (2)
-                (1 + fer / 100)
-                (1 + as / 100)
-damagePerSecond = averageDamagePerHit * hitsPerSecond
-intermediateEquation = (1 + str / 100)
-                       (1 + fer / 100)
-                       (1 + as / 100)
-                       [(1 + cd / 100) (1 + cc / 100) - (cc / 100)]
+DISCORD_TOKEN                   — Discord bot token
+DEVELOPER_ERROR_LOG_CHANNEL_ID  — Discord channel ID for error logging
 ```
+
+## Quick Example
+
+```java
+// Define a command
+@Structure(
+    name = "ping",
+    description = "Replies with pong"
+)
+public class PingCommand extends DiscordCommand<SlashCommandContext> {
+
+    @Override
+    public Mono<Void> process(@NotNull SlashCommandContext context) {
+        return context.reply("Pong!");
+    }
+}
+
+// Start the bot
+public class MyBot extends DiscordBot {
+    public static void main(String[] args) {
+        new MyBot().start(
+            DiscordConfig.builder()
+                .withToken(System.getenv("DISCORD_TOKEN"))
+                .withCommands(PingCommand.class)
+                .build()
+        );
+    }
+}
+```
+
+## Architecture
+
+### Entry Point
+
+`DiscordBot` is the abstract base class for all bots. It accepts a
+`DiscordConfig` (built via `DiscordConfig.builder()`) that configures the
+token, gateway intents, shard count, commands, and listeners. The bot
+initializes handlers, logs into Discord, and connects to the gateway.
+
+### Command System
+
+Commands extend `DiscordCommand<C extends CommandContext<?>>` and are annotated
+with `@Structure`:
+
+| Context Type | Command Type |
+|-------------|--------------|
+| `SlashCommandContext` | Slash commands (`/command`) |
+| `UserCommandContext` | Right-click user commands |
+| `MessageCommandContext` | Right-click message commands |
+
+`@Structure` configures: `name`, `description`, `parent` (subcommands),
+`group` (subcommand groups), `guildId` (-1 for global), `ephemeral`,
+`developerOnly`, `singleton`, `botPermissions`, `userPermissions`,
+`integrations`, `contexts`.
+
+Commands are discovered via classpath scanning and registered through
+`CommandHandler`.
+
+### Response System
+
+Two response types handle paginated, interactive messages:
+
+| Type | Builder | Navigation | Use Case |
+|------|---------|------------|----------|
+| `TreeResponse` | `Response.builder()` | Hierarchical subpage tree | Multi-level menus |
+| `FormResponse` | `Response.form()` | Sequential index-based | Wizards, multi-step forms |
+
+Both support `Page` instances (select menu navigation), `ItemHandler`
+(paginated fields with sort/filter/search), interactive components,
+attachments, and auto-expiration.
+
+### Component System
+
+Components are a top-level package independent of the response system. They
+provide quality-of-life builders for Discord4J component types:
+
+| Package | Components |
+|---------|------------|
+| `component/interaction/` | `Button`, `SelectMenu`, `TextInput`, `Modal` |
+| `component/layout/` | `ActionRow`, `Container`, `Section`, `Separator`, `Label` |
+| `component/media/` | `Attachment`, `FileUpload`, `MediaGallery`, `Thumbnail` |
+| `component/type/` | Capability interfaces (`EventComponent`, `ToggleableComponent`, etc.) |
+
+Components V2 is detected automatically when v2 component types are present.
+
+### Context Hierarchy
+
+Every Discord event gets a typed context wrapping the Discord4J event:
+
+```
+EventContext
+├── InteractionContext
+│   ├── DeferrableInteractionContext
+│   │   ├── SlashCommandContext
+│   │   ├── UserCommandContext
+│   │   ├── MessageCommandContext
+│   │   ├── ButtonContext
+│   │   ├── SelectMenuContext
+│   │   └── ModalContext
+│   └── AutoCompleteContext
+├── MessageContext
+└── ReactionContext
+```
+
+Contexts provide: `reply()`, `edit()`, `followup()`, `presentModal()`,
+`deleteFollowup()`, and access to the cached `Response` / `CachedResponse`.
+
+### Listener System
+
+Listeners extend `DiscordListener<T extends Event>` and are auto-registered
+via classpath scanning. Built-in listeners handle:
+
+- **Commands** - `SlashCommandListener`, `UserCommandListener`,
+  `MessageCommandListener`, `AutoCompleteListener`
+- **Components** - `ButtonListener`, `SelectMenuListener`, `ModalListener`
+- **Messages** - `MessageCreateListener`, `MessageDeleteListener`,
+  `ReactionAddListener`, `ReactionRemoveListener`
+- **Lifecycle** - `DisconnectListener`, `GuildCreateListener`
+
+Additional listeners can be registered via
+`DiscordConfig.Builder.withListeners()`.
+
+## Project Structure
+
+```
+discord-api/
+├── src/main/java/dev/sbs/discordapi/
+│   ├── DiscordBot.java                 # Abstract bot entry point
+│   ├── command/                        # DiscordCommand, @Structure
+│   ├── component/
+│   │   ├── interaction/                # Button, SelectMenu, TextInput, Modal
+│   │   ├── layout/                     # ActionRow, Container, Section, etc.
+│   │   ├── media/                      # Attachment, FileUpload, MediaGallery
+│   │   └── type/                       # Capability interfaces
+│   ├── context/
+│   │   ├── command/                    # SlashCommandContext, AutoCompleteContext
+│   │   ├── component/                  # ButtonContext, SelectMenuContext, etc.
+│   │   └── message/                    # MessageContext, ReactionContext
+│   ├── handler/                        # CommandHandler, ResponseHandler, etc.
+│   ├── listener/
+│   │   ├── command/                    # Command event listeners
+│   │   ├── component/                  # Component event listeners
+│   │   ├── message/                    # Message event listeners
+│   │   └── lifecycle/                  # Gateway lifecycle listeners
+│   └── response/
+│       ├── impl/                       # TreeResponse, FormResponse
+│       ├── handler/                    # HistoryHandler, ItemHandler, OutputHandler
+│       └── page/                       # TreePage, FormPage
+├── src/test/java/                      # JUnit 5 tests and DebugBot
+├── build.gradle.kts
+└── gradle/libs.versions.toml           # Version catalog
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style
+guidelines, and how to submit a pull request.
+
+## License
+
+This project is licensed under the **Apache License 2.0**.
