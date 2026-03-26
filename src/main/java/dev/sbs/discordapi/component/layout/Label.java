@@ -1,10 +1,15 @@
 package dev.sbs.discordapi.component.layout;
 
+import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.interaction.Modal;
+import dev.sbs.discordapi.component.interaction.SelectMenu;
+import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import discord4j.discordjson.json.ComponentData;
@@ -23,24 +28,23 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * An immutable modal layout that wraps a {@link LabelComponent} with a title and
- * optional description.
+ * An immutable layout that wraps a {@link LabelComponent} with a title and optional
+ * description.
  *
  * <p>
  * Used in modals to attach descriptive labels to interactive components such as
- * {@link dev.sbs.discordapi.component.interaction.TextInput TextInputs} and
- * {@link dev.sbs.discordapi.component.interaction.SelectMenu SelectMenus}.
+ * {@link TextInput TextInputs} and {@link SelectMenu SelectMenus}.
  *
  * <p>
  * Instances are created via the {@link Builder} obtained from {@link #builder()}, or
  * duplicated for modification via {@link #mutate()}.
  *
- * @see TopLevelModalComponent
  * @see LabelComponent
+ * @see Modal
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Label implements TopLevelModalComponent {
+public final class Label implements LayoutComponent, TopLevelModalComponent {
 
     /** The title text displayed above the wrapped component. */
     private final @NotNull String title;
@@ -80,9 +84,14 @@ public final class Label implements TopLevelModalComponent {
     @Override
     public @NotNull Stream<Component> flattenComponents() {
         return Stream.concat(
-            TopLevelModalComponent.super.flattenComponents(),
+            LayoutComponent.super.flattenComponents(),
             this.getComponent().flattenComponents()
         );
+    }
+
+    @Override
+    public @NotNull ConcurrentList<LabelComponent> getComponents() {
+        return Concurrent.newUnmodifiableList(this.getComponent());
     }
 
     /**
