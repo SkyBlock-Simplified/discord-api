@@ -7,11 +7,13 @@ import dev.sbs.api.persistence.JpaSession;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.scheduler.Scheduler;
 import dev.sbs.api.util.LogUtil;
+import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.component.interaction.TextInput;
+import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.command.AutoCompleteContext;
 import dev.sbs.discordapi.context.command.MessageCommandContext;
 import dev.sbs.discordapi.context.command.SlashCommandContext;
@@ -26,8 +28,10 @@ import dev.sbs.discordapi.exception.DiscordGatewayException;
 import dev.sbs.discordapi.handler.CommandHandler;
 import dev.sbs.discordapi.handler.DiscordConfig;
 import dev.sbs.discordapi.handler.EmojiHandler;
+import dev.sbs.discordapi.handler.exception.CompositeExceptionHandler;
 import dev.sbs.discordapi.handler.exception.DiscordExceptionHandler;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
+import dev.sbs.discordapi.handler.exception.SentryExceptionHandler;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.Followup;
 import dev.sbs.discordapi.handler.response.ResponseHandler;
@@ -50,6 +54,8 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.EventDispatcher;
+import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.MessageChannel;
@@ -61,6 +67,7 @@ import io.netty.channel.unix.Errors;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -114,8 +121,6 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 public abstract class DiscordBot {
 
-    // TODO: ADD SENTRY FOR ERROR LOGGING https://sentry.io/welcome/
-
     private final @NotNull Scheduler scheduler = new Scheduler();
     private final @NotNull DiscordConfig config;
 
@@ -135,7 +140,7 @@ public abstract class DiscordBot {
 
     protected DiscordBot(@NotNull DiscordConfig config) {
         this.config = config;
-        this.exceptionHandler = new DiscordExceptionHandler(this);
+        this.exceptionHandler = this.buildExceptionHandler();
         this.emojiHandler = new EmojiHandler(this);
         this.responseHandler = new ResponseHandler();
         LogUtil.setRootLevel(this.getConfig().getLogLevel());
@@ -167,8 +172,7 @@ public abstract class DiscordBot {
      *
      * @throws DiscordGatewayException If unable to connect to the Discord Gateway.
      */
-    @SuppressWarnings("unchecked")
-    private void connect() throws DiscordGatewayException {
+    protected final void connect() throws DiscordGatewayException {
         if (this.gateway != null)
             throw new IllegalStateException("Discord Gateway already connected");
 
@@ -225,20 +229,18 @@ public abstract class DiscordBot {
                         .filterPackage(DiscordListener.class)
                         .getSubtypesOf(DiscordListener.class)
                         .stream()
-                        .map(lClass -> (DiscordListener<?>) new Reflection<>(lClass).newInstance(this))
-                        .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
+                        .map(listenerClass -> this.createListener(eventDispatcher, listenerClass))
                         .collect(Concurrent.toList());
-
-                    log.info("Registering Emojis");
-                    this.emojiHandler.reload();
-                    Mono<Void> emojis = this.emojiHandler.upload();
 
                     this.getConfig()
                         .getListeners()
                         .stream()
-                        .map(lClass -> new Reflection<>(lClass).newInstance(this))
-                        .map(listener -> eventDispatcher.on(listener.getEventClass(), listener))
+                        .map(listenerClass -> this.createListener(eventDispatcher, listenerClass))
                         .forEach(eventListeners::add);
+
+                    log.info("Registering Emojis");
+                    this.emojiHandler.reload();
+                    Mono<Void> emojis = this.emojiHandler.upload();
 
                     log.info("Logged in as {}", this.getSelf().username());
                     return Mono.when(eventListeners)
@@ -252,20 +254,6 @@ public abstract class DiscordBot {
 
         this.shardHandler = new ShardHandler(this);
         this.getGateway().onDisconnect().block(); // Stay Online
-    }
-
-    /**
-     * Initializes and configures the Discord REST client and establishes a connection to the Discord Gateway,
-     * enabling real-time events, presence, voice, etc.
-     *
-     * @throws IllegalStateException If the login or connection steps encounter issues, such as
-     *                                a duplicate client initialization or an invalid token configuration.
-     * @throws DiscordClientException If the Discord REST client fails to retrieve the self-user's details.
-     * @throws DiscordGatewayException If the Discord Gateway connection cannot be established.
-     */
-    protected final void initialize() {
-        this.login();
-        this.connect();
     }
 
     /**
@@ -283,7 +271,7 @@ public abstract class DiscordBot {
      *       or {@code NativeIoException}, with exponential backoff up to 10 retries.</li>
      * </ul>
      */
-    private void login() {
+    protected final void login() {
         if (this.client != null)
             throw new IllegalStateException("Discord Client already initialized.");
 
@@ -329,6 +317,53 @@ public abstract class DiscordBot {
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
             .orElseThrow(() -> new DiscordGatewayException("Unable to locate main guild."));
+    }
+
+    /**
+     * Instantiates the given {@link DiscordListener} subclass and registers it
+     * with the event dispatcher, wrapping it with top-level error handling that
+     * forwards unhandled exceptions to the exception handler.
+     *
+     * @param <T> the Discord4J event type
+     * @param eventDispatcher the event dispatcher to register with
+     * @param listenerClass the listener class to instantiate and register
+     * @return a publisher completing when the listener subscription ends
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <T extends Event> @NonNull Publisher<Void> createListener(@NotNull EventDispatcher eventDispatcher, @NotNull Class<? extends DiscordListener> listenerClass) {
+        DiscordListener<T> instance = (DiscordListener<T>) new Reflection<>(listenerClass).newInstance(this);
+        return eventDispatcher.on(instance.getEventClass(), event ->
+            Mono.from(instance.apply(event)).onErrorResume(throwable -> this.getExceptionHandler().handleException(
+                ExceptionContext.of(this, event, throwable, instance.getTitle() + " Exception")
+            ))
+        );
+    }
+
+    /**
+     * Builds the exception handler chain based on configuration. Adds a
+     * {@link SentryExceptionHandler} if a Sentry DSN is available (config
+     * takes priority over {@code SENTRY_DSN} environment variable), and a
+     * {@link DiscordExceptionHandler} if a debug channel is configured.
+     *
+     * @return the configured exception handler
+     */
+    private @NotNull ExceptionHandler buildExceptionHandler() {
+        ConcurrentList<ExceptionHandler> handlers = Concurrent.newList();
+
+        // Resolve Sentry DSN: config > env var
+        this.config.getSentryDsn()
+            .or(() -> SystemUtil.getEnv("SENTRY_DSN"))
+            .ifPresent(dsn -> handlers.add(new SentryExceptionHandler(this, dsn)));
+
+        // Add Discord handler
+        handlers.add(this.config.getLogChannelId()
+            .map(channelId -> new DiscordExceptionHandler(this, channelId))
+            .orElse(new DiscordExceptionHandler(this, -1L)));
+
+        if (handlers.size() == 1)
+            return handlers.getFirst();
+
+        return new CompositeExceptionHandler(this, handlers);
     }
 
     @SuppressWarnings("unused")
