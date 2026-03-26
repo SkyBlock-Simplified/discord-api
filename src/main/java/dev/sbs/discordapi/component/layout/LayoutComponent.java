@@ -21,11 +21,16 @@ import java.util.stream.Stream;
  * Provides recursive traversal of the component tree via {@link #flattenComponents()},
  * targeted lookup via {@link #findComponent(Class, Function, Object)}, and in-place
  * replacement via {@link #modifyComponent(ActionComponent)}.
+ *
+ * @see ActionRow
+ * @see Container
+ * @see Section
+ * @see Label
  */
 public interface LayoutComponent extends TopLevelMessageComponent {
 
     /** The child components held by this layout. */
-    @NotNull ConcurrentList<Component> getComponents();
+    @NotNull ConcurrentList<? extends Component> getComponents();
 
     /** {@inheritDoc} */
     @NotNull discord4j.core.object.component.LayoutComponent getD4jComponent();
@@ -77,20 +82,21 @@ public interface LayoutComponent extends TopLevelMessageComponent {
      *                        existing component is replaced
      * @param <T> the action component subtype
      */
+    @SuppressWarnings("unchecked")
     default <T extends ActionComponent> void modifyComponent(@NotNull T actionComponent) {
         this.getComponents().forEach(component -> {
             if (component instanceof LayoutComponent layoutComponent) {
                 if (component instanceof Section section) {
-                    if (section.getAccessory() instanceof UserInteractComponent userInteractComponent)
+                    if (section.getAccessory() instanceof UserInteractComponent)
                         section.mutate().withAccessory((AccessoryComponent) actionComponent).build();
+                } else if (component instanceof Label label) {
+                    if (label.getComponent().getIdentifier().equals(actionComponent.getIdentifier()))
+                        label.mutate().withComponent((LabelComponent) actionComponent).build();
                 } else
                     layoutComponent.modifyComponent(actionComponent);
-            } else if (component instanceof Label label) {
-                if (label.getComponent().getIdentifier().equals(actionComponent.getIdentifier()))
-                    label.mutate().withComponent((LabelComponent) actionComponent).build();
             } else if (component instanceof ActionComponent innerComponent) {
                 if (innerComponent.getIdentifier().equals(actionComponent.getIdentifier())) {
-                    this.getComponents().set(
+                    ((ConcurrentList<Component>) this.getComponents()).set(
                         this.getComponents().indexOf(innerComponent),
                         actionComponent
                     );
