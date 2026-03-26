@@ -4,6 +4,7 @@ simplified-annotations = "1.0.4"
 junit-jupiter = "5.11.4"
 hamcrest = "2.2"
 discord4j = "3.3.1"
+sentry = "8.34.1"
 
 [libraries]
 lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
@@ -12,3 +13,4 @@ junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", v
 junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit-jupiter" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
 discord4j = { group = "com.discord4j", name = "discord4j-core", version.ref = "discord4j" }
+sentry = { group = "io.sentry", name = "sentry", version.ref = "sentry" }
