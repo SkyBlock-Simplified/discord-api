@@ -5,8 +5,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.handler.DiscordConfig;
 import dev.sbs.discordapi.command.DiscordCommand;
+import dev.sbs.discordapi.handler.DiscordConfig;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
@@ -25,7 +25,8 @@ public final class DebugBot extends DiscordBot {
 
     private static DebugBot create(@NotNull DiscordConfig discordConfig) {
         DebugBot debugBot = new DebugBot(discordConfig);
-        debugBot.initialize();
+        debugBot.login();
+        debugBot.connect();
         return debugBot;
     }
 
@@ -33,7 +34,7 @@ public final class DebugBot extends DiscordBot {
         DiscordConfig discordConfig = DiscordConfig.builder()
             .withToken(SystemUtil.getEnv("DISCORD_TOKEN"))
             .withMainGuildId(652148034448261150L)
-            .withDebugChannelId(SystemUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
+            .withLogChannelId(SystemUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
             .withCommands(
                 Reflection.getResources()
                     .filterPackage("dev.sbs.discordapi.debug.command")

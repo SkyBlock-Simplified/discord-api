@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.impl;
+package dev.sbs.discordapi.response.page;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -8,10 +8,8 @@ import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.handler.Subpages;
-import dev.sbs.discordapi.response.handler.history.TreeHistoryHandler;
-import dev.sbs.discordapi.response.handler.item.ItemHandler;
-import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.TreeHistoryHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;

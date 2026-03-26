@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.impl;
+package dev.sbs.discordapi.response;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -13,11 +13,10 @@ import dev.sbs.discordapi.component.media.Attachment;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
 import dev.sbs.discordapi.context.component.ButtonContext;
 import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.handler.Subpages;
-import dev.sbs.discordapi.response.handler.history.IndexHistoryHandler;
+import dev.sbs.discordapi.response.handler.IndexHistoryHandler;
+import dev.sbs.discordapi.response.page.FormPage;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.impl.form.FormPage;
+import dev.sbs.discordapi.response.page.Subpages;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import discord4j.common.util.Snowflake;

@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.page.impl.form;
+package dev.sbs.discordapi.response.page;
 
 import lombok.Getter;
 
