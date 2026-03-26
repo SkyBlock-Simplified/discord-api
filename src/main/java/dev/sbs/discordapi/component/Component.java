@@ -22,8 +22,6 @@ import java.util.stream.Stream;
  * and identified by their {@link Type}. Hierarchical component trees can be traversed using
  * {@link #flattenComponents()}, which recursively expands {@link LayoutComponent} children
  * into a flat stream.
- *
- * @see LayoutComponent
  */
 public interface Component {
 
@@ -95,7 +93,13 @@ public interface Component {
         /** A label wrapping an interactive component. */
         LABEL(18),
         /** A file upload component. */
-        FILE_UPLOAD(19);
+        FILE_UPLOAD(19),
+        /** A single-selection radio group (Components V2). */
+        RADIO_GROUP(21),
+        /** A multi-selection checkbox group (Components V2). */
+        CHECKBOX_GROUP(22),
+        /** A single toggle checkbox (Components V2). */
+        CHECKBOX(23);
 
         /** The Discord integer type identifier. */
         private final int value;
