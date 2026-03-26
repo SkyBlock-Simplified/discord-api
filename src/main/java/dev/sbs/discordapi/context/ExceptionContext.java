@@ -6,7 +6,15 @@ import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
+import discord4j.core.event.domain.guild.GuildCreateEvent;
+import discord4j.core.event.domain.guild.GuildDeleteEvent;
+import discord4j.core.event.domain.interaction.InteractionCreateEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.MessageDeleteEvent;
+import discord4j.core.event.domain.message.ReactionEvent;
+import discord4j.core.event.domain.message.ReactionUserEmojiEvent;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import lombok.AccessLevel;
@@ -123,6 +131,22 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
     }
 
     /**
+     * Creates a new {@link ExceptionContext} wrapping a raw Discord4J {@link Event}
+     * that was not yet bound to an {@link EventContext}. Extracts user, channel, and
+     * guild information on a best-effort basis from the raw event.
+     *
+     * @param <T> the Discord4J event type
+     * @param discordBot the bot instance
+     * @param event the raw event in which the exception occurred
+     * @param throwable the caught exception
+     * @param title a human-readable title for the exception category
+     * @return a new exception context
+     */
+    static <T extends Event> @NotNull ExceptionContext<T> of(@NotNull DiscordBot discordBot, @NotNull T event, @NotNull Throwable throwable, @NotNull String title) {
+        return new ListenerImpl<>(discordBot, event, throwable, title);
+    }
+
+    /**
      * Default implementation of {@link ExceptionContext} that stores the bot instance,
      * wrapped event context, exception, and title.
      *
@@ -156,6 +180,134 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
          * A human-readable title for the exception category.
          */
         private final @NotNull String title;
+
+    }
+
+    /**
+     * Implementation of {@link ExceptionContext} for exceptions thrown from listener
+     * pipelines before an {@link EventContext} has been constructed. Extracts user,
+     * channel, and guild metadata from the raw Discord4J {@link Event} on a best-effort
+     * basis.
+     *
+     * @param <T> the Discord4J event type
+     */
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    class ListenerImpl<T extends Event> implements ExceptionContext<T> {
+
+        /**
+         * The bot instance that received this event.
+         */
+        private final @NotNull DiscordBot discordBot;
+
+        /**
+         * The underlying Discord4J event.
+         */
+        private final @NotNull T event;
+
+        /**
+         * A randomly generated response identifier for this exception context.
+         */
+        private final @NotNull UUID responseId = UUID.randomUUID();
+
+        /**
+         * The caught exception.
+         */
+        private final @NotNull Throwable exception;
+
+        /**
+         * A human-readable title for the exception category.
+         */
+        private final @NotNull String title;
+
+        /** {@inheritDoc} */
+        @Override
+        public @NotNull EventContext<T> getEventContext() {
+            return this;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Mono<MessageChannel> getChannel() {
+            return this.getDiscordBot()
+                .getGateway()
+                .getChannelById(this.getChannelId())
+                .ofType(MessageChannel.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public @NotNull Snowflake getChannelId() {
+            return switch (this.event) {
+                case InteractionCreateEvent ice -> ice.getInteraction().getChannelId();
+                case MessageCreateEvent mce -> mce.getMessage().getChannelId();
+                case MessageDeleteEvent mde -> mde.getChannelId();
+                case ReactionUserEmojiEvent rue -> rue.getChannelId();
+                default -> Snowflake.of(0L);
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Mono<Guild> getGuild() {
+            return Mono.justOrEmpty(this.getGuildId()).flatMap(id -> this.discordBot.getGateway().getGuildById(id));
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Optional<Snowflake> getGuildId() {
+            return switch (this.event) {
+                case InteractionCreateEvent ice -> ice.getInteraction().getGuildId();
+                case MessageCreateEvent mce -> mce.getGuildId();
+                case MessageDeleteEvent mde -> mde.getGuildId();
+                case ReactionEvent re -> re.getGuildId();
+                case GuildCreateEvent gce -> Optional.of(gce.getGuild().getId());
+                case GuildDeleteEvent gde -> Optional.of(gde.getGuildId());
+                default -> Optional.empty();
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public @NotNull User getInteractUser() {
+            switch (this.getEvent()) {
+                case InteractionCreateEvent ice -> {
+                    return ice.getInteraction().getUser();
+                }
+                case MessageCreateEvent mce -> {
+                    Optional<User> author = mce.getMessage().getAuthor();
+                    if (author.isPresent())
+                        return author.get();
+                }
+                case MessageDeleteEvent mde -> {
+                    Optional<User> author = mde.getMessage().flatMap(Message::getAuthor);
+                    if (author.isPresent())
+                        return author.get();
+                }
+                case ReactionUserEmojiEvent rue -> {
+                    Optional<User> user = rue.getUser().blockOptional();
+                    if (user.isPresent())
+                        return user.get();
+                }
+                default -> { }
+            }
+
+            return new User(this.getDiscordBot().getGateway(), this.getDiscordBot().getSelf());
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public @NotNull Snowflake getInteractUserId() {
+            return this.getInteractUser().getId();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Mono<Void> reply(@NotNull Response response) {
+            return this.getChannel()
+                .flatMap(response::getD4jCreateMono)
+                .then();
+        }
 
     }
 
