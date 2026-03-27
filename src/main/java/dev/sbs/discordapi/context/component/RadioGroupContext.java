@@ -2,7 +2,7 @@ package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.RadioGroup;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import lombok.AccessLevel;
@@ -55,7 +55,7 @@ public interface RadioGroupContext extends ActionComponentContext {
      * @param followup the associated followup, if any
      * @return a new radio group context
      */
-    static @NotNull RadioGroupContext of(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull RadioGroup radioGroup, @NotNull Optional<Followup> followup) {
+    static @NotNull RadioGroupContext of(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull RadioGroup radioGroup, @NotNull Optional<ResponseFollowup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -85,7 +85,7 @@ public interface RadioGroupContext extends ActionComponentContext {
         private final @NotNull RadioGroup component;
 
         /** The associated followup, if any. */
-        private final @NotNull Optional<Followup> followup;
+        private final @NotNull Optional<ResponseFollowup> followup;
 
     }
 

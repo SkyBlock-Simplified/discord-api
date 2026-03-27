@@ -2,7 +2,7 @@ package dev.sbs.discordapi.listener.message;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.handler.response.CachedResponse;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import discord4j.core.event.domain.message.MessageDeleteEvent;
 import org.jetbrains.annotations.NotNull;
@@ -11,7 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Listener for message delete events, removing the corresponding {@link Followup}
+ * Listener for message delete events, removing the corresponding {@link ResponseFollowup}
  * from its parent {@link CachedResponse} when a tracked followup message is deleted.
  */
 public class MessageDeleteListener extends DiscordListener<MessageDeleteEvent> {

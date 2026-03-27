@@ -7,7 +7,7 @@ import dev.sbs.discordapi.component.type.UserInteractComponent;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
@@ -68,7 +68,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * @param followup the matched followup, if the interaction targets one
      * @return the constructed context
      */
-    protected abstract @NotNull C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<Followup> followup);
+    protected abstract @NotNull C getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull T component, @NotNull Optional<ResponseFollowup> followup);
 
     /**
      * Locates the interacted component within the response tree and delegates
@@ -79,7 +79,7 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * @param followup the matched followup, if the interaction targets one
      * @return a reactive pipeline completing when the interaction is handled
      */
-    protected Mono<Void> handleEvent(@NotNull E event, @NotNull CachedResponse entry, @NotNull Optional<Followup> followup) {
+    protected Mono<Void> handleEvent(@NotNull E event, @NotNull CachedResponse entry, @NotNull Optional<ResponseFollowup> followup) {
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents())
             .concatWith(Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()))
             .flatMap(tlmComponent -> Flux.fromStream(tlmComponent.flattenComponents()))
@@ -103,14 +103,15 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      * @param followup the matched followup, if the interaction targets one
      * @return a reactive pipeline completing when the interaction is handled
      */
-    protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull T component, @NotNull Optional<Followup> followup) {
+    protected final Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull T component, @NotNull Optional<ResponseFollowup> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
 
-        return Mono.just(context)
-            .then(component.isDeferEdit() ? context.deferEdit() : Mono.empty())
+        Mono<Void> deferEdit = Mono.defer(() -> entry.isDeferred() ? Mono.empty() : context.deferEdit());
+
+        return (component.isDeferEdit() ? deferEdit : Mono.<Void>empty())
             .then(Mono.defer(() -> component.getInteraction().apply(context)))
             .checkpoint("ComponentListener#handleInteraction Processing")
-            .onErrorResume(throwable -> context.deferEdit().then(
+            .onErrorResume(throwable -> deferEdit.then(
                 this.getDiscordBot().getExceptionHandler().handleException(
                     ExceptionContext.of(
                         this.getDiscordBot(),

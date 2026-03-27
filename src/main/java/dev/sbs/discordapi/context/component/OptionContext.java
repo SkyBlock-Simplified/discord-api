@@ -2,7 +2,7 @@ package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import lombok.AccessLevel;
@@ -102,7 +102,7 @@ public interface OptionContext extends ActionComponentContext {
         private final @NotNull SelectMenu.Option option;
 
         /** The associated followup, if any. */
-        private final @NotNull Optional<Followup> followup;
+        private final @NotNull Optional<ResponseFollowup> followup;
 
     }
 

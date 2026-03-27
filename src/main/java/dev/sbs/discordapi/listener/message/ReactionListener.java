@@ -4,7 +4,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.message.ReactionContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.listener.DiscordListener;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -69,7 +69,7 @@ public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends
      * @param followup the matched followup, if the reaction targets one
      * @return the constructed context
      */
-    protected abstract @NotNull ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<Followup> followup);
+    protected abstract @NotNull ReactionContext getContext(@NotNull E event, @NotNull Response cachedMessage, @NotNull Emoji reaction, @NotNull Optional<ResponseFollowup> followup);
 
     /**
      * Executes the reaction's registered interaction handler within an error-handling
@@ -81,7 +81,7 @@ public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends
      * @param followup the matched followup, if the reaction targets one
      * @return a reactive pipeline completing when the interaction is handled
      */
-    private Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull Emoji reaction, @NotNull Optional<Followup> followup) {
+    private Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull Emoji reaction, @NotNull Optional<ResponseFollowup> followup) {
         return Mono.just(this.getContext(event, entry.getResponse(), reaction, followup))
             .flatMap(context -> Mono.just(entry)
                 .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(

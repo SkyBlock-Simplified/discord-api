@@ -3,7 +3,7 @@ package dev.sbs.discordapi.context.component;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import lombok.AccessLevel;
@@ -65,7 +65,7 @@ public interface SelectMenuContext extends ActionComponentContext {
      * @param followup the associated followup, if any
      * @return a new select menu context
      */
-    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<Followup> followup) {
+    static SelectMenuContext of(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull Response cachedMessage, SelectMenu selectMenu, @NotNull Optional<ResponseFollowup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -95,7 +95,7 @@ public interface SelectMenuContext extends ActionComponentContext {
         private final @NotNull SelectMenu component;
 
         /** The associated followup, if any. */
-        private final @NotNull Optional<Followup> followup;
+        private final @NotNull Optional<ResponseFollowup> followup;
 
     }
 

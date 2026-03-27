@@ -4,9 +4,9 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
-import dev.sbs.discordapi.handler.response.BaseEntry;
+import dev.sbs.discordapi.handler.response.ResponseEntry;
 import dev.sbs.discordapi.handler.response.CachedResponse;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -45,7 +45,7 @@ import java.util.function.Function;
  * @param <T> the Discord4J {@link Event} type wrapped by this context
  * @see EventContext
  * @see CachedResponse
- * @see Followup
+ * @see ResponseFollowup
  */
 public interface MessageContext<T extends Event> extends EventContext<T> {
 
@@ -58,7 +58,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      */
     default Mono<Void> consumeResponse(@NotNull Consumer<Response> consumer) {
         return Mono.justOrEmpty(this.getFollowup())
-            .map(Followup::getResponse)
+            .map(ResponseFollowup::getResponse)
             .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
             .flatMap(response -> {
                 consumer.accept(response);
@@ -226,7 +226,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      * @return a {@link Mono} completing when the followup edit has been applied
      */
     default Mono<Void> editFollowup() {
-        return this.editFollowup(BaseEntry::getResponse);
+        return this.editFollowup(ResponseEntry::getResponse);
     }
 
     /**
@@ -235,7 +235,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      * @param responseFunction the function that extracts or transforms the response from the followup
      * @return a {@link Mono} completing when the followup edit has been applied
      */
-    default Mono<Void> editFollowup(@NotNull Function<Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull Function<ResponseFollowup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup()).flatMap(followup -> this.editFollowup(followup.getIdentifier(), responseFunction));
     }
 
@@ -247,7 +247,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      * @param responseFunction the function that extracts or transforms the response from the followup
      * @return a {@link Mono} completing when the followup edit has been applied and cached
      */
-    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<Followup, Response> responseFunction) {
+    default Mono<Void> editFollowup(@NotNull String identifier, @NotNull Function<ResponseFollowup, Response> responseFunction) {
         return Mono.justOrEmpty(this.getFollowup(identifier))
             .flatMap(followup -> {
                 Response editedResponse = responseFunction.apply(followup);
@@ -327,16 +327,16 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         return this.getMessage().flatMap(Message::getChannel);
     }
 
-    /** The default {@link Followup} associated with this context, if one exists. */
-    @NotNull Optional<Followup> getFollowup();
+    /** The default {@link ResponseFollowup} associated with this context, if one exists. */
+    @NotNull Optional<ResponseFollowup> getFollowup();
 
     /**
-     * Returns the {@link Followup} with the given identifier from the cached response entry.
+     * Returns the {@link ResponseFollowup} with the given identifier from the cached response entry.
      *
      * @param identifier the followup identifier to look up
      * @return an {@link Optional} containing the matching followup, or empty if not found
      */
-    default @NotNull Optional<Followup> getFollowup(@NotNull String identifier) {
+    default @NotNull Optional<ResponseFollowup> getFollowup(@NotNull String identifier) {
         return this.getResponseCacheEntry().findFollowup(identifier);
     }
 
@@ -367,7 +367,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      */
     default Mono<Void> withResponse(@NotNull Function<Response, Mono<Void>> function) {
         return Mono.justOrEmpty(this.getFollowup())
-            .map(Followup::getResponse)
+            .map(ResponseFollowup::getResponse)
             .switchIfEmpty(Mono.justOrEmpty(this.getResponse()))
             .flatMap(function);
     }
@@ -393,7 +393,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      * @param followup an optional followup associated with this message
      * @return a new {@code Create} context
      */
-    static @NotNull Create ofCreate(@NotNull DiscordBot discordBot, @NotNull MessageCreateEvent event, @NotNull Response cachedMessage, @NotNull Optional<Followup> followup) {
+    static @NotNull Create ofCreate(@NotNull DiscordBot discordBot, @NotNull MessageCreateEvent event, @NotNull Response cachedMessage, @NotNull Optional<ResponseFollowup> followup) {
         return new Create(
             discordBot,
             event,
@@ -434,7 +434,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
         /**
          * The default followup associated with this context, if any.
          */
-        private final @NotNull Optional<Followup> followup;
+        private final @NotNull Optional<ResponseFollowup> followup;
 
         /** {@inheritDoc} */
         @Override

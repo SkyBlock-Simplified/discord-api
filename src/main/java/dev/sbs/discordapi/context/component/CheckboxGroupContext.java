@@ -3,7 +3,7 @@ package dev.sbs.discordapi.context.component;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.CheckboxGroup;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import lombok.AccessLevel;
@@ -61,7 +61,7 @@ public interface CheckboxGroupContext extends ActionComponentContext {
      * @param followup the associated followup, if any
      * @return a new checkbox group context
      */
-    static @NotNull CheckboxGroupContext of(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull CheckboxGroup checkboxGroup, @NotNull Optional<Followup> followup) {
+    static @NotNull CheckboxGroupContext of(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull CheckboxGroup checkboxGroup, @NotNull Optional<ResponseFollowup> followup) {
         return new Impl(
             discordBot,
             event,
@@ -91,7 +91,7 @@ public interface CheckboxGroupContext extends ActionComponentContext {
         private final @NotNull CheckboxGroup component;
 
         /** The associated followup, if any. */
-        private final @NotNull Optional<Followup> followup;
+        private final @NotNull Optional<ResponseFollowup> followup;
 
     }
 

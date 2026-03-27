@@ -4,7 +4,7 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.CheckboxGroup;
 import dev.sbs.discordapi.context.component.CheckboxGroupContext;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +28,7 @@ public final class CheckboxGroupListener extends ComponentListener<ComponentInte
     }
 
     @Override
-    protected @NotNull CheckboxGroupContext getContext(@NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull CheckboxGroup component, @NotNull Optional<Followup> followup) {
+    protected @NotNull CheckboxGroupContext getContext(@NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull CheckboxGroup component, @NotNull Optional<ResponseFollowup> followup) {
         List<String> values = event.getInteraction().getCommandInteraction()
             .flatMap(ci -> ci.getValues())
             .orElse(Concurrent.newList());

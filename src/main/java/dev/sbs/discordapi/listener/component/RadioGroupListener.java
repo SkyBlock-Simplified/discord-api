@@ -3,7 +3,7 @@ package dev.sbs.discordapi.listener.component;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.RadioGroup;
 import dev.sbs.discordapi.context.component.RadioGroupContext;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +26,7 @@ public final class RadioGroupListener extends ComponentListener<ComponentInterac
     }
 
     @Override
-    protected @NotNull RadioGroupContext getContext(@NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull RadioGroup component, @NotNull Optional<Followup> followup) {
+    protected @NotNull RadioGroupContext getContext(@NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull RadioGroup component, @NotNull Optional<ResponseFollowup> followup) {
         /*String value = event.getInteraction()
             .getCommandInteraction()
             .flatMap(ci -> ci.getValues().map(values -> values.isEmpty() ? null : values.getFirst()))
