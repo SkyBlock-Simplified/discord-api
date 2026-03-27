@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.handler;
+package dev.sbs.discordapi.response.handler.item;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -14,8 +14,13 @@ import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
+import dev.sbs.discordapi.response.handler.Filter;
+import dev.sbs.discordapi.response.handler.FilterHandler;
+import dev.sbs.discordapi.response.handler.Search;
+import dev.sbs.discordapi.response.handler.SearchHandler;
+import dev.sbs.discordapi.response.handler.SortHandler;
+import dev.sbs.discordapi.response.handler.Sorter;
 import dev.sbs.discordapi.response.page.Page;
-import dev.sbs.discordapi.response.page.Paging;
 import dev.sbs.discordapi.response.page.item.Item;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import dev.sbs.discordapi.response.page.item.field.StringItem;
@@ -31,14 +36,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * An {@link ItemHandler} implementation that renders items as embed {@link Field Fields}.
+ *
+ * <p>
+ * Supports static items, a configurable {@link ItemHandler.FieldStyle}, and a transformer that
+ * converts each item into a {@link FieldItem} for embed rendering.
+ *
+ * @param <T> the item type
+ * @see ItemHandler
+ * @see FieldItem
+ */
 @Getter
 @RequiredArgsConstructor
-public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
+public final class EmbedItemHandler<T> implements ItemHandler<T> {
 
     private final @NotNull ConcurrentList<T> items;
     private final @NotNull ConcurrentList<Item> staticItems;
     private final @NotNull ConcurrentMap<String, Object> variables;
-    private final @NotNull FieldStyle fieldStyle;
+    private final @NotNull ItemHandler.FieldStyle fieldStyle;
     private final @NotNull TriFunction<T, Long, Long, FieldItem<?>> transformer;
     private final @NotNull Optional<String> listTitle;
     private final boolean editorEnabled;
@@ -65,7 +81,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ItemHandler<?> that = (ItemHandler<?>) o;
+        EmbedItemHandler<?> that = (EmbedItemHandler<?>) o;
 
         return Objects.equals(this.getItems(), that.getItems())
             && Objects.equals(this.getStaticItems(), that.getStaticItems())
@@ -85,7 +101,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             && Objects.equals(this.getCachedStaticItems(), that.getCachedStaticItems());
     }
 
-    public static <T> @NotNull Builder<T> from(@NotNull ItemHandler<T> itemHandler) {
+    public static <T> @NotNull Builder<T> from(@NotNull EmbedItemHandler<T> itemHandler) {
         return new Builder<T>()
             .withItems(itemHandler.getItems())
             .withStaticItems(itemHandler.getStaticItems())
@@ -100,6 +116,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
             .withSearch(itemHandler.getSearchHandler().getItems());
     }
 
+    @Override
     public @NotNull ConcurrentList<Item> getCachedStaticItems() {
         if (this.isCacheUpdateRequired()) {
             this.cachedStaticItems = this.staticItems.stream()
@@ -214,10 +231,12 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         this.setCacheUpdateRequired();
     }
 
+    @Override
     public void gotoFirstItemPage() {
         this.gotoPage(1);
     }
 
+    @Override
     public void gotoLastItemPage() {
         this.gotoPage(this.getTotalPages());
     }
@@ -237,10 +256,12 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         return Objects.hash(this.getItems(), this.getStaticItems(), this.getVariables(), this.getFieldStyle(), this.getTransformer(), this.getListTitle(), this.isEditorEnabled(), this.getAmountPerPage(), this.getSortHandler(), this.getFilterHandler(), this.getSearchHandler(), this.isCacheUpdateRequired(), this.getCurrentIndex(), this.getCachedFilteredItems(), this.getCachedFieldItems(), this.getCachedStaticItems());
     }
 
+    @Override
     public boolean hasNextItemPage() {
         return this.currentIndex < this.getTotalPages();
     }
 
+    @Override
     public boolean hasPreviousItemPage() {
         return this.currentIndex > 1;
     }
@@ -266,7 +287,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class Builder<T> implements ClassBuilder<ItemHandler<T>> {
+    public static class Builder<T> implements ClassBuilder<EmbedItemHandler<T>> {
 
         private final ConcurrentList<T> items = Concurrent.newList();
         private final ConcurrentList<Item> staticItems = Concurrent.newList();
@@ -275,7 +296,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         private final ConcurrentList<Search<T>> searchers = Concurrent.newList();
         private final ConcurrentMap<String, Object> variables = Concurrent.newMap();
         @BuildFlag(nonNull = true)
-        private FieldStyle fieldStyle = FieldStyle.DEFAULT;
+        private ItemHandler.FieldStyle fieldStyle = ItemHandler.FieldStyle.DEFAULT;
         @BuildFlag(nonNull = true)
         private TriFunction<T, Long, Long, FieldItem<?>> transformer = (t, index, size) -> StringItem.builder().build();
         private Optional<String> listTitle = Optional.empty();
@@ -283,7 +304,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         private int amountPerPage = 12;
 
         /**
-         * Clear all items from the {@link ItemHandler}.
+         * Clear all items from the {@link EmbedItemHandler}.
          */
         public Builder<T> clearItems() {
             this.items.clear();
@@ -291,7 +312,7 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         }
 
         /**
-         * Clear all static items from the {@link ItemHandler}.
+         * Clear all static items from the {@link EmbedItemHandler}.
          */
         public Builder<T> clearStaticItems() {
             this.staticItems.clear();
@@ -349,9 +370,9 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         }
 
         /**
-         * Sets the {@link FieldStyle} used to render {@link Field Fields}.
+         * Sets the {@link ItemHandler.FieldStyle} used to render {@link Field Fields}.
          */
-        public Builder<T> withFieldStyle(@NotNull FieldStyle fieldStyle) {
+        public Builder<T> withFieldStyle(@NotNull ItemHandler.FieldStyle fieldStyle) {
             this.fieldStyle = fieldStyle;
             return this;
         }
@@ -503,11 +524,11 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
         }
 
         @Override
-        public @NotNull ItemHandler<T> build() {
+        public @NotNull EmbedItemHandler<T> build() {
             Reflection.validateFlags(this);
             this.variables.put("SIZE", this.items.size());
 
-            return new ItemHandler<>(
+            return new EmbedItemHandler<>(
                 this.items.toUnmodifiableList(),
                 this.staticItems.toUnmodifiableList(),
                 this.variables,
@@ -521,45 +542,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
                 new SearchHandler<>(this.searchers)
             );
         }
-
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum FieldStyle {
-
-        /**
-         * Displays {@link Item} into a single {@link Field}.
-         * <br><br>
-         * - Does not override inline-state.
-         * <br>
-         * - Field names and emojis are handled by the {@link Item}.
-         */
-        DEFAULT(false),
-        /**
-         * Displays {@link Item} into a single {@link Field}.
-         * <br><br>
-         * - Overrides inline-state.
-         * <br>
-         * - Field names and emojis are handled by the {@link Item}.
-         */
-        FIELD(false),
-        /**
-         * Displays {@link Item} into a single inline {@link Field}.
-         * <br><br>
-         * - Overrides inline-state.
-         * <br>
-         * Field names and emojis are handled by the {@link Item}.
-         */
-        FIELD_INLINE(true),
-        /**
-         * Displays all {@link Item Items} in as a list of data.
-         * <br><br>
-         * Field names and emojis are handled by column data specified on the {@link Page}.
-         */
-        LIST(false);
-
-        private final boolean inline;
 
     }
 

@@ -11,7 +11,8 @@ import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.HistoryHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +26,7 @@ public interface Page {
 
     @NotNull ConcurrentList<LayoutComponent> getComponents();
 
-    //@NotNull HistoryHandler<?, String> getHistoryHandler();
+    @NotNull HistoryHandler<?, String> getHistoryHandler();
 
     @NotNull ItemHandler<?> getItemHandler();
 
@@ -37,20 +38,20 @@ public interface Page {
 
     // Builders
 
-    static @NotNull FormPage.QuestionBuilder form() {
-        return FormPage.builder();
-    }
-
     static @NotNull TreePage.TreePageBuilder builder() {
         return TreePage.builder();
     }
 
-    static @NotNull FormPage.QuestionBuilder from(@NotNull FormPage formPage) {
-        return FormPage.from(formPage);
+    static @NotNull FormPage.QuestionBuilder form() {
+        return FormPage.builder();
     }
 
     static @NotNull TreePage.TreePageBuilder from(@NotNull TreePage treePage) {
         return TreePage.from(treePage);
+    }
+
+    static @NotNull FormPage.QuestionBuilder from(@NotNull FormPage formPage) {
+        return FormPage.from(formPage);
     }
 
     // Accessors
@@ -86,7 +87,7 @@ public interface Page {
         protected ConcurrentList<LayoutComponent> components = Concurrent.newList();
         protected ConcurrentList<Emoji> reactions = Concurrent.newList();
         @BuildFlag(nonNull = true)
-        protected ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
+        protected ItemHandler<?> itemHandler = ItemHandler.<Item>embed().build();
 
         /**
          * Clear all but preservable components from {@link Page}.

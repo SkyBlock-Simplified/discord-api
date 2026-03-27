@@ -2,20 +2,26 @@ package dev.sbs.discordapi.response;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
+import dev.sbs.api.collection.query.SearchFunction;
+import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.ExceptionUtil;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.Component;
-import dev.sbs.discordapi.component.interaction.Button;
-import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.component.media.Attachment;
 import dev.sbs.discordapi.component.media.MediaData;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.response.embed.Embed;
+import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.handler.HistoryHandler;
+import dev.sbs.discordapi.response.handler.PaginationHandler;
+import dev.sbs.discordapi.response.handler.item.EmbedItemHandler;
 import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.page.TreePage;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -30,6 +36,7 @@ import discord4j.discordjson.json.MessageReferenceData;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,47 +62,97 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public interface Response {
+@Getter
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class Response {
 
-    @NotNull AllowedMentions getAllowedMentions();
+    private final long buildTime = System.currentTimeMillis();
+    private final @NotNull UUID uniqueId;
+    private final @NotNull EventContext<?> eventContext;
+    private final @NotNull Optional<Snowflake> referenceId;
+    private final @NotNull Scheduler reactorScheduler;
+    private final @NotNull AllowedMentions allowedMentions;
+    private final int timeToLive;
+    private final boolean ephemeral;
+    private final @NotNull ConcurrentList<Attachment> attachments;
+    private final @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> createInteraction;
+    private final boolean renderingPagingComponents;
+    private final @NotNull HistoryHandler<Page, String> historyHandler;
+    private final @NotNull PaginationHandler paginationHandler;
+    @Getter(AccessLevel.NONE)
+    private ConcurrentList<TopLevelMessageComponent> cachedPageComponents = Concurrent.newUnmodifiableList();
 
-    @NotNull ConcurrentList<Attachment> getAttachments();
-
-    long getBuildTime();
-
-    @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents();
-
-    @NotNull HistoryHandler<Page, String> getHistoryHandler();
-
-    @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> getCreateInteraction();
-
-    @NotNull Scheduler getReactorScheduler();
-
-    @NotNull Optional<Snowflake> getReferenceId();
-
-    int getTimeToLive();
-
-    @NotNull UUID getUniqueId();
-
-    boolean isEphemeral();
-
-    boolean isRenderingPagingComponents();
-
-    // Builders
-
-    static @NotNull FormResponse.FormBuilder form() {
-        return FormResponse.builder();
+    public static @NotNull Builder builder() {
+        return new Builder();
     }
 
-    static @NotNull TreeResponse.TreeBuilder builder() {
-        return TreeResponse.builder();
+    public static @NotNull Builder from(@NotNull Response response) {
+        return builder()
+            .withContext(response.getEventContext())
+            .withUniqueId(response.getUniqueId())
+            .withPages(response.getPages())
+            .withAttachments(response.getAttachments())
+            .withReference(response.getReferenceId())
+            .withReactorScheduler(response.getReactorScheduler())
+            .withTimeToLive(response.getTimeToLive())
+            .isRenderingPagingComponents(response.isRenderingPagingComponents())
+            .isEphemeral(response.isEphemeral())
+            .withPageHistory(response.getHistoryHandler().getIdentifierHistory())
+            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentIndex())
+            .onCreate(response.getCreateInteraction());
     }
 
-    <P extends Page> @NotNull Builder<P> mutate();
+    public @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents() {
+        if (this.isRenderingPagingComponents() && this.isCacheUpdateRequired())
+            this.cachedPageComponents = this.getPaginationHandler().buildCachedPageComponents(this.getHistoryHandler());
 
-    // Reply Streams
+        return this.cachedPageComponents;
+    }
 
-    default @NotNull Stream<Attachment> getPendingAttachments() {
+    public @NotNull ConcurrentList<Page> getPages() {
+        return this.getHistoryHandler().getItems();
+    }
+
+    public @NotNull Builder mutate() {
+        return from(this);
+    }
+
+    // --- Content/Embed helpers ---
+
+    private @NotNull ConcurrentList<Embed> getCurrentEmbeds() {
+        Page currentPage = this.getHistoryHandler().getCurrentPage();
+        ConcurrentList<Embed> embeds = Concurrent.newList();
+
+        if (currentPage instanceof TreePage treePage)
+            embeds.addAll(treePage.getEmbeds());
+
+        if (currentPage.hasItems()) {
+            EmbedItemHandler<?> legacyHandler = (EmbedItemHandler<?>) currentPage.getItemHandler();
+            ConcurrentList<Field> renderFields = legacyHandler.getRenderFields();
+
+            embeds.add(
+                Embed.builder()
+                    .withItems(legacyHandler.getCachedStaticItems())
+                    .withFields(renderFields)
+                    .build()
+            );
+        }
+
+        return embeds;
+    }
+
+    private @NotNull Optional<String> getCurrentContent() {
+        Page currentPage = this.getHistoryHandler().getCurrentPage();
+
+        if (currentPage instanceof TreePage treePage)
+            return treePage.getContent();
+
+        return Optional.empty();
+    }
+
+    // --- Reply Streams ---
+
+    public @NotNull Stream<Attachment> getPendingAttachments() {
         return Stream.concat(
             this.getAttachments().stream(),
             this.getCurrentComponents()
@@ -105,37 +162,26 @@ public interface Response {
         ).filter(Attachment::isPendingUpload);
     }
 
-    default @NotNull Stream<TopLevelMessageComponent> getCurrentComponents() {
+    public @NotNull Stream<TopLevelMessageComponent> getCurrentComponents() {
         return Stream.concat(this.getCachedPageComponents().stream(), this.getHistoryHandler().getCurrentPage().getComponents().stream());
-
-        // Content TextDisplay
-        //Optional<String> content = this.getHistoryHandler().getCurrentPage().getContent();
-
-        //if (content.isPresent() && this.isComponentsV2())
-        //    components.add(TextDisplay.of(content.get()));
     }
 
-    default @NotNull ConcurrentList<Message.Flag> getCurrentFlags() {
+    public @NotNull ConcurrentList<Message.Flag> getCurrentFlags() {
         ConcurrentList<Message.Flag> flags = Concurrent.newList();
         flags.addIf(this::isComponentsV2, Message.Flag.IS_COMPONENTS_V2);
         return flags;
     }
 
-    default boolean isComponentsV2() {
+    public boolean isComponentsV2() {
         return this.getCurrentComponents()
             .flatMap(Component::flattenComponents)
             .anyMatch(component -> component.getType().isRequireFlag());
     }
 
-    // Cache
+    // --- Cache ---
 
-    /**
-     * Updates an existing paging {@link Button}.
-     *
-     * @param buttonBuilder The button to edit.
-     */
-    @SuppressWarnings("unchecked")
-    default <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.Builder, Button.Builder> buttonBuilder) {
+    /*@SuppressWarnings("unchecked")
+    public <S> void editPageButton(@NotNull Function<Button, S> function, S value, Function<Button.Builder, Button.Builder> buttonBuilder) {
         this.getCachedPageComponents().forEach(topLevelComponent -> topLevelComponent.flattenComponents()
             .filter(LayoutComponent.class::isInstance)
             .map(LayoutComponent.class::cast)
@@ -146,13 +192,45 @@ public interface Response {
                 ))
             )
         );
+    }*/
+
+    /**
+     * Edits the current page in-place using the given builder editor function,
+     * casting the page's builder to the specified type.
+     *
+     * @param <B> the concrete builder type
+     * @param builderType the builder class to cast to
+     * @param editor the function that transforms the builder
+     * @return this response
+     */
+    public <B extends Page.Builder> @NotNull Response editCurrentPage(@NotNull Class<B> builderType, @NotNull Function<B, B> editor) {
+        this.historyHandler.editCurrentPage(page -> editor.apply(builderType.cast(page.mutate())).build());
+        return this;
     }
 
-    boolean isCacheUpdateRequired();
+    /**
+     * Edits the current {@link TreePage} in-place using the given builder editor function.
+     *
+     * @param editor the function that transforms the tree page builder
+     * @return this response
+     */
+    public @NotNull Response editCurrentPage(@NotNull Function<TreePage.TreePageBuilder, TreePage.TreePageBuilder> editor) {
+        return this.editCurrentPage(TreePage.TreePageBuilder.class, editor);
+    }
 
-    void setNoCacheUpdateRequired();
+    public boolean isCacheUpdateRequired() {
+        return this.getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getHistoryHandler().isCacheUpdateRequired() ||
+            this.getHistoryHandler().getCurrentPage().getItemHandler().isCacheUpdateRequired();
+    }
 
-    default void updateAttachments(@NotNull Message message) {
+    public void setNoCacheUpdateRequired() {
+        this.getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getHistoryHandler().setCacheUpdateRequired(false);
+        this.getHistoryHandler().getCurrentPage().getItemHandler().setCacheUpdateRequired(false);
+    }
+
+    public void updateAttachments(@NotNull Message message) {
         if (this.getAttachments().contains(attachment -> attachment.getMediaData().getState(), MediaData.State.LOADING)) {
             for (int i = 0; this.getAttachments().notEmpty(); i++) {
                 Attachment attachment = this.getAttachments().get(i);
@@ -174,10 +252,12 @@ public interface Response {
         }
     }
 
-    // D4J Specs
+    // --- D4J Specs ---
 
-    default @NotNull MessageCreateSpec getD4jCreateSpec() {
+    public @NotNull MessageCreateSpec getD4jCreateSpec() {
         return MessageCreateSpec.builder()
+            .content(this.getCurrentContent().orElse(""))
+            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .flags(this.getCurrentFlags())
             .nonce(this.getUniqueId().toString().substring(0, 25))
             .allowedMentions(this.getAllowedMentions())
@@ -191,8 +271,10 @@ public interface Response {
             .build();
     }
 
-    default @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
+    public @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
         return MessageCreateMono.of(channel)
+            .withContent(this.getCurrentContent().orElse(""))
+            .withEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .withFlags(this.getCurrentFlags())
             .withNonce(this.getUniqueId().toString().substring(0, 25))
             .withFlags()
@@ -206,8 +288,10 @@ public interface Response {
             );
     }
 
-    default @NotNull MessageEditSpec getD4jEditSpec() {
+    public @NotNull MessageEditSpec getD4jEditSpec() {
         return MessageEditSpec.builder()
+            .contentOrNull(this.getCurrentContent().orElse(""))
+            .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .addAllFlags(this.getCurrentFlags())
             .addAllFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .addAllComponents(
@@ -218,8 +302,10 @@ public interface Response {
             .build();
     }
 
-    default @NotNull InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
+    public @NotNull InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
         return InteractionApplicationCommandCallbackSpec.builder()
+            .content(this.getCurrentContent().orElse(""))
+            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -231,8 +317,10 @@ public interface Response {
             .build();
     }
 
-    default @NotNull InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec() {
+    public @NotNull InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec() {
         return InteractionFollowupCreateSpec.builder()
+            .content(this.getCurrentContent().orElse(""))
+            .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .ephemeral(this.isEphemeral())
             .allowedMentions(this.getAllowedMentions())
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
@@ -244,8 +332,10 @@ public interface Response {
             .build();
     }
 
-    default @NotNull InteractionReplyEditSpec getD4jInteractionReplyEditSpec() {
+    public @NotNull InteractionReplyEditSpec getD4jInteractionReplyEditSpec() {
         return InteractionReplyEditSpec.builder()
+            .contentOrNull(this.getCurrentContent().orElse(""))
+            .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .allowedMentionsOrNull(this.getAllowedMentions())
             .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
             .componentsOrNull(
@@ -256,35 +346,58 @@ public interface Response {
             .build();
     }
 
-    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    abstract class Builder<P extends Page> implements ClassBuilder<Response> {
+    // --- Builder ---
+
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Builder implements ClassBuilder<Response> {
 
         @BuildFlag(nonNull = true)
-        protected UUID uniqueId = UUID.randomUUID();
+        private UUID uniqueId = UUID.randomUUID();
+        @BuildFlag(nonNull = true)
+        private EventContext<?> eventContext;
         @BuildFlag(notEmpty = true)
-        protected final ConcurrentList<P> pages = Concurrent.newList();
-        protected final ConcurrentList<Attachment> attachments = Concurrent.newList();
-        protected Optional<Snowflake> referenceId = Optional.empty();
+        private final ConcurrentList<Page> pages = Concurrent.newList();
+        private final ConcurrentList<Attachment> attachments = Concurrent.newList();
+        private Optional<Snowflake> referenceId = Optional.empty();
         @BuildFlag(nonNull = true)
-        protected Scheduler reactorScheduler = Schedulers.boundedElastic();
-        protected int timeToLive = 10;
-        protected boolean renderingPagingComponents = true;
-        protected boolean ephemeral = false;
+        private Scheduler reactorScheduler = Schedulers.boundedElastic();
+        private int timeToLive = 10;
+        private boolean renderingPagingComponents = true;
+        private boolean ephemeral = false;
         @BuildFlag(nonNull = true)
-        protected AllowedMentions allowedMentions = AllowedMentions.suppressEveryone();
-        protected Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> createInteraction = Optional.empty();
+        private AllowedMentions allowedMentions = AllowedMentions.suppressEveryone();
+        private Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> createInteraction = Optional.empty();
+
+        // Navigation state
+        private Optional<String> defaultPage = Optional.empty();
+        private ConcurrentList<String> pageHistory = Concurrent.newList();
+        private int currentItemPage = 1;
 
         /**
          * Recursively disable all interactable components from all {@link Page Pages} in {@link Response}.
          */
-        public abstract Builder<P> disableAllComponents();
+        public Builder disableAllComponents() {
+            this.pages.forEach(page -> this.editPage(page.mutate().disableComponents(true).build()));
+            return this;
+        }
+
+        /**
+         * Sets the {@link EventContext} for the {@link Response}, providing access to the
+         * {@link DiscordBot} instance for emoji resolution and other bot operations.
+         *
+         * @param eventContext the event context
+         */
+        public Builder withContext(@NotNull EventContext<?> eventContext) {
+            this.eventContext = eventContext;
+            return this;
+        }
 
         /**
          * Updates an existing {@link Page}.
          *
-         * @param page The page to edit.
+         * @param page the page to edit
          */
-        public Builder<P> editPage(@NotNull P page) {
+        public Builder editPage(@NotNull Page page) {
             this.pages.stream()
                 .filter(existingPage -> existingPage.getOption().getValue().equals(page.getOption().getValue()))
                 .findFirst()
@@ -296,16 +409,16 @@ public interface Response {
         /**
          * Sets the {@link Response} should be ephemeral.
          */
-        public Builder<P> isEphemeral() {
+        public Builder isEphemeral() {
             return this.isEphemeral(true);
         }
 
         /**
          * Sets the {@link Response} should be ephemeral.
          *
-         * @param value True if ephemeral.
+         * @param value true if ephemeral
          */
-        public Builder<P> isEphemeral(boolean value) {
+        public Builder isEphemeral(boolean value) {
             this.ephemeral = value;
             return this;
         }
@@ -313,16 +426,16 @@ public interface Response {
         /**
          * Sets the {@link Response} to render paging components.
          */
-        public Builder<P> isRenderingPagingComponents() {
+        public Builder isRenderingPagingComponents() {
             return this.isRenderingPagingComponents(true);
         }
 
         /**
          * Sets if the {@link Response} should render paging components.
          *
-         * @param value True if rendering page components.
+         * @param value true if rendering page components
          */
-        public Builder<P> isRenderingPagingComponents(boolean value) {
+        public Builder isRenderingPagingComponents(boolean value) {
             this.renderingPagingComponents = value;
             return this;
         }
@@ -330,18 +443,18 @@ public interface Response {
         /**
          * Sets the interaction to execute when the {@link Response} is known to exist.
          *
-         * @param interaction The interaction function.
+         * @param interaction the interaction function
          */
-        public Builder<P> onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
+        public Builder onCreate(@Nullable Function<MessageContext<MessageCreateEvent>, Mono<Void>> interaction) {
             return this.onCreate(Optional.ofNullable(interaction));
         }
 
         /**
          * Sets the interaction to execute when the {@link Response} is known to exist.
          *
-         * @param interaction The interaction function.
+         * @param interaction the interaction function
          */
-        public Builder<P> onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
+        public Builder onCreate(@NotNull Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> interaction) {
             this.createInteraction = interaction;
             return this;
         }
@@ -349,9 +462,9 @@ public interface Response {
         /**
          * Specifies the allowed mentions for the {@link Response}.
          *
-         * @param allowedMentions An {@link AllowedMentions} object that defines which mentions should be allowed in the response.
+         * @param allowedMentions an {@link AllowedMentions} object that defines which mentions should be allowed in the response
          */
-        public Builder<P> withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
+        public Builder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
             this.allowedMentions = allowedMentions;
             return this;
         }
@@ -359,21 +472,21 @@ public interface Response {
         /**
          * Adds an {@link Attachment} to the {@link Response}.
          *
-         * @param name The name of the attachment.
-         * @param inputStream The stream of attachment data.
+         * @param name the name of the attachment
+         * @param inputStream the stream of attachment data
          */
-        public Builder<P> withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
+        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream) {
             return this.withAttachment(name, inputStream, false);
         }
 
         /**
          * Adds an {@link Attachment} to the {@link Response}.
          *
-         * @param name The name of the attachment.
-         * @param inputStream The stream of attachment data.
-         * @param spoiler True if the attachment should be a spoiler.
+         * @param name the name of the attachment
+         * @param inputStream the stream of attachment data
+         * @param spoiler true if the attachment should be a spoiler
          */
-        public Builder<P> withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
+        public Builder withAttachment(@NotNull String name, @NotNull InputStream inputStream, boolean spoiler) {
             return this.withAttachments(
                 Attachment.builder()
                     .isSpoiler(spoiler)
@@ -386,11 +499,11 @@ public interface Response {
         /**
          * Add {@link Attachment Attachments} to the {@link Response}.
          *
-         * @param attachments Variable number of attachments to add.
+         * @param attachments variable number of attachments to add
          */
-        public Builder<P> withAttachments(@NotNull Attachment... attachments) {
+        public Builder withAttachments(@NotNull Attachment... attachments) {
             Arrays.stream(attachments)
-                .filter(attachment -> !this.attachments.contains(current -> current.getMediaData().getName(), attachment.getMediaData().getName()))
+                .filter(attachment -> !this.attachments.contains(SearchFunction.combine(Attachment::getMediaData, MediaData::getName), attachment.getMediaData().getName()))
                 .forEach(this.attachments::add);
 
             return this;
@@ -399,11 +512,11 @@ public interface Response {
         /**
          * Add {@link Attachment Attachments} to the {@link Response}.
          *
-         * @param attachments Collection of attachments to add.
+         * @param attachments collection of attachments to add
          */
-        public Builder<P> withAttachments(@NotNull Iterable<Attachment> attachments) {
+        public Builder withAttachments(@NotNull Iterable<Attachment> attachments) {
             attachments.forEach(attachment -> {
-                if (!this.attachments.contains(current -> current.getMediaData().getName(), attachment.getMediaData().getName()))
+                if (!this.attachments.contains(SearchFunction.combine(Attachment::getMediaData, MediaData::getName), attachment.getMediaData().getName()))
                     this.attachments.add(attachment);
             });
 
@@ -411,11 +524,40 @@ public interface Response {
         }
 
         /**
+         * Sets the default page the {@link Response} should load.
+         *
+         * @param pageIdentifier the page identifier to load
+         */
+        public Builder withDefaultPage(@Nullable String pageIdentifier) {
+            return this.withDefaultPage(Optional.ofNullable(pageIdentifier));
+        }
+
+        /**
+         * Sets the default page the {@link Response} should load.
+         *
+         * @param pageIdentifier the page identifier to load
+         */
+        public Builder withDefaultPage(@NotNull Optional<String> pageIdentifier) {
+            this.defaultPage = pageIdentifier;
+            return this;
+        }
+
+        private Builder withItemPage(int currentItemPage) {
+            this.currentItemPage = currentItemPage;
+            return this;
+        }
+
+        private Builder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
+            this.pageHistory = pageHistory;
+            return this;
+        }
+
+        /**
          * Adds the stack trace of an {@link Throwable Exception} as an {@link Attachment} to the {@link Response}.
          *
-         * @param throwable The throwable exception stack trace to add.
+         * @param throwable the throwable exception stack trace to add
          */
-        public Builder<P> withException(@NotNull Throwable throwable) {
+        public Builder withException(@NotNull Throwable throwable) {
             this.attachments.add(
                 Attachment.builder()
                     .withName("stacktrace-%s.log", DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.of("EST", ZoneId.SHORT_IDS)).format(Instant.now()))
@@ -429,18 +571,18 @@ public interface Response {
         /**
          * Add {@link File Files} to the {@link Response}.
          *
-         * @param files Variable number of files to add.
+         * @param files variable number of files to add
          */
-        public Builder<P> withFiles(@NotNull File... files) {
+        public Builder withFiles(@NotNull File... files) {
             return this.withFiles(Arrays.asList(files));
         }
 
         /**
          * Add {@link File Files} to the {@link Response}.
          *
-         * @param files Collection of files to add.
+         * @param files collection of files to add
          */
-        public Builder<P> withFiles(@NotNull Iterable<File> files) {
+        public Builder withFiles(@NotNull Iterable<File> files) {
             List<File> fileList = List.class.isAssignableFrom(files.getClass()) ? (List<File>) files : StreamSupport.stream(files.spliterator(), false).toList();
 
             fileList.stream()
@@ -462,28 +604,28 @@ public interface Response {
         /**
          * Add {@link Page Pages} to the {@link Response}.
          *
-         * @param pages Variable number of pages to add.
+         * @param pages variable number of pages to add
          */
-        public Builder<P> withPages(@NotNull P... pages) {
+        public Builder withPages(@NotNull Page... pages) {
             return this.withPages(Arrays.asList(pages));
         }
 
         /**
          * Add {@link Page Pages} to the {@link Response}.
          *
-         * @param pages Collection of pages to add.
+         * @param pages collection of pages to add
          */
-        public Builder<P> withPages(@NotNull Iterable<P> pages) {
+        public Builder withPages(@NotNull Iterable<? extends Page> pages) {
             pages.forEach(this.pages::add);
             return this;
         }
 
-        public Builder<P> withReactorScheduler(@NotNull Scheduler reactorScheduler) {
+        public Builder withReactorScheduler(@NotNull Scheduler reactorScheduler) {
             this.reactorScheduler = reactorScheduler;
             return this;
         }
 
-        public Builder<P> withReactorScheduler(@NotNull ExecutorService executorService) {
+        public Builder withReactorScheduler(@NotNull ExecutorService executorService) {
             this.reactorScheduler = Schedulers.fromExecutorService(executorService);
             return this;
         }
@@ -491,36 +633,36 @@ public interface Response {
         /**
          * Sets the message the {@link Response} should reply to.
          *
-         * @param messageContext The message to reference.
+         * @param messageContext the message to reference
          */
-        public Builder<P> withReference(@NotNull MessageContext<?> messageContext) {
+        public Builder withReference(@NotNull MessageContext<?> messageContext) {
             return this.withReference(messageContext.getMessageId());
         }
 
         /**
          * Sets the message the {@link Response} should reply to.
          *
-         * @param messageId The message to reference.
+         * @param messageId the message to reference
          */
-        public Builder<P> withReference(@Nullable Snowflake messageId) {
+        public Builder withReference(@Nullable Snowflake messageId) {
             return this.withReference(Optional.ofNullable(messageId));
         }
 
         /**
          * Sets the message the {@link Response} should reply to.
          *
-         * @param messageId The message to reference.
+         * @param messageId the message to reference
          */
-        public Builder<P> withReference(@NotNull Mono<Snowflake> messageId) {
+        public Builder withReference(@NotNull Mono<Snowflake> messageId) {
             return this.withReference(messageId.blockOptional());
         }
 
         /**
          * Sets the message the {@link Response} should reply to.
          *
-         * @param messageId The message to reference.
+         * @param messageId the message to reference
          */
-        public Builder<P> withReference(@NotNull Optional<Snowflake> messageId) {
+        public Builder withReference(@NotNull Optional<Snowflake> messageId) {
             this.referenceId = messageId;
             return this;
         }
@@ -530,11 +672,11 @@ public interface Response {
          * <br><br>
          * This value moves whenever the user interacts with the {@link Response}.
          * <br><br>
-         * Maximum 500 seconds and Minimum is 5 seconds.
+         * Maximum 300 seconds and minimum is 5 seconds.
          *
-         * @param timeToLive How long the response should live without interaction in seconds.
+         * @param timeToLive how long the response should live without interaction in seconds
          */
-        public Builder<P> withTimeToLive(int timeToLive) {
+        public Builder withTimeToLive(int timeToLive) {
             this.timeToLive = NumberUtil.ensureRange(timeToLive, 5, 300);
             return this;
         }
@@ -542,9 +684,9 @@ public interface Response {
         /**
          * Used to replace an existing message with a known ID.
          *
-         * @param uniqueId Unique ID to assign to {@link Response}.
+         * @param uniqueId unique ID to assign to {@link Response}
          */
-        public Builder<P> withUniqueId(@NotNull UUID uniqueId) {
+        public Builder withUniqueId(@NotNull UUID uniqueId) {
             this.uniqueId = uniqueId;
             return this;
         }
@@ -552,10 +694,45 @@ public interface Response {
         /**
          * Build using the configured fields.
          *
-         * @return A built {@link Response}.
+         * @return a built {@link Response}
          */
         @Override
-        public abstract @NotNull Response build();
+        public @NotNull Response build() {
+            Reflection.validateFlags(this);
+
+            Response response = new Response(
+                this.uniqueId,
+                this.eventContext,
+                this.referenceId,
+                this.reactorScheduler,
+                this.allowedMentions,
+                this.timeToLive,
+                this.ephemeral,
+                this.attachments,
+                this.createInteraction.orElse(__ -> Mono.empty()),
+                this.renderingPagingComponents,
+                HistoryHandler.<Page, String>builder()
+                    .withPages(this.pages.toUnmodifiableList())
+                    .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
+                    .withTransformer(page -> page.getOption().getValue())
+                    .build(),
+                new PaginationHandler(this.eventContext.getDiscordBot())
+            );
+
+            // Navigation state restoration
+            if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
+                response.getHistoryHandler().gotoTopLevelPage(this.defaultPage.get());
+            else {
+                if (!this.pageHistory.isEmpty()) {
+                    response.getHistoryHandler().gotoTopLevelPage(this.pageHistory.removeFirst());
+                    this.pageHistory.forEach(identifier -> response.getHistoryHandler().gotoSubPage(identifier));
+                    response.getHistoryHandler().getCurrentPage().getItemHandler().gotoPage(this.currentItemPage);
+                } else
+                    response.getHistoryHandler().gotoPage(response.getPages().getFirst());
+            }
+
+            return response;
+        }
 
     }
 

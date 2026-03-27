@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.response.handler.item.search;
+package dev.sbs.discordapi.response.handler;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
@@ -6,9 +6,7 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.component.interaction.Button;
 import dev.sbs.discordapi.component.interaction.TextInput;
-import dev.sbs.discordapi.response.handler.item.sorter.Sorter;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -62,7 +60,6 @@ public class Search<T> {
 
     public static <T> @NotNull Builder<T> from(@NotNull Search<T> searcher) {
         return new Builder<T>()
-            .withLabel(searcher.getTextInput().getLabel().orElseThrow())
             .withPlaceholder(searcher.getTextInput().getPlaceholder())
             .withPredicates(searcher.getPredicates());
     }
@@ -152,31 +149,6 @@ public class Search<T> {
          */
         public Builder<T> withPlaceholder(@NotNull Optional<String> placeholder) {
             this.textInputBuilder.withPlaceholder(placeholder);
-            return this;
-        }
-
-        /**
-         * Sets the label of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button}.
-         *
-         * @param label The label of the field item.
-         */
-        public Builder<T> withLabel(@NotNull String label) {
-            this.textInputBuilder.withLabel(label);
-            return this;
-        }
-
-        /**
-         * Sets the label of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button}.
-         *
-         * @param label The label of the field item.
-         * @param args The objects used to format the label.
-         */
-        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
-            this.textInputBuilder.withLabel(label, args);
             return this;
         }
 

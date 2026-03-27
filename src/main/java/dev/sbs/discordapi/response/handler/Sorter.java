@@ -8,9 +8,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.component.interaction.Button;
-import dev.sbs.discordapi.component.interaction.SelectMenu;
-import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.component.interaction.RadioGroup;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,15 +25,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>> {
+public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>>, UserInteractComponent {
 
-    private final @NotNull SelectMenu.Option option;
+    private final @NotNull String identifier;
+    private final @NotNull String label;
+    private final @NotNull Optional<String> description;
+    private final boolean enabled;
     private final @NotNull ConcurrentMap<Comparator<? extends T>, SortOrder> comparators;
     private final @NotNull SortOrder order;
 
@@ -66,6 +69,20 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         return copy;
     }
 
+    /**
+     * Builds a {@link RadioGroup.Option} from this sorter's fields.
+     *
+     * @return the built radio option
+     */
+    public @NotNull RadioGroup.Option buildOption() {
+        RadioGroup.Option.Builder optionBuilder = RadioGroup.Option.builder()
+            .withLabel(this.getLabel())
+            .withValue(this.getIdentifier());
+
+        this.getDescription().ifPresent(optionBuilder::withDescription);
+        return optionBuilder.build();
+    }
+
     public static <T> @NotNull Builder<T> builder() {
         return new Builder<>();
     }
@@ -77,21 +94,27 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
 
         Sorter<?> sorter = (Sorter<?>) o;
 
-        return Objects.equals(this.getOption(), sorter.getOption())
+        return Objects.equals(this.getIdentifier(), sorter.getIdentifier())
+            && Objects.equals(this.getLabel(), sorter.getLabel())
+            && Objects.equals(this.getDescription(), sorter.getDescription())
+            && this.isEnabled() == sorter.isEnabled()
             && Objects.equals(this.getComparators(), sorter.getComparators())
             && Objects.equals(this.getOrder(), sorter.getOrder());
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Sorter<T> sorter) {
         return new Builder<T>()
-            .withOption(sorter.getOption())
+            .withIdentifier(sorter.getIdentifier())
+            .withLabel(sorter.getLabel())
+            .withDescription(sorter.getDescription())
+            .isEnabled(sorter.isEnabled())
             .withComparators(sorter.getComparators())
             .withOrder(sorter.getOrder());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getOption(), this.getComparators(), this.getOrder());
+        return Objects.hash(this.getIdentifier(), this.getLabel(), this.getDescription(), this.isEnabled(), this.getComparators(), this.getOrder());
     }
 
     public @NotNull Builder<T> mutate() {
@@ -101,36 +124,75 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder<T> implements ClassBuilder<Sorter<T>> {
 
-        @BuildFlag(nonNull = true)
-        private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        private String identifier = UUID.randomUUID().toString();
+        @BuildFlag(notEmpty = true)
+        private Optional<String> label = Optional.empty();
+        private Optional<String> description = Optional.empty();
+        private boolean enabled = false;
         @BuildFlag(nonNull = true)
         private final ConcurrentMap<Comparator<? extends T>, SortOrder> comparators = Concurrent.newMap();
         @BuildFlag(nonNull = true)
         private SortOrder order = SortOrder.DESCENDING;
 
         /**
+         * Sets this sorter as enabled.
+         */
+        public Builder<T> isEnabled() {
+            return this.isEnabled(true);
+        }
+
+        /**
+         * Sets this sorter as enabled if given true.
+         *
+         * @param value true to enable
+         */
+        public Builder<T> isEnabled(boolean value) {
+            this.enabled = value;
+            return this;
+        }
+
+        /**
+         * Sets this sorter as disabled.
+         */
+        public Builder<T> isDisabled() {
+            return this.isDisabled(true);
+        }
+
+        /**
+         * Sets this sorter as disabled if given true.
+         *
+         * @param value true to disable
+         */
+        public Builder<T> isDisabled(boolean value) {
+            this.enabled = !value;
+            return this;
+        }
+
+        /**
          * Add custom comparators for the {@link Item FieldItems}.
          *
-         * @param comparators A variable amount of comparators.
+         * @param comparators a variable amount of comparators
          */
-        public Builder<T> withComparators(@NotNull Comparator<? extends T>... comparators) {
+        @SafeVarargs
+        public final Builder<T> withComparators(@NotNull Comparator<? extends T>... comparators) {
             return this.withComparators(Arrays.asList(comparators));
         }
 
         /**
          * Add custom comparators for the {@link Item FieldItems}.
          *
-         * @param order How the comparators are sorted.
-         * @param comparators A variable amount of comparators.
+         * @param order how the comparators are sorted
+         * @param comparators a variable amount of comparators
          */
-        public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Comparator<? extends T>... comparators) {
+        @SafeVarargs
+        public final Builder<T> withComparators(@NotNull SortOrder order, @NotNull Comparator<? extends T>... comparators) {
             return this.withComparators(order, Arrays.asList(comparators));
         }
 
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param comparators A variable amount of comparators.
+         * @param comparators a variable amount of comparators
          */
         public Builder<T> withComparators(@NotNull Iterable<Comparator<? extends T>> comparators) {
             return this.withComparators(SortOrder.DESCENDING, comparators);
@@ -139,8 +201,8 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param order How the comparators are sorted.
-         * @param comparators A variable amount of comparators.
+         * @param order how the comparators are sorted
+         * @param comparators a variable amount of comparators
          */
         public Builder<T> withComparators(@NotNull SortOrder order, @NotNull Iterable<Comparator<? extends T>> comparators) {
             comparators.forEach(comparator -> this.comparators.put(comparator, order));
@@ -155,7 +217,7 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         /**
          * Sets the description of the {@link Sorter}.
          *
-         * @param description The description to use.
+         * @param description the description to use
          */
         public Builder<T> withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
@@ -164,8 +226,8 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         /**
          * Sets the description of the {@link Sorter}.
          *
-         * @param description The description to use.
-         * @param args The objects used to format the description.
+         * @param description the description to use
+         * @param args the objects used to format the description
          */
         public Builder<T> withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
@@ -174,59 +236,38 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         /**
          * Sets the description of the {@link Sorter}.
          *
-         * @param description The description to use.
+         * @param description the description to use
          */
         public Builder<T> withDescription(@NotNull Optional<String> description) {
-            this.optionBuilder.withDescription(description);
-            return this;
-        }
-
-        /**
-         * Sets the emoji of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button#getEmoji()}.
-         *
-         * @param emoji The emoji to use.
-         */
-        public Builder<T> withEmoji(@Nullable Emoji emoji) {
-            return this.withEmoji(Optional.ofNullable(emoji));
-        }
-
-        /**
-         * Sets the emoji of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button#getEmoji()}.
-         *
-         * @param emoji The emoji to use.
-         */
-        public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
-            this.optionBuilder.withEmoji(emoji);
+            this.description = description;
             return this;
         }
 
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param functions A variable amount of sort functions.
+         * @param functions a variable amount of sort functions
          */
-        public Builder<T> withFunctions(@NotNull Function<T, ? extends Comparable>... functions) {
+        @SafeVarargs
+        public final Builder<T> withFunctions(@NotNull Function<T, ? extends Comparable>... functions) {
             return this.withFunctions(SortOrder.DESCENDING, functions);
         }
 
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param functions A variable amount of sort functions.
-         * @param order How the comparators are sorted.
+         * @param functions a variable amount of sort functions
+         * @param order how the comparators are sorted
          */
-        public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Function<T, ? extends Comparable>... functions) {
+        @SafeVarargs
+        public final Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Function<T, ? extends Comparable>... functions) {
             return this.withFunctions(order, Arrays.asList(functions));
         }
 
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param functions A collection of sort functions.
+         * @param functions a collection of sort functions
          */
         public Builder<T> withFunctions(@NotNull Iterable<Function<T, ? extends Comparable>> functions) {
             return this.withFunctions(SortOrder.DESCENDING, functions);
@@ -235,8 +276,8 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         /**
          * Add custom sort functions for the {@link Item FieldItems}.
          *
-         * @param functions A collection of sort functions.
-         * @param order How the comparators are sorted.
+         * @param functions a collection of sort functions
+         * @param order how the comparators are sorted
          */
         public Builder<T> withFunctions(@NotNull SortOrder order, @NotNull Iterable<Function<T, ? extends Comparable>> functions) {
             functions.forEach(function -> this.comparators.put(Comparator.comparing(function), order));
@@ -244,32 +285,33 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         }
 
         /**
-         * Sets the label of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button}.
+         * Sets the identifier of the {@link Sorter}, overriding the default random UUID.
          *
-         * @param label The label of the field item.
+         * @param identifier the identifier to use
          */
-        public Builder<T> withLabel(@NotNull String label) {
-            this.optionBuilder.withLabel(label);
+        public Builder<T> withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
             return this;
         }
 
         /**
          * Sets the label of the {@link Sorter}.
-         * <br><br>
-         * This is used for the {@link Button}.
          *
-         * @param label The label of the field item.
-         * @param args The objects used to format the label.
+         * @param label the label of the sorter
          */
-        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
-            this.optionBuilder.withLabel(label, args);
+        public Builder<T> withLabel(@NotNull String label) {
+            this.label = Optional.of(label);
             return this;
         }
 
-        public Builder<T> withOption(@NotNull SelectMenu.Option option) {
-            this.optionBuilder = SelectMenu.Option.from(option);
+        /**
+         * Sets the label of the {@link Sorter}.
+         *
+         * @param label the label of the sorter
+         * @param args the objects used to format the label
+         */
+        public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
+            this.label = Optional.of(String.format(label, args));
             return this;
         }
 
@@ -279,7 +321,7 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
          * Descending - Highest to Lowest (Default)<br>
          * Ascending - Lowest to Highest
          *
-         * @param order The order to sort the items in.
+         * @param order the order to sort the items in
          */
         public Builder<T> withOrder(@NotNull SortOrder order) {
             this.order = order;
@@ -291,7 +333,10 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
             Reflection.validateFlags(this);
 
             return new Sorter<>(
-                this.optionBuilder.build(),
+                this.identifier,
+                this.label.orElseThrow(),
+                this.description,
+                this.enabled,
                 this.comparators.toUnmodifiableMap(),
                 this.order
             );

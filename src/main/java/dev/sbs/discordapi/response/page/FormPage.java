@@ -8,7 +8,8 @@ import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.HistoryHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,8 +29,8 @@ public final class FormPage implements Page {
     private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull ConcurrentList<Emoji> reactions;
     private final @NotNull ItemHandler<Question<?>> itemHandler;
-    //private final @NotNull IndexHistoryHandler<Question<?>, String> historyHandler;
-    
+    private final @NotNull HistoryHandler<Question<?>, String> historyHandler;
+
     // Form
     private final @NotNull String header;
     private final @NotNull Optional<String> details;
@@ -38,12 +39,16 @@ public final class FormPage implements Page {
         return new QuestionBuilder();
     }
 
+    public @NotNull ConcurrentList<Question<?>> getQuestions() {
+        return this.getItemHandler().getItems();
+    }
+
     public static @NotNull QuestionBuilder from(@NotNull FormPage formPage) {
         return new QuestionBuilder()
             .withOption(formPage.getOption())
             .withComponents(formPage.getComponents())
             .withReactions(formPage.getReactions())
-            .withQuestions(formPage.getItemHandler().getItems())
+            .withQuestions(formPage.getQuestions())
             .withTitle(formPage.getHeader())
             .withDetails(formPage.getDetails());
     }
@@ -243,30 +248,18 @@ public final class FormPage implements Page {
                 this.optionBuilder.build(),
                 this.components.toUnmodifiableList(),
                 this.reactions.toUnmodifiableList(),
-                ItemHandler.<Question<?>>builder()
+                ItemHandler.<Question<?>>embed()
                     .withItems(this.questions.toUnmodifiableList())
                     .withTransformer((question, index, size) -> question.getFieldItem())
                     .build(),
-                /*IndexHistoryHandler.<Question<?>, String>builder()
+                HistoryHandler.<Question<?>, String>builder()
                     .withPages(this.questions.toUnmodifiableList())
                     .withMatcher((question, identifier) -> question.getIdentifier().equals(identifier))
                     .withTransformer(Question::getIdentifier)
-                    .build(),*/
+                    .build(),
                 this.title.orElseThrow(),
                 this.details
             );
-
-            // First Page
-            /*if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
-                response.getHistoryHandler().locatePage(this.defaultPage.get());
-            else {
-                if (!this.pageHistory.isEmpty()) {
-                    response.getHistoryHandler().locatePage(this.pageHistory.removeFirst());
-                    this.pageHistory.forEach(identifier -> response.getHistoryHandler().gotoSubPage(identifier));
-                    response.getHistoryHandler().getCurrentPage().getItemHandler().gotoItemPage(this.currentItemPage);
-                } else
-                    response.getHistoryHandler().gotoPage(response.getPages().get(0));
-            }*/
         }
 
     }

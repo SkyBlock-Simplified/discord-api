@@ -47,6 +47,15 @@ import java.util.function.Function;
 public interface EventContext<T extends Event> {
 
     /**
+     * Creates a new {@link Response.Builder} pre-wired with this context.
+     *
+     * @return the pre-wired response builder
+     */
+    default @NotNull Response.Builder buildResponse() {
+        return Response.builder().withContext(this);
+    }
+
+    /**
      * Builds a Discord message from the given {@link Response} by sending it to the
      * resolved {@link MessageChannel}.
      *

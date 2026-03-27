@@ -7,9 +7,8 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
-import dev.sbs.discordapi.component.interaction.Button;
-import dev.sbs.discordapi.component.interaction.SelectMenu;
-import dev.sbs.discordapi.response.Emoji;
+import dev.sbs.discordapi.component.interaction.CheckboxGroup;
+import dev.sbs.discordapi.component.type.UserInteractComponent;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,13 +21,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Filter<T> implements TriPredicate<T, Long, Long> {
+public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractComponent {
 
-    private final @NotNull SelectMenu.Option option;
+    private final @NotNull String identifier;
+    private final @NotNull String label;
+    private final @NotNull Optional<String> description;
     private final @NotNull ConcurrentList<TriPredicate<T, Long, Long>> predicates;
     private final boolean enabled;
 
@@ -37,6 +39,20 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         return !this.isEnabled() || this.getPredicates()
             .stream()
             .allMatch(predicate -> predicate.test(item, index, size));
+    }
+
+    /**
+     * Builds a {@link CheckboxGroup.Option} from this filter's fields.
+     *
+     * @return the built checkbox option
+     */
+    public @NotNull CheckboxGroup.Option buildOption() {
+        CheckboxGroup.Option.Builder optionBuilder = CheckboxGroup.Option.builder()
+            .withLabel(this.getLabel())
+            .withValue(this.getIdentifier());
+
+        this.getDescription().ifPresent(optionBuilder::withDescription);
+        return optionBuilder.build();
     }
 
     public static <T> @NotNull Builder<T> builder() {
@@ -50,21 +66,31 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
 
         Filter<?> filter = (Filter<?>) o;
 
-        return Objects.equals(this.getOption(), filter.getOption())
+        return Objects.equals(this.getIdentifier(), filter.getIdentifier())
+            && Objects.equals(this.getLabel(), filter.getLabel())
+            && Objects.equals(this.getDescription(), filter.getDescription())
             && Objects.equals(this.getPredicates(), filter.getPredicates())
             && this.isEnabled() == filter.isEnabled();
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull Filter<T> filter) {
         return new Builder<T>()
-            .withOption(filter.getOption())
+            .withIdentifier(filter.getIdentifier())
+            .withLabel(filter.getLabel())
+            .withDescription(filter.getDescription())
             .withTriPredicates(filter.getPredicates())
             .isEnabled(filter.isEnabled());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getOption(), this.getPredicates(), this.isEnabled());
+        return Objects.hash(
+            this.getIdentifier(),
+            this.getLabel(),
+            this.getDescription(),
+            this.getPredicates(),
+            this.isEnabled()
+        );
     }
 
     public @NotNull Builder<T> mutate() {
@@ -74,8 +100,10 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder<T> implements ClassBuilder<Filter<T>> {
 
-        @BuildFlag(nonNull = true)
-        private SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
+        private String identifier = UUID.randomUUID().toString();
+        @BuildFlag(notEmpty = true)
+        private Optional<String> label = Optional.empty();
+        private Optional<String> description = Optional.empty();
         @BuildFlag(nonNull = true)
         private final ConcurrentList<TriPredicate<T, Long, Long>> predicates = Concurrent.newList();
         private boolean enabled = false;
@@ -89,7 +117,8 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
 
         /**
          * Sets this filter as enabled if given true.
-         * @param value True to enable.
+         *
+         * @param value true to enable
          */
         public Builder<T> isEnabled(boolean value) {
             this.enabled = value;
@@ -105,7 +134,8 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
 
         /**
          * Sets this filter as disabled if given true.
-         * @param value True to disable.
+         *
+         * @param value true to disable
          */
         public Builder<T> isDisabled(boolean value) {
             this.enabled = !value;
@@ -115,16 +145,17 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         /**
          * Adds predicates used to filter {@link FieldItem RenderItems}.
          *
-         * @param predicates Collection of filters to apply to {@link T}.
+         * @param predicates collection of filters to apply to {@link T}
          */
-        public Builder<T> withPredicates(@NotNull Predicate<T>... predicates) {
+        @SafeVarargs
+        public final Builder<T> withPredicates(@NotNull Predicate<T>... predicates) {
             return this.withPredicates(Arrays.asList(predicates));
         }
 
         /**
          * Adds predicates used to filter {@link FieldItem RenderItems}.
          *
-         * @param predicates Collection of filters to apply to {@link T}.
+         * @param predicates collection of filters to apply to {@link T}
          */
         public Builder<T> withPredicates(@NotNull Iterable<Predicate<T>> predicates) {
             predicates.forEach(predicate -> this.predicates.add((t, index, size) -> predicate.test(t)));
@@ -134,16 +165,17 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         /**
          * Adds predicates used to filter {@link FieldItem RenderItems}.
          *
-         * @param predicates Collection of filters to apply to {@link T}.
+         * @param predicates collection of filters to apply to {@link T}
          */
-        public Builder<T> withTriPredicates(@NotNull TriPredicate<T, Long, Long>... predicates) {
+        @SafeVarargs
+        public final Builder<T> withTriPredicates(@NotNull TriPredicate<T, Long, Long>... predicates) {
             return this.withTriPredicates(Arrays.asList(predicates));
         }
 
         /**
          * Adds predicates used to filter {@link FieldItem RenderItems}.
          *
-         * @param predicates Collection of filters to apply to {@link T}.
+         * @param predicates collection of filters to apply to {@link T}
          */
         public Builder<T> withTriPredicates(@NotNull Iterable<TriPredicate<T, Long, Long>> predicates) {
             predicates.forEach(this.predicates::add);
@@ -153,7 +185,7 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         /**
          * Sets the description of the {@link Filter}.
          *
-         * @param description The description to use.
+         * @param description the description to use
          */
         public Builder<T> withDescription(@Nullable String description) {
             return this.withDescription(Optional.ofNullable(description));
@@ -162,8 +194,8 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         /**
          * Sets the description of the {@link Filter}.
          *
-         * @param description The description to use.
-         * @param args The objects used to format the description.
+         * @param description the description to use
+         * @param args the objects used to format the description
          */
         public Builder<T> withDescription(@PrintFormat @Nullable String description, @Nullable Object... args) {
             return this.withDescription(StringUtil.formatNullable(description, args));
@@ -172,63 +204,41 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
         /**
          * Sets the description of the {@link Filter}.
          *
-         * @param description The description to use.
+         * @param description the description to use
          */
         public Builder<T> withDescription(@NotNull Optional<String> description) {
-            this.optionBuilder.withDescription(description);
+            this.description = description;
             return this;
         }
 
         /**
-         * Sets the emoji of the {@link Filter}.
-         * <br><br>
-         * This is used for the {@link Button#getEmoji()}.
+         * Sets the identifier of the {@link Filter}, overriding the default random UUID.
          *
-         * @param emoji The emoji to use.
+         * @param identifier the identifier to use
          */
-        public Builder<T> withEmoji(@Nullable Emoji emoji) {
-            return this.withEmoji(Optional.ofNullable(emoji));
-        }
-
-        /**
-         * Sets the emoji of the {@link Filter}.
-         * <br><br>
-         * This is used for the {@link Button#getEmoji()}.
-         *
-         * @param emoji The emoji to use.
-         */
-        public Builder<T> withEmoji(@NotNull Optional<Emoji> emoji) {
-            this.optionBuilder.withEmoji(emoji);
+        public Builder<T> withIdentifier(@NotNull String identifier) {
+            this.identifier = identifier;
             return this;
         }
 
         /**
          * Sets the label of the {@link Filter}.
-         * <br><br>
-         * This is used for the {@link Button}.
          *
-         * @param label The label of the field item.
+         * @param label the label of the filter
          */
         public Builder<T> withLabel(@NotNull String label) {
-            this.optionBuilder.withLabel(label);
+            this.label = Optional.of(label);
             return this;
         }
 
         /**
          * Sets the label of the {@link Filter}.
-         * <br><br>
-         * This is used for the {@link Button}.
          *
-         * @param label The label of the field item.
-         * @param args The objects used to format the label.
+         * @param label the label of the filter
+         * @param args the objects used to format the label
          */
         public Builder<T> withLabel(@PrintFormat @NotNull String label, @Nullable Object... args) {
-            this.optionBuilder.withLabel(label, args);
-            return this;
-        }
-
-        public Builder<T> withOption(@NotNull SelectMenu.Option option) {
-            this.optionBuilder = SelectMenu.Option.from(option);
+            this.label = Optional.of(String.format(label, args));
             return this;
         }
 
@@ -237,7 +247,9 @@ public class Filter<T> implements TriPredicate<T, Long, Long> {
             Reflection.validateFlags(this);
 
             return new Filter<>(
-                this.optionBuilder.build(),
+                this.identifier,
+                this.label.orElseThrow(),
+                this.description,
                 this.predicates.toUnmodifiableList(),
                 this.enabled
             );

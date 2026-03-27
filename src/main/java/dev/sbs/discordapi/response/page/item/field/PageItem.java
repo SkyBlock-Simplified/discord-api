@@ -8,7 +8,7 @@ import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Field;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.Subpages;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
@@ -77,7 +77,7 @@ public final class PageItem implements FieldItem<ItemHandler<?>>, Subpages<PageI
         private final SelectMenu.Option.Builder optionBuilder = SelectMenu.Option.builder();
         private boolean editable;
         private boolean inline;
-        private ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
+        private ItemHandler<?> itemHandler = ItemHandler.<Item>embed().build();
 
         /**
          * Sets the {@link Item} as editable.

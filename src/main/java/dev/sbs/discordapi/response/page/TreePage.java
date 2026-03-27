@@ -8,8 +8,8 @@ import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.handler.ItemHandler;
-import dev.sbs.discordapi.response.handler.TreeHistoryHandler;
+import dev.sbs.discordapi.response.handler.HistoryHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -31,7 +31,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
     private final @NotNull ConcurrentList<LayoutComponent> components;
     private final @NotNull ConcurrentList<Emoji> reactions;
     private final @NotNull ItemHandler<?> itemHandler;
-    private final @NotNull TreeHistoryHandler<TreePage, String> historyHandler;
+    private final @NotNull HistoryHandler<TreePage, String> historyHandler;
 
     // Legacy
     private final @NotNull Optional<String> content;
@@ -89,7 +89,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
         private Optional<String> content = Optional.empty();
         private final ConcurrentList<TreePage> pages = Concurrent.newList();
         private final ConcurrentList<Embed> embeds = Concurrent.newList();
-        private ItemHandler<?> itemHandler = ItemHandler.<Item>builder().build();
+        private ItemHandler<?> itemHandler = ItemHandler.<Item>embed().build();
 
         /**
          * Clear all but preservable components from {@link TreePage}.
@@ -365,7 +365,7 @@ public final class TreePage implements Page, Subpages<TreePage> {
                 this.components.toUnmodifiableList(),
                 this.reactions.toUnmodifiableList(),
                 this.itemHandler,
-                TreeHistoryHandler.<TreePage, String>builder()
+                HistoryHandler.<TreePage, String>builder()
                     .withPages(this.pages)
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withTransformer(page -> page.getOption().getValue())
