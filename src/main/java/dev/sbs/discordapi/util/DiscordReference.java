@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.util;
 
 import dev.sbs.api.collection.concurrent.Concurrent;
+import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.linked.ConcurrentLinkedMap;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
@@ -71,6 +72,17 @@ public abstract class DiscordReference {
      */
     protected final @NotNull <T extends Annotation> Optional<T> getAnnotation(@NotNull Class<T> aClass, @NotNull Class<?> tClass) {
         return tClass.isAnnotationPresent(aClass) ? Optional.of(tClass.getAnnotation(aClass)) : java.util.Optional.empty();
+    }
+
+    /**
+     * Renders a progress bar of the given color for the specified percentage.
+     *
+     * @param progressBar the color variant to render
+     * @param percentage the completion percentage (0-100)
+     * @return an unmodifiable list of five emojis representing the progress bar
+     */
+    protected final @NotNull ConcurrentList<Emoji> buildProgressBar(@NotNull ProgressBar progressBar, double percentage) {
+        return progressBar.render(percentage, this.getDiscordBot().getEmojiHandler().getEmojis());
     }
 
     /**
