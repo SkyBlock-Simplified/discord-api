@@ -400,6 +400,7 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
 
         // Build User Error
         Response userErrorResponse = Response.builder()
+            .withContext(exceptionContext)
             .isEphemeral(true)
             .withPages(
                 TreePage.builder()
@@ -432,6 +433,7 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
 
                         // Build Exception Response
                         Response logResponse = Response.builder()
+                            .withContext(exceptionContext)
                             .withException(exceptionContext.getException())
                             .withPages(
                                 TreePage.builder()
@@ -451,10 +453,6 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
                     })
             ))
             .then(Mono.empty());
-
-        // Handle Uncaught Exception
-        if (!(exceptionContext.getException() instanceof DiscordException))
-            mono = mono.then(Mono.error(exceptionContext.getException()));
 
         return mono;
     }

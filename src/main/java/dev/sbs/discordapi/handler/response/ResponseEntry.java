@@ -7,72 +7,41 @@ import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.reaction.Reaction;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
-
 /**
- * Abstract base for cached response entries, associating a {@link Response}
- * with its Discord channel, user, and message {@link Snowflake} identifiers.
+ * A cached entry associating a {@link Response} with its Discord channel, user,
+ * and message {@link Snowflake} identifiers.
  *
  * <p>
- * Subclasses track the last-rendered state ({@code currentResponse}) alongside
- * the latest state ({@code response}) to support dirty-checking via
- * {@link #isModified()}, and provide reactive helpers for updating attachments
- * and reactions on the underlying Discord message.
+ * Implementations track the last-rendered state ({@link #getCurrentResponse()})
+ * alongside the latest state ({@link #getResponse()}) to support dirty-checking
+ * via {@link #isModified()}, and provide reactive helpers for updating
+ * attachments and reactions on the underlying Discord message.
  *
  * @see CachedResponse
- * @see Followup
+ * @see ResponseFollowup
  */
-@Getter
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class BaseEntry {
+public interface ResponseEntry {
 
     /** Discord channel snowflake where the response message resides. */
-    private final @NotNull Snowflake channelId;
+    @NotNull Snowflake getChannelId();
 
     /** Discord user snowflake of the user who owns this response. */
-    private final @NotNull Snowflake userId;
+    @NotNull Snowflake getUserId();
 
     /** Discord message snowflake of the response message. */
-    private final @NotNull Snowflake messageId;
+    @NotNull Snowflake getMessageId();
 
     /** Current (possibly updated) response state. */
-    private @NotNull Response response;
+    @NotNull Response getResponse();
 
     /** Snapshot of the response state as last sent to Discord. */
-    @Getter(AccessLevel.PROTECTED)
-    private @NotNull Response currentResponse;
+    @NotNull Response getCurrentResponse();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        BaseEntry baseEntry = (BaseEntry) o;
-
-        return Objects.equals(this.getChannelId(), baseEntry.getChannelId())
-            && Objects.equals(this.getUserId(), baseEntry.getUserId())
-            && Objects.equals(this.getMessageId(), baseEntry.getMessageId())
-            && Objects.equals(this.getResponse(), baseEntry.getResponse())
-            && Objects.equals(this.getCurrentResponse(), baseEntry.getCurrentResponse());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getChannelId(), this.getUserId(), this.getMessageId(), this.getResponse(), this.getCurrentResponse());
-    }
-
-    /**
-     * Returns whether this entry represents a followup message.
-     *
-     * @return {@code true} if this entry is a followup
-     */
-    public abstract boolean isFollowup();
+    /** Whether this entry represents a followup message. */
+    boolean isFollowup();
 
     /**
      * Checks whether the current response state differs from the
@@ -81,26 +50,8 @@ public abstract class BaseEntry {
      *
      * @return {@code true} if the response has been modified since last render
      */
-    public boolean isModified() {
+    default boolean isModified() {
         return !this.getCurrentResponse().equals(this.getResponse()) || this.getResponse().isCacheUpdateRequired();
-    }
-
-    /**
-     * Synchronizes the last-rendered snapshot with the current response
-     * state and clears the cache-update flag.
-     */
-    protected void processLastInteract() {
-        this.currentResponse = this.response;
-        this.response.setNoCacheUpdateRequired();
-    }
-
-    /**
-     * Replaces the current response with the given updated response.
-     *
-     * @param response the new response state
-     */
-    protected void setUpdatedResponse(@NotNull Response response) {
-        this.response = response;
     }
 
     /**
@@ -110,7 +61,7 @@ public abstract class BaseEntry {
      * @param message the Discord message containing updated attachments
      * @return a mono that completes when attachments have been updated
      */
-    public Mono<CachedResponse> updateAttachments(@NotNull Message message) {
+    default Mono<CachedResponse> updateAttachments(@NotNull Message message) {
         return Mono.fromRunnable(() -> this.getResponse().updateAttachments(message));
     }
 
@@ -122,17 +73,15 @@ public abstract class BaseEntry {
      * @param message the Discord message to update reactions on
      * @return a mono emitting this entry when reaction updates complete
      */
-    public Mono<BaseEntry> updateReactions(@NotNull Message message) {
+    default Mono<ResponseEntry> updateReactions(@NotNull Message message) {
         return Mono.just(message)
             .checkpoint("ResponseHandler#updateReactions Processing")
             .flatMap(msg -> {
-                // Update Reactions
                 ConcurrentList<Emoji> newReactions = this.getResponse()
                     .getHistoryHandler()
                     .getCurrentPage()
                     .getReactions();
 
-                // Current Reactions
                 ConcurrentList<Emoji> currentReactions = msg.getReactions()
                     .stream()
                     .filter(Reaction::selfReacted)
@@ -142,7 +91,6 @@ public abstract class BaseEntry {
 
                 Mono<Void> mono = Mono.empty();
 
-                // Remove Existing Reactions
                 if (currentReactions.stream().anyMatch(messageEmoji -> !newReactions.contains(messageEmoji)))
                     mono = msg.removeAllReactions();
 

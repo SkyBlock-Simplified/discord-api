@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * Cached entry for a primary {@link Response} message, tracking its
  * lifecycle state (busy, deferred, last interaction time), associated
- * {@link Followup} messages, and per-user active {@link Modal} dialogs.
+ * {@link ResponseFollowup} messages, and per-user active {@link Modal} dialogs.
  *
  * <p>
  * A cached response is considered {@linkplain #isActive() active} while
@@ -26,15 +26,30 @@ import java.util.Optional;
  * interaction. Inactive responses are eligible for removal from the
  * {@link ResponseHandler}.
  *
- * @see BaseEntry
- * @see Followup
+ * @see ResponseEntry
+ * @see ResponseFollowup
  * @see ResponseHandler
  */
 @Getter
-public final class CachedResponse extends BaseEntry {
+public final class CachedResponse implements ResponseEntry {
+
+    /** Discord channel snowflake where the response message resides. */
+    private final @NotNull Snowflake channelId;
+
+    /** Discord user snowflake of the user who owns this response. */
+    private final @NotNull Snowflake userId;
+
+    /** Discord message snowflake of the response message. */
+    private final @NotNull Snowflake messageId;
+
+    /** Current (possibly updated) response state. */
+    private @NotNull Response response;
+
+    /** Snapshot of the response state as last sent to Discord. */
+    private @NotNull Response currentResponse;
 
     /** Followup messages associated with this cached response. */
-    private final @NotNull ConcurrentList<Followup> followups = Concurrent.newList();
+    private final @NotNull ConcurrentList<ResponseFollowup> followups = Concurrent.newList();
 
     /** Map of user snowflakes to their currently active modal dialogs. */
     private final @NotNull ConcurrentMap<Snowflake, Modal> activeModals = Concurrent.newMap();
@@ -57,13 +72,17 @@ public final class CachedResponse extends BaseEntry {
      * @param response the response to cache
      */
     public CachedResponse(@NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-        super(channelId, userId, messageId, response, response);
+        this.channelId = channelId;
+        this.userId = userId;
+        this.messageId = messageId;
+        this.response = response;
+        this.currentResponse = response;
         this.busy = true;
         this.deferred = false;
     }
 
     /**
-     * Creates a new {@link Followup} entry, adds it to this cached response,
+     * Creates a new {@link ResponseFollowup} entry, adds it to this cached response,
      * and returns it.
      *
      * @param identifier the unique string identifier for the followup
@@ -73,10 +92,10 @@ public final class CachedResponse extends BaseEntry {
      * @param response the followup response
      * @return a mono emitting the newly created followup
      */
-    public Mono<Followup> addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
-        Followup followup = new Followup(identifier, channelId, userId, messageId, response);
-        this.followups.add(followup);
-        return Mono.just(followup);
+    public Mono<ResponseFollowup> addFollowup(@NotNull String identifier, @NotNull Snowflake channelId, @NotNull Snowflake userId, @NotNull Snowflake messageId, @NotNull Response response) {
+        ResponseFollowup responseFollowup = new ResponseFollowup(identifier, channelId, userId, messageId, response);
+        this.followups.add(responseFollowup);
+        return Mono.just(responseFollowup);
     }
 
     /**
@@ -110,8 +129,8 @@ public final class CachedResponse extends BaseEntry {
      * @return an optional containing the matching followup, or empty if
      *         none exists
      */
-    public Optional<Followup> findFollowup(@NotNull String identifier) {
-        return this.getFollowups().findFirst(Followup::getIdentifier, identifier);
+    public Optional<ResponseFollowup> findFollowup(@NotNull String identifier) {
+        return this.getFollowups().findFirst(ResponseFollowup::getIdentifier, identifier);
     }
 
     /**
@@ -121,8 +140,8 @@ public final class CachedResponse extends BaseEntry {
      * @return an optional containing the matching followup, or empty if
      *         none exists
      */
-    public Optional<Followup> findFollowup(@NotNull Snowflake messageId) {
-        return this.getFollowups().findFirst(Followup::getMessageId, messageId);
+    public Optional<ResponseFollowup> findFollowup(@NotNull Snowflake messageId) {
+        return this.getFollowups().findFirst(ResponseFollowup::getMessageId, messageId);
     }
 
     /**
@@ -147,11 +166,15 @@ public final class CachedResponse extends BaseEntry {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         CachedResponse entry = (CachedResponse) o;
 
-        return this.getLastInteract() == entry.getLastInteract()
+        return Objects.equals(this.getChannelId(), entry.getChannelId())
+            && Objects.equals(this.getUserId(), entry.getUserId())
+            && Objects.equals(this.getMessageId(), entry.getMessageId())
+            && Objects.equals(this.getResponse(), entry.getResponse())
+            && Objects.equals(this.getCurrentResponse(), entry.getCurrentResponse())
+            && this.getLastInteract() == entry.getLastInteract()
             && this.isBusy() == entry.isBusy()
             && this.isDeferred() == entry.isDeferred()
             && Objects.equals(this.getFollowups(), entry.getFollowups())
@@ -171,7 +194,7 @@ public final class CachedResponse extends BaseEntry {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), this.getFollowups(), this.getActiveModals(), this.getLastInteract(), this.isBusy(), this.isDeferred());
+        return Objects.hash(this.getChannelId(), this.getUserId(), this.getMessageId(), this.getResponse(), this.getCurrentResponse(), this.getFollowups(), this.getActiveModals(), this.getLastInteract(), this.isBusy(), this.isDeferred());
     }
 
     /**
@@ -212,10 +235,9 @@ public final class CachedResponse extends BaseEntry {
         return this.isBusy() || System.currentTimeMillis() < this.getLastInteract() + (this.getResponse().getTimeToLive() * 1000L);
     }
 
-    /** {@inheritDoc} */
     @Override
     public boolean isFollowup() {
-        return true;
+        return false;
     }
 
     /**
@@ -262,7 +284,8 @@ public final class CachedResponse extends BaseEntry {
      */
     public Mono<CachedResponse> updateLastInteract() {
         return Mono.fromRunnable(() -> {
-            super.processLastInteract();
+            this.currentResponse = this.response;
+            this.response.setNoCacheUpdateRequired();
             this.lastInteract = System.currentTimeMillis();
             this.busy = false;
             this.deferred = false;
@@ -276,7 +299,7 @@ public final class CachedResponse extends BaseEntry {
      * @return a mono emitting this cached response
      */
     public Mono<CachedResponse> updateResponse(@NotNull Response response) {
-        super.setUpdatedResponse(response);
+        this.response = response;
         return Mono.just(this);
     }
 

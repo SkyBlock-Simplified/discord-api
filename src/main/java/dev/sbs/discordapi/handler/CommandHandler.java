@@ -319,7 +319,7 @@ public final class CommandHandler extends DiscordReference {
     public @NotNull ConcurrentList<DiscordCommand> getCommandsById(long commandId) {
         return this.getLoadedCommands()
             .stream()
-            .filter(command -> command.getId() == commandId)
+            .filter(command -> Long.valueOf(commandId).equals(this.getCommandId(command.getClass())))
             .collect(Concurrent.toUnmodifiableList());
     }
 
