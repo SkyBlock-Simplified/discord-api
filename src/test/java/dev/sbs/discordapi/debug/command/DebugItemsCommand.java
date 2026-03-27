@@ -9,7 +9,7 @@ import dev.sbs.discordapi.context.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.handler.Filter;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.handler.Search;
 import dev.sbs.discordapi.response.handler.Sorter;
 import dev.sbs.discordapi.response.page.Page;
@@ -42,11 +42,12 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
             Response.builder()
+                .withContext(commandContext)
                 .withTimeToLive(60)
                 .withPages(
                     Page.builder()
                         .withItemHandler(
-                            ItemHandler.<Test>builder()
+                            ItemHandler.<Test>embed()
                                 .withItems(tests)
                                 .withAmountPerPage(15)
                                 .withVariable("WORLD", "World!")
@@ -68,6 +69,7 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
                                 // TODO: Select menu filtering, one menu per Filter
                                 .withFilters(
                                     Filter.<Test>builder()
+                                        .withLabel("Under 100")
                                         .withTriPredicates((test, index, size) -> test.getIndex() < 100)
                                         .build()
                                 )
@@ -82,7 +84,6 @@ public class DebugItemsCommand extends DiscordCommand<SlashCommandContext> {
                                 .withSearch(
                                     Search.<Test>builder()
                                         .withPlaceholder("Input name.")
-                                        .withLabel("Name")
                                         .withPredicates((testItem, value) -> testItem.getName().equalsIgnoreCase(value))
                                         .build()
                                 )

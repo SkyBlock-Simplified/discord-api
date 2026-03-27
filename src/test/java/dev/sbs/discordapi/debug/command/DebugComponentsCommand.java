@@ -12,6 +12,7 @@ import dev.sbs.discordapi.component.interaction.Modal;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.component.layout.ActionRow;
+import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.context.command.SlashCommandContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.exception.DiscordException;
@@ -25,7 +26,6 @@ import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
-import java.util.function.Function;
 
 @Structure(
     parent = @Structure.Parent(
@@ -67,6 +67,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
             Response.builder()
+                .withContext(commandContext)
                 .withTimeToLive(30)
                 /*.withAttachments(
                     Attachment.of(
@@ -98,7 +99,6 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                 "test2.txt",
                                                 new ByteArrayInputStream("santa test".getBytes())
                                             )
-                                            //.editCurrentPage(builder -> builder.withContent("santa!!"))
                                             .build()
                                     ))
                                     .build(),
@@ -116,21 +116,23 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                         Modal.builder()
                                             .withTitle("Test title")
                                             .withComponents(
-                                                ActionRow.of(
-                                                    TextInput.builder()
-                                                        .withStyle(TextInput.Style.SHORT)
-                                                        .withIdentifier("something")
-                                                        .withLabel("label")
-                                                        .withPlaceholder("placeholder")
-                                                        .isRequired(false)
-                                                        .build()
-                                                )
+                                                Label.builder()
+                                                    .withTitle("Label")
+                                                    .withComponent(
+                                                        TextInput.builder()
+                                                            .withStyle(TextInput.Style.SHORT)
+                                                            .withIdentifier("something")
+                                                            .withPlaceholder("placeholder")
+                                                            .isRequired(false)
+                                                            .build()
+                                                    )
+                                                    .build()
                                             )
-                                            /*.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent("modal: " + context.getComponent()
-                                                .findComponent(TextInput.class, "something")
+                                            .onInteract(context -> context.edit(response -> response.editCurrentPage(builder -> builder.withContent("modal: " + context.getComponent()
+                                                .findComponent(TextInput.class, TextInput::getIdentifier, "something")
                                                 .flatMap(TextInput::getValue)
                                                 .orElse("hurdur i'm a failure")
-                                            )))*/
+                                            ))))
                                             .build()
                                     ))
                                     .build(),
@@ -142,18 +144,17 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                     .withStyle(Button.Style.LINK)
                                     .withUrl("https://google.com/")
                                     .withLabel("Google")
-                                    .isPreserved()
                                     .build()
                             ),
                             ActionRow.of(
                                 SelectMenu.builder()
                                     .withPlaceholder("Derpy menu")
-                                    .withPlaceholderUsesSelectedOption()
+                                    .withPlaceholderShowingSelectedOption()
                                     .withOptions(
                                         SelectMenu.Option.builder()
                                             .withLabel("Neigh")
                                             .withValue("value 1")
-                                            .withEmoji(Emoji.of(943867165990346793L, "SKYBLOCK_ICON_HORSE"))
+                                            .withEmoji(this.getEmoji("OTHER_HORSE_HEAD"))
                                             //.onInteract(context -> this.editPage(context, pageBuilder -> pageBuilder.withContent(context.getOption().getValue())))
                                             .build(),
                                         SelectMenu.Option.builder()
@@ -190,7 +191,6 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                     .withContent("Followup")
                                                     .withEmbeds(
                                                         Embed.builder()
-                                                            //.withIdentifier("embedder")
                                                             .withDescription("Hmm")
                                                             .withFooter(
                                                                 Footer.builder()
@@ -207,18 +207,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                                             .withLabel("FEdit")
                                                             .onInteract(context2 -> context2.editFollowup(
                                                                 followup -> followup.getResponse()
-                                                                    .mutate()
-                                                                    /*.editCurrentPage(builder -> builder.editEmbed(
-                                                                        "embedder",
-                                                                        ebuilder -> ebuilder
-                                                                            .withDescription("Hmm Edit")
-                                                                            .withFooter(
-                                                                                Footer.builder()
-                                                                                    .withText("Herro edit")
-                                                                                    .build()
-                                                                            )
-                                                                    ))*/
-                                                                    .build()
+                                                                    .editCurrentPage(builder -> builder.withContent("Followup Edit"))
                                                                 )
                                                             )
                                                             .build(),
@@ -241,18 +230,7 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                                     .onInteract(context -> context.editFollowup(
                                         "followuptest",
                                         followup -> followup.getResponse()
-                                            .mutate()
-                                            /*.editCurrentPage(builder -> builder.editEmbed(
-                                                "embedder",
-                                                ebuilder -> ebuilder
-                                                    .withDescription("Hmm Edit2")
-                                                    .withFooter(
-                                                        Footer.builder()
-                                                            .withText("Herro edit2")
-                                                            .build()
-                                                    )
-                                            ))*/
-                                            .build()
+                                            .editCurrentPage(builder -> builder.withContent("Followup Edit 2"))
                                     ))
                                     .build(),
                                 Button.builder()
@@ -267,22 +245,6 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
                 )
                 .build()
             );
-    }
-
-    private Mono<Void> editPage(MessageContext<?> context, Function<Page.Builder, Page.Builder> currentPage) {
-        return context.withResponseEntry(entry -> entry.updateResponse(
-            context.getResponse()
-                .mutate()
-                .editPage(
-                    currentPage.apply(
-                        context.getResponse()
-                            .getHistoryHandler()
-                            .getCurrentPage()
-                            .mutate()
-                    ).build()
-                )
-                .build()
-        ));
     }
 
 }

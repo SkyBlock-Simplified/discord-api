@@ -33,7 +33,7 @@ import dev.sbs.discordapi.handler.exception.DiscordExceptionHandler;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.handler.exception.SentryExceptionHandler;
 import dev.sbs.discordapi.handler.response.CachedResponse;
-import dev.sbs.discordapi.handler.response.Followup;
+import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.handler.response.ResponseHandler;
 import dev.sbs.discordapi.handler.shard.ShardHandler;
 import dev.sbs.discordapi.listener.DiscordListener;
@@ -72,6 +72,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.lang.reflect.Modifier;
 import java.net.SocketException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +104,7 @@ import java.util.concurrent.TimeUnit;
  *         <ul>
  *             <li>{@link Response}</li>
  *             <li>{@link FormPage}</li>
- *             <li>{@link Followup Followups}</li>
+ *             <li>{@link ResponseFollowup Followups}</li>
  *         </ul></li>
  *         <li>Components
  *         <ul>
@@ -229,6 +230,7 @@ public abstract class DiscordBot {
                         .filterPackage(DiscordListener.class)
                         .getSubtypesOf(DiscordListener.class)
                         .stream()
+                        .filter(listenerClass -> !Modifier.isAbstract(listenerClass.getModifiers()))
                         .map(listenerClass -> this.createListener(eventDispatcher, listenerClass))
                         .collect(Concurrent.toList());
 
@@ -238,14 +240,10 @@ public abstract class DiscordBot {
                         .map(listenerClass -> this.createListener(eventDispatcher, listenerClass))
                         .forEach(eventListeners::add);
 
-                    log.info("Registering Emojis");
-                    this.emojiHandler.reload();
-                    Mono<Void> emojis = this.emojiHandler.upload();
-
                     log.info("Logged in as {}", this.getSelf().username());
                     return Mono.when(eventListeners)
-                        .and(this.getCommandHandler().updateGlobalApplicationCommands())
-                        .and(emojis);
+                        .and(this.getCommandHandler().updateApplicationCommands())
+                        .and(this.getEmojiHandler().sync());
                 })
             )
             .login()

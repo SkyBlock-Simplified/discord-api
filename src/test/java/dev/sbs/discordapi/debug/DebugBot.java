@@ -23,16 +23,9 @@ public final class DebugBot extends DiscordBot {
         super(discordConfig);
     }
 
-    private static DebugBot create(@NotNull DiscordConfig discordConfig) {
-        DebugBot debugBot = new DebugBot(discordConfig);
-        debugBot.login();
-        debugBot.connect();
-        return debugBot;
-    }
-
     public static void main(final String[] args) {
         DiscordConfig discordConfig = DiscordConfig.builder()
-            .withToken(SystemUtil.getEnv("DISCORD_TOKEN"))
+            .withToken(SystemUtil.getEnv("SBS_DEBUG_TOKEN"))
             .withMainGuildId(652148034448261150L)
             .withLogChannelId(SystemUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
             .withCommands(
@@ -48,7 +41,9 @@ public final class DebugBot extends DiscordBot {
             .withLogLevel(Level.INFO)
             .build();
 
-        DebugBot.create(discordConfig);
+        DebugBot debugBot = new DebugBot(discordConfig);
+        debugBot.login();
+        debugBot.connect();
     }
 
     @Override

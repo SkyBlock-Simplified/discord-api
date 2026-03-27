@@ -9,7 +9,7 @@ import dev.sbs.discordapi.context.command.SlashCommandContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Response;
 import dev.sbs.discordapi.response.embed.Embed;
-import dev.sbs.discordapi.response.handler.ItemHandler;
+import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import dev.sbs.discordapi.response.page.Page;
 import dev.sbs.discordapi.response.page.TreePage;
 import dev.sbs.discordapi.response.page.item.AuthorItem;
@@ -65,7 +65,7 @@ public class EmbedCommand extends DiscordCommand<SlashCommandContext> {
                                         .withPages(
                                             Page.builder()
                                                 .withItemHandler(
-                                                    ItemHandler.<Item>builder()
+                                                    ItemHandler.<Item>embed()
                                                         .withStaticItems(
                                                             AuthorItem.builder().isEditable().build(),
                                                             TitleItem.builder().isEditable().build(),
