@@ -3,17 +3,19 @@ package dev.sbs.discordapi.handler;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.collection.concurrent.ConcurrentSet;
+import dev.sbs.api.math.Range;
 import dev.sbs.api.reflection.info.ResourceInfo;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.util.DiscordReference;
+import discord4j.core.object.entity.ApplicationEmoji;
 import discord4j.core.object.entity.ApplicationInfo;
 import discord4j.core.spec.ApplicationEmojiCreateSpec;
 import discord4j.rest.util.Image;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,7 +32,11 @@ import java.util.function.Function;
  * @see Emoji
  */
 @Getter
+@Log4j2
 public final class EmojiHandler extends DiscordReference {
+
+    /** Valid Discord emoji name length range. */
+    private static final Range<Integer> EMOJI_NAME_LENGTH = Range.between(2, 32);
 
     /** Emoji resources discovered from the classpath at construction time. */
     private final @NotNull ConcurrentSet<ResourceEmoji> resourceEmojis;
@@ -56,49 +62,85 @@ public final class EmojiHandler extends DiscordReference {
     }
 
     /**
-     * Reloads the cached emoji list from the Discord application's
-     * currently registered emojis.
-     */
-    public void reload() {
-        this.emojis = this.getDiscordBot()
-            .getGateway()
-            .getApplicationInfo()
-            .flatMapMany(ApplicationInfo::getEmojis)
-            .toStream()
-            .map(Emoji::of)
-            .collect(Concurrent.toUnmodifiableList());
-    }
-
-    /**
-     * Uploads any classpath emoji resources that are not yet registered
-     * with the Discord application, skipping emojis whose names already
-     * exist.
+     * Deletes all emojis currently registered with the Discord application.
      *
-     * @return a mono that completes when all new emojis have been uploaded
+     * @return a mono that completes when all emojis have been deleted
      */
-    public Mono<Void> upload() {
+    public @NotNull Mono<Void> purgeAll() {
         return this.getDiscordBot()
             .getGateway()
             .getApplicationInfo()
-            .flatMapMany(applicationInfo -> Flux.fromStream(
-                this.getResourceEmojis()
-                    .stream()
-                    .filter(resourceEmoji -> this.getEmojis()
-                        .stream()
-                        .noneMatch(emoji -> emoji.getName().equalsIgnoreCase(resourceEmoji.getName()))
-                    )
-                    .map(resourceEmoji -> ApplicationEmojiCreateSpec.builder()
-                        .name(resourceEmoji.getName())
-                        .image(Image.ofRaw(
-                            resourceEmoji.getResourceInfo().toBytes(),
-                            resourceEmoji.getFormat()
-                        ))
-                        .build()
-                    )
-                    .map(applicationInfo::createEmoji))
-                .flatMap(Function.identity())
-            )
+            .flatMapMany(ApplicationInfo::getEmojis)
+            .flatMap(ApplicationEmoji::delete)
             .then();
+    }
+
+    /**
+     * Synchronizes application emojis in a single reactor chain - purges
+     * orphaned emojis not backed by a classpath resource, uploads missing
+     * resource emojis, and refreshes the local cache using one
+     * {@link ApplicationInfo} fetch.
+     *
+     * @return a mono that completes when synchronization is finished
+     */
+    public @NotNull Mono<Void> sync() {
+        return this.getDiscordBot()
+            .getGateway()
+            .getApplicationInfo()
+            .flatMap(applicationInfo -> applicationInfo.getEmojis()
+                .collectList()
+                .flatMap(registeredEmojis -> {
+                    log.info("Registering Emojis");
+
+                    // Purge: delete registered emojis with no matching resource
+                    Flux<Void> purge = Flux.fromIterable(registeredEmojis)
+                        .filter(appEmoji -> this.resourceEmojis.stream()
+                            .noneMatch(res -> res.getName().equalsIgnoreCase(appEmoji.getName()))
+                        )
+                        .flatMap(ApplicationEmoji::delete);
+
+                    // Upload: create resource emojis not yet registered
+                    Flux<?> upload = Flux.fromStream(
+                        this.resourceEmojis.stream()
+                            .filter(resourceEmoji -> {
+                                if (!EMOJI_NAME_LENGTH.contains(resourceEmoji.getName().length())) {
+                                    log.warn(
+                                        "Skipping emoji '{}' - name length {} is outside valid range {}",
+                                        resourceEmoji.getName(),
+                                        resourceEmoji.getName().length(),
+                                        EMOJI_NAME_LENGTH
+                                    );
+                                    return false;
+                                }
+
+                                return true;
+                            })
+                            .filter(resourceEmoji -> registeredEmojis.stream()
+                                .noneMatch(appEmoji -> appEmoji.getName().equalsIgnoreCase(resourceEmoji.getName()))
+                            )
+                            .map(resourceEmoji -> ApplicationEmojiCreateSpec.builder()
+                                .name(resourceEmoji.getName())
+                                .image(Image.ofRaw(
+                                    resourceEmoji.getResourceInfo().toBytes(),
+                                    resourceEmoji.getFormat()
+                                ))
+                                .build())
+                            .map(applicationInfo::createEmoji)
+                        )
+                        .flatMap(Function.identity());
+
+                    return purge.thenMany(upload)
+                        .then()
+                        .doOnSuccess(__ -> log.info("Emojis Registered"));
+                })
+                // Reload: refresh cache from final application state
+                .then(applicationInfo.getEmojis()
+                    .map(Emoji::of)
+                    .collectList()
+                    .doOnNext(list -> this.emojis = list.stream().collect(Concurrent.toUnmodifiableList()))
+                    .then()
+                )
+            );
     }
 
     /**
@@ -135,18 +177,17 @@ public final class EmojiHandler extends DiscordReference {
         }
 
         /**
-         * Derives the emoji name from the resource path by stripping the
-         * leading slash, replacing path separators with underscores,
-         * removing the "resources/" prefix, and uppercasing the result.
+         * Derives the emoji name from the resource path by extracting the
+         * immediate parent directory and filename (without extension),
+         * concatenating them as {@code parent_filename} in lowercase.
          *
          * @param resourceInfo the classpath resource metadata
          * @return the derived emoji name
          */
         private static @NotNull String getName(@NotNull ResourceInfo resourceInfo) {
-            return StringUtil.stripStart(resourceInfo.getResourceName(), "/")
-                .replace('/', '_')
-                .replaceFirst("^resources/", "")
-                .toUpperCase();
+            String path = resourceInfo.getPath();
+            String parent = path.substring(path.lastIndexOf('/') + 1);
+            return String.format("%s_%s", parent, resourceInfo.getName()).toUpperCase();
         }
 
         /**
