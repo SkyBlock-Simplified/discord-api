@@ -4,7 +4,6 @@ import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.component.interaction.ActionComponent;
 import dev.sbs.discordapi.component.type.ContainerComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ import java.util.Objects;
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ActionRow implements ContainerComponent, LayoutComponent, TopLevelModalComponent {
+public final class ActionRow implements ContainerComponent, LayoutComponent {
 
     /** The action components arranged in this row. */
     private final @NotNull ConcurrentList<ActionComponent> components;
@@ -79,7 +78,7 @@ public final class ActionRow implements ContainerComponent, LayoutComponent, Top
      * @param components the action components to include
      * @return a new action row
      */
-    public static @NotNull ActionRow of(@NotNull Iterable<ActionComponent> components) {
+    public static @NotNull ActionRow of(@NotNull Iterable<? extends ActionComponent> components) {
         ConcurrentList<ActionComponent> componentList = Concurrent.newList();
         components.forEach(componentList::add);
         return new ActionRow(componentList.toUnmodifiableList());

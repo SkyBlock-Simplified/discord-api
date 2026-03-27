@@ -1,6 +1,5 @@
 package dev.sbs.discordapi.component.interaction;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
@@ -12,10 +11,7 @@ import dev.sbs.discordapi.component.type.ToggleableComponent;
 import dev.sbs.discordapi.context.component.ButtonContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.response.Emoji;
-import dev.sbs.discordapi.response.Response;
-import dev.sbs.discordapi.response.handler.item.search.Search;
-import dev.sbs.discordapi.response.handler.item.sorter.Sorter;
-import dev.sbs.discordapi.response.page.Page;
+import dev.sbs.discordapi.response.handler.PaginationHandler;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -437,151 +433,33 @@ public final class Button implements ActionComponent, AccessoryComponent, EventC
     }
 
     /**
-     * Built-in button behaviors for paginated item navigation.
+     * Identifier for built-in pagination button roles.
+     *
      * <p>
-     * Each constant encapsulates a label and an interaction handler that operates
-     * on the current page's item handler via the {@link Response} history.
+     * Interaction handlers and component construction are provided by
+     * {@link PaginationHandler PaginationHandler}.
+     *
+     * @see PaginationHandler
      */
-    // TODO: MOVE INTERACTION CODE TO BOT STARTUP ABSTRACTION
     @Getter
     @RequiredArgsConstructor
     public enum PageType {
 
-        /** No-op page type with no navigation behavior. */
-        NONE("", __ -> Mono.empty()),
+        /** No pagination role. */
+        NONE(""),
         /** Navigates to the previous page. */
-        PREVIOUS("Previous", context -> context.consumeResponse(response -> response.getHistoryHandler()
-            .getCurrentPage()
-            .getItemHandler()
-            .gotoPreviousPage()
-        )),
-        /** Presents a search modal with page and index text inputs. */
-        SEARCH("Search", context -> context.withResponse(response -> context.presentModal(
-            // TODO: Use labels and better TextInput.SearchType
-            Modal.builder()
-                .withComponents(
-                    ActionRow.of(TextInput.SearchType.PAGE.build(response.getHistoryHandler().getCurrentPage().getItemHandler())),
-                    ActionRow.of(TextInput.SearchType.INDEX.build(response.getHistoryHandler().getCurrentPage().getItemHandler()))
-                )
-                .withComponents(
-                    response.getHistoryHandler()
-                        .getCurrentPage()
-                        .getItemHandler()
-                        .getSearchHandler()
-                        .getItems()
-                        .stream()
-                        .map(Search::getTextInput)
-                        .map(ActionRow::of)
-                        .collect(Concurrent.toList())
-                )
-                .withTitle("Search")
-                .build()
-        ))),
-        /** Reserved index-based navigation placeholder. */
-        INDEX("Index", __ -> Mono.empty()),
-        /** Presents a filter follow-up response with sort and filter select menus. */
-        FILTER("Filter", context -> context.withResponse(response -> context.followup(
-            Response.builder()
-                .withPages(
-                    Page.builder()
-                        .withComponents(
-                            ActionRow.of(
-                                SelectMenu.builder()
-                                    .withOptions(
-                                        SelectMenu.Option.builder()
-                                            .withLabel("None")
-                                            .build()
-                                    )
-                                    .withOptions(
-                                        response.getHistoryHandler()
-                                            .getCurrentPage()
-                                            .getItemHandler()
-                                            .getSortHandler()
-                                            .getItems()
-                                            .stream()
-                                            .map(Sorter::getOption)
-                                            .collect(Concurrent.toList())
-                                    )
-                                    .withPlaceholderUsesSelectedOption()
-                                    .build(),
-                                SelectMenu.builder()
-                                    .build()
-                            ),
-                            ActionRow.of(
-                                SelectMenu.builder()
-                                    .withOptions(
-                                        SelectMenu.Option.builder()
-                                            .withLabel("None")
-                                            .build()
-                                    )
-                                    .withOptions(
-                                        // TODO: FilterHandler like SortHandler
-                                        //       In the stream, build the select menu and
-                                        //       then their action row and move it to it's own
-                                        //       withComponents method
-                                    )
-                                    .withPlaceholderUsesSelectedOption()
-                                    .build(),
-                                SelectMenu.builder()
-                                    .build()
-                            )
-                        )
-                        .build()
-                )
-                .build()
-        ))),
+        PREVIOUS("Previous"),
+        /** Presents a sort interface. */
+        SORT("Sort"),
+        /** Displays the current page index. */
+        INDEX("Index"),
+        /** Presents a filter interface. */
+        FILTER("Filter"),
         /** Navigates to the next page. */
-        NEXT("Next", context -> context.consumeResponse(response -> response.getHistoryHandler()
-            .getCurrentPage()
-            .getItemHandler()
-            .gotoNextPage()
-        ));
-        //LAST("Last", 1, this.getEmoji("ARROW_SQUARE_LAST")),
-        /*BACK("Back", this.getEmoji("ARROW_LEFT"), __ -> Mono.empty()),
-        SORT("Sort", this.getEmoji("SORT"), context -> context.consumeResponse(response -> response.getHistoryHandler()
-            .getCurrentPage()
-            .getItemHandler()
-            .getSortHandler()
-            .gotoNext()
-        )),
-        ORDER("Order", this.getEmoji("SORT_DESCENDING"), context -> context.consumeResponse(response -> response.getHistoryHandler()
-            .getCurrentPage()
-            .getItemHandler()so
-            .getSortHandler()
-            .invertOrder()
-        ))*/
+        NEXT("Next");
 
         /** The display label for this page type's button. */
         private final @NotNull String label;
-
-        /** The interaction handler invoked when this page type's button is clicked. */
-        private final @NotNull Function<ButtonContext, Mono<Void>> interaction;
-
-        /**
-         * Builds a {@link Button} with this page type's behavior and no emoji.
-         *
-         * @return a new {@link Button} configured with this page type
-         */
-        public @NotNull Button build() {
-            return this.build(Optional.empty());
-        }
-
-        /**
-         * Builds a {@link Button} with this page type's behavior.
-         *
-         * @param emoji the optional emoji to display on the button
-         * @return a new {@link Button} configured with this page type
-         */
-        public @NotNull Button build(@NotNull Optional<Emoji> emoji) {
-            return Button.builder()
-                .withStyle(Button.Style.SECONDARY)
-                .withEmoji(emoji)
-                .withLabel(this.getLabel())
-                .withPageType(this)
-                .setDisabled(true)
-                .onInteract(this.getInteraction())
-                .build();
-        }
 
     }
 

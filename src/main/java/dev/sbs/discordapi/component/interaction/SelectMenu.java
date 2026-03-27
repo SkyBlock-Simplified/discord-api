@@ -12,6 +12,7 @@ import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
 import dev.sbs.discordapi.context.component.OptionContext;
 import dev.sbs.discordapi.context.component.SelectMenuContext;
+import discord4j.discordjson.json.ComponentData;
 import dev.sbs.discordapi.response.Emoji;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -81,6 +82,8 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
     /** The entity type of this select menu. */
     private final @NotNull Type menuType;
 
+    private final @NotNull PageType pageType;
+
     /** The currently selected options. */
     private @NotNull ConcurrentList<Option> selected;
 
@@ -113,7 +116,8 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             && Objects.equals(this.getOptions(), that.getOptions())
             && Objects.equals(this.userInteraction, that.userInteraction)
             && Objects.equals(this.getMenuType(), that.getMenuType())
-            && Objects.equals(this.getSelected(), that.getSelected());
+            && Objects.equals(this.getSelected(), that.getSelected())
+            && Objects.equals(this.getPageType(), that.getPageType());
     }
 
     /**
@@ -146,7 +150,8 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
             .withPlaceholderShowingSelectedOption(selectMenu.isPlaceholderShowingSelectedOption())
             .withOptions(selectMenu.getOptions())
             .onInteract(selectMenu.userInteraction)
-            .withType(selectMenu.getMenuType());
+            .withType(selectMenu.getMenuType())
+            .withPageType(selectMenu.getPageType());
     }
 
     /** {@inheritDoc} */
@@ -208,6 +213,12 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
 
     /** {@inheritDoc} */
     @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        this.updateSelected(data.values().toOptional().orElse(Concurrent.newList()));
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setEnabled(boolean value) {
         this.enabled = value;
     }
@@ -265,7 +276,8 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         private boolean deferEdit;
         private boolean required;
         private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
-        private Type type = Type.UNKNOWN;
+        private Type type = Type.STRING;
+        private PageType pageType = PageType.NONE;
 
         /**
          * Replaces an existing {@link Option} matched by unique ID with the given option.
@@ -491,6 +503,16 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
         /**
+         * Sets the page type of the {@link SelectMenu}.
+         *
+         * @param pageType The page type of the select menu.
+         */
+        public Builder withPageType(@NotNull PageType pageType) {
+            this.pageType = pageType;
+            return this;
+        }
+
+        /**
          * Builds a new {@link SelectMenu} from the configured fields.
          *
          * @return a new {@link SelectMenu} instance
@@ -513,6 +535,7 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
                 this.required,
                 this.interaction,
                 this.type,
+                this.pageType,
                 Concurrent.newUnmodifiableList(),
                 this.enabled
             );
@@ -819,5 +842,29 @@ public final class SelectMenu implements ActionComponent, EventComponent<SelectM
         }
 
     }
+
+    /**
+     * Identifier for built-in pagination select menu roles.
+     *
+     * <p>
+     * Used to tag select menus for identification. Interaction handlers are
+     * provided by {@link dev.sbs.discordapi.response.handler.PaginationHandler
+     * PaginationHandler}.
+     *
+     * @see dev.sbs.discordapi.response.handler.PaginationHandler
+     */
+    public enum PageType {
+
+        /** No pagination role. */
+        NONE,
+        /** Top-level page selection. */
+        PAGE_SELECTOR,
+        /** Subpage selection with back navigation. */
+        SUBPAGE_SELECTOR,
+        /** Item selection for editing. */
+        ITEM
+
+    }
+
 
 }

@@ -11,8 +11,8 @@ import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.context.component.RadioGroupContext;
+import discord4j.discordjson.json.ComponentData;
 import discord4j.core.object.component.RadioGroupAction;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -46,7 +46,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RadioGroup implements ActionComponent, EventComponent<RadioGroupContext>, LabelComponent, ToggleableComponent, TopLevelModalComponent {
+public final class RadioGroup implements ActionComponent, EventComponent<RadioGroupContext>, LabelComponent, ToggleableComponent {
 
     /** The unique identifier for this radio group. */
     private final @NotNull String identifier;
@@ -163,6 +163,16 @@ public final class RadioGroup implements ActionComponent, EventComponent<RadioGr
      */
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        this.updateSelected(
+            data.values().toOptional()
+                .flatMap(values -> values.stream().findFirst())
+                .orElse(null)
+        );
     }
 
     /** {@inheritDoc} */

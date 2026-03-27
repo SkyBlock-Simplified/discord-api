@@ -1,12 +1,10 @@
 package dev.sbs.discordapi.component.interaction;
 
-import dev.sbs.api.math.Range;
 import dev.sbs.api.util.NumberUtil;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
-import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
@@ -26,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -58,7 +55,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
     private final @NotNull Style style;
 
     /** The optional pre-filled value. */
-    private final @NotNull Optional<String> value;
+    private @NotNull Optional<String> value;
 
     /** The optional placeholder text shown when the input is empty. */
     private final @NotNull Optional<String> placeholder;
@@ -160,6 +157,12 @@ public final class TextInput implements ActionComponent, LabelComponent {
      */
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        this.value = data.value().toOptional().map(StringUtil::stripToNull);
     }
 
     /**
@@ -364,114 +367,30 @@ public final class TextInput implements ActionComponent, LabelComponent {
     }
 
     /**
-     * Built-in search behaviors for modal text input fields.
+     * Identifier for built-in search behaviors assigned to modal text input fields.
+     *
      * <p>
-     * Each constant provides a title, description, placeholder function, validator function,
-     * and an interaction handler that operates on the current page's {@link ItemHandler}.
+     * Each constant carries an interaction handler for modal submission dispatch.
+     * Placeholder text, validators, and component construction are provided by
+     * {@link dev.sbs.discordapi.response.handler.PaginationHandler PaginationHandler}.
+     *
+     * @see dev.sbs.discordapi.response.handler.PaginationHandler
      */
     @Getter
     @RequiredArgsConstructor
     public enum SearchType {
 
-        /** No-op search type with no navigation behavior. */
+        /** No search behavior. */
         NONE((c_, t_) -> Mono.empty()),
-        /** Navigates to a specific page number within the paginated results. */
-        PAGE(
-            "Go to Page",
-            "null",
-            itemHandler -> String.format("Enter a number between 1 and %d.", itemHandler.getTotalPages()),
-            itemHandler -> value -> {
-                if (!NumberUtil.isCreatable(value))
-                    return false;
-
-                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
-                int page = NumberUtil.createInteger(value);
-                return pageRange.contains(page);
-            },
-            (context, textInput) -> context.consumeResponse(response -> {
-                ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
-                Range<Integer> pageRange = Range.between(1, itemHandler.getTotalPages());
-                itemHandler.gotoPage(pageRange.fit(Integer.parseInt(textInput.getValue().orElseThrow())));
-            })
-        ),
-        /** Navigates to a specific item index within the paginated results. */
-        INDEX(
-            "Go to Index",
-            "null",
-            itemHandler -> String.format("Enter a number between 0 and %d.", itemHandler.getCachedFilteredItems().size()),
-            itemHandler -> value -> {
-                if (!NumberUtil.isCreatable(value))
-                    return false;
-
-                Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
-                int index = NumberUtil.createInteger(value);
-                return indexRange.contains(index);
-            },
-            (context, textInput) -> context.consumeResponse(response -> {
-                ItemHandler<?> itemHandler = context.getResponse().getHistoryHandler().getCurrentPage().getItemHandler();
-                Range<Integer> indexRange = Range.between(0, itemHandler.getCachedFilteredItems().size());
-                int index = indexRange.fit(Integer.parseInt(textInput.getValue().orElseThrow()));
-                itemHandler.gotoPage((int) Math.ceil((double) index / itemHandler.getAmountPerPage()));
-            })
-        ),
-        /** Delegates to the item handler's search handler for custom search logic. */
-        CUSTOM((context, textInput) -> context.consumeResponse(response -> context.getResponse()
-            .getHistoryHandler()
-            .getCurrentPage()
-            .getItemHandler()
-            .getSearchHandler()
-            .search(textInput)
-        ));
-
-        /** The display title for this search type. */
-        private final @NotNull String title;
-
-        /** The optional description shown alongside the text input. */
-        private final @NotNull Optional<String> description;
-
-        /** Generates placeholder text based on the current item handler state. */
-        private final @NotNull Function<ItemHandler<?>, String> placeholder;
-
-        /** Generates a validator predicate based on the current item handler state. */
-        private final @NotNull Function<ItemHandler<?>, Predicate<String>> validator;
+        /** Navigates to a specific page number. */
+        PAGE(dev.sbs.discordapi.response.handler.PaginationHandler::handlePageSearch),
+        /** Navigates to a specific item index. */
+        INDEX(dev.sbs.discordapi.response.handler.PaginationHandler::handleIndexSearch),
+        /** Delegates to the item handler's custom search logic. */
+        CUSTOM(dev.sbs.discordapi.response.handler.PaginationHandler::handleCustomSearch);
 
         /** The interaction handler invoked when the modal containing this search type is submitted. */
         private final @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction;
-
-        SearchType(@NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction) {
-            this(Optional.empty(), f_ -> "", f_ -> p_ -> true, interaction);
-        }
-
-        SearchType(
-            @NotNull String title,
-            @Nullable String description,
-            @NotNull Function<ItemHandler<?>, String> placeholder,
-            @NotNull Function<ItemHandler<?>, Predicate<String>> validator,
-            @NotNull BiFunction<ModalContext, TextInput, Mono<Void>> interaction
-        ) {
-            this(title, Optional.ofNullable(description), placeholder, validator, interaction);
-        }
-
-        /**
-         * Builds a {@link Label} wrapping a configured {@link TextInput} for the given item handler.
-         *
-         * @param itemHandler the item handler used to generate placeholder and validator
-         * @return a new {@link Label} containing the configured text input
-         */
-        public @NotNull Label build(@NotNull ItemHandler<?> itemHandler) {
-            return Label.builder()
-                .withTitle(this.getTitle())
-                .withDescription(this.getDescription())
-                .withComponent(
-                    TextInput.builder()
-                        .withStyle(Style.SHORT)
-                        .withSearchType(this)
-                        .withPlaceholder(this.getPlaceholder().apply(itemHandler))
-                        .withValidator(this.getValidator().apply(itemHandler))
-                        .build()
-                )
-                .build();
-        }
 
     }
 

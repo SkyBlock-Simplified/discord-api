@@ -8,8 +8,8 @@ import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.context.component.CheckboxContext;
+import discord4j.discordjson.json.ComponentData;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import discord4j.core.object.component.CheckboxAction;
 import lombok.AccessLevel;
@@ -41,7 +41,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Checkbox implements ActionComponent, EventComponent<CheckboxContext>, LabelComponent, ToggleableComponent, TopLevelModalComponent {
+public final class Checkbox implements ActionComponent, EventComponent<CheckboxContext>, LabelComponent, ToggleableComponent {
 
     private static final Function<CheckboxContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
 
@@ -116,6 +116,12 @@ public final class Checkbox implements ActionComponent, EventComponent<CheckboxC
      */
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        // Checkbox toggle state is event-driven, not stored on the component
     }
 
     /** {@inheritDoc} */

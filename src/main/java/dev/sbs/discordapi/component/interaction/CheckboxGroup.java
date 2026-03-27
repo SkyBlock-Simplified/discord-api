@@ -11,8 +11,8 @@ import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ToggleableComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.context.component.CheckboxContext;
+import discord4j.discordjson.json.ComponentData;
 import dev.sbs.discordapi.context.component.CheckboxGroupContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import lombok.AccessLevel;
@@ -49,7 +49,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class CheckboxGroup implements ActionComponent, EventComponent<CheckboxGroupContext>, LabelComponent, ToggleableComponent, TopLevelModalComponent {
+public final class CheckboxGroup implements ActionComponent, EventComponent<CheckboxGroupContext>, LabelComponent, ToggleableComponent {
 
     private static final Function<CheckboxContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
 
@@ -180,6 +180,12 @@ public final class CheckboxGroup implements ActionComponent, EventComponent<Chec
      */
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        this.updateSelected(data.values().toOptional().orElse(Concurrent.newList()));
     }
 
     /** {@inheritDoc} */

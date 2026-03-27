@@ -7,11 +7,11 @@ import dev.sbs.discordapi.component.interaction.Modal;
  * Pure marker interface for components valid at the top level of a Discord modal.
  *
  * <p>
- * Top-level modal components are those that can appear directly in a {@link Modal}'s
- * component list without being nested inside another layout. Unlike
- * {@link TopLevelMessageComponent}, this interface does not narrow the Discord4J return
- * type because the D4J {@code TopLevelModalComponent} is itself a pure marker that not
- * all valid modal components extend.
+ * Only {@link dev.sbs.discordapi.component.layout.Label Label} and
+ * {@link dev.sbs.discordapi.component.TextDisplay TextDisplay} implement this interface.
+ * Interactive components such as {@link dev.sbs.discordapi.component.interaction.TextInput
+ * TextInput} and {@link dev.sbs.discordapi.component.interaction.SelectMenu SelectMenu} must
+ * be wrapped in a {@code Label} to appear in a modal.
  *
  * @see Modal
  */

@@ -4,8 +4,8 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.type.LabelComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import discord4j.core.spec.MessageCreateFields;
+import discord4j.discordjson.json.ComponentData;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class FileUpload implements LabelComponent, TopLevelModalComponent {
+public final class FileUpload implements LabelComponent {
 
     /** The unique identifier for this file upload. */
     private final @NotNull String identifier;
@@ -141,6 +141,12 @@ public final class FileUpload implements LabelComponent, TopLevelModalComponent 
      */
     public boolean isPendingUpload() {
         return this.getMediaData().isPendingUpload();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void updateFromModalData(@NotNull ComponentData data) {
+        // File upload state is managed externally
     }
 
     /**

@@ -3,16 +3,15 @@ package dev.sbs.discordapi.component.interaction;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
-import dev.sbs.api.tuple.pair.Pair;
-import dev.sbs.api.tuple.pair.PairOptional;
-import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.command.exception.InputException;
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.Label;
+import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.component.type.EventComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.type.ModalUpdatable;
 import dev.sbs.discordapi.component.type.TopLevelModalComponent;
 import dev.sbs.discordapi.component.type.UserInteractComponent;
 import dev.sbs.discordapi.context.ExceptionContext;
@@ -111,6 +110,27 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
             .withTitle(modal.getTitle())
             .withComponents(modal.getComponents())
             .onInteract(modal.interaction);
+    }
+
+    /**
+     * Finds the first {@link ActionComponent} of the given type whose extracted property
+     * matches the specified value, searching through all layout components in this modal.
+     *
+     * @param tClass the action component subtype to search for
+     * @param function the property extractor applied to each candidate
+     * @param value the value to match against the extracted property
+     * @param <S> the property type
+     * @param <T> the action component subtype
+     * @return an {@link Optional} containing the matching component, or empty if none is found
+     */
+    public <S, T extends ActionComponent> @NotNull Optional<T> findComponent(@NotNull Class<T> tClass, @NotNull Function<T, S> function, S value) {
+        return this.getComponents()
+            .stream()
+            .filter(LayoutComponent.class::isInstance)
+            .map(LayoutComponent.class::cast)
+            .map(layout -> layout.findComponent(tClass, function, value))
+            .flatMap(Optional::stream)
+            .findFirst();
     }
 
     /**
@@ -217,28 +237,6 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         }
 
         /**
-         * Finds the first {@link LabelComponent} matching the given predicate within the modal's labels.
-         *
-         * @param tClass the component type to match
-         * @param function the accessor used to extract the comparison value
-         * @param value the value to match against
-         * @param <S> the comparison type
-         * @param <A> the label component type
-         * @return the matching label and component pair, if present
-         */
-        private <S, A extends LabelComponent> PairOptional<Label, A> findComponent(@NotNull Class<A> tClass, @NotNull Function<A, S> function, S value) {
-            return PairOptional.of(
-                this.components.stream()
-                    .filter(Label.class::isInstance)
-                    .map(Label.class::cast)
-                    .filter(label -> tClass.isInstance(label.getComponent()))
-                    .filter(label -> Objects.equals(function.apply(tClass.cast(label.getComponent())), value))
-                    .map(label -> Pair.of(label, tClass.cast(label.getComponent())))
-                    .findFirst()
-            );
-        }
-
-        /**
          * Sets the interaction handler invoked when the {@link Modal} is submitted.
          *
          * @param interaction the interaction function, or {@code null} for the default no-op handler
@@ -260,8 +258,9 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
         /**
          * Updates component values from a modal submit event.
          * <p>
-         * Iterates through the event's submitted components and updates matching
-         * {@link TextInput} values and {@link SelectMenu} selections within this builder.
+         * Iterates through the event's submitted components and delegates to each
+         * matching {@link ModalUpdatable} component's
+         * {@link ModalUpdatable#updateFromModalData updateFromModalData} method.
          *
          * @param event the modal submit interaction event
          */
@@ -270,37 +269,14 @@ public final class Modal implements EventComponent<ModalContext>, UserInteractCo
                 .stream()
                 .map(discord4j.core.object.component.LayoutComponent::getChildren)
                 .flatMap(List::stream)
-                .forEach(d4jComponent -> {
-                    switch (d4jComponent.getType()) {
-                        case TEXT_INPUT -> this.findComponent(
-                            TextInput.class,
-                            TextInput::getIdentifier,
-                            d4jComponent.getData().customId().get()
-                        ).ifPresent((label, textInput) -> label.mutate()
-                            .withComponent(
-                                textInput.mutate()
-                                    .withValue(
-                                        d4jComponent.getData()
-                                            .value()
-                                            .toOptional()
-                                            .map(StringUtil::stripToNull)
-                                    )
-                                    .build()
-                            )
-                            .build()
-                        );
-                        case SELECT_MENU_STRING -> this.findComponent(
-                            SelectMenu.class,
-                            SelectMenu::getIdentifier,
-                            d4jComponent.getData().customId().get()
-                        ).ifPresent((label, selectMenu) -> selectMenu.updateSelected(
-                            d4jComponent.getData()
-                                .values()
-                                .toOptional()
-                                .orElse(Concurrent.newList())
-                        ));
-                    }
-                });
+                .forEach(d4jComponent -> this.components.stream()
+                    .filter(Label.class::isInstance)
+                    .map(Label.class::cast)
+                    .filter(label -> label.getComponent() instanceof ModalUpdatable)
+                    .filter(label -> label.getComponent().getIdentifier().equals(d4jComponent.getData().customId().get()))
+                    .findFirst()
+                    .ifPresent(label -> ((ModalUpdatable) label.getComponent()).updateFromModalData(d4jComponent.getData()))
+                );
 
             return this;
         }
