@@ -85,6 +85,17 @@ public interface EventContext<T extends Event> {
     /** The {@link DiscordBot} instance that received this event. */
     @NotNull DiscordBot getDiscordBot();
 
+    /**
+     * Returns the bot instance cast to the specified subclass.
+     *
+     * @param <B> the bot subclass type
+     * @param botType the bot subclass to cast to
+     * @return the bot instance as the specified type
+     */
+    default <B extends DiscordBot> @NotNull B getDiscordBot(@NotNull Class<B> botType) {
+        return botType.cast(getDiscordBot());
+    }
+
     /** The underlying Discord4J {@link Event} wrapped by this context. */
     @NotNull T getEvent();
 

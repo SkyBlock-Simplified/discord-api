@@ -53,6 +53,17 @@ public abstract class DiscordReference {
     @Getter private final @NotNull Logger log;
 
     /**
+     * Returns the bot instance cast to the specified subclass.
+     *
+     * @param <B> the bot subclass type
+     * @param botType the bot subclass to cast to
+     * @return the bot instance as the specified type
+     */
+    protected final <B extends DiscordBot> @NotNull B getDiscordBot(@NotNull Class<B> botType) {
+        return botType.cast(this.discordBot);
+    }
+
+    /**
      * Constructs a new reference bound to the given bot instance.
      *
      * @param discordBot the bot instance
