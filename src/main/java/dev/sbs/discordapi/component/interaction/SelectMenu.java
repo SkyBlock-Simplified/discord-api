@@ -9,6 +9,7 @@ import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.capability.EventInteractable;
 import dev.sbs.discordapi.component.capability.Toggleable;
+import dev.sbs.discordapi.component.scope.ActionComponent;
 import dev.sbs.discordapi.component.scope.LabelComponent;
 import dev.sbs.discordapi.context.component.OptionContext;
 import dev.sbs.discordapi.context.component.SelectMenuContext;

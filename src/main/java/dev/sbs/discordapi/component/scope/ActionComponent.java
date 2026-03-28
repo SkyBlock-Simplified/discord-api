@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.component.interaction;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.capability.UserInteractable;
@@ -6,11 +6,13 @@ import dev.sbs.discordapi.component.layout.ActionRow;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Capability interface for interactive Discord components that accept user input.
+ * Placement scope for interactive components valid inside an {@link ActionRow} layout.
  *
  * <p>
- * Narrows the return type of {@link Component#getD4jComponent()} to Discord4J's
- * {@link ActionComponent}.
+ * Action components accept user input and carry a
+ * {@link UserInteractable#getIdentifier() custom_id} for interaction routing.
+ * Implementations narrow the Discord4J return type to
+ * {@link discord4j.core.object.component.ActionComponent}.
  *
  * @see ActionRow
  */

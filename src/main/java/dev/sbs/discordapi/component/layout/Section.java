@@ -10,6 +10,7 @@ import dev.sbs.discordapi.component.interaction.Button;
 import dev.sbs.discordapi.component.media.Thumbnail;
 import dev.sbs.discordapi.component.scope.AccessoryComponent;
 import dev.sbs.discordapi.component.scope.ContainerComponent;
+import dev.sbs.discordapi.component.scope.LayoutComponent;
 import dev.sbs.discordapi.component.scope.SectionComponent;
 import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import lombok.AccessLevel;

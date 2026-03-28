@@ -10,6 +10,7 @@ import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.capability.EventInteractable;
 import dev.sbs.discordapi.component.capability.Toggleable;
 import dev.sbs.discordapi.component.layout.Label;
+import dev.sbs.discordapi.component.scope.ActionComponent;
 import dev.sbs.discordapi.component.scope.LabelComponent;
 import dev.sbs.discordapi.context.component.RadioGroupContext;
 import discord4j.core.object.component.RadioGroupAction;

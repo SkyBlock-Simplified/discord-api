@@ -6,6 +6,7 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.scope.ContainerComponent;
+import dev.sbs.discordapi.component.scope.LayoutComponent;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import lombok.AccessLevel;
 import lombok.Getter;

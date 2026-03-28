@@ -1,12 +1,12 @@
-package dev.sbs.discordapi.component.layout;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.capability.UserInteractable;
-import dev.sbs.discordapi.component.interaction.ActionComponent;
-import dev.sbs.discordapi.component.scope.AccessoryComponent;
-import dev.sbs.discordapi.component.scope.LabelComponent;
-import dev.sbs.discordapi.component.scope.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.layout.ActionRow;
+import dev.sbs.discordapi.component.layout.Container;
+import dev.sbs.discordapi.component.layout.Label;
+import dev.sbs.discordapi.component.layout.Section;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -15,7 +15,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * A top-level message component that contains child {@link Component Components}.
+ * Placement scope for top-level message components that contain child
+ * {@link Component Components}.
  *
  * <p>
  * Provides recursive traversal of the component tree via {@link #flattenComponents()},

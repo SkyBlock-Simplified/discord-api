@@ -11,6 +11,7 @@ import dev.sbs.discordapi.component.interaction.Modal;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
 import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.component.scope.LabelComponent;
+import dev.sbs.discordapi.component.scope.LayoutComponent;
 import dev.sbs.discordapi.component.scope.TopLevelModalComponent;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
