@@ -41,7 +41,7 @@ import java.util.function.Function;
  *   <li><b>{@link ExceptionContext}</b> - exception-wrapping decorator</li>
  *   <li><b>{@link InteractionContext}</b> - Discord interaction events</li>
  * </ul>
- *
+ * <img src="doc-files/ContextDiagram.svg" />
  * @param <T> the Discord4J {@link Event} type wrapped by this context
  */
 public interface EventContext<T extends Event> {

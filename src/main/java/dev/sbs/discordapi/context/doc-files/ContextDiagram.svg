@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="610" height="412" viewBox="0 0 610 412">
+  <style>
+    .box { fill: #3C3F41; stroke: #515658; stroke-width: 1; }
+    .lbl { font-family: Consolas, monospace; font-size: 11px; fill: #BBBBBB; }
+    .e   { stroke: #609350; stroke-width: 1.2; fill: none; }
+    .d   { stroke: #3A5930; stroke-width: 1; fill: none; stroke-dasharray: 5,3; }
+    .da  { stroke: #3A5930; stroke-width: 1; fill: none; }
+    .sa  { stroke: #609350; stroke-width: 1.2; fill: none; }
+  </style>
+  <path class="d" d="M167.8,116.0 L167.8,146.0"/>
+  <polygon points="164,146 171,146 168,152" fill="#3A5930"/>
+  <path class="d" d="M146.1,116.0 L146.1,122.0 Q146.1,126.0 142.1,126.0 L127.1,126.0 Q123.1,126.0 123.1,130.0 L123.1,184.0 Q123.1,188.0 127.1,188.0 L273.4,188.0 Q277.4,188.0 277.4,192.0 L277.4,208.0"/>
+  <polygon points="274,208 281,208 277,214" fill="#3A5930"/>
+  <path class="d" d="M353.1,178.0 L353.1,184.0 Q353.1,188.0 357.1,188.0 L479.3,188.0 Q483.3,188.0 483.3,192.0 L483.3,208.0"/>
+  <polygon points="480,208 487,208 483,214" fill="#3A5930"/>
+  <path class="e" d="M295.4,116.0 L295.4,122.0 Q295.4,126.0 291.4,126.0 L205.4,126.0 Q201.4,126.0 201.4,130.0 L201.4,144.0"/>
+  <polygon points="196,144 206,144 201,152" fill="#609350"/>
+  <path class="e" d="M536.5,302.0 L536.5,348.0 Q536.5,352.0 532.5,352.0 L463.5,352.0 Q462.5,352.0 462.5,353.0 L462.5,354.0"/>
+  <polygon points="458,354 468,354 463,362" fill="#609350"/>
+  <path class="e" d="M553.5,302.0 L553.5,354.0"/>
+  <polygon points="549,354 559,354 554,362" fill="#609350"/>
+  <path class="e" d="M271.5,240.0 L271.5,246.0 Q271.5,250.0 267.5,250.0 L81.0,250.0 Q77.0,250.0 77.0,254.0 L77.0,268.0"/>
+  <polygon points="72,268 82,268 77,276" fill="#609350"/>
+  <path class="e" d="M468.5,302.0 L468.5,308.0 Q468.5,312.0 464.5,312.0 L60.5,312.0 Q56.5,312.0 56.5,316.0 L56.5,354.0"/>
+  <polygon points="52,354 62,354 57,362" fill="#609350"/>
+  <path class="e" d="M485.5,302.0 L485.5,318.0 Q485.5,322.0 481.5,322.0 L145.5,322.0 Q141.5,322.0 141.5,326.0 L141.5,354.0"/>
+  <polygon points="137,354 147,354 142,362" fill="#609350"/>
+  <path class="e" d="M327.1,116.0 L327.1,144.0"/>
+  <polygon points="322,144 332,144 327,152" fill="#609350"/>
+  <path class="e" d="M511.0,240.0 L511.0,268.0"/>
+  <polygon points="506,268 516,268 511,276" fill="#609350"/>
+  <path class="e" d="M483.3,240.0 L483.3,246.0 Q483.3,250.0 479.3,250.0 L411.5,250.0 Q407.5,250.0 407.5,254.0 L407.5,268.0"/>
+  <polygon points="403,268 413,268 408,276" fill="#609350"/>
+  <path class="e" d="M487.2,50.0 L487.2,76.0 Q487.2,80.0 483.2,80.0 L312.3,80.0 Q311.3,80.0 311.3,81.0 L311.3,82.0"/>
+  <polygon points="306,82 316,82 311,90" fill="#609350"/>
+  <path class="e" d="M301.1,178.0 L301.1,206.0"/>
+  <polygon points="296,206 306,206 301,214" fill="#609350"/>
+  <path class="e" d="M307.0,240.0 L307.0,268.0"/>
+  <polygon points="302,268 312,268 307,276" fill="#609350"/>
+  <path class="e" d="M502.5,302.0 L502.5,328.0 Q502.5,332.0 498.5,332.0 L242.5,332.0 Q238.5,332.0 238.5,336.0 L238.5,354.0"/>
+  <polygon points="234,354 244,354 239,362" fill="#609350"/>
+  <path class="e" d="M519.5,302.0 L519.5,338.0 Q519.5,342.0 515.5,342.0 L354.5,342.0 Q350.5,342.0 350.5,346.0 L350.5,354.0"/>
+  <polygon points="346,354 356,354 351,362" fill="#609350"/>
+  <path class="e" d="M499.2,50.0 L499.2,82.0"/>
+  <polygon points="494,82 504,82 499,90" fill="#609350"/>
+  <path class="e" d="M511.0,116.0 L511.0,206.0"/>
+  <polygon points="506,206 516,206 511,214" fill="#609350"/>
+  <path class="e" d="M463.2,50.0 L463.2,56.0 Q463.2,60.0 459.2,60.0 L72.9,60.0 Q68.9,60.0 68.9,64.0 L68.9,82.0"/>
+  <polygon points="64,82 74,82 69,90" fill="#609350"/>
+  <path class="e" d="M289.3,240.0 L289.3,256.0 Q289.3,260.0 285.3,260.0 L193.0,260.0 Q189.0,260.0 189.0,264.0 L189.0,268.0"/>
+  <polygon points="184,268 194,268 189,276" fill="#609350"/>
+  <path class="e" d="M487.3,116.0 L487.3,122.0 Q487.3,126.0 483.3,126.0 L466.5,126.0 Q462.5,126.0 462.5,130.0 L462.5,144.0"/>
+  <polygon points="458,144 468,144 463,152" fill="#609350"/>
+  <path class="e" d="M475.2,50.0 L475.2,66.0 Q475.2,70.0 471.2,70.0 L160.9,70.0 Q156.9,70.0 156.9,74.0 L156.9,82.0"/>
+  <polygon points="152,82 162,82 157,90" fill="#609350"/>
+  <rect class="box" x="451" y="24" width="60" height="26" rx="4" ry="4"/>
+  <g transform="translate(455.2,29.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="474.2" y="41.0">Event</text>
+  <rect class="box" x="134" y="152" width="101" height="26" rx="4" ry="4"/>
+  <g transform="translate(138.1,157.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="157.1" y="169.0">AutoComplete</text>
+  <rect class="box" x="418" y="362" width="89" height="26" rx="4" ry="4"/>
+  <g transform="translate(422.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="441.0" y="379.0">RadioGroup</text>
+  <rect class="box" x="521" y="362" width="65" height="26" rx="4" ry="4"/>
+  <g transform="translate(525.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="544.0" y="379.0">Option</text>
+  <rect class="box" x="27" y="276" width="101" height="26" rx="4" ry="4"/>
+  <g transform="translate(30.5,281.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="49.5" y="293.0">SlashCommand</text>
+  <rect class="box" x="24" y="362" width="65" height="26" rx="4" ry="4"/>
+  <g transform="translate(28.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="47.0" y="379.0">Button</text>
+  <rect class="box" x="103" y="362" width="77" height="26" rx="4" ry="4"/>
+  <g transform="translate(107.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="126.0" y="379.0">Checkbox</text>
+  <rect class="box" x="249" y="152" width="156" height="26" rx="4" ry="4"/>
+  <g transform="translate(253.1,157.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="272.1" y="169.0">DeferrableInteraction</text>
+  <rect class="box" x="452" y="276" width="119" height="26" rx="4" ry="4"/>
+  <g transform="translate(455.5,281.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="474.5" y="293.0">ActionComponent</text>
+  <rect class="box" x="378" y="276" width="60" height="26" rx="4" ry="4"/>
+  <g transform="translate(381.5,281.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="400.5" y="293.0">Modal</text>
+  <rect class="box" x="264" y="90" width="95" height="26" rx="4" ry="4"/>
+  <g transform="translate(267.8,95.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="286.8" y="107.0">Interaction</text>
+  <rect class="box" x="254" y="214" width="71" height="26" rx="4" ry="4"/>
+  <g transform="translate(257.8,219.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="276.8" y="231.0">Command</text>
+  <rect class="box" x="251" y="276" width="113" height="26" rx="4" ry="4"/>
+  <g transform="translate(254.5,281.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="273.5" y="293.0">MessageCommand</text>
+  <rect class="box" x="194" y="362" width="89" height="26" rx="4" ry="4"/>
+  <g transform="translate(198.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="217.0" y="379.0">SelectMenu</text>
+  <rect class="box" x="297" y="362" width="107" height="26" rx="4" ry="4"/>
+  <g transform="translate(301.0,367.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="320.0" y="379.0">CheckboxGroup</text>
+  <rect class="box" x="464" y="90" width="71" height="26" rx="4" ry="4"/>
+  <g transform="translate(467.7,95.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="486.7" y="107.0">Message</text>
+  <rect class="box" x="456" y="214" width="83" height="26" rx="4" ry="4"/>
+  <g transform="translate(459.7,219.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="478.7" y="231.0">Component</text>
+  <rect class="box" x="27" y="90" width="83" height="26" rx="4" ry="4"/>
+  <g transform="translate(31.4,95.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="50.4" y="107.0">Exception</text>
+  <rect class="box" x="142" y="276" width="95" height="26" rx="4" ry="4"/>
+  <g transform="translate(145.5,281.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="164.5" y="293.0">UserCommand</text>
+  <rect class="box" x="424" y="152" width="77" height="26" rx="4" ry="4"/>
+  <g transform="translate(428.0,157.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="447.0" y="169.0">Reaction</text>
+  <rect class="box" x="124" y="90" width="65" height="26" rx="4" ry="4"/>
+  <g transform="translate(128.4,95.0)">
+<circle cx="8" cy="8" r="6.5" fill="#253627" stroke="#57965C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M10 4.5V5.5L8.5 5.5V10.5H10V11.5L8.5 11.5H7.5L6 11.5V10.5H7.5V5.5L6 5.5V4.5H7.5H8.5H10Z" fill="#57965C"/>
+  </g>
+  <text class="lbl" x="147.4" y="107.0">Typing</text>
+</svg>

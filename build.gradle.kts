@@ -43,4 +43,11 @@ tasks {
     test {
         useJUnitPlatform()
     }
+
+    register<JavaExec>("generateDiagrams") {
+        description = "Generates SVG hierarchy diagrams for context and component packages"
+        group = "documentation"
+        mainClass.set("dev.sbs.discordapi.diagram.DiagramGenerator")
+        classpath = sourceSets["test"].runtimeClasspath
+    }
 }

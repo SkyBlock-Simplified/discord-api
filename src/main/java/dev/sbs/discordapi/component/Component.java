@@ -22,6 +22,8 @@ import java.util.stream.Stream;
  * and identified by their {@link Type}. Hierarchical component trees can be traversed using
  * {@link #flattenComponents()}, which recursively expands {@link LayoutComponent} children
  * into a flat stream.
+ * <p>
+ * <img src="doc-files/ComponentDiagram.svg" />
  */
 public interface Component {
 
