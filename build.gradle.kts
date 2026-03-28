@@ -32,6 +32,7 @@ dependencies {
     testImplementation(libs.hamcrest)
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(libs.junit.platform.launcher)
 
     // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
     api(libs.discord4j)

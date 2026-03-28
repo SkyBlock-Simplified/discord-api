@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-This is a submodule of the SkyBlock-Simplified multi-module Gradle project (Java 21). Run commands from the monorepo root (`../`).
+This is a submodule of the SkyBlock-Simplified multi-module Gradle project (Java 21, Gradle 9.4+). Run commands from the monorepo root (`../`).
 
 ```bash
 # Build this module

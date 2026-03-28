@@ -55,7 +55,7 @@ discovery.
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | [JDK](https://adoptium.net/) | **21+** | Required |
-| [Gradle](https://gradle.org/) | **8.12+** | Included via wrapper (`./gradlew`) |
+| [Gradle](https://gradle.org/) | **9.4+** | Included via wrapper (`./gradlew`) |
 | Discord bot token | - | Create one at the [Discord Developer Portal](https://discord.com/developers/applications) |
 
 ### Installation
