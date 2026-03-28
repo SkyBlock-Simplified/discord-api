@@ -1,6 +1,7 @@
 package dev.sbs.discordapi;
 
 import dev.sbs.api.SimplifiedApi;
+import dev.sbs.api.scheduler.Scheduler;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestPlan;
 
@@ -33,17 +34,10 @@ public class TestLifecycleListener implements TestExecutionListener {
             System.out.println("[TestLifecycleListener] Scheduler shut down");
         }
 
-        Thread.getAllStackTraces().keySet().stream()
-            .filter(t -> !t.isDaemon() && t.isAlive())
-            .filter(t -> !t.getName().equals("main"))
-            .filter(t -> !t.getName().startsWith("Reference Handler"))
-            .filter(t -> !t.getName().startsWith("Signal Dispatcher"))
-            .filter(t -> !t.getName().startsWith("Notification"))
-            .filter(t -> !t.getName().startsWith("Finalizer"))
-            .filter(t -> !t.getName().contains("workers"))
-            .filter(t -> !t.getName().startsWith("Test worker"))
-            .forEach(t -> System.out.printf("[TestLifecycleListener] Remaining non-daemon: %s (state=%s, group=%s)%n",
-                t.getName(), t.getState(), t.getThreadGroup()));
+        Scheduler.leakedThreads().forEach(t -> System.out.printf(
+            "[TestLifecycleListener] Remaining non-daemon: %s (state=%s, group=%s)%n",
+            t.getName(), t.getState(), t.getThreadGroup()
+        ));
     }
 
 }
