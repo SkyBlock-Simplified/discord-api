@@ -1,9 +1,11 @@
 package dev.sbs.discordapi.context;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.command.TypingContext;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
+import dev.sbs.discordapi.context.capability.TypingContext;
 import dev.sbs.discordapi.context.message.ReactionContext;
+import dev.sbs.discordapi.context.scope.InteractionContext;
+import dev.sbs.discordapi.context.scope.MessageContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.handler.response.ResponseHandler;
 import dev.sbs.discordapi.response.Response;
@@ -35,11 +37,17 @@ import java.util.function.Function;
  * The full context hierarchy:
  * <ul>
  *   <li><b>{@code EventContext}</b> - this interface (root)</li>
- *   <li><b>{@link MessageContext}</b> - message-based events with followup support</li>
- *   <li><b>{@link TypingContext TypingContext}</b> - events carrying command structure metadata</li>
- *   <li><b>{@link ReactionContext ReactionContext}</b> - reaction add/remove events</li>
- *   <li><b>{@link ExceptionContext}</b> - exception-wrapping decorator</li>
- *   <li><b>{@link InteractionContext}</b> - Discord interaction events</li>
+ *   <li><b>{@link ReactionContext}</b> - reaction add/remove events</li>
+ *   <li><b>Scope</b> - Discord-driven placement constraints
+ *   <ul>
+ *     <li><b>{@link MessageContext}</b> - message-based events with followup support</li>
+ *     <li><b>{@link InteractionContext}</b> - Discord interaction events</li>
+ *   </ul></li>
+ *   <li><b>Capability</b> - application-driven behavioral contracts
+ *   <ul>
+ *     <li><b>{@link ExceptionContext}</b> - exception-wrapping decorator</li>
+ *     <li><b>{@link TypingContext}</b> - command structure metadata</li>
+ *   </ul></li>
  * </ul>
  * <img src="doc-files/ContextDiagram.svg" />
  * @param <T> the Discord4J {@link Event} type wrapped by this context

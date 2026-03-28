@@ -1,17 +1,20 @@
-package dev.sbs.discordapi.context.command;
+package dev.sbs.discordapi.context.scope;
 
 import dev.sbs.discordapi.command.DiscordCommand;
-import dev.sbs.discordapi.context.DeferrableInteractionContext;
+import dev.sbs.discordapi.context.capability.TypingContext;
+import dev.sbs.discordapi.context.command.MessageCommandContext;
+import dev.sbs.discordapi.context.command.SlashCommandContext;
+import dev.sbs.discordapi.context.command.UserCommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Context for application command interactions, extending {@link DeferrableInteractionContext}
+ * Interaction scope for application command contexts, extending {@link DeferrableInteractionContext}
  * and {@link TypingContext} with access to the command identifier and resolved command type.
  *
  * <p>
- * This is the base context for all command interaction types - slash commands, user commands,
+ * This scope is the parent of all command interaction types - slash commands, user commands,
  * and message commands.
  *
  * @param <T> the specific {@link ApplicationCommandInteractionEvent} subtype

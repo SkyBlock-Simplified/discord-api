@@ -1,7 +1,8 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.capability;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.scope.CommandContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
@@ -27,9 +28,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Decorator around an existing {@link EventContext} that augments it with exception
- * information, used by the {@link ExceptionHandler} to report and log errors that occur
- * during event processing.
+ * Capability interface for contexts that carry exception information, decorating an
+ * existing {@link EventContext} with error metadata used by the {@link ExceptionHandler}
+ * to report and log errors that occur during event processing.
  *
  * <p>
  * All {@link EventContext} methods delegate to the wrapped {@link #getEventContext()

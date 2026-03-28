@@ -1,14 +1,16 @@
-package dev.sbs.discordapi.context.component;
+package dev.sbs.discordapi.context.scope;
 
-import dev.sbs.discordapi.component.interaction.ActionComponent;
+import dev.sbs.discordapi.component.scope.ActionComponent;
+import dev.sbs.discordapi.context.component.ButtonContext;
+import dev.sbs.discordapi.context.component.SelectMenuContext;
 import dev.sbs.discordapi.response.Response;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * Context for action component interactions (buttons and select menus), extending
- * {@link ComponentContext} with the ability to modify the triggering component
- * within the current {@link Response} page.
+ * Interaction scope for component contexts targeting an {@link ActionComponent}, extending
+ * {@link ComponentContext} with the ability to modify the triggering component within the
+ * current {@link Response} page.
  *
  * @see ButtonContext
  * @see SelectMenuContext

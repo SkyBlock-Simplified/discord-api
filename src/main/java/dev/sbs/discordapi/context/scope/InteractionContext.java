@@ -1,5 +1,6 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.scope;
 
+import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.command.AutoCompleteContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.InteractionCreateEvent;
@@ -12,12 +13,12 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 
 /**
- * Specialization of {@link EventContext} for Discord interaction events, delegating
+ * Interaction scope for contexts wrapping Discord interaction events, delegating
  * channel, guild, and user resolution to the underlying
  * {@link InteractionCreateEvent#getInteraction() Interaction} object.
  *
  * <p>
- * This interface sits between the root {@link EventContext} and the more specific
+ * This scope sits between the root {@link EventContext} and the more specific
  * interaction subtypes:
  * <ul>
  *   <li><b>{@link AutoCompleteContext}</b> - autocomplete suggestion events</li>

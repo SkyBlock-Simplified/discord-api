@@ -1,7 +1,5 @@
-package dev.sbs.discordapi.context;
+package dev.sbs.discordapi.context.scope;
 
-import dev.sbs.discordapi.context.command.CommandContext;
-import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -10,8 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * Specialization of {@link InteractionContext} for Discord interactions that support
- * deferred replies, adding the ability to defer, edit, and retrieve the interaction reply.
+ * Interaction scope for contexts wrapping deferrable Discord interactions, adding
+ * the ability to defer, edit, and retrieve the interaction reply.
  *
  * <p>
  * Unlike the base {@link InteractionContext}, deferrable interactions build and edit
@@ -19,7 +17,7 @@ import reactor.core.publisher.Mono;
  * ({@link DeferrableInteractionEvent#editReply}) rather than sending new channel messages.
  *
  * <p>
- * This interface is the parent of both command and component context hierarchies:
+ * This scope is the parent of both command and component context hierarchies:
  * <ul>
  *   <li><b>{@link CommandContext}</b> - slash, user, and message commands</li>
  *   <li><b>{@link ComponentContext}</b> - buttons, select menus, and modals</li>

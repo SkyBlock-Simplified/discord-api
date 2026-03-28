@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.command;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.command.Structure;
+import dev.sbs.discordapi.context.scope.CommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import discord4j.core.object.entity.Message;

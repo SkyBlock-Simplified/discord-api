@@ -1,20 +1,20 @@
-package dev.sbs.discordapi.context.command;
+package dev.sbs.discordapi.context.capability;
 
 import dev.sbs.discordapi.command.DiscordCommand;
 import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.context.EventContext;
+import dev.sbs.discordapi.context.command.AutoCompleteContext;
 import discord4j.core.event.domain.Event;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Specialization of {@link EventContext} for events that carry command {@link Structure}
- * metadata and a {@link DiscordCommand.Type}, enabling the command system to identify which
+ * Capability interface for contexts that carry command {@link Structure} metadata
+ * and a {@link DiscordCommand.Type}, enabling the command system to identify which
  * command definition the event is associated with.
  *
  * <p>
  * Implemented by context types that participate in command routing, such as
- * {@link AutoCompleteContext AutoCompleteContext}
- * and the deferrable command contexts.
+ * {@link AutoCompleteContext} and the deferrable command contexts.
  *
  * @param <T> the Discord4J {@link Event} type wrapped by this context
  * @see Structure

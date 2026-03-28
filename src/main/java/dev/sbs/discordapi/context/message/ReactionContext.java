@@ -1,6 +1,7 @@
 package dev.sbs.discordapi.context.message;
 
 import dev.sbs.discordapi.DiscordBot;
+import dev.sbs.discordapi.context.scope.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Emoji;

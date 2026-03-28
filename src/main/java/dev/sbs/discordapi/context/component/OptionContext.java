@@ -2,6 +2,7 @@ package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
+import dev.sbs.discordapi.context.scope.ActionComponentContext;
 import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;

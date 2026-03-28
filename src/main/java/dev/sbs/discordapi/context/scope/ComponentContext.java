@@ -1,9 +1,8 @@
-package dev.sbs.discordapi.context.component;
+package dev.sbs.discordapi.context.scope;
 
 import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.component.interaction.Modal;
-import dev.sbs.discordapi.context.DeferrableInteractionContext;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * Context for component interactions (buttons, select menus, modals), extending both
+ * Interaction scope for contexts bound to a component interaction event, combining
  * {@link MessageContext} and {@link DeferrableInteractionContext} with component-specific
  * capabilities such as deferred edits, followup management, and modal presentation.
  *

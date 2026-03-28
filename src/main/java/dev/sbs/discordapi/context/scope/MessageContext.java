@@ -1,11 +1,11 @@
-package dev.sbs.discordapi.context.message;
+package dev.sbs.discordapi.context.scope;
 
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
 import dev.sbs.discordapi.handler.exception.ExceptionHandler;
-import dev.sbs.discordapi.handler.response.ResponseEntry;
 import dev.sbs.discordapi.handler.response.CachedResponse;
+import dev.sbs.discordapi.handler.response.ResponseEntry;
 import dev.sbs.discordapi.handler.response.ResponseFollowup;
 import dev.sbs.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Specialization of {@link EventContext} for message-based events, adding support for
+ * Interaction scope for contexts bound to message-based events, adding support for
  * editing the originating message, creating and managing followup messages, and accessing
  * the cached {@link Response} and its {@link CachedResponse} entry.
  *
