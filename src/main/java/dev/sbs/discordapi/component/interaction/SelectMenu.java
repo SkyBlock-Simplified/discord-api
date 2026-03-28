@@ -7,13 +7,13 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
-import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.LabelComponent;
-import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.component.capability.EventInteractable;
+import dev.sbs.discordapi.component.capability.Toggleable;
+import dev.sbs.discordapi.component.scope.LabelComponent;
 import dev.sbs.discordapi.context.component.OptionContext;
 import dev.sbs.discordapi.context.component.SelectMenuContext;
-import discord4j.discordjson.json.ComponentData;
 import dev.sbs.discordapi.response.Emoji;
+import discord4j.discordjson.json.ComponentData;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -50,7 +50,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SelectMenu implements ActionComponent, EventComponent<SelectMenuContext>, LabelComponent, ToggleableComponent {
+public final class SelectMenu implements ActionComponent, EventInteractable<SelectMenuContext>, LabelComponent, Toggleable {
 
     /** The unique identifier for this select menu. */
     private final @NotNull String identifier;

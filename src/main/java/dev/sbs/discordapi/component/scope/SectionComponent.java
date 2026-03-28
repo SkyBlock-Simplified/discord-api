@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.Section;
 
 /**
- * Marker interface for components that can be placed inside a {@link Section} layout as
+ * Placement scope for components that can be placed inside a {@link Section} layout as
  * primary content.
  *
  * <p>

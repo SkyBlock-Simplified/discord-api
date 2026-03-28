@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.discordapi.component.Component;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Capability interface for components valid at the top level of a Discord message.
+ * Placement scope for components valid at the top level of a Discord message.
  *
  * <p>
  * Top-level message components are those that can appear directly in a message's component

@@ -1,11 +1,12 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.capability;
 
 import dev.sbs.discordapi.component.Component;
 import discord4j.discordjson.json.ComponentData;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Capability interface for components that can update their state from modal submission data.
+ * Capability interface for components that can update their state from modal submission
+ * data ({@link ComponentData} payload).
  *
  * <p>
  * When a modal is submitted, Discord delivers a {@link ComponentData} payload for each

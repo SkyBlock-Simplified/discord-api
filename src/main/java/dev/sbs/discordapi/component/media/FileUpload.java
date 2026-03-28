@@ -3,7 +3,7 @@ package dev.sbs.discordapi.component.media;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.layout.Label;
-import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.scope.LabelComponent;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.discordjson.json.ComponentData;
 import lombok.AccessLevel;

@@ -1,8 +1,8 @@
 package dev.sbs.discordapi.component.interaction;
 
 import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.component.layout.ActionRow;
-import dev.sbs.discordapi.component.type.UserInteractable;
 import org.jetbrains.annotations.NotNull;
 
 /**

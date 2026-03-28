@@ -12,7 +12,7 @@ import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.layout.Container;
 import dev.sbs.discordapi.component.layout.Section;
-import dev.sbs.discordapi.component.type.ContainerComponent;
+import dev.sbs.discordapi.component.scope.ContainerComponent;
 import dev.sbs.discordapi.response.handler.Filter;
 import dev.sbs.discordapi.response.handler.FilterHandler;
 import dev.sbs.discordapi.response.handler.Search;

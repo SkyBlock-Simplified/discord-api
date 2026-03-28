@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.component;
 
+import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.component.interaction.Modal;
-import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.context.DeferrableInteractionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;

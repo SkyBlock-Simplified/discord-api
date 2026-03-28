@@ -4,14 +4,14 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
+import dev.sbs.discordapi.component.capability.EventInteractable;
+import dev.sbs.discordapi.component.capability.Toggleable;
 import dev.sbs.discordapi.component.layout.Label;
-import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.LabelComponent;
-import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.component.scope.LabelComponent;
 import dev.sbs.discordapi.context.component.CheckboxContext;
-import discord4j.discordjson.json.ComponentData;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import discord4j.core.object.component.CheckboxAction;
+import discord4j.discordjson.json.ComponentData;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -41,7 +41,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Checkbox implements ActionComponent, EventComponent<CheckboxContext>, LabelComponent, ToggleableComponent {
+public final class Checkbox implements ActionComponent, EventInteractable<CheckboxContext>, LabelComponent, Toggleable {
 
     private static final Function<CheckboxContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
 

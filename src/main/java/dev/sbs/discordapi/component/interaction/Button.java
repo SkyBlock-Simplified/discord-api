@@ -4,10 +4,10 @@ import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
+import dev.sbs.discordapi.component.capability.EventInteractable;
+import dev.sbs.discordapi.component.capability.Toggleable;
 import dev.sbs.discordapi.component.layout.ActionRow;
-import dev.sbs.discordapi.component.type.AccessoryComponent;
-import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.ToggleableComponent;
+import dev.sbs.discordapi.component.scope.AccessoryComponent;
 import dev.sbs.discordapi.context.component.ButtonContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.response.Emoji;
@@ -44,7 +44,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Button implements ActionComponent, AccessoryComponent, EventComponent<ButtonContext>, ToggleableComponent {
+public final class Button implements ActionComponent, AccessoryComponent, EventInteractable<ButtonContext>, Toggleable {
 
     private static final Function<ButtonContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
 

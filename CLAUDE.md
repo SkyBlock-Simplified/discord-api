@@ -80,10 +80,11 @@ component/                — Component (interface), TextDisplay
 component/interaction/    — ActionComponent, Button, SelectMenu, TextInput, Modal
 component/layout/         — LayoutComponent, ActionRow, Container, Section, Separator, Label
 component/media/          — Attachment, FileUpload, MediaData, MediaGallery, Thumbnail
-component/type/           — capability interfaces for type filtering:
-    AccessoryComponent, ContainerComponent, EventComponent, LabelComponent,
-    SectionComponent, ToggleableComponent, TopLevelMessageComponent,
-    TopLevelModalComponent, UserInteractComponent
+component/capability/     — application-level behavioral contracts:
+    EventInteractable, ModalUpdatable, Toggleable, UserInteractable
+component/scope/          — Discord placement scoping interfaces:
+    AccessoryComponent, ContainerComponent, LabelComponent,
+    SectionComponent, TopLevelMessageComponent, TopLevelModalComponent
 ```
 
 Components support Discord's Components V2 flag (`IS_COMPONENTS_V2`) — detected automatically when v2 component types are present.

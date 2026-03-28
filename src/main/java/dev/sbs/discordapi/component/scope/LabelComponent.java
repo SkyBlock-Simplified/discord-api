@@ -1,10 +1,11 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.scope;
 
+import dev.sbs.discordapi.component.capability.ModalUpdatable;
+import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.component.layout.Label;
 
 /**
- * Capability interface for interactive components that can be wrapped in a {@link Label}
- * layout.
+ * Placement scope for interactive components that can be wrapped in a {@link Label} layout.
  *
  * <p>
  * A label layout pairs a descriptive text label with an interactive component, providing

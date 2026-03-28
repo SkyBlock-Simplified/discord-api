@@ -1,4 +1,4 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.capability;
 
 import dev.sbs.discordapi.component.Component;
 
@@ -11,7 +11,7 @@ import dev.sbs.discordapi.component.Component;
  * ({@link #isEnabled()}, {@link #isDisabled()}) and mutation methods
  * ({@link #setEnabled()}, {@link #setEnabled(boolean)}).
  */
-public interface ToggleableComponent extends Component {
+public interface Toggleable extends Component {
 
     /** Whether this component is currently enabled. */
     boolean isEnabled();

@@ -2,10 +2,10 @@ package dev.sbs.discordapi.component;
 
 import dev.sbs.discordapi.component.layout.Container;
 import dev.sbs.discordapi.component.layout.Section;
-import dev.sbs.discordapi.component.type.ContainerComponent;
-import dev.sbs.discordapi.component.type.SectionComponent;
-import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
-import dev.sbs.discordapi.component.type.TopLevelModalComponent;
+import dev.sbs.discordapi.component.scope.ContainerComponent;
+import dev.sbs.discordapi.component.scope.SectionComponent;
+import dev.sbs.discordapi.component.scope.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.scope.TopLevelModalComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

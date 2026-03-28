@@ -12,7 +12,7 @@ import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.media.Attachment;
 import dev.sbs.discordapi.component.media.MediaData;
-import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.scope.TopLevelMessageComponent;
 import dev.sbs.discordapi.context.EventContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.response.embed.Embed;

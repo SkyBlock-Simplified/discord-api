@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.Container;
 
 /**
- * Marker interface for components that can be placed inside a {@link Container} layout.
+ * Placement scope for components that can be placed inside a {@link Container} layout.
  *
  * <p>
  * A container groups related components together under a single visual boundary

@@ -2,8 +2,8 @@ package dev.sbs.discordapi.listener.component;
 
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.UserInteractable;
+import dev.sbs.discordapi.component.capability.EventInteractable;
+import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
@@ -22,7 +22,7 @@ import java.util.Optional;
 /**
  * Abstract base for component interaction listeners, providing the shared flow of
  * matching an incoming event to a {@link CachedResponse}, locating the interacted
- * {@link EventComponent}, and dispatching to its registered interaction handler.
+ * {@link EventInteractable}, and dispatching to its registered interaction handler.
  * <p>
  * Concrete subclasses ({@link ButtonListener}, {@link SelectMenuListener},
  * {@link ModalListener}) supply the appropriate {@link ComponentContext} via
@@ -32,7 +32,7 @@ import java.util.Optional;
  * @param <C> the context type passed to the component's interaction handler
  * @param <T> the component type this listener handles
  */
-public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends EventComponent<C>> extends DiscordListener<E> {
+public abstract class ComponentListener<E extends ComponentInteractionEvent, C extends ComponentContext, T extends EventInteractable<C>> extends DiscordListener<E> {
 
     /** The resolved component class, used to filter matching components from the response tree. */
     private final Class<T> componentClass;

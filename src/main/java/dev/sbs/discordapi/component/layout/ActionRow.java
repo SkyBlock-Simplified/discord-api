@@ -3,7 +3,7 @@ package dev.sbs.discordapi.component.layout;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.component.interaction.ActionComponent;
-import dev.sbs.discordapi.component.type.ContainerComponent;
+import dev.sbs.discordapi.component.scope.ContainerComponent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

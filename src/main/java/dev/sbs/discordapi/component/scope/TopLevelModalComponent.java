@@ -1,10 +1,10 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.scope;
 
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.interaction.Modal;
 
 /**
- * Pure marker interface for components valid at the top level of a Discord modal.
+ * Placement scope for components valid at the top level of a Discord modal.
  *
  * <p>
  * Only {@link dev.sbs.discordapi.component.layout.Label Label} and

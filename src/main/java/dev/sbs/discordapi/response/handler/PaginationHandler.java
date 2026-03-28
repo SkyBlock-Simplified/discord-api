@@ -15,7 +15,7 @@ import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.component.layout.ActionRow;
 import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
-import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
+import dev.sbs.discordapi.component.scope.TopLevelMessageComponent;
 import dev.sbs.discordapi.context.component.ButtonContext;
 import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.context.component.SelectMenuContext;

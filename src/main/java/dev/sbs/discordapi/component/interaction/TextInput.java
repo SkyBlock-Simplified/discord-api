@@ -5,7 +5,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.Component;
-import dev.sbs.discordapi.component.type.LabelComponent;
+import dev.sbs.discordapi.component.scope.LabelComponent;
 import dev.sbs.discordapi.context.component.ModalContext;
 import dev.sbs.discordapi.response.handler.item.ItemHandler;
 import discord4j.discordjson.json.ComponentData;

@@ -1,9 +1,10 @@
-package dev.sbs.discordapi.component.type;
+package dev.sbs.discordapi.component.capability;
 
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Capability interface for components that support user interaction.
+ * Capability interface for components that support user interaction via a unique
+ * {@code custom_id} identifier for interaction routing.
  *
  * <p>
  * Every interactive component carries a unique identifier corresponding to the Discord
