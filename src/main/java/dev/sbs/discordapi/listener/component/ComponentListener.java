@@ -3,7 +3,7 @@ package dev.sbs.discordapi.listener.component;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.discordapi.DiscordBot;
 import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
@@ -83,8 +83,8 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         return Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getCachedPageComponents())
             .concatWith(Flux.fromIterable((followup.isPresent() ? followup.get() : entry).getResponse().getHistoryHandler().getCurrentPage().getComponents()))
             .flatMap(tlmComponent -> Flux.fromStream(tlmComponent.flattenComponents()))
-            .filter(UserInteractComponent.class::isInstance)
-            .filter(component -> event.getCustomId().equals(((UserInteractComponent) component).getIdentifier())) // Validate Component ID
+            .filter(UserInteractable.class::isInstance)
+            .filter(component -> event.getCustomId().equals(((UserInteractable) component).getIdentifier())) // Validate Component ID
             .filter(this.componentClass::isInstance) // Validate Component Type
             .map(this.componentClass::cast)
             .singleOrEmpty()

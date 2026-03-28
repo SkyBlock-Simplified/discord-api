@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.context.component;
 
 import dev.sbs.discordapi.component.interaction.Modal;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.context.DeferrableInteractionContext;
 import dev.sbs.discordapi.context.message.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
@@ -127,7 +127,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
     }
 
     /** The interactive component that triggered this interaction. */
-    @NotNull UserInteractComponent getComponent();
+    @NotNull UserInteractable getComponent();
 
     /** {@inheritDoc} */
     @Override

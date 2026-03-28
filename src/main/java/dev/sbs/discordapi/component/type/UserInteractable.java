@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  * Every interactive component carries a unique identifier corresponding to the Discord
  * {@code custom_id} field, used to route interaction events back to the originating component.
  */
-public interface UserInteractComponent {
+public interface UserInteractable {
 
     /** The unique {@code custom_id} string identifying this interactive component. */
     @NotNull String getIdentifier();

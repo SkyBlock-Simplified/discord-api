@@ -8,7 +8,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.interaction.CheckboxGroup;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.response.page.item.field.FieldItem;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractComponent {
+public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractable {
 
     private final @NotNull String identifier;
     private final @NotNull String label;

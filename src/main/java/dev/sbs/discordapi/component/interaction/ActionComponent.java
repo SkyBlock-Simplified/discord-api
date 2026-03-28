@@ -2,7 +2,7 @@ package dev.sbs.discordapi.component.interaction;
 
 import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.ActionRow;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see ActionRow
  */
-public interface ActionComponent extends Component, UserInteractComponent {
+public interface ActionComponent extends Component, UserInteractable {
 
     /** {@inheritDoc} */
     @NotNull discord4j.core.object.component.ActionComponent getD4jComponent();

@@ -9,7 +9,7 @@ import dev.sbs.api.util.StringUtil;
 import dev.sbs.api.util.builder.BuildFlag;
 import dev.sbs.api.util.builder.ClassBuilder;
 import dev.sbs.discordapi.component.interaction.RadioGroup;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.response.page.item.Item;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,7 +32,7 @@ import java.util.function.Function;
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>>, UserInteractComponent {
+public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, ConcurrentList<T>>, UserInteractable {
 
     private final @NotNull String identifier;
     private final @NotNull String label;

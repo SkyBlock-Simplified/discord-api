@@ -6,7 +6,7 @@ import dev.sbs.discordapi.component.interaction.ActionComponent;
 import dev.sbs.discordapi.component.type.AccessoryComponent;
 import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.TopLevelMessageComponent;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -72,7 +72,7 @@ public interface LayoutComponent extends TopLevelMessageComponent {
 
     /**
      * Replaces an existing {@link ActionComponent} in the component tree with the given
-     * replacement, matched by {@linkplain UserInteractComponent#getIdentifier() identifier}.
+     * replacement, matched by {@linkplain UserInteractable#getIdentifier() identifier}.
      *
      * <p>
      * The replacement walks the tree recursively through nested {@link LayoutComponent}
@@ -87,7 +87,7 @@ public interface LayoutComponent extends TopLevelMessageComponent {
         this.getComponents().forEach(component -> {
             if (component instanceof LayoutComponent layoutComponent) {
                 if (component instanceof Section section) {
-                    if (section.getAccessory() instanceof UserInteractComponent)
+                    if (section.getAccessory() instanceof UserInteractable)
                         section.mutate().withAccessory((AccessoryComponent) actionComponent).build();
                 } else if (component instanceof Label label) {
                     if (label.getComponent().getIdentifier().equals(actionComponent.getIdentifier()))

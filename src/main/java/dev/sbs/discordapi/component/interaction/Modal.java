@@ -10,10 +10,9 @@ import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.component.layout.LayoutComponent;
 import dev.sbs.discordapi.component.type.EventComponent;
-import dev.sbs.discordapi.component.type.LabelComponent;
 import dev.sbs.discordapi.component.type.ModalUpdatable;
 import dev.sbs.discordapi.component.type.TopLevelModalComponent;
-import dev.sbs.discordapi.component.type.UserInteractComponent;
+import dev.sbs.discordapi.component.type.UserInteractable;
 import dev.sbs.discordapi.context.ExceptionContext;
 import dev.sbs.discordapi.context.component.ComponentContext;
 import dev.sbs.discordapi.context.component.ModalContext;
@@ -61,7 +60,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Modal implements EventComponent<ModalContext>, UserInteractComponent {
+public final class Modal implements EventComponent<ModalContext>, UserInteractable {
 
     private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
 
