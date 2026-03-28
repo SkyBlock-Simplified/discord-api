@@ -185,7 +185,7 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
 
     /** {@inheritDoc} */
     @Override
-    public void updateFromModalData(@NotNull ComponentData data) {
+    public void updateFromData(@NotNull ComponentData data) {
         this.updateSelected(data.values().toOptional().orElse(Concurrent.newList()));
     }
 

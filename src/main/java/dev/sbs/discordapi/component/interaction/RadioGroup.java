@@ -168,7 +168,7 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
 
     /** {@inheritDoc} */
     @Override
-    public void updateFromModalData(@NotNull ComponentData data) {
+    public void updateFromData(@NotNull ComponentData data) {
         this.updateSelected(
             data.values().toOptional()
                 .flatMap(values -> values.stream().findFirst())

@@ -121,7 +121,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
 
     /** {@inheritDoc} */
     @Override
-    public void updateFromModalData(@NotNull ComponentData data) {
+    public void updateFromData(@NotNull ComponentData data) {
         // Checkbox toggle state is event-driven, not stored on the component
     }
 

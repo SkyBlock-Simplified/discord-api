@@ -162,7 +162,7 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
     /** {@inheritDoc} */
     @Override
-    public void updateFromModalData(@NotNull ComponentData data) {
+    public void updateFromData(@NotNull ComponentData data) {
         this.value = data.value().toOptional().map(StringUtil::stripToNull);
     }
 

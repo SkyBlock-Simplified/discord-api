@@ -145,7 +145,7 @@ public final class FileUpload implements LabelComponent {
 
     /** {@inheritDoc} */
     @Override
-    public void updateFromModalData(@NotNull ComponentData data) {
+    public void updateFromData(@NotNull ComponentData data) {
         // File upload state is managed externally
     }
 

@@ -1,5 +1,6 @@
 package dev.sbs.discordapi.component.scope;
 
+import dev.sbs.discordapi.component.Component;
 import dev.sbs.discordapi.component.capability.ModalUpdatable;
 import dev.sbs.discordapi.component.capability.UserInteractable;
 import dev.sbs.discordapi.component.layout.Label;
@@ -12,11 +13,11 @@ import dev.sbs.discordapi.component.layout.Label;
  * additional context for the user. Components implementing this interface declare that they
  * are valid targets for label wrapping, carry a {@link UserInteractable#getIdentifier()
  * custom_id} for interaction routing, and can update their state from modal submission data
- * via {@link ModalUpdatable#updateFromModalData}.
+ * via {@link ModalUpdatable#updateFromData}.
  *
  * @see Label
  * @see ModalUpdatable
  */
-public interface LabelComponent extends ModalUpdatable, UserInteractable {
+public interface LabelComponent extends Component, ModalUpdatable, UserInteractable {
 
 }

@@ -260,7 +260,7 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
          * <p>
          * Iterates through the event's submitted components and delegates to each
          * matching {@link ModalUpdatable} component's
-         * {@link ModalUpdatable#updateFromModalData updateFromModalData} method.
+         * {@link ModalUpdatable#updateFromData updateFromModalData} method.
          *
          * @param event the modal submit interaction event
          */
@@ -274,7 +274,7 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
                     .map(Label.class::cast)
                     .filter(label -> label.getComponent().getIdentifier().equals(d4jComponent.getData().customId().get()))
                     .findFirst()
-                    .ifPresent(label -> label.getComponent().updateFromModalData(d4jComponent.getData()))
+                    .ifPresent(label -> label.getComponent().updateFromData(d4jComponent.getData()))
                 );
 
             return this;

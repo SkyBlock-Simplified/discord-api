@@ -15,13 +15,13 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see Component
  */
-public interface ModalUpdatable extends Component {
+public interface ModalUpdatable {
 
     /**
      * Updates this component's state from the given modal submission data.
      *
      * @param data the Discord component data from the modal submit event
      */
-    void updateFromModalData(@NotNull ComponentData data);
+    void updateFromData(@NotNull ComponentData data);
 
 }
