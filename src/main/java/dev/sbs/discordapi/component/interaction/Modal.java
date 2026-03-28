@@ -272,10 +272,9 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
                 .forEach(d4jComponent -> this.components.stream()
                     .filter(Label.class::isInstance)
                     .map(Label.class::cast)
-                    .filter(label -> label.getComponent() instanceof ModalUpdatable)
                     .filter(label -> label.getComponent().getIdentifier().equals(d4jComponent.getData().customId().get()))
                     .findFirst()
-                    .ifPresent(label -> ((ModalUpdatable) label.getComponent()).updateFromModalData(d4jComponent.getData()))
+                    .ifPresent(label -> label.getComponent().updateFromModalData(d4jComponent.getData()))
                 );
 
             return this;
