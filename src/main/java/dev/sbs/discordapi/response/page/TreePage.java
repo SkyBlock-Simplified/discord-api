@@ -5,7 +5,7 @@ import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.api.reflection.Reflection;
 import dev.sbs.api.util.StringUtil;
 import dev.sbs.discordapi.component.interaction.SelectMenu;
-import dev.sbs.discordapi.component.layout.LayoutComponent;
+import dev.sbs.discordapi.component.scope.LayoutComponent;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.handler.HistoryHandler;

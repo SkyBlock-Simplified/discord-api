@@ -1,7 +1,7 @@
 package dev.sbs.discordapi.handler.exception;
 
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
 import dev.sbs.discordapi.util.DiscordReference;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;

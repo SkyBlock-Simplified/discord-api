@@ -14,10 +14,9 @@ import dev.sbs.discordapi.command.exception.InputException;
 import dev.sbs.discordapi.command.exception.ParameterException;
 import dev.sbs.discordapi.command.exception.PermissionException;
 import dev.sbs.discordapi.command.parameter.Parameter;
-import dev.sbs.discordapi.context.ExceptionContext;
-import dev.sbs.discordapi.context.command.CommandContext;
-import dev.sbs.discordapi.context.message.MessageContext;
-import dev.sbs.discordapi.exception.DiscordException;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
+import dev.sbs.discordapi.context.scope.CommandContext;
+import dev.sbs.discordapi.context.scope.MessageContext;
 import dev.sbs.discordapi.handler.response.CachedResponse;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;
@@ -414,7 +413,7 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
             ((MessageContext<?>) exceptionContext.getEventContext()).followup(userErrorResponse) :
             exceptionContext.reply(userErrorResponse);
 
-        Mono<T> mono = reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
+        return reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
                 // Log to debug channel when it's not an expected reactive user error
                 Mono.just(this.getDiscordBot().getMainGuild())
                     .flatMap(guild -> guild.getChannelById(this.getLogChannel()))
@@ -453,8 +452,6 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
                     })
             ))
             .then(Mono.empty());
-
-        return mono;
     }
 
 }

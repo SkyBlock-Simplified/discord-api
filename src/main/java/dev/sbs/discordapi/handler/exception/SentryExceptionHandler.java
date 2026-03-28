@@ -2,8 +2,8 @@ package dev.sbs.discordapi.handler.exception;
 
 import dev.sbs.api.util.SystemUtil;
 import dev.sbs.discordapi.DiscordBot;
-import dev.sbs.discordapi.context.ExceptionContext;
-import dev.sbs.discordapi.context.command.CommandContext;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
+import dev.sbs.discordapi.context.scope.CommandContext;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
 import lombok.Getter;

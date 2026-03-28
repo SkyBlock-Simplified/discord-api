@@ -88,15 +88,15 @@ Components are a top-level package (`component/`), independent of `response/`. T
 
 ```
 component/                — Component (interface), TextDisplay
-component/interaction/    — ActionComponent, Button, SelectMenu, TextInput, Modal,
+component/interaction/    — Button, SelectMenu, TextInput, Modal,
                             RadioGroup, Checkbox, CheckboxGroup
-component/layout/         — LayoutComponent, ActionRow, Container, Section, Separator, Label
+component/layout/         — ActionRow, Container, Section, Separator, Label
 component/media/          — Attachment, FileUpload, MediaData, MediaGallery, Thumbnail
 component/capability/     — application-level behavioral contracts:
     EventInteractable, ModalUpdatable, Toggleable, UserInteractable
 component/scope/          — Discord placement scoping interfaces:
-    AccessoryComponent, ContainerComponent, LabelComponent,
-    SectionComponent, TopLevelMessageComponent, TopLevelModalComponent
+    ActionComponent, LayoutComponent, AccessoryComponent, ContainerComponent,
+    LabelComponent, SectionComponent, TopLevelMessageComponent, TopLevelModalComponent
 ```
 
 Components support Discord's Components V2 flag (`IS_COMPONENTS_V2`) — detected automatically when v2 component types are present.
@@ -106,13 +106,15 @@ Components support Discord's Components V2 flag (`IS_COMPONENTS_V2`) — detecte
 Every event gets a typed context wrapping the Discord4J event:
 
 ```
-context/                  — EventContext, InteractionContext, DeferrableInteractionContext, ExceptionContext
-context/command/          — CommandContext, SlashCommandContext, UserCommandContext,
-                            MessageCommandContext, AutoCompleteContext, TypingContext
-context/component/        — ComponentContext, ActionComponentContext, ButtonContext,
-                            SelectMenuContext, OptionContext, ModalContext,
+context/                  — EventContext
+context/scope/            — MessageContext, InteractionContext, DeferrableInteractionContext,
+                            CommandContext, ComponentContext, ActionComponentContext
+context/capability/       — ExceptionContext, TypingContext
+context/command/          — SlashCommandContext, UserCommandContext,
+                            MessageCommandContext, AutoCompleteContext
+context/component/        — ButtonContext, SelectMenuContext, OptionContext, ModalContext,
                             CheckboxContext, CheckboxGroupContext, RadioGroupContext
-context/message/          — MessageContext, ReactionContext
+context/message/          — ReactionContext
 ```
 
 `ComponentContext` extends both `MessageContext` and `DeferrableInteractionContext` (diamond via interfaces).

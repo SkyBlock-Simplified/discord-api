@@ -14,7 +14,7 @@ import dev.sbs.discordapi.component.media.Attachment;
 import dev.sbs.discordapi.component.media.MediaData;
 import dev.sbs.discordapi.component.scope.TopLevelMessageComponent;
 import dev.sbs.discordapi.context.EventContext;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.scope.MessageContext;
 import dev.sbs.discordapi.response.embed.Embed;
 import dev.sbs.discordapi.response.embed.Field;
 import dev.sbs.discordapi.response.handler.HistoryHandler;

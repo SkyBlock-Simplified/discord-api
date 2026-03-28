@@ -13,7 +13,7 @@ import dev.sbs.discordapi.command.Structure;
 import dev.sbs.discordapi.command.parameter.Argument;
 import dev.sbs.discordapi.command.parameter.Parameter;
 import dev.sbs.discordapi.component.interaction.TextInput;
-import dev.sbs.discordapi.context.ExceptionContext;
+import dev.sbs.discordapi.context.capability.ExceptionContext;
 import dev.sbs.discordapi.context.command.AutoCompleteContext;
 import dev.sbs.discordapi.context.command.MessageCommandContext;
 import dev.sbs.discordapi.context.command.SlashCommandContext;

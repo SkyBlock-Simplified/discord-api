@@ -14,7 +14,7 @@ import dev.sbs.discordapi.component.interaction.TextInput;
 import dev.sbs.discordapi.component.layout.ActionRow;
 import dev.sbs.discordapi.component.layout.Label;
 import dev.sbs.discordapi.context.command.SlashCommandContext;
-import dev.sbs.discordapi.context.message.MessageContext;
+import dev.sbs.discordapi.context.scope.MessageContext;
 import dev.sbs.discordapi.exception.DiscordException;
 import dev.sbs.discordapi.response.Emoji;
 import dev.sbs.discordapi.response.Response;

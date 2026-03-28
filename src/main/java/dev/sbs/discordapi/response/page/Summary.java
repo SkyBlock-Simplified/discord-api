@@ -1,10 +1,9 @@
 package dev.sbs.discordapi.response.page;
 
-import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentList;
 import dev.sbs.discordapi.component.interaction.Button;
 import dev.sbs.discordapi.component.layout.ActionRow;
-import dev.sbs.discordapi.component.layout.LayoutComponent;
+import dev.sbs.discordapi.component.scope.LayoutComponent;
 import dev.sbs.discordapi.context.component.ButtonContext;
 import dev.sbs.discordapi.response.Response;
 import lombok.AccessLevel;
