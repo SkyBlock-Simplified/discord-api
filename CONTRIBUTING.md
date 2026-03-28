@@ -53,8 +53,8 @@ project follows.
 2. **Clone the `api` module alongside** (for local development)
 
    This module depends on the [api](https://github.com/SkyBlock-Simplified/api)
-   module. If the `api` subproject is not present locally, the build falls back
-   to a JitPack snapshot.
+   module (`dev.sbs:api:0.1.0`). For local development, clone the `api`
+   repository alongside this one and use a Gradle composite build.
 
    ```bash
    cd ..
@@ -207,32 +207,56 @@ A brief overview to help you find your way around the codebase:
 
 ```
 src/main/java/dev/sbs/discordapi/
-├── DiscordBot.java             # Abstract entry point (configure → login → connect)
+├── DiscordBot.java             # Abstract entry point (configure -> login -> connect)
 ├── command/
-│   └── DiscordCommand.java     # Base command class with @Structure annotation
+│   ├── DiscordCommand.java     # Base command class with @Structure annotation
+│   ├── exception/              # CommandException, PermissionException, InputException, etc.
+│   └── parameter/              # Parameter, Argument
 ├── component/
-│   ├── interaction/            # Button, SelectMenu, TextInput, Modal
-│   ├── layout/                 # ActionRow, Container, Section, Separator
-│   ├── media/                  # Attachment, FileUpload, MediaGallery
-│   └── type/                   # Capability interfaces (EventComponent, etc.)
+│   ├── Component.java          # Root component interface
+│   ├── TextDisplay.java        # Text display component (V2)
+│   ├── interaction/            # Button, SelectMenu, TextInput, Modal,
+│   │                           # RadioGroup, Checkbox, CheckboxGroup
+│   ├── layout/                 # ActionRow, Container, Section, Separator, Label
+│   ├── media/                  # Attachment, FileUpload, MediaGallery, Thumbnail
+│   ├── capability/             # EventInteractable, Toggleable, ModalUpdatable,
+│   │                           # UserInteractable
+│   └── scope/                  # AccessoryComponent, ContainerComponent,
+│                               # SectionComponent, TopLevelMessageComponent, etc.
 ├── context/
-│   ├── command/                # SlashCommandContext, AutoCompleteContext, etc.
-│   ├── component/              # ButtonContext, SelectMenuContext, ModalContext
+│   ├── EventContext.java       # Root context interface
+│   ├── command/                # CommandContext, SlashCommandContext, AutoCompleteContext, etc.
+│   ├── component/              # ComponentContext, ButtonContext, SelectMenuContext,
+│   │                           # ModalContext, CheckboxContext, RadioGroupContext, etc.
 │   └── message/                # MessageContext, ReactionContext
+├── exception/                  # DiscordException, DiscordUserException, etc.
 ├── handler/
 │   ├── DiscordConfig.java      # Builder-pattern bot configuration
 │   ├── CommandHandler.java     # Command registration and routing
-│   ├── ResponseHandler.java    # Active response message cache
-│   └── ExceptionHandler.java   # Error handling
+│   ├── EmojiHandler.java       # Custom emoji upload/lookup
+│   ├── DiscordLocale.java      # BCP 47 locale enum
+│   ├── exception/              # ExceptionHandler, DiscordExceptionHandler,
+│   │                           # SentryExceptionHandler, CompositeExceptionHandler
+│   ├── response/               # ResponseHandler, CachedResponse, ResponseEntry,
+│   │                           # ResponseFollowup
+│   └── shard/                  # ShardHandler, Shard
 ├── listener/
 │   ├── command/                # Slash, user, message command listeners
-│   ├── component/              # Button, select menu, modal listeners
+│   ├── component/              # Button, select menu, modal, checkbox,
+│   │                           # radio group listeners
 │   ├── message/                # Message create/delete, reaction listeners
 │   └── lifecycle/              # Disconnect, guild create listeners
-└── response/
-    ├── impl/                   # TreeResponse, FormResponse
-    ├── handler/                # HistoryHandler, ItemHandler, OutputHandler
-    └── page/                   # TreePage, FormPage
+├── response/
+│   ├── Response.java           # Response interface + TreeResponse/FormResponse
+│   ├── Emoji.java              # Emoji representation
+│   ├── embed/                  # Embed, Author, Field, Footer
+│   ├── handler/                # HistoryHandler, PaginationHandler, OutputHandler,
+│   │   │                       # FilterHandler, SortHandler, SearchHandler
+│   │   └── item/               # ItemHandler, EmbedItemHandler, ComponentItemHandler
+│   └── page/                   # Page, TreePage, FormPage, Paging, Summary, Subpages
+│       └── item/               # Item, AuthorItem, TitleItem, DescriptionItem, etc.
+│           └── field/          # FieldItem, StringItem, NumberItem, ToggleItem, etc.
+└── util/                       # DiscordReference, DiscordDate, DiscordProtocol, ProgressBar
 ```
 
 ### Key extension points
@@ -246,6 +270,8 @@ src/main/java/dev/sbs/discordapi/
   scanning.
 - **New response type** - Implement the `Response` interface with a custom
   `HistoryHandler`.
+- **New exception handler** - Extend `ExceptionHandler` and register it via
+  `DiscordConfig` or wrap it in a `CompositeExceptionHandler`.
 
 ## Legal
 

@@ -21,6 +21,7 @@ discovery.
   - [Component System](#component-system)
   - [Context Hierarchy](#context-hierarchy)
   - [Listener System](#listener-system)
+  - [Exception Handling](#exception-handling)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -33,15 +34,19 @@ discovery.
   (`FormResponse`) paginated message builders with subpage navigation, item
   handlers, sort/filter/search, and auto-expiration
 - **Component builders** - Quality-of-life builders for Discord's interaction
-  components (`Button`, `SelectMenu`, `TextInput`, `Modal`) and layout
-  components (`ActionRow`, `Container`, `Section`, `Separator`), with
-  Components V2 support
+  components (`Button`, `SelectMenu`, `TextInput`, `Modal`, `RadioGroup`,
+  `Checkbox`, `CheckboxGroup`) and layout components (`ActionRow`, `Container`,
+  `Section`, `Separator`, `TextDisplay`), with Components V2 support
 - **Context system** - Typed wrappers around Discord4J events providing
   `reply()`, `edit()`, `followup()`, `presentModal()`, and cached response
   access
 - **Listener discovery** - Event listeners are auto-registered via classpath
   scanning, with support for additional runtime registration
 - **Shard management** - Built-in gateway shard handling via `ShardHandler`
+- **Error tracking** - Pluggable exception handler chain with built-in Discord
+  embed reporting and optional [Sentry](https://sentry.io/) integration
+- **Locale support** - `DiscordLocale` enum covering all Discord-supported
+  BCP 47 language tags for command internationalization
 
 ## Getting Started
 
@@ -55,8 +60,9 @@ discovery.
 
 ### Installation
 
-This module depends on the [api](../api) module. For local development, clone
-both repositories side by side:
+This module depends on the [api](../api) module, declared as a Maven
+coordinate (`dev.sbs:api:0.1.0`). For local development you can clone both
+repositories side by side and use a Gradle composite build:
 
 ```bash
 git clone https://github.com/SkyBlock-Simplified/api.git
@@ -79,8 +85,8 @@ Run tests:
 **Required environment variables:**
 
 ```
-DISCORD_TOKEN                   — Discord bot token
-DEVELOPER_ERROR_LOG_CHANNEL_ID  — Discord channel ID for error logging
+DISCORD_TOKEN                   - Discord bot token
+DEVELOPER_ERROR_LOG_CHANNEL_ID  - Discord channel ID for error logging
 ```
 
 ## Quick Example
@@ -142,16 +148,18 @@ Commands are discovered via classpath scanning and registered through
 
 ### Response System
 
-Two response types handle paginated, interactive messages:
+`Response` is a single final class built via `Response.builder()`. Pagination
+behavior is determined by the `Page` type used:
 
-| Type | Builder | Navigation | Use Case |
-|------|---------|------------|----------|
-| `TreeResponse` | `Response.builder()` | Hierarchical subpage tree | Multi-level menus |
-| `FormResponse` | `Response.form()` | Sequential index-based | Wizards, multi-step forms |
+| Page Type | Builder | Navigation | Use Case |
+|-----------|---------|------------|----------|
+| `TreePage` | `Page.builder()` | Hierarchical subpage tree | Multi-level menus |
+| `FormPage` | `Page.form()` | Sequential question-based | Wizards, multi-step forms |
 
-Both support `Page` instances (select menu navigation), `ItemHandler`
-(paginated fields with sort/filter/search), interactive components,
-attachments, and auto-expiration.
+Responses support multiple `Page` instances (select menu navigation),
+`ItemHandler` (paginated items with sort/filter/search via `EmbedItemHandler`
+or `ComponentItemHandler`), interactive components, attachments, and
+auto-expiration.
 
 ### Component System
 
@@ -160,10 +168,12 @@ provide quality-of-life builders for Discord4J component types:
 
 | Package | Components |
 |---------|------------|
-| `component/interaction/` | `Button`, `SelectMenu`, `TextInput`, `Modal` |
+| `component/` | `Component` (root interface), `TextDisplay` |
+| `component/interaction/` | `Button`, `SelectMenu`, `TextInput`, `Modal`, `RadioGroup`, `Checkbox`, `CheckboxGroup` |
 | `component/layout/` | `ActionRow`, `Container`, `Section`, `Separator`, `Label` |
 | `component/media/` | `Attachment`, `FileUpload`, `MediaGallery`, `Thumbnail` |
-| `component/type/` | Capability interfaces (`EventComponent`, `ToggleableComponent`, etc.) |
+| `component/capability/` | Behavioral contracts - `EventInteractable`, `ModalUpdatable`, `Toggleable`, `UserInteractable` |
+| `component/scope/` | Discord placement scoping - `AccessoryComponent`, `ContainerComponent`, `SectionComponent`, `TopLevelMessageComponent`, `TopLevelModalComponent` |
 
 Components V2 is detected automatically when v2 component types are present.
 
@@ -174,16 +184,24 @@ Every Discord event gets a typed context wrapping the Discord4J event:
 ```
 EventContext
 ├── InteractionContext
-│   ├── DeferrableInteractionContext
-│   │   ├── SlashCommandContext
-│   │   ├── UserCommandContext
-│   │   ├── MessageCommandContext
-│   │   ├── ButtonContext
-│   │   ├── SelectMenuContext
-│   │   └── ModalContext
-│   └── AutoCompleteContext
+│   ├── AutoCompleteContext
+│   └── DeferrableInteractionContext
+│       ├── CommandContext [+ TypingContext]
+│       │   ├── SlashCommandContext
+│       │   ├── UserCommandContext
+│       │   └── MessageCommandContext
+│       └── ComponentContext [+ MessageContext]
+│           ├── ActionComponentContext
+│           │   ├── ButtonContext
+│           │   ├── SelectMenuContext
+│           │   └── OptionContext
+│           ├── CheckboxContext
+│           ├── CheckboxGroupContext
+│           ├── RadioGroupContext
+│           └── ModalContext
 ├── MessageContext
-└── ReactionContext
+│   └── ReactionContext
+└── ExceptionContext
 ```
 
 Contexts provide: `reply()`, `edit()`, `followup()`, `presentModal()`,
@@ -196,7 +214,9 @@ via classpath scanning. Built-in listeners handle:
 
 - **Commands** - `SlashCommandListener`, `UserCommandListener`,
   `MessageCommandListener`, `AutoCompleteListener`
-- **Components** - `ButtonListener`, `SelectMenuListener`, `ModalListener`
+- **Components** - `ComponentListener`, `ButtonListener`,
+  `SelectMenuListener`, `ModalListener`, `CheckboxListener`,
+  `CheckboxGroupListener`, `RadioGroupListener`
 - **Messages** - `MessageCreateListener`, `MessageDeleteListener`,
   `ReactionAddListener`, `ReactionRemoveListener`
 - **Lifecycle** - `DisconnectListener`, `GuildCreateListener`
@@ -204,33 +224,80 @@ via classpath scanning. Built-in listeners handle:
 Additional listeners can be registered via
 `DiscordConfig.Builder.withListeners()`.
 
+### Exception Handling
+
+Exceptions are routed through a pluggable `ExceptionHandler` chain:
+
+| Handler | Purpose |
+|---------|---------|
+| `ExceptionHandler` | Abstract base class |
+| `DiscordExceptionHandler` | Formats errors into Discord embeds and sends them to the user and a developer log channel |
+| `SentryExceptionHandler` | Captures exceptions to [Sentry](https://sentry.io/) with enriched Discord context tags |
+| `CompositeExceptionHandler` | Chains multiple handlers in sequence (e.g. Sentry capture then Discord embed) |
+
+Command-specific exceptions (`PermissionException`, `InputException`,
+`ParameterException`, etc.) are caught and rendered as user-facing error
+embeds automatically.
+
 ## Project Structure
 
 ```
 discord-api/
 ├── src/main/java/dev/sbs/discordapi/
 │   ├── DiscordBot.java                 # Abstract bot entry point
-│   ├── command/                        # DiscordCommand, @Structure
+│   ├── command/
+│   │   ├── DiscordCommand.java         # Base command class with @Structure
+│   │   ├── exception/                  # CommandException, PermissionException, etc.
+│   │   └── parameter/                  # Parameter, Argument
 │   ├── component/
-│   │   ├── interaction/                # Button, SelectMenu, TextInput, Modal
-│   │   ├── layout/                     # ActionRow, Container, Section, etc.
-│   │   ├── media/                      # Attachment, FileUpload, MediaGallery
-│   │   └── type/                       # Capability interfaces
+│   │   ├── Component.java              # Root component interface
+│   │   ├── TextDisplay.java            # Text display component (V2)
+│   │   ├── interaction/                # Button, SelectMenu, TextInput, Modal,
+│   │   │                               # RadioGroup, Checkbox, CheckboxGroup
+│   │   ├── layout/                     # ActionRow, Container, Section, Separator, Label
+│   │   ├── media/                      # Attachment, FileUpload, MediaGallery, Thumbnail
+│   │   ├── capability/                 # EventInteractable, Toggleable, ModalUpdatable,
+│   │   │                               # UserInteractable
+│   │   └── scope/                      # AccessoryComponent, ContainerComponent,
+│   │                                   # SectionComponent, TopLevelMessageComponent, etc.
 │   ├── context/
-│   │   ├── command/                    # SlashCommandContext, AutoCompleteContext
-│   │   ├── component/                  # ButtonContext, SelectMenuContext, etc.
+│   │   ├── EventContext.java           # Root context interface
+│   │   ├── command/                    # CommandContext, SlashCommandContext, etc.
+│   │   ├── component/                  # ComponentContext, ButtonContext, ModalContext,
+│   │   │                               # CheckboxContext, RadioGroupContext, etc.
 │   │   └── message/                    # MessageContext, ReactionContext
-│   ├── handler/                        # CommandHandler, ResponseHandler, etc.
+│   ├── exception/                      # DiscordException, DiscordUserException, etc.
+│   ├── handler/
+│   │   ├── DiscordConfig.java          # Builder-pattern bot configuration
+│   │   ├── CommandHandler.java         # Command registration and routing
+│   │   ├── EmojiHandler.java           # Custom emoji upload/lookup
+│   │   ├── DiscordLocale.java          # BCP 47 locale enum
+│   │   ├── exception/                  # ExceptionHandler, DiscordExceptionHandler,
+│   │   │                               # SentryExceptionHandler, CompositeExceptionHandler
+│   │   ├── response/                   # ResponseHandler, CachedResponse,
+│   │   │                               # ResponseEntry, ResponseFollowup
+│   │   └── shard/                      # ShardHandler, Shard
 │   ├── listener/
-│   │   ├── command/                    # Command event listeners
-│   │   ├── component/                  # Component event listeners
-│   │   ├── message/                    # Message event listeners
-│   │   └── lifecycle/                  # Gateway lifecycle listeners
-│   └── response/
-│       ├── impl/                       # TreeResponse, FormResponse
-│       ├── handler/                    # HistoryHandler, ItemHandler, OutputHandler
-│       └── page/                       # TreePage, FormPage
-├── src/test/java/                      # JUnit 5 tests and DebugBot
+│   │   ├── command/                    # Slash, user, message command listeners
+│   │   ├── component/                  # Button, select menu, modal, checkbox,
+│   │   │                               # radio group listeners
+│   │   ├── message/                    # Message create/delete, reaction listeners
+│   │   └── lifecycle/                  # Disconnect, guild create listeners
+│   ├── response/
+│   │   ├── Response.java               # Response interface + TreeResponse/FormResponse
+│   │   ├── Emoji.java                  # Emoji representation
+│   │   ├── embed/                      # Embed, Author, Field, Footer
+│   │   ├── handler/                    # HistoryHandler, PaginationHandler, OutputHandler,
+│   │   │   │                           # FilterHandler, SortHandler, SearchHandler,
+│   │   │   │                           # Filter, Sorter, Search
+│   │   │   └── item/                   # ItemHandler, EmbedItemHandler, ComponentItemHandler
+│   │   └── page/                       # Page, TreePage, FormPage, Paging, Summary,
+│   │       │                           # Subpages, Question
+│   │       └── item/                   # Item, AuthorItem, TitleItem, DescriptionItem, etc.
+│   │           └── field/              # FieldItem, StringItem, NumberItem, ToggleItem, etc.
+│   └── util/                           # DiscordReference, DiscordDate, DiscordProtocol,
+│                                       # ProgressBar
+├── src/test/java/                      # JUnit 5 tests, DebugBot, DiagramGenerator
 ├── build.gradle.kts
 └── gradle/libs.versions.toml           # Version catalog
 ```
