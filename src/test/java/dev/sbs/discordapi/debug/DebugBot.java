@@ -42,8 +42,7 @@ public final class DebugBot extends DiscordBot {
             .build();
 
         DebugBot debugBot = new DebugBot(discordConfig);
-        debugBot.login();
-        debugBot.connect();
+        debugBot.start();
     }
 
     @Override
