@@ -60,9 +60,10 @@ discovery.
 
 ### Installation
 
-This module depends on the [api](../api) module, declared as a Maven
-coordinate (`dev.sbs:api:0.1.0`). For local development you can clone both
-repositories side by side and use a Gradle composite build:
+> [!NOTE]
+> This module depends on the [api](../api) module, declared as a Maven
+> coordinate (`dev.sbs:api:0.1.0`). For local development you can clone both
+> repositories side by side and use a Gradle composite build.
 
 ```bash
 git clone https://github.com/SkyBlock-Simplified/api.git
@@ -82,12 +83,13 @@ Run tests:
 ./gradlew test
 ```
 
-**Required environment variables:**
-
-```
-DISCORD_TOKEN                   - Discord bot token
-DEVELOPER_ERROR_LOG_CHANNEL_ID  - Discord channel ID for error logging
-```
+> [!IMPORTANT]
+> **Required environment variables:**
+>
+> ```
+> DISCORD_TOKEN                   - Discord bot token
+> DEVELOPER_ERROR_LOG_CHANNEL_ID  - Discord channel ID for error logging
+> ```
 
 ## Quick Example
 
@@ -175,7 +177,8 @@ provide quality-of-life builders for Discord4J component types:
 | `component/capability/` | Behavioral contracts - `EventInteractable`, `ModalUpdatable`, `Toggleable`, `UserInteractable` |
 | `component/scope/` | Discord placement scoping - `AccessoryComponent`, `ContainerComponent`, `SectionComponent`, `TopLevelMessageComponent`, `TopLevelModalComponent` |
 
-Components V2 is detected automatically when v2 component types are present.
+> [!NOTE]
+> Components V2 is detected automatically when v2 component types are present.
 
 ### Context Hierarchy
 
@@ -221,8 +224,9 @@ via classpath scanning. Built-in listeners handle:
   `ReactionAddListener`, `ReactionRemoveListener`
 - **Lifecycle** - `DisconnectListener`, `GuildCreateListener`
 
-Additional listeners can be registered via
-`DiscordConfig.Builder.withListeners()`.
+> [!TIP]
+> Additional listeners can be registered via
+> `DiscordConfig.Builder.withListeners()`.
 
 ### Exception Handling
 
