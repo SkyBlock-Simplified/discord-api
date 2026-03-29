@@ -364,6 +364,43 @@ public abstract class DiscordBot {
         return new CompositeExceptionHandler(this, handlers);
     }
 
+    /**
+     * Starts the bot by executing the full two-phase initialization lifecycle.
+     * <p>
+     * <b>Phase 1 - REST Client ({@link #login()})</b>
+     * <ul>
+     *     <li>Creates and configures the {@link DiscordClient} with the bot token, allowed mentions,
+     *         response suppression rules, and network retry logic.</li>
+     *     <li>Fetches the bot's own {@link UserData} from Discord.</li>
+     *     <li>Invokes the {@link #onClientCreated(DiscordClient)} hook.</li>
+     * </ul>
+     * <p>
+     * <b>Phase 2 - Gateway ({@link #connect()})</b>
+     * <ul>
+     *     <li>Opens a Gateway connection with the configured intents, presence, and member request filter.</li>
+     *     <li>On the initial {@link ConnectEvent}:
+     *     <ul>
+     *         <li>Invokes the {@link #onGatewayConnected(GatewayDiscordClient)} hook.</li>
+     *         <li>If a JPA configuration is present, establishes a database session and invokes the
+     *             {@link #onDatabaseConnected()} hook.</li>
+     *         <li>Schedules a periodic cache cleaner that removes inactive {@link CachedResponse} entries.</li>
+     *         <li>Discovers and registers all {@link DiscordListener} implementations.</li>
+     *         <li>Syncs custom emojis via the {@link EmojiHandler}.</li>
+     *         <li>Updates global application commands via the {@link CommandHandler}.</li>
+     *     </ul></li>
+     *     <li>Blocks the calling thread on {@link GatewayDiscordClient#onDisconnect()} to keep the bot online
+     *         until the gateway is terminated.</li>
+     * </ul>
+     *
+     * @throws DiscordGatewayException if the gateway connection cannot be established
+     * @see #login()
+     * @see #connect()
+     */
+    protected final void start() {
+        this.login();
+        this.connect();
+    }
+
     @SuppressWarnings("unused")
     protected void onClientCreated(@NotNull DiscordClient discordClient) { }
 
