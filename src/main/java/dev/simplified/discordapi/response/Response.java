@@ -216,7 +216,7 @@ public final class Response {
 
     public void updateAttachments(@NotNull Message message) {
         if (this.getAttachments().contains(attachment -> attachment.getMediaData().getState(), MediaData.State.LOADING)) {
-            for (int i = 0; this.getAttachments().notEmpty(); i++) {
+            for (int i = 0; i < this.getAttachments().size(); i++) {
                 Attachment attachment = this.getAttachments().get(i);
                 final int index = i;
 
