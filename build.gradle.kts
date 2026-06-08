@@ -40,8 +40,8 @@ dependencies {
     api("com.github.simplified-dev:reflection") { version { strictly("c02511a") } }
     api("com.github.simplified-dev:scheduler") { version { strictly("f9b1bd4") } }
     api("com.github.simplified-dev:yaml") { version { strictly("586bc52") } }
-    api("com.github.simplified-dev:client") { version { strictly("47d3c2f") } }
-    api("com.github.simplified-dev:dataflow") { version { strictly("448c6be") } }
+    api("com.github.simplified-dev:client") { version { strictly("64ae978") } }
+    api("com.github.simplified-dev:dataflow") { version { strictly("9e5906d") } }
 
     implementation(libs.sentry)
 }
