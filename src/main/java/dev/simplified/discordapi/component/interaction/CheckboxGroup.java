@@ -3,14 +3,10 @@ package dev.simplified.discordapi.component.interaction;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.Component;
-import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
-import dev.simplified.discordapi.context.component.CheckboxContext;
-import dev.simplified.discordapi.context.component.CheckboxGroupContext;
-import dev.simplified.discordapi.context.scope.ComponentContext;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
@@ -22,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,9 +31,9 @@ import java.util.function.Function;
  *
  * <p>
  * Checkbox groups present a list of {@link Option options} from which a user may choose
- * one or more values, bounded by {@link #getMinValues()} and {@link #getMaxValues()}.
- * When a selection changes, the computed {@link #getInteraction()} dispatches to the
- * group-level handler.
+ * one or more values inside a modal, bounded by {@link #getMinValues()} and
+ * {@link #getMaxValues()}. The chosen values are read from the modal submission via
+ * {@link #updateFromData(ComponentData)} and exposed through {@link #getSelected()}.
  *
  * <p>
  * Instances are created via {@link #builder()} and can be copied for modification
@@ -49,9 +44,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class CheckboxGroup implements ActionComponent, EventInteractable<CheckboxGroupContext>, LabelComponent, Toggleable {
-
-    private static final Function<CheckboxContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
+public final class CheckboxGroup implements ActionComponent, LabelComponent, Toggleable {
 
     /** The unique identifier for this checkbox group. */
     private final @NotNull String identifier;
@@ -65,14 +58,8 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
     /** The maximum number of options that may be selected. */
     private final int maxValues;
 
-    /** Whether the interaction is automatically deferred as an edit. */
-    private final boolean deferEdit;
-
     /** Whether this checkbox group is required. */
     private final boolean required;
-
-    @Getter(AccessLevel.NONE)
-    private final @NotNull Optional<Function<CheckboxGroupContext, Mono<Void>>> userInteraction;
 
     /** The currently selected options. */
     private @NotNull ConcurrentList<Option> selected;
@@ -98,12 +85,10 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
 
         return this.getMinValues() == that.getMinValues()
             && this.getMaxValues() == that.getMaxValues()
-            && this.isDeferEdit() == that.isDeferEdit()
             && this.isRequired() == that.isRequired()
             && this.isEnabled() == that.isEnabled()
             && Objects.equals(this.getIdentifier(), that.getIdentifier())
             && Objects.equals(this.getOptions(), that.getOptions())
-            && Objects.equals(this.userInteraction, that.userInteraction)
             && Objects.equals(this.getSelected(), that.getSelected());
     }
 
@@ -134,9 +119,7 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
             .withOptions(checkboxGroup.getOptions())
             .withMinValues(checkboxGroup.getMinValues())
             .withMaxValues(checkboxGroup.getMaxValues())
-            .withDeferEdit(checkboxGroup.isDeferEdit())
-            .setRequired(checkboxGroup.isRequired())
-            .onInteract(checkboxGroup.userInteraction);
+            .setRequired(checkboxGroup.isRequired());
     }
 
     /** {@inheritDoc} */
@@ -157,20 +140,13 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull Function<CheckboxGroupContext, Mono<Void>> getInteraction() {
-        return context -> Mono.justOrEmpty(this.userInteraction)
-            .flatMap(interaction -> interaction.apply(context));
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public @NotNull Component.Type getType() {
         return Component.Type.CHECKBOX_GROUP;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getOptions(), this.getMinValues(), this.getMaxValues(), this.isDeferEdit(), this.isRequired(), this.userInteraction, this.getSelected(), this.isEnabled());
+        return Objects.hash(this.getIdentifier(), this.getOptions(), this.getMinValues(), this.getMaxValues(), this.isRequired(), this.getSelected(), this.isEnabled());
     }
 
     /**
@@ -240,28 +216,7 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
         private final ConcurrentList<Option> options = Concurrent.newList();
         private int minValues = 0;
         private int maxValues = 1;
-        private boolean deferEdit;
         private boolean required;
-        private Optional<Function<CheckboxGroupContext, Mono<Void>>> interaction = Optional.empty();
-
-        /**
-         * Sets the interaction handler invoked when the {@link CheckboxGroup} selection changes.
-         *
-         * @param interaction the interaction function, or {@code null} for no handler
-         */
-        public Builder onInteract(@Nullable Function<CheckboxGroupContext, Mono<Void>> interaction) {
-            return this.onInteract(Optional.ofNullable(interaction));
-        }
-
-        /**
-         * Sets the interaction handler invoked when the {@link CheckboxGroup} selection changes.
-         *
-         * @param interaction the optional interaction function
-         */
-        public Builder onInteract(@NotNull Optional<Function<CheckboxGroupContext, Mono<Void>>> interaction) {
-            this.interaction = interaction;
-            return this;
-        }
 
         /**
          * Sets the {@link CheckboxGroup} as disabled.
@@ -277,23 +232,6 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
          */
         public Builder setDisabled(boolean value) {
             return this.setEnabled(!value);
-        }
-
-        /**
-         * Sets the {@link CheckboxGroup} to automatically defer interactions as edits.
-         */
-        public Builder withDeferEdit() {
-            return this.withDeferEdit(true);
-        }
-
-        /**
-         * Sets whether the {@link CheckboxGroup} automatically defers interactions as edits.
-         *
-         * @param deferEdit {@code true} to defer interactions
-         */
-        public Builder withDeferEdit(boolean deferEdit) {
-            this.deferEdit = deferEdit;
-            return this;
         }
 
         /**
@@ -403,9 +341,7 @@ public final class CheckboxGroup implements ActionComponent, EventInteractable<C
                 this.options,
                 this.minValues,
                 this.maxValues,
-                this.deferEdit,
                 this.required,
-                this.interaction,
                 Concurrent.newUnmodifiableList(),
                 this.enabled
             );

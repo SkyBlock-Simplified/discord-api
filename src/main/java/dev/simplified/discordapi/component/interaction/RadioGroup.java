@@ -3,12 +3,10 @@ package dev.simplified.discordapi.component.interaction;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.Component;
-import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
-import dev.simplified.discordapi.context.component.RadioGroupContext;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
@@ -21,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -34,8 +31,8 @@ import java.util.function.Function;
  *
  * <p>
  * Radio groups present a list of {@link Option options} from which a user may choose exactly
- * one value. When a selection changes, the computed {@link #getInteraction()} dispatches to
- * the group-level handler.
+ * one value inside a modal. The chosen value is read from the modal submission via
+ * {@link #updateFromData(ComponentData)} and exposed through {@link #getSelected()}.
  *
  * <p>
  * Instances are created via {@link #builder()} and can be copied for modification
@@ -46,7 +43,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RadioGroup implements ActionComponent, EventInteractable<RadioGroupContext>, LabelComponent, Toggleable {
+public final class RadioGroup implements ActionComponent, LabelComponent, Toggleable {
 
     /** The unique identifier for this radio group. */
     private final @NotNull String identifier;
@@ -54,14 +51,8 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
     /** The available options within this radio group. */
     private final @NotNull ConcurrentList<Option> options;
 
-    /** Whether the interaction is automatically deferred as an edit. */
-    private final boolean deferEdit;
-
     /** Whether this radio group is required. */
     private final boolean required;
-
-    @Getter(AccessLevel.NONE)
-    private final @NotNull Optional<Function<RadioGroupContext, Mono<Void>>> userInteraction;
 
     /** The currently selected option. */
     private @NotNull Optional<Option> selected;
@@ -85,12 +76,10 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
 
         RadioGroup that = (RadioGroup) o;
 
-        return this.isDeferEdit() == that.isDeferEdit()
-            && this.isRequired() == that.isRequired()
+        return this.isRequired() == that.isRequired()
             && this.isEnabled() == that.isEnabled()
             && Objects.equals(this.getIdentifier(), that.getIdentifier())
             && Objects.equals(this.getOptions(), that.getOptions())
-            && Objects.equals(this.userInteraction, that.userInteraction)
             && Objects.equals(this.getSelected(), that.getSelected());
     }
 
@@ -119,9 +108,7 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
             .withIdentifier(radioGroup.getIdentifier())
             .setDisabled(radioGroup.isEnabled())
             .withOptions(radioGroup.getOptions())
-            .withDeferEdit(radioGroup.isDeferEdit())
-            .setRequired(radioGroup.isRequired())
-            .onInteract(radioGroup.userInteraction);
+            .setRequired(radioGroup.isRequired());
     }
 
     /** {@inheritDoc} */
@@ -140,20 +127,13 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
 
     /** {@inheritDoc} */
     @Override
-    public @NotNull Function<RadioGroupContext, Mono<Void>> getInteraction() {
-        return context -> Mono.justOrEmpty(this.userInteraction)
-            .flatMap(interaction -> interaction.apply(context));
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public @NotNull Component.Type getType() {
         return Component.Type.RADIO_GROUP;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getOptions(), this.isDeferEdit(), this.isRequired(), this.userInteraction, this.getSelected(), this.isEnabled());
+        return Objects.hash(this.getIdentifier(), this.getOptions(), this.isRequired(), this.getSelected(), this.isEnabled());
     }
 
     /**
@@ -213,28 +193,7 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
         private boolean enabled;
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<Option> options = Concurrent.newList();
-        private boolean deferEdit;
         private boolean required;
-        private Optional<Function<RadioGroupContext, Mono<Void>>> interaction = Optional.empty();
-
-        /**
-         * Sets the interaction handler invoked when the {@link RadioGroup} selection changes.
-         *
-         * @param interaction the interaction function, or {@code null} for no handler
-         */
-        public Builder onInteract(@Nullable Function<RadioGroupContext, Mono<Void>> interaction) {
-            return this.onInteract(Optional.ofNullable(interaction));
-        }
-
-        /**
-         * Sets the interaction handler invoked when the {@link RadioGroup} selection changes.
-         *
-         * @param interaction the optional interaction function
-         */
-        public Builder onInteract(@NotNull Optional<Function<RadioGroupContext, Mono<Void>>> interaction) {
-            this.interaction = interaction;
-            return this;
-        }
 
         /**
          * Sets the {@link RadioGroup} as disabled.
@@ -250,23 +209,6 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
          */
         public Builder setDisabled(boolean value) {
             return this.setEnabled(!value);
-        }
-
-        /**
-         * Sets the {@link RadioGroup} to automatically defer interactions as edits.
-         */
-        public Builder withDeferEdit() {
-            return this.withDeferEdit(true);
-        }
-
-        /**
-         * Sets whether the {@link RadioGroup} automatically defers interactions as edits.
-         *
-         * @param deferEdit {@code true} to defer interactions
-         */
-        public Builder withDeferEdit(boolean deferEdit) {
-            this.deferEdit = deferEdit;
-            return this;
         }
 
         /**
@@ -354,9 +296,7 @@ public final class RadioGroup implements ActionComponent, EventInteractable<Radi
             return new RadioGroup(
                 this.identifier,
                 this.options,
-                this.deferEdit,
                 this.required,
-                this.interaction,
                 Optional.empty(),
                 this.enabled
             );

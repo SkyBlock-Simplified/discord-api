@@ -108,10 +108,36 @@ public final class DispatchFactory {
      * @return the modal submit dispatch
      */
     public Dispatch modalSubmit(long messageId, String modalCustomId, String inputId, String value) {
-        return this.fromJson(modalSubmitJson(messageId, modalCustomId, inputId, value));
+        String components = "[" + actionRow("{\"type\":4,\"custom_id\":\"" + inputId + "\",\"value\":\"" + value + "\"}") + "]";
+        return this.fromJson(modalSubmitJson(messageId, modalCustomId, components));
     }
 
-    private static String modalSubmitJson(long messageId, String modalCustomId, String inputId, String value) {
+    /**
+     * Builds an {@code INTERACTION_CREATE} (type 5, modal submit) dispatch carrying a radio group value
+     * (type 21, {@code values}) and a checkbox value (type 23, {@code value}), so tests can verify that
+     * non-text-input components fold their submitted state through the modal.
+     *
+     * @param messageId the id of the cached message the modal belongs to
+     * @param modalCustomId the modal's custom id
+     * @param radioId the radio group's custom id
+     * @param radioValue the selected radio option value
+     * @param checkboxId the checkbox's custom id
+     * @param checkboxChecked whether the checkbox was checked
+     * @return the modal submit dispatch
+     */
+    public Dispatch modalSubmitValues(long messageId, String modalCustomId, String radioId, String radioValue, String checkboxId, boolean checkboxChecked) {
+        String components = "["
+            + actionRow("{\"type\":21,\"custom_id\":\"" + radioId + "\",\"values\":[\"" + radioValue + "\"]}") + ","
+            + actionRow("{\"type\":23,\"custom_id\":\"" + checkboxId + "\",\"value\":\"" + checkboxChecked + "\"}")
+            + "]";
+        return this.fromJson(modalSubmitJson(messageId, modalCustomId, components));
+    }
+
+    private static String actionRow(String child) {
+        return "{\"type\":1,\"components\":[" + child + "]}";
+    }
+
+    private static String modalSubmitJson(long messageId, String modalCustomId, String components) {
         return "{\"op\":0,\"s\":12,\"t\":\"INTERACTION_CREATE\",\"d\":{"
             + "\"id\":\"950000000000000012\","
             + "\"application_id\":\"" + TestIds.APPLICATION_ID + "\","
@@ -121,8 +147,7 @@ public final class DispatchFactory {
             + "\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
             + "\"user\":{\"id\":\"" + TestIds.USER_ID + "\",\"username\":\"tester\",\"discriminator\":\"0001\",\"avatar\":null},"
             + "\"message\":" + messageObject(messageId) + ","
-            + "\"data\":{\"custom_id\":\"" + modalCustomId + "\",\"components\":[{\"type\":1,\"components\":["
-            + "{\"type\":4,\"custom_id\":\"" + inputId + "\",\"value\":\"" + value + "\"}]}]}"
+            + "\"data\":{\"custom_id\":\"" + modalCustomId + "\",\"components\":" + components + "}"
             + "}}";
     }
 

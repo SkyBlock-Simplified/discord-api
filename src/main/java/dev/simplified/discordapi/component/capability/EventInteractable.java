@@ -41,19 +41,12 @@ public interface EventInteractable<T extends ComponentContext> {
      * Builds the typed interaction context for an interaction targeting this component, folding
      * in any Discord-side interaction values (for example a select menu's chosen values).
      *
-     * <p>
-     * Overridden by the dispatchable components (button, select menu, modal). Components that only
-     * ever appear as modal-submit values, and so are never dispatched on their own, do not build a
-     * context.
-     *
      * @param discordBot the bot instance
      * @param event the component interaction event
      * @param response the cached response containing the component
      * @param followup the matched followup, if the interaction targets one
      * @return the constructed context
      */
-    default @NotNull T createContext(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull Optional<CachedResponse> followup) {
-        throw new UnsupportedOperationException(this.getClass().getSimpleName() + " does not build an interaction context");
-    }
+    @NotNull T createContext(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull Optional<CachedResponse> followup);
 
 }

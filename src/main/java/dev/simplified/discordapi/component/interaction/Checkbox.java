@@ -1,13 +1,10 @@
 package dev.simplified.discordapi.component.interaction;
 
 import dev.simplified.discordapi.component.Component;
-import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
-import dev.simplified.discordapi.context.component.CheckboxContext;
-import dev.simplified.discordapi.context.scope.ComponentContext;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import discord4j.core.object.component.CheckboxAction;
@@ -19,40 +16,34 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 
 /**
- * An immutable single toggle checkbox component rendered within a Discord message.
+ * An immutable single toggle checkbox component rendered inside a {@link Modal}.
  *
  * <p>
- * A checkbox represents a boolean on/off toggle. The checked state is provided by the
- * Discord interaction event, not stored on the component itself.
+ * A checkbox represents a boolean on/off toggle. It never emits its own interaction event; its
+ * checked state is read from the modal submission via {@link #updateFromData(ComponentData)} and
+ * exposed through {@link #isSelected()}.
  *
  * <p>
  * Instances are created via {@link #builder()} and can be copied for modification
  * via {@link #mutate()}.
  *
  * @see Label
+ * @see Modal
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Checkbox implements ActionComponent, EventInteractable<CheckboxContext>, LabelComponent, Toggleable {
-
-    private static final Function<CheckboxContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
+public final class Checkbox implements ActionComponent, LabelComponent, Toggleable {
 
     /** The unique identifier for this checkbox. */
     private final @NotNull String identifier;
 
-    /** Whether the interaction is automatically deferred as an edit. */
-    private final boolean deferEdit;
-
-    /** The interaction handler invoked when this checkbox is toggled. */
-    private final @NotNull Function<CheckboxContext, Mono<Void>> interaction;
+    /** Whether this checkbox was checked in the submitted modal. */
+    private boolean selected;
 
     /** Whether this checkbox is currently enabled. */
     private boolean enabled;
@@ -73,7 +64,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
 
         Checkbox that = (Checkbox) o;
 
-        return this.isDeferEdit() == that.isDeferEdit()
+        return this.isSelected() == that.isSelected()
             && this.isEnabled() == that.isEnabled()
             && Objects.equals(this.getIdentifier(), that.getIdentifier());
     }
@@ -87,9 +78,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
     public static @NotNull Builder from(@NotNull Checkbox checkbox) {
         return new Builder()
             .withIdentifier(checkbox.getIdentifier())
-            .setDisabled(checkbox.isEnabled())
-            .withDeferEdit(checkbox.isDeferEdit())
-            .onInteract(checkbox.getInteraction());
+            .setDisabled(checkbox.isEnabled());
     }
 
     /** {@inheritDoc} */
@@ -106,7 +95,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.isDeferEdit(), this.isEnabled());
+        return Objects.hash(this.getIdentifier(), this.isSelected(), this.isEnabled());
     }
 
     /**
@@ -121,7 +110,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
     /** {@inheritDoc} */
     @Override
     public void updateFromData(@NotNull ComponentData data) {
-        // Checkbox toggle state is event-driven, not stored on the component
+        this.selected = data.value().toOptional().map(Boolean::parseBoolean).orElse(false);
     }
 
     /** {@inheritDoc} */
@@ -139,27 +128,6 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
         @BuildFlag(nonNull = true)
         private String identifier;
         private boolean enabled;
-        private boolean deferEdit;
-        private Optional<Function<CheckboxContext, Mono<Void>>> interaction = Optional.empty();
-
-        /**
-         * Sets the interaction handler invoked when the {@link Checkbox} is toggled.
-         *
-         * @param interaction the interaction function, or {@code null} for the default no-op handler
-         */
-        public Builder onInteract(@Nullable Function<CheckboxContext, Mono<Void>> interaction) {
-            return this.onInteract(Optional.ofNullable(interaction));
-        }
-
-        /**
-         * Sets the interaction handler invoked when the {@link Checkbox} is toggled.
-         *
-         * @param interaction the optional interaction function
-         */
-        public Builder onInteract(@NotNull Optional<Function<CheckboxContext, Mono<Void>>> interaction) {
-            this.interaction = interaction;
-            return this;
-        }
 
         /**
          * Sets the {@link Checkbox} as disabled.
@@ -175,23 +143,6 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
          */
         public Builder setDisabled(boolean value) {
             return this.setEnabled(!value);
-        }
-
-        /**
-         * Sets the {@link Checkbox} to automatically defer interactions as edits.
-         */
-        public Builder withDeferEdit() {
-            return this.withDeferEdit(true);
-        }
-
-        /**
-         * Sets whether the {@link Checkbox} automatically defers interactions as edits.
-         *
-         * @param deferEdit {@code true} to defer interactions
-         */
-        public Builder withDeferEdit(boolean deferEdit) {
-            this.deferEdit = deferEdit;
-            return this;
         }
 
         /**
@@ -242,8 +193,7 @@ public final class Checkbox implements ActionComponent, EventInteractable<Checkb
 
             return new Checkbox(
                 this.identifier,
-                this.deferEdit,
-                this.interaction.orElse(NOOP_HANDLER),
+                false,
                 this.enabled
             );
         }
