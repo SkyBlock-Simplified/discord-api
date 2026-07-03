@@ -69,8 +69,13 @@ import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.shard.GatewayBootstrap;
 import discord4j.discordjson.json.UserData;
+import discord4j.gateway.GatewayOptions;
+import discord4j.rest.RestClientBuilder;
+import discord4j.rest.request.DefaultRouter;
 import discord4j.rest.request.RouteMatcher;
+import discord4j.rest.request.RouterOptions;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
@@ -206,7 +211,7 @@ public abstract class DiscordBot {
             throw new IllegalStateException("Discord Gateway already connected");
 
         log.info("Connecting to Discord Gateway");
-        this.gateway = this.getClient()
+        GatewayBootstrap<GatewayOptions> bootstrap = this.getClient()
             .gateway()
             .setEnabledIntents(this.getConfig().getIntents())
             .setInitialPresence(this.getConfig()::getClientPresence)
@@ -288,8 +293,13 @@ public abstract class DiscordBot {
                         .and(this.getCommandHandler().updateApplicationCommands())
                         .and(this.getEmojiHandler().sync());
                 })
-            )
-            .login()
+            );
+
+        // Optional gateway client factory (offline test harness injects a fake in-JVM GatewayClient);
+        // defaults to the stock live gateway connection
+        this.gateway = this.getConfig().getGatewayClientFactory()
+            .map(factory -> bootstrap.login(factory))
+            .orElseGet(() -> bootstrap.login())
             .blockOptional()
             .orElseThrow(() -> new DiscordGatewayException("Unable to connect to gateway."));
 
@@ -317,7 +327,7 @@ public abstract class DiscordBot {
             throw new IllegalStateException("Discord Client already initialized.");
 
         log.info("Creating Discord Client");
-        this.client = DiscordClientBuilder.create(this.getConfig().getToken())
+        RestClientBuilder<DiscordClient, RouterOptions> clientBuilder = DiscordClientBuilder.create(this.getConfig().getToken())
             .setDefaultAllowedMentions(this.getConfig().getAllowedMentions())
             .onClientResponse(ResponseFunction.emptyIfNotFound()) // Suppress 404 Not Found
             .onClientResponse(ResponseFunction.emptyOnErrorStatus(RouteMatcher.route(Routes.REACTION_CREATE), 400)) // Suppress (Reaction Add) 400 Bad Request
@@ -325,8 +335,24 @@ public abstract class DiscordBot {
                 RouteMatcher.any(),
                 Retry.backoff(10, Duration.ofSeconds(2))
                     .filter(throwable -> throwable instanceof SocketException || throwable instanceof Errors.NativeIoException))
-            )
-            .build();
+            );
+
+        // Optional custom REST transport (e.g. non-secure HttpClient for a plaintext local endpoint)
+        this.getConfig().getRestReactorResources().ifPresent(clientBuilder::setReactorResources);
+
+        // Optional custom API base url (custom endpoint / self-host / proxy / offline test server); the
+        // gateway endpoint is resolved from this base url via GET /gateway, so both are redirected together
+        this.client = this.getConfig().getApiBaseUrl()
+            .map(baseUrl -> clientBuilder.build(options -> new DefaultRouter(new RouterOptions(
+                options.getToken(),
+                options.getReactorResources(),
+                options.getExchangeStrategies(),
+                options.getResponseTransformers(),
+                options.getGlobalRateLimiter(),
+                options.getRequestQueueFactory(),
+                baseUrl
+            ))))
+            .orElseGet(clientBuilder::build);
 
         this.self = this.client.getSelf()
             .blockOptional()

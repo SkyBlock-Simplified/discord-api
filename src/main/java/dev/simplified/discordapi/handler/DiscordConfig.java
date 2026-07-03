@@ -13,9 +13,12 @@ import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.reflection.info.ResourceInfo;
 import dev.simplified.util.Logging;
 import dev.simplified.yaml.annotation.Flag;
+import discord4j.common.ReactorResources;
 import discord4j.core.event.domain.Event;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.MemberRequestFilter;
+import discord4j.gateway.GatewayClient;
+import discord4j.gateway.GatewayOptions;
 import discord4j.gateway.ShardInfo;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.util.AllowedMentions;
@@ -49,6 +52,11 @@ public final class DiscordConfig {
     private final @NotNull MemberRequestFilter memberRequestFilter;
     private final @NotNull Logging.Level logLevel;
     private final @NotNull ExtractorStore extractorStore;
+
+    // Endpoint overrides (custom Discord-compatible endpoint / self-host / proxy / offline test harness)
+    private final @NotNull Optional<String> apiBaseUrl;
+    private final @NotNull Optional<ReactorResources> restReactorResources;
+    private final @NotNull Optional<Function<GatewayOptions, GatewayClient>> gatewayClientFactory;
 
     public static @NotNull Builder builder() {
         return new Builder();
@@ -86,6 +94,11 @@ public final class DiscordConfig {
         private Logging.Level logLevel = Logging.Level.WARN;
         @BuildFlag(nonNull = true)
         private ExtractorStore extractorStore = InMemoryExtractorStore.of();
+
+        // Endpoint overrides (default empty = stock Discord)
+        private Optional<String> apiBaseUrl = Optional.empty();
+        private Optional<ReactorResources> restReactorResources = Optional.empty();
+        private Optional<Function<GatewayOptions, GatewayClient>> gatewayClientFactory = Optional.empty();
 
         public Builder withAllowedMentions(@NotNull AllowedMentions allowedMentions) {
             this.allowedMentions = allowedMentions;
@@ -233,6 +246,47 @@ public final class DiscordConfig {
             return this;
         }
 
+        /**
+         * Overrides the Discord REST API base url (defaults to the stock Discord endpoint).
+         * <p>
+         * Redirects all REST traffic - and, transitively, the gateway endpoint resolved from
+         * {@code GET /gateway} - to a custom Discord-compatible endpoint such as a self-hosted server,
+         * a proxy, or a local offline test server.
+         *
+         * @param apiBaseUrl the base url, e.g. {@code http://localhost:8080/api/v10}
+         * @return this builder
+         */
+        public Builder withApiBaseUrl(@NotNull String apiBaseUrl) {
+            this.apiBaseUrl = Optional.of(apiBaseUrl);
+            return this;
+        }
+
+        /**
+         * Supplies custom {@link ReactorResources} for the REST client, for example a non-secure
+         * {@code HttpClient} when targeting a plaintext {@code http://} endpoint.
+         *
+         * @param restReactorResources the reactor resources
+         * @return this builder
+         */
+        public Builder withRestReactorResources(@NotNull ReactorResources restReactorResources) {
+            this.restReactorResources = Optional.of(restReactorResources);
+            return this;
+        }
+
+        /**
+         * Replaces the gateway client with a caller-supplied factory.
+         * <p>
+         * Advanced hook used by the offline test harness to inject a fake in-JVM {@link GatewayClient}
+         * in place of a live gateway connection.
+         *
+         * @param gatewayClientFactory the factory producing a gateway client from the resolved options
+         * @return this builder
+         */
+        public Builder withGatewayClientFactory(@NotNull Function<GatewayOptions, GatewayClient> gatewayClientFactory) {
+            this.gatewayClientFactory = Optional.of(gatewayClientFactory);
+            return this;
+        }
+
         public @NotNull DiscordConfig build() {
             Reflection.validateFlags(this);
 
@@ -250,7 +304,10 @@ public final class DiscordConfig {
                 this.clientPresence,
                 this.memberRequestFilter,
                 this.logLevel,
-                this.extractorStore
+                this.extractorStore,
+                this.apiBaseUrl,
+                this.restReactorResources,
+                this.gatewayClientFactory
             );
         }
 
