@@ -10,11 +10,13 @@ import dev.simplified.util.Logging;
 import discord4j.common.ReactorResources;
 import discord4j.common.util.Snowflake;
 import discord4j.discordjson.json.gateway.Dispatch;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -22,7 +24,11 @@ import java.util.function.Predicate;
  * Wires the offline pieces together: a localhost REST mock, a fake in-JVM gateway, and a
  * {@link HarnessBot} pointed at both. Tests boot it, wait until connected, then drive dispatches and
  * assert on the captured REST traffic.
+ * <p>
+ * The DSL narrates each driven event at INFO and each wait/teardown at DEBUG; raise the
+ * {@code dev.simplified.discordapi.harness} logger to DEBUG or TRACE to see the REST and dispatch detail.
  */
+@Log4j2
 public final class OfflineHarness implements AutoCloseable {
 
     private final HarnessConfig config;
@@ -65,6 +71,7 @@ public final class OfflineHarness implements AutoCloseable {
             .build();
 
         this.bot = new HarnessBot(discordConfig);
+        log.info("Offline harness constructed: botId={} guildId={} REST base {}", config.getBotId(), config.getGuildId(), this.server.baseUrl());
     }
 
     /** The harness identity backing this run (ids, token, command-id scheme). */
@@ -79,8 +86,10 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness boot(@NotNull Duration timeout) {
+        log.info("Booting bot, waiting up to {} for the gateway to connect", timeout);
         this.bot.bootAsync();
         awaitTrue(this::gatewayConnected, timeout, "gateway did not connect");
+        log.info("Gateway connected");
         return this;
     }
 
@@ -111,6 +120,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness sendSlashCommand(@NotNull String name, @NotNull SlashOption... options) {
+        log.info("-> slash command /{}{}", name, describe(options));
         this.awaitCommandRegistered(name, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.slashCommand(name, options));
         return this;
@@ -142,6 +152,8 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness sendSubCommand(@NotNull String parent, @Nullable String group, @NotNull String sub, @NotNull SlashOption... options) {
+        String path = parent + (group == null ? "" : " " + group) + " " + sub;
+        log.info("-> slash command /{}{}", path, describe(options));
         this.awaitCommandRegistered(parent, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.slashSubCommand(parent, group, sub, options));
         return this;
@@ -156,6 +168,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness sendUserCommand(@NotNull String name, long targetUserId) {
+        log.info("-> user command '{}' on user {}", name, targetUserId);
         this.awaitCommandRegistered(name, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.userCommand(name, targetUserId));
         return this;
@@ -170,6 +183,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness sendMessageCommand(@NotNull String name, long targetMessageId) {
+        log.info("-> message command '{}' on message {}", name, targetMessageId);
         this.awaitCommandRegistered(name, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.messageCommand(name, targetMessageId));
         return this;
@@ -220,6 +234,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness clickButton(long messageId, @NotNull String customId) {
+        log.info("-> click button '{}' on message {}", customId, messageId);
         this.awaitResponseCached(messageId, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.button(messageId, customId));
         return this;
@@ -235,6 +250,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness clickSelectMenu(long messageId, @NotNull String customId, @NotNull String... values) {
+        log.info("-> select '{}' on message {} values={}", customId, messageId, Arrays.toString(values));
         this.awaitResponseCached(messageId, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.selectMenu(messageId, customId, values));
         return this;
@@ -250,6 +266,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness submitModal(long messageId, @NotNull String modalCustomId, @NotNull String inputId, @NotNull String value) {
+        log.info("-> submit modal '{}' input '{}'='{}' on message {}", modalCustomId, inputId, value, messageId);
         this.gatewayClient.emit(this.dispatchFactory.modalSubmit(messageId, modalCustomId, inputId, value));
         return this;
     }
@@ -262,6 +279,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness emitMessageCreate(long messageId) {
+        log.info("-> MESSAGE_CREATE for message {}", messageId);
         this.awaitResponseCached(messageId, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.messageCreate(messageId));
         return this;
@@ -354,15 +372,23 @@ public final class OfflineHarness implements AutoCloseable {
                 Thread.sleep(25);
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
+                log.warn("Interrupted while waiting: {}", message);
                 throw new IllegalStateException("Interrupted while waiting: " + message, interrupted);
             }
         }
 
+        log.error("Timed out after {} waiting: {}; recorded requests={}", timeout, message, this.server.requests());
         throw new IllegalStateException(message + "; recorded requests=" + this.server.requests());
+    }
+
+    /** Renders slash options for a log line, or an empty string when there are none. */
+    private static @NotNull String describe(@NotNull SlashOption... options) {
+        return options.length == 0 ? "" : " " + Arrays.toString(options);
     }
 
     @Override
     public void close() {
+        log.debug("Closing harness");
         this.gatewayClient.close(false).subscribe();
         this.server.stop();
     }

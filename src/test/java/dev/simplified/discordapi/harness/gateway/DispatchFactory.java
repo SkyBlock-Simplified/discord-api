@@ -19,6 +19,7 @@ import discord4j.discordjson.json.gateway.MessageCreate;
 import discord4j.discordjson.json.gateway.Ready;
 import discord4j.discordjson.possible.Possible;
 import discord4j.gateway.retry.GatewayStateChange;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +37,11 @@ import java.util.Optional;
  * hand-written JSON. Building through the typed builders keeps the payloads in step with Discord4J
  * updates - a renamed or restructured field breaks the compile instead of silently producing a bad
  * dispatch.
+ * <p>
+ * Each public builder logs the shape it produced at TRACE, so enabling TRACE on the harness package
+ * narrates exactly which interaction/event was fabricated before it is emitted into the pipeline.
  */
+@Log4j2
 public final class DispatchFactory {
 
     private static final long SLASH_INTERACTION_ID = 950000000000000010L;
@@ -57,6 +62,7 @@ public final class DispatchFactory {
      * @return the ready dispatch
      */
     public Dispatch ready(long botId) {
+        log.trace("Building READY for bot {}", botId);
         return Ready.builder()
             .v(10)
             .user(botUser(botId))
@@ -77,6 +83,7 @@ public final class DispatchFactory {
         List<Dispatch> dispatches = new ArrayList<>();
         dispatches.add(this.ready(botId));
         dispatches.add(GatewayStateChange.connected());
+        log.debug("Built startup handshake ({} dispatches) for bot {}", dispatches.size(), botId);
         return dispatches;
     }
 
@@ -90,6 +97,7 @@ public final class DispatchFactory {
      * @return the interaction-create dispatch
      */
     public Dispatch slashCommand(String name, SlashOption... options) {
+        log.trace("Building slash interaction '/{}' with {} option(s)", name, options.length);
         return interaction(
             baseInteraction(SLASH_INTERACTION_ID, 2, "interaction-token-" + name)
                 .data(chatInputData(name, leafOptions(options)))
@@ -109,6 +117,7 @@ public final class DispatchFactory {
      * @return the interaction-create dispatch
      */
     public Dispatch slashSubCommand(String parent, @Nullable String group, String sub, SlashOption... options) {
+        log.trace("Building subcommand interaction: parent='{}' group='{}' sub='{}' with {} option(s)", parent, group, sub, options.length);
         ApplicationCommandInteractionOptionData subCommand = subCommandOption(sub, options);
         ApplicationCommandInteractionOptionData top = isPresent(group) ? groupOption(group, subCommand) : subCommand;
 
@@ -127,6 +136,7 @@ public final class DispatchFactory {
      * @return the component interaction dispatch
      */
     public Dispatch button(long messageId, String customId) {
+        log.trace("Building button interaction: customId='{}' message={}", customId, messageId);
         return interaction(
             baseInteraction(COMPONENT_INTERACTION_ID, 3, "button-token-" + customId)
                 .message(messageData(messageId))
@@ -147,6 +157,7 @@ public final class DispatchFactory {
      * @return the component interaction dispatch
      */
     public Dispatch selectMenu(long messageId, String customId, String... values) {
+        log.trace("Building select-menu interaction: customId='{}' message={} values={}", customId, messageId, Arrays.toString(values));
         return interaction(
             baseInteraction(COMPONENT_INTERACTION_ID, 3, "select-token-" + customId)
                 .message(messageData(messageId))
@@ -193,6 +204,7 @@ public final class DispatchFactory {
     }
 
     private Dispatch modalSubmit(long messageId, String modalCustomId, List<ComponentData> components) {
+        log.trace("Building modal submit: modal='{}' message={} with {} component row(s)", modalCustomId, messageId, components.size());
         return interaction(
             baseInteraction(MODAL_INTERACTION_ID, 5, "modal-token-" + modalCustomId)
                 .message(messageData(messageId))
@@ -211,6 +223,7 @@ public final class DispatchFactory {
      * @return the message-create dispatch
      */
     public Dispatch messageCreate(long messageId) {
+        log.trace("Building MESSAGE_CREATE for message {}", messageId);
         return MessageCreate.builder().message(messageData(messageId)).build();
     }
 
@@ -223,6 +236,7 @@ public final class DispatchFactory {
      * @return the user command dispatch
      */
     public Dispatch userCommand(String name, long targetUserId) {
+        log.trace("Building user context-menu interaction: name='{}' targetUser={}", name, targetUserId);
         return contextMenu(name, 2, "user-token-" + name, targetUserId,
             ApplicationCommandInteractionResolvedData.builder()
                 .users(Map.of(Long.toString(targetUserId), targetUser(targetUserId)))
@@ -238,6 +252,7 @@ public final class DispatchFactory {
      * @return the message command dispatch
      */
     public Dispatch messageCommand(String name, long targetMessageId) {
+        log.trace("Building message context-menu interaction: name='{}' targetMessage={}", name, targetMessageId);
         return contextMenu(name, 3, "message-token-" + name, targetMessageId,
             ApplicationCommandInteractionResolvedData.builder()
                 .messages(Map.of(Long.toString(targetMessageId), messageData(targetMessageId)))

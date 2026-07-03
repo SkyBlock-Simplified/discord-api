@@ -77,9 +77,25 @@ message. Pass a customized `HarnessConfig` to `new OfflineHarness(config)` to ch
 
 ## Debugging
 
-Run with `-Dharness.debug=true` to print every `[mock] METHOD /path body` line the server receives - the
-fastest way to see how far a pathway got. Framework logs surface at INFO (see `log4j2-test.xml`); noisy
-transport libs are dampened to WARN.
+The harness logs through Log4j2 (no `System.out`). By level:
+
+- **INFO** - the DSL narrates each driven event (`-> slash command /ping`, `-> click button ...`) plus
+  boot/connect lifecycle. On by default.
+- **DEBUG** - REST mock bind/stop, per-request `[mock] METHOD /path body`, and gateway handshake/close.
+- **TRACE** - every dispatch the factory builds and every event emitted into the pipeline.
+- **WARN** - conditions Discord itself would reject or report: an interaction acknowledged twice
+  (error 40060), a REST endpoint the mock does not model, or a swallowed mock error.
+- **ERROR** - a bot startup failure on the daemon thread (otherwise silent) or a wait that timed out.
+
+Raise the harness logger in `log4j2-test.xml` to see the detail:
+
+```xml
+<Logger name="dev.simplified.discordapi.harness" level="TRACE"/>
+```
+
+`-Dharness.debug=true` elevates the per-request `[mock] ...` firehose to INFO so it shows without touching
+the config - the fastest way to see how far a pathway got. Framework logs surface at INFO; noisy transport
+libs are dampened to WARN.
 
 ```
 ./gradlew test --tests "dev.simplified.discordapi.harness.*" -Dharness.debug=true

@@ -15,6 +15,8 @@ import discord4j.discordjson.json.SessionStartLimitData;
 import discord4j.discordjson.json.UserData;
 import discord4j.discordjson.possible.Possible;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -27,24 +29,34 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A minimal localhost stand-in for the Discord REST API, backed by reactor-netty. Serves just enough
  * endpoints for the framework's login prologue and post-connect sync, echoes bulk command overwrites
  * with synthetic ids, and records every request for assertions.
  */
+@Log4j2
 @RequiredArgsConstructor
 public final class LocalDiscordServer {
 
     // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
     private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
 
+    // Matches an interaction-callback path, capturing the interaction token in group 1.
+    private static final Pattern CALLBACK_PATTERN = Pattern.compile("/interactions/\\d+/([^/]+)/callback");
+
     // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
     private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
+    // Interaction tokens already acknowledged (via a callback); a repeat is the "already acknowledged" bug.
+    private final Set<String> acknowledgedTokens = ConcurrentHashMap.newKeySet();
     private final HarnessConfig config;
     private DisposableServer server;
 
@@ -80,6 +92,7 @@ public final class LocalDiscordServer {
                 routes.route(request -> true, catchAll());
             })
             .bindNow();
+        log.debug("REST mock bound at {}", this.baseUrl());
         return this;
     }
 
@@ -106,8 +119,10 @@ public final class LocalDiscordServer {
     }
 
     public void stop() {
-        if (this.server != null)
+        if (this.server != null) {
+            log.debug("Stopping REST mock at {}", this.baseUrl());
             this.server.disposeNow();
+        }
     }
 
     private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> fixed(String body) {
@@ -123,7 +138,14 @@ public final class LocalDiscordServer {
     }
 
     private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> catchAll() {
-        return (request, response) -> respond(request, response, 200, ignored -> "{}");
+        return (request, response) -> respond(request, response, 200, ignored -> {
+            log.warn(
+                "No mock route for {} {} - returning an empty JSON object; the bot hit a REST endpoint the harness does not model",
+                request.method().name(),
+                stripQuery(request.uri())
+            );
+            return "{}";
+        });
     }
 
     private Publisher<Void> respond(HttpServerRequest request, HttpServerResponse response, int status, Function<String, String> responder) {
@@ -132,11 +154,15 @@ public final class LocalDiscordServer {
             .asString()
             .defaultIfEmpty("")
             .flatMap(body -> {
+                String method = request.method().name();
                 String path = stripQuery(request.uri());
-                this.requests.add(new RecordedRequest(request.method().name(), path, body));
+                this.requests.add(new RecordedRequest(method, path, body));
 
-                if (this.config.isDebug())
-                    System.out.println("[mock] " + request.method().name() + " " + path + (body.isEmpty() ? "" : " " + body));
+                // -Dharness.debug=true elevates the per-request firehose to INFO; otherwise it stays at DEBUG.
+                Level level = this.config.isDebug() ? Level.INFO : Level.DEBUG;
+                log.log(level, "[mock] {} {}{}", method, path, body.isEmpty() ? "" : " " + body);
+
+                this.warnOnDoubleAcknowledge(method, path);
 
                 if (responder == null)
                     return Mono.from(response.status(status).send()).then();
@@ -145,11 +171,27 @@ public final class LocalDiscordServer {
                 try {
                     out = responder.apply(body);
                 } catch (Exception exception) {
+                    log.warn("Mock responder threw for {} {}; returning an empty JSON object", method, path, exception);
                     out = "{}";
                 }
 
                 return Mono.from(response.header("Content-Type", "application/json").status(status).sendString(Mono.just(out))).then();
             });
+    }
+
+    /**
+     * Warns when an interaction token is acknowledged more than once. Discord permits exactly one callback
+     * per interaction and rejects a second with "interaction has already been acknowledged" (error 40060);
+     * surfacing it here catches the double-acknowledge class of bug this harness has hunted before.
+     */
+    private void warnOnDoubleAcknowledge(@NotNull String method, @NotNull String path) {
+        if (!"POST".equals(method) || !path.endsWith("/callback"))
+            return;
+
+        Matcher matcher = CALLBACK_PATTERN.matcher(path);
+
+        if (matcher.matches() && !this.acknowledgedTokens.add(matcher.group(1)))
+            log.warn("Interaction '{}' acknowledged more than once - Discord rejects this as already acknowledged (40060)", matcher.group(1));
     }
 
     private String echoCommands(String body) {
@@ -178,6 +220,7 @@ public final class LocalDiscordServer {
 
             return this.mapper.writeValueAsString(out);
         } catch (Exception exception) {
+            log.warn("Failed to echo command bulk-overwrite payload; returning an empty array", exception);
             return "[]";
         }
     }
@@ -200,6 +243,7 @@ public final class LocalDiscordServer {
         try {
             return this.mapper.writeValueAsString(data);
         } catch (Exception exception) {
+            log.error("Failed to serialize {} for a mock response", data.getClass().getSimpleName(), exception);
             throw new IllegalStateException("Failed to serialize " + data.getClass().getSimpleName(), exception);
         }
     }

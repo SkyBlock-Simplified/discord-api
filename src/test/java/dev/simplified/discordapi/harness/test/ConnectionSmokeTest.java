@@ -2,6 +2,7 @@ package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
+import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * M1 walking skeleton: proves the bot reaches a fully wired connected state offline (localhost REST
  * mock + fake in-JVM gateway), including the post-connect command and emoji sync, with no network.
  */
+@Log4j2
 class ConnectionSmokeTest {
 
     @Test
@@ -35,7 +37,7 @@ class ConnectionSmokeTest {
             );
 
             java.util.List<String> paths = harness.requests().stream().map(RecordedRequest::path).toList();
-            System.out.println("[harness] recorded request paths: " + paths);
+            log.info("Recorded request paths: {}", paths);
 
             assertTrue(paths.contains("/users/@me"), "should have fetched self; paths=" + paths);
             assertTrue(paths.contains("/oauth2/applications/@me"), "should have fetched application info; paths=" + paths);
