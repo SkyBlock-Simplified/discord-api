@@ -684,16 +684,21 @@ public sealed interface SelectMenu
          */
         @Override
         public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
-            return selectMenuContext -> Mono.just(selectMenuContext)
-                .flatMap(context -> Mono.justOrEmpty(this.userInteraction)
-                    .flatMap(interaction -> interaction.apply(context))
-                    .thenReturn(context)
-                )
-                .filter(context -> context.getEvent().getValues().size() == 1)
-                .flatMap(context -> Mono.justOrEmpty(this.getSelected().findFirst())
-                    .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)))
-                    .switchIfEmpty(context.deferEdit())
-                );
+            return context -> Mono.justOrEmpty(this.userInteraction)
+                .flatMap(interaction -> interaction.apply(context))
+                .then(Mono.defer(() -> this.dispatchSelectedOption(context)))
+                // Fallback ack when neither the menu- nor option-level handler acknowledged the
+                // interaction; idempotent, so it is a no-op when one of them already did.
+                .then(context.deferEdit());
+        }
+
+        /** Dispatches to the single selected option's handler when exactly one option was chosen. */
+        private @NotNull Mono<Void> dispatchSelectedOption(@NotNull SelectMenuContext context) {
+            if (context.getEvent().getValues().size() != 1)
+                return Mono.empty();
+
+            return Mono.justOrEmpty(this.getSelected().findFirst())
+                .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)));
         }
 
         @Override
@@ -1170,9 +1175,10 @@ public sealed interface SelectMenu
          */
         @Override
         public @NotNull Function<SelectMenuContext, Mono<Void>> getInteraction() {
-            return selectMenuContext -> Mono.justOrEmpty(this.userInteraction)
-                .flatMap(interaction -> interaction.apply(selectMenuContext))
-                .switchIfEmpty(selectMenuContext.deferEdit());
+            return context -> Mono.justOrEmpty(this.userInteraction)
+                .flatMap(interaction -> interaction.apply(context))
+                // Fallback ack when the menu handler did not acknowledge; idempotent no-op if it did.
+                .then(context.deferEdit());
         }
 
         @Override

@@ -49,7 +49,7 @@ public class MessageCreateListener extends DiscordListener<MessageCreateEvent> {
                 entry.getResponse(),
                 followup
             ))
-            .then(entry.updateLastInteract())
+            .then(entry.finalizeInteraction())
             .then();
     }
 

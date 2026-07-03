@@ -233,17 +233,17 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
     }
 
     /**
-     * Finalizes the interaction exactly once: editing the response through the interaction (which
-     * clears the dirty flag internally) when the handler modified it, or otherwise recording the
-     * interaction. Consolidating both outcomes here keeps the dispatch chains from double-finalizing.
+     * Flushes any pending response edit the handler left behind, then finalizes the interaction exactly
+     * once by returning the entry to {@link CachedResponse.State#IDLE IDLE}. Editing renders the content
+     * without touching the acknowledgment state, so the single {@link CachedResponse#finalizeInteraction()}
+     * here is the only place the dispatch returns to idle.
      */
     private @NotNull Mono<Void> editIfModified(@NotNull CachedResponse entry, @NotNull ComponentContext context, @NotNull Optional<CachedResponse> followup) {
-        return Mono.defer(() -> {
-            if (entry.isModified())
-                return followup.isEmpty() ? context.edit() : context.editFollowup();
-
-            return entry.updateLastInteract().then();
-        });
+        return Mono.defer(() -> entry.isModified()
+                ? (followup.isEmpty() ? context.edit() : context.editFollowup())
+                : Mono.<Void>empty())
+            .then(entry.finalizeInteraction())
+            .then();
     }
 
     /** Drops an interaction that has no handler by acknowledging it with a deferred edit. */

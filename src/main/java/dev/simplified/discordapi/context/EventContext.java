@@ -162,7 +162,7 @@ public interface EventContext<T extends Event> {
                 .store(message, this, response)
                 .flatMap(entry -> entry.updateReactions(message)
                     .then(entry.updateAttachments(message))
-                    .then(entry.updateLastInteract())
+                    .then(entry.finalizeInteraction())
                 )
                 .then()
             );

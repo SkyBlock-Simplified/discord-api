@@ -54,7 +54,7 @@ public abstract class ReactionListener<E extends ReactionUserEmojiEvent> extends
                     .filter(reaction -> reaction.equals(emoji))
                     .singleOrEmpty()
                     .flatMap(reaction -> this.handleInteraction(event, entry, reaction, followup))
-                    .then(entry.updateLastInteract())
+                    .then(entry.finalizeInteraction())
                     .then();
             });
     }

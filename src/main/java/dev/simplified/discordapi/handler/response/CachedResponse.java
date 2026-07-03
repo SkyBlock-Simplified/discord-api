@@ -71,7 +71,6 @@ public final class CachedResponse {
 
     private volatile @NotNull Response response;
     private volatile @NotNull State state;
-    private volatile boolean acknowledged;
     private volatile long lastInteract;
     private volatile @NotNull NavState navState;
 
@@ -87,7 +86,6 @@ public final class CachedResponse {
         this.expiresAt = builder.expiresAt;
         this.response = builder.response;
         this.state = builder.state;
-        this.acknowledged = builder.state == State.DEFERRED || builder.state == State.ACKNOWLEDGED;
         this.lastInteract = builder.lastInteract;
         this.navState = builder.navState;
     }
@@ -204,22 +202,19 @@ public final class CachedResponse {
         return !this.isActive();
     }
 
-    /** Marks this entry as currently being processed, resetting the per-event acknowledgment flag. */
+    /** Marks this entry as currently being processed, clearing any prior acknowledgment. */
     public void setBusy() {
         this.state = State.BUSY;
-        this.acknowledged = false;
     }
 
     /** Marks this entry as deferred (the initial Discord ack has been sent). */
     public void setDeferred() {
         this.state = State.DEFERRED;
-        this.acknowledged = true;
     }
 
     /** Marks this entry's interaction as acknowledged with a response (an edit or a presented modal). */
     public void setAcknowledged() {
         this.state = State.ACKNOWLEDGED;
-        this.acknowledged = true;
     }
 
     /**
@@ -227,15 +222,16 @@ public final class CachedResponse {
      * Discord permits exactly one interaction callback, so subsequent output must use the webhook.
      *
      * <p>
-     * Tracked as a per-event flag (reset by {@link #setBusy()} at the start of each interaction) rather
-     * than derived from {@link #getState() state}, so it survives the mid-dispatch {@link
-     * #updateLastInteract()} that returns the entry to {@link State#IDLE} for expiry - a later
-     * {@code deferEdit} in the same dispatch (e.g. a select menu's per-option fallback) stays idempotent.
+     * Derived from the single lifecycle {@link #getState() state}. The state is set to {@link State#BUSY}
+     * at the start of each interaction ({@link #setBusy()}) and returned to {@link State#IDLE} only once,
+     * at the end of the dispatch ({@link #finalizeInteraction()}); the mid-dispatch content render
+     * ({@link #markRendered()}) leaves it untouched, so a later {@code deferEdit} in the same dispatch
+     * (e.g. a select menu's per-option fallback) correctly sees the interaction as already acknowledged.
      *
-     * @return {@code true} once the interaction has been deferred or responded to
+     * @return {@code true} when the state is {@link State#DEFERRED} or {@link State#ACKNOWLEDGED}
      */
     public boolean isAcknowledged() {
-        return this.acknowledged;
+        return this.state == State.DEFERRED || this.state == State.ACKNOWLEDGED;
     }
 
     /** Replaces the bound {@link Response} with the given updated instance. */
@@ -250,10 +246,26 @@ public final class CachedResponse {
     }
 
     /**
-     * Records the current time as the last interaction, clears the dirty flag
-     * on the bound response, and transitions back to {@link State#IDLE}.
+     * Records that the bound response's content has been rendered to Discord: clears the dirty flag and
+     * records the current time as the last interaction, WITHOUT changing the {@link State lifecycle state}.
+     *
+     * <p>
+     * Called after each content send (edit/followup) so a subsequent render in the same dispatch does not
+     * re-send, while leaving the interaction's acknowledgment state intact until the dispatch finalizes.
      */
-    public Mono<CachedResponse> updateLastInteract() {
+    public Mono<CachedResponse> markRendered() {
+        return Mono.fromRunnable(() -> {
+            this.response.setNoCacheUpdateRequired();
+            this.lastInteract = System.currentTimeMillis();
+        });
+    }
+
+    /**
+     * Finalizes the interaction at the end of a dispatch: applies {@link #markRendered()} and returns the
+     * entry to {@link State#IDLE} so it becomes eligible for expiry again. Should run exactly once per
+     * interaction, at the end.
+     */
+    public Mono<CachedResponse> finalizeInteraction() {
         return Mono.fromRunnable(() -> {
             this.response.setNoCacheUpdateRequired();
             this.lastInteract = System.currentTimeMillis();

@@ -232,7 +232,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
                 .flatMap(entry -> entry.updateResponse(editedResponse)
                     .then(entry.updateReactions(message))
                     .then(entry.updateAttachments(message))
-                    .then(entry.updateLastInteract())
+                    .then(entry.markRendered())
                 )
             )
             .then();
@@ -288,7 +288,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             .flatMap(message -> followup.updateResponse(editedResponse)
                 .then(followup.updateReactions(message))
                 .then(followup.updateAttachments(message))
-                .then(this.getResponseCacheEntry().updateLastInteract())
+                .then(this.getResponseCacheEntry().markRendered())
             )
             .then();
     }
@@ -332,7 +332,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
             .flatMap(message -> locator.storeFollowup(parent, identifier, message, this, response)
                 .flatMap(followup -> followup.updateReactions(message)
                     .then(followup.updateAttachments(message))
-                    .then(parent.updateLastInteract())
+                    .then(parent.markRendered())
                 )
             )
             .then();
