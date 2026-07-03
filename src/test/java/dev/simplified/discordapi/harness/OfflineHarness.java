@@ -361,9 +361,19 @@ public final class OfflineHarness implements AutoCloseable {
         }
     }
 
-    // Polls rather than awaits a signal: the conditions (gateway connected, command registered, response
-    // cached, request matched) are external state mutated on the bot's reactive/netty threads with nothing
-    // to latch on, so a bounded 25ms poll is the pragmatic harness primitive.
+    /**
+     * Blocks the calling test thread until the condition holds, polling every 25ms until the timeout elapses.
+     *
+     * <p>
+     * Polls rather than awaiting a signal because the awaited conditions - gateway connected, command
+     * registered, response cached, request matched - are external state mutated on the bot's reactive and
+     * netty threads with nothing to latch onto, so a bounded poll is the pragmatic harness primitive.
+     *
+     * @param condition the condition to await
+     * @param timeout the maximum time to wait
+     * @param message the failure description used in the log and the thrown exception
+     * @throws IllegalStateException if the timeout elapses, or the thread is interrupted, before the condition holds
+     */
     @SuppressWarnings("BusyWait")
     private void awaitTrue(@NotNull java.util.function.BooleanSupplier condition, @NotNull Duration timeout, @NotNull String message) {
         long deadline = System.nanoTime() + timeout.toNanos();
