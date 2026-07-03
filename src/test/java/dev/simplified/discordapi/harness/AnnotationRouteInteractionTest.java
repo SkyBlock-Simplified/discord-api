@@ -63,7 +63,12 @@ class AnnotationRouteInteractionTest {
     @Test
     void eternal_annotation_route_dispatches_on_cache_miss() {
         try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
-            // The route is registered at connect; no backing message is ever cached for it.
+            // The route registers at connect, but the event listeners register on a concurrent ConnectEvent
+            // subscription, so a bare boot does not guarantee the listener is live. Warm the pipeline up with a
+            // slash command and await its reply (the component listener registers alongside the slash listener),
+            // then emit the eternal click on a DIFFERENT, uncached message id.
+            harness.sendSlashCommand("annotated");
+            harness.awaitInteractionReply();
             harness.awaitComponentRoute(AnnotatedButtonCommand.ETERNAL_ID, Duration.ofSeconds(10));
             harness.gateway().emit(harness.dispatches().button(UNCACHED_MESSAGE_ID, AnnotatedButtonCommand.ETERNAL_ID));
 

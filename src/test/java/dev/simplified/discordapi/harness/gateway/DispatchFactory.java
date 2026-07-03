@@ -1,39 +1,41 @@
 package dev.simplified.discordapi.harness.gateway;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.simplified.discordapi.harness.data.TestIds;
-import discord4j.common.JacksonResources;
+import discord4j.discordjson.json.ApplicationCommandInteractionData;
+import discord4j.discordjson.json.ApplicationCommandInteractionResolvedData;
+import discord4j.discordjson.json.ComponentData;
+import discord4j.discordjson.json.ImmutableInteractionData;
+import discord4j.discordjson.json.InteractionData;
+import discord4j.discordjson.json.MessageData;
+import discord4j.discordjson.json.PartialApplicationInfoData;
+import discord4j.discordjson.json.UserData;
 import discord4j.discordjson.json.gateway.Dispatch;
-import discord4j.gateway.json.GatewayPayload;
+import discord4j.discordjson.json.gateway.InteractionCreate;
+import discord4j.discordjson.json.gateway.MessageCreate;
+import discord4j.discordjson.json.gateway.Ready;
+import discord4j.discordjson.possible.Possible;
 import discord4j.gateway.retry.GatewayStateChange;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
- * Builds Discord4J {@link Dispatch} objects from gateway JSON envelopes via the same Jackson mapper the
- * gateway uses, so tests can supply plain JSON instead of hand-assembling discord-json immutables.
+ * Builds Discord4J {@link Dispatch} objects for the offline harness directly from the discord-json
+ * immutable builders (the same types Discord4J deserializes the gateway wire into), rather than from
+ * hand-written JSON. Building through the typed builders keeps the payloads in step with Discord4J
+ * updates - a renamed or restructured field breaks the compile instead of silently producing a bad
+ * dispatch.
  */
 public final class DispatchFactory {
 
-    private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
-
-    /**
-     * Deserializes a full gateway payload envelope ({@code op}/{@code t}/{@code s}/{@code d}) into its
-     * concrete {@link Dispatch}.
-     *
-     * @param json the gateway payload json
-     * @return the deserialized dispatch
-     */
-    public Dispatch fromJson(String json) {
-        try {
-            GatewayPayload<?> payload = this.mapper.readValue(json, new TypeReference<GatewayPayload<?>>() {});
-            return (Dispatch) payload.getData();
-        } catch (Exception exception) {
-            throw new IllegalStateException("Failed to deserialize dispatch: " + json, exception);
-        }
-    }
+    private static final long SLASH_INTERACTION_ID = 950000000000000010L;
+    private static final long COMPONENT_INTERACTION_ID = 950000000000000011L;
+    private static final long MODAL_INTERACTION_ID = 950000000000000012L;
+    private static final long CONTEXT_MENU_INTERACTION_ID = 950000000000000013L;
+    private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
+    private static final String GATEWAY_URL = "ws://127.0.0.1/fake-gateway";
 
     /**
      * Builds a minimal {@code READY} dispatch with an empty guild list.
@@ -42,7 +44,13 @@ public final class DispatchFactory {
      * @return the ready dispatch
      */
     public Dispatch ready(long botId) {
-        return this.fromJson(readyJson(botId));
+        return Ready.builder()
+            .v(10)
+            .user(botUser(botId))
+            .sessionId("fake-session")
+            .resumeGatewayUrl(GATEWAY_URL)
+            .application(PartialApplicationInfoData.builder().id(Long.toString(botId)).build())
+            .build();
     }
 
     /**
@@ -68,7 +76,14 @@ public final class DispatchFactory {
      * @return the interaction-create dispatch
      */
     public Dispatch slashCommand(String name) {
-        return this.fromJson(slashCommandJson(name, TestIds.commandId(name)));
+        return interaction(
+            baseInteraction(SLASH_INTERACTION_ID, 2, "interaction-token-" + name)
+                .data(ApplicationCommandInteractionData.builder()
+                    .id(Long.toString(TestIds.commandId(name)))
+                    .name(name)
+                    .type(1)
+                    .build())
+        );
     }
 
     /**
@@ -80,21 +95,35 @@ public final class DispatchFactory {
      * @return the component interaction dispatch
      */
     public Dispatch button(long messageId, String customId) {
-        return this.fromJson(buttonJson(messageId, customId));
+        return interaction(
+            baseInteraction(COMPONENT_INTERACTION_ID, 3, "button-token-" + customId)
+                .message(messageData(messageId))
+                .data(ApplicationCommandInteractionData.builder()
+                    .customId(customId)
+                    .componentType(2)
+                    .build())
+        );
     }
 
-    private static String buttonJson(long messageId, String customId) {
-        return "{\"op\":0,\"s\":11,\"t\":\"INTERACTION_CREATE\",\"d\":{"
-            + "\"id\":\"950000000000000011\","
-            + "\"application_id\":\"" + TestIds.APPLICATION_ID + "\","
-            + "\"type\":3,"
-            + "\"token\":\"button-token-" + customId + "\","
-            + "\"version\":1,"
-            + "\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
-            + "\"user\":{\"id\":\"" + TestIds.USER_ID + "\",\"username\":\"tester\",\"discriminator\":\"0001\",\"avatar\":null},"
-            + "\"message\":" + messageObject(messageId) + ","
-            + "\"data\":{\"custom_id\":\"" + customId + "\",\"component_type\":2}"
-            + "}}";
+    /**
+     * Builds an {@code INTERACTION_CREATE} (type 3, message component) dispatch for a string select menu
+     * on the given cached message, carrying the chosen values. No guild context.
+     *
+     * @param messageId the id of the cached message the select menu lives on
+     * @param customId the select menu's custom id
+     * @param values the selected option values
+     * @return the component interaction dispatch
+     */
+    public Dispatch selectMenu(long messageId, String customId, String... values) {
+        return interaction(
+            baseInteraction(COMPONENT_INTERACTION_ID, 3, "select-token-" + customId)
+                .message(messageData(messageId))
+                .data(ApplicationCommandInteractionData.builder()
+                    .customId(customId)
+                    .componentType(3)
+                    .values(values)
+                    .build())
+        );
     }
 
     /**
@@ -108,8 +137,7 @@ public final class DispatchFactory {
      * @return the modal submit dispatch
      */
     public Dispatch modalSubmit(long messageId, String modalCustomId, String inputId, String value) {
-        String components = "[" + actionRow("{\"type\":4,\"custom_id\":\"" + inputId + "\",\"value\":\"" + value + "\"}") + "]";
-        return this.fromJson(modalSubmitJson(messageId, modalCustomId, components));
+        return modalSubmit(messageId, modalCustomId, List.of(actionRow(textInput(inputId, value))));
     }
 
     /**
@@ -126,29 +154,21 @@ public final class DispatchFactory {
      * @return the modal submit dispatch
      */
     public Dispatch modalSubmitValues(long messageId, String modalCustomId, String radioId, String radioValue, String checkboxId, boolean checkboxChecked) {
-        String components = "["
-            + actionRow("{\"type\":21,\"custom_id\":\"" + radioId + "\",\"values\":[\"" + radioValue + "\"]}") + ","
-            + actionRow("{\"type\":23,\"custom_id\":\"" + checkboxId + "\",\"value\":\"" + checkboxChecked + "\"}")
-            + "]";
-        return this.fromJson(modalSubmitJson(messageId, modalCustomId, components));
+        return modalSubmit(messageId, modalCustomId, List.of(
+            actionRow(radio(radioId, radioValue)),
+            actionRow(checkbox(checkboxId, checkboxChecked))
+        ));
     }
 
-    private static String actionRow(String child) {
-        return "{\"type\":1,\"components\":[" + child + "]}";
-    }
-
-    private static String modalSubmitJson(long messageId, String modalCustomId, String components) {
-        return "{\"op\":0,\"s\":12,\"t\":\"INTERACTION_CREATE\",\"d\":{"
-            + "\"id\":\"950000000000000012\","
-            + "\"application_id\":\"" + TestIds.APPLICATION_ID + "\","
-            + "\"type\":5,"
-            + "\"token\":\"modal-token-" + modalCustomId + "\","
-            + "\"version\":1,"
-            + "\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
-            + "\"user\":{\"id\":\"" + TestIds.USER_ID + "\",\"username\":\"tester\",\"discriminator\":\"0001\",\"avatar\":null},"
-            + "\"message\":" + messageObject(messageId) + ","
-            + "\"data\":{\"custom_id\":\"" + modalCustomId + "\",\"components\":" + components + "}"
-            + "}}";
+    private Dispatch modalSubmit(long messageId, String modalCustomId, List<ComponentData> components) {
+        return interaction(
+            baseInteraction(MODAL_INTERACTION_ID, 5, "modal-token-" + modalCustomId)
+                .message(messageData(messageId))
+                .data(ApplicationCommandInteractionData.builder()
+                    .customId(modalCustomId)
+                    .components(components)
+                    .build())
+        );
     }
 
     /**
@@ -159,15 +179,7 @@ public final class DispatchFactory {
      * @return the message-create dispatch
      */
     public Dispatch messageCreate(long messageId) {
-        return this.fromJson("{\"op\":0,\"s\":14,\"t\":\"MESSAGE_CREATE\",\"d\":" + messageObject(messageId) + "}");
-    }
-
-    private static String messageObject(long messageId) {
-        return "{\"id\":\"" + messageId + "\",\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
-            + "\"author\":{\"id\":\"" + TestIds.APPLICATION_ID + "\",\"username\":\"TestBot\",\"discriminator\":\"0000\",\"avatar\":null,\"bot\":true},"
-            + "\"content\":\"press it\",\"timestamp\":\"2020-01-01T00:00:00.000000+00:00\",\"edited_timestamp\":null,"
-            + "\"tts\":false,\"mention_everyone\":false,\"mentions\":[],\"mention_roles\":[],\"attachments\":[],"
-            + "\"embeds\":[],\"pinned\":false,\"type\":0}";
+        return MessageCreate.builder().message(messageData(messageId)).build();
     }
 
     /**
@@ -179,8 +191,10 @@ public final class DispatchFactory {
      * @return the user command dispatch
      */
     public Dispatch userCommand(String name, long targetUserId) {
-        return this.fromJson(contextMenuJson(name, 2, "user", targetUserId,
-            "\"users\":{\"" + targetUserId + "\":" + userObject(targetUserId) + "}"));
+        return contextMenu(name, 2, "user-token-" + name, targetUserId,
+            ApplicationCommandInteractionResolvedData.builder()
+                .users(Map.of(Long.toString(targetUserId), targetUser(targetUserId)))
+                .build());
     }
 
     /**
@@ -192,52 +206,106 @@ public final class DispatchFactory {
      * @return the message command dispatch
      */
     public Dispatch messageCommand(String name, long targetMessageId) {
-        return this.fromJson(contextMenuJson(name, 3, "message", targetMessageId,
-            "\"messages\":{\"" + targetMessageId + "\":" + messageObject(targetMessageId) + "}"));
+        return contextMenu(name, 3, "message-token-" + name, targetMessageId,
+            ApplicationCommandInteractionResolvedData.builder()
+                .messages(Map.of(Long.toString(targetMessageId), messageData(targetMessageId)))
+                .build());
     }
 
-    private static String contextMenuJson(String name, int commandType, String tokenPrefix, long targetId, String resolved) {
-        return "{\"op\":0,\"s\":13,\"t\":\"INTERACTION_CREATE\",\"d\":{"
-            + "\"id\":\"950000000000000013\","
-            + "\"application_id\":\"" + TestIds.APPLICATION_ID + "\","
-            + "\"type\":2,"
-            + "\"token\":\"" + tokenPrefix + "-token-" + name + "\","
-            + "\"version\":1,"
-            + "\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
-            + "\"user\":{\"id\":\"" + TestIds.USER_ID + "\",\"username\":\"tester\",\"discriminator\":\"0001\",\"avatar\":null},"
-            + "\"data\":{\"id\":\"" + TestIds.commandId(name) + "\",\"name\":\"" + name + "\",\"type\":" + commandType + ","
-            + "\"target_id\":\"" + targetId + "\",\"resolved\":{" + resolved + "}}"
-            + "}}";
+    private Dispatch contextMenu(String name, int commandType, String token, long targetId, ApplicationCommandInteractionResolvedData resolved) {
+        return interaction(
+            baseInteraction(CONTEXT_MENU_INTERACTION_ID, 2, token)
+                .data(ApplicationCommandInteractionData.builder()
+                    .id(Long.toString(TestIds.commandId(name)))
+                    .name(name)
+                    .type(commandType)
+                    .targetId(Long.toString(targetId))
+                    .resolved(resolved)
+                    .build())
+        );
     }
 
-    private static String userObject(long id) {
-        return "{\"id\":\"" + id + "\",\"username\":\"target\",\"discriminator\":\"0002\",\"avatar\":null}";
+    // --- shared builders ---
+
+    private static Dispatch interaction(ImmutableInteractionData.Builder interaction) {
+        return InteractionCreate.builder().interaction(interaction.build()).build();
     }
 
-    private static String slashCommandJson(String name, long commandId) {
-        return "{\"op\":0,\"s\":10,\"t\":\"INTERACTION_CREATE\",\"d\":{"
-            + "\"id\":\"950000000000000010\","
-            + "\"application_id\":\"" + TestIds.APPLICATION_ID + "\","
-            + "\"type\":2,"
-            + "\"token\":\"interaction-token-" + name + "\","
-            + "\"version\":1,"
-            + "\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
-            + "\"user\":{\"id\":\"" + TestIds.USER_ID + "\",\"username\":\"tester\",\"discriminator\":\"0001\",\"avatar\":null},"
-            + "\"data\":{\"id\":\"" + commandId + "\",\"name\":\"" + name + "\",\"type\":1}"
-            + "}}";
+    /**
+     * Seeds the fields common to every simulated interaction: ids, type, token, version, the channel,
+     * and the (non-bot) acting user, with no guild context so it runs as a private-channel interaction.
+     */
+    private static ImmutableInteractionData.Builder baseInteraction(long id, int type, String token) {
+        return InteractionData.builder()
+            .id(id)
+            .applicationId(TestIds.APPLICATION_ID)
+            .type(type)
+            .token(token)
+            .version(1)
+            .channelId(TestIds.CHANNEL_ID)
+            .user(actorUser());
     }
 
-    private static String readyJson(long botId) {
-        return "{\"op\":0,\"s\":1,\"t\":\"READY\",\"d\":{"
-            + "\"v\":10,"
-            + "\"user\":{\"id\":\"" + botId + "\",\"username\":\"TestBot\",\"discriminator\":\"0000\",\"avatar\":null,\"bot\":true},"
-            + "\"guilds\":[],"
-            + "\"private_channels\":[],"
-            + "\"session_id\":\"fake-session\","
-            + "\"resume_gateway_url\":\"ws://127.0.0.1/fake-gateway\","
-            + "\"_trace\":[],"
-            + "\"application\":{\"id\":\"" + botId + "\",\"flags\":0}"
-            + "}}";
+    private static ComponentData actionRow(ComponentData child) {
+        return ComponentData.builder().type(1).addComponent(child).build();
+    }
+
+    private static ComponentData textInput(String customId, String value) {
+        return ComponentData.builder().type(4).customId(customId).value(value).build();
+    }
+
+    private static ComponentData radio(String customId, String value) {
+        return ComponentData.builder().type(21).customId(customId).values(value).build();
+    }
+
+    private static ComponentData checkbox(String customId, boolean checked) {
+        return ComponentData.builder().type(23).customId(customId).value(Boolean.toString(checked)).build();
+    }
+
+    private static UserData actorUser() {
+        return UserData.builder()
+            .id(TestIds.USER_ID)
+            .username("tester")
+            .discriminator("0001")
+            .globalName(Optional.empty())
+            .avatar(Optional.empty())
+            .build();
+    }
+
+    private static UserData targetUser(long id) {
+        return UserData.builder()
+            .id(id)
+            .username("target")
+            .discriminator("0002")
+            .globalName(Optional.empty())
+            .avatar(Optional.empty())
+            .build();
+    }
+
+    private static UserData botUser(long botId) {
+        return UserData.builder()
+            .id(botId)
+            .username("TestBot")
+            .discriminator("0000")
+            .globalName(Optional.empty())
+            .avatar(Optional.empty())
+            .bot(Possible.of(true))
+            .build();
+    }
+
+    private static MessageData messageData(long messageId) {
+        return MessageData.builder()
+            .id(messageId)
+            .channelId(TestIds.CHANNEL_ID)
+            .author(botUser(TestIds.APPLICATION_ID))
+            .content("press it")
+            .timestamp(MESSAGE_TIMESTAMP)
+            .editedTimestamp(Optional.empty())
+            .tts(false)
+            .mentionEveryone(false)
+            .pinned(false)
+            .type(0)
+            .build();
     }
 
 }
