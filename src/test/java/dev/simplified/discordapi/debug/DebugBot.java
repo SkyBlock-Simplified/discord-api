@@ -28,7 +28,7 @@ public final class DebugBot extends DiscordBot {
             .withLogChannelId(SystemUtil.getEnv("DEVELOPER_ERROR_LOG_CHANNEL_ID").map(NumberUtil::tryParseLong))
             .withCommands(
                 Reflection.getResources()
-                    .filterPackage("dev.sbs.discordapi.debug.command")
+                    .filterPackage("dev.simplified.discordapi.debug.command")
                     .getTypesOf(DiscordCommand.class)
             )
             .withEmojis(Reflection.getResources(DebugBot.class.getClassLoader()).getResources("emojis/"))

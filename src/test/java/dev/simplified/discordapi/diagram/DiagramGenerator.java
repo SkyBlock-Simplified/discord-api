@@ -55,7 +55,7 @@ public class DiagramGenerator {
             .withSuffix("Component")
             .withScanPackage(Component.class)
             .withRoots(Component.class, UserInteractable.class)
-            .withTypeFilter(cls -> !cls.getPackageName().equals("dev.sbs.discordapi.component.capability"))
+            .withTypeFilter(cls -> !cls.getPackageName().equals("dev.simplified.discordapi.component.capability"))
             .withLayeringOption(LayeringOption.STRATEGY, LayeringStrategy.MIN_WIDTH)
             .withLayeringOption(LayeringOption.MIN_WIDTH_UPPER_BOUND_ON_WIDTH, 2)
             .build()

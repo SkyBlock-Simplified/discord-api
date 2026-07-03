@@ -41,6 +41,6 @@ import java.time.Duration;
 public final class ComponentRouteTtlContextKey {
 
     /** The Reactor {@link Context} key under which the per-route TTL {@link Duration} is stored. */
-    public static final String KEY = "dev.sbs.discordapi.component-route-ttl";
+    public static final String KEY = "dev.simplified.discordapi.component-route-ttl";
 
 }
