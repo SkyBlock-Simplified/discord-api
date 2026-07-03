@@ -1,5 +1,6 @@
 package dev.simplified.discordapi.component.interaction;
 
+import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.ActionRow;
@@ -7,11 +8,15 @@ import dev.simplified.discordapi.component.scope.AccessoryComponent;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.context.component.ButtonContext;
 import dev.simplified.discordapi.context.scope.ComponentContext;
+import dev.simplified.discordapi.handler.response.CachedResponse;
 import dev.simplified.discordapi.response.Emoji;
+import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.response.handler.PaginationHandler;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -134,6 +139,12 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
             case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
         }).disabled(this.isEnabled());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @NotNull ButtonContext createContext(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull Optional<CachedResponse> followup) {
+        return ButtonContext.of(discordBot, (ButtonInteractionEvent) event, response, this, followup);
     }
 
     /** {@inheritDoc} */

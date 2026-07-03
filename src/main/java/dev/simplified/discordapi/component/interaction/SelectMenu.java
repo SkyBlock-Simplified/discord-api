@@ -3,6 +3,7 @@ package dev.simplified.discordapi.component.interaction;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.collection.ConcurrentSet;
+import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.Toggleable;
@@ -10,13 +11,17 @@ import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
 import dev.simplified.discordapi.context.component.OptionContext;
 import dev.simplified.discordapi.context.component.SelectMenuContext;
-import dev.simplified.discordapi.listener.component.SelectMenuListener;
+import dev.simplified.discordapi.handler.response.CachedResponse;
+import dev.simplified.discordapi.listener.component.ComponentListener;
 import dev.simplified.discordapi.response.Emoji;
+import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.response.handler.PaginationHandler;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
+import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.discordjson.json.ComponentData;
 import lombok.AccessLevel;
@@ -49,8 +54,8 @@ import java.util.function.Function;
  *
  * <p>
  * Instances are built via {@link #builder()} for a string menu or {@link #entity(Type)} for
- * an auto-populated entity menu. The {@link SelectMenuListener
- * SelectMenuListener} calls {@link #updateSelected(List)} internally on interaction, so user
+ * an auto-populated entity menu. The {@link ComponentListener
+ * ComponentListener} calls {@link #updateSelected(List)} internally on interaction, so user
  * code only needs to consume {@link #getSelectedValues()} (or the variant-specific accessors
  * on the concrete subtype) from within its {@code onInteract} handler.
  *
@@ -115,6 +120,18 @@ public sealed interface SelectMenu
     /** {@inheritDoc} */
     @Override
     @NotNull discord4j.core.object.component.SelectMenu getD4jComponent();
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Folds the interaction's chosen values into the menu via {@link #updateSelected(List)} before
+     * building the context, so handlers observe the user's selection.
+     */
+    @Override
+    default @NotNull SelectMenuContext createContext(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull Optional<CachedResponse> followup) {
+        SelectMenuInteractionEvent selectEvent = (SelectMenuInteractionEvent) event;
+        return SelectMenuContext.of(discordBot, selectEvent, response, this.updateSelected(selectEvent.getValues()), followup);
+    }
 
     /**
      * Creates a new {@link StringMenu} builder with a random identifier.

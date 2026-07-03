@@ -2,6 +2,7 @@ package dev.simplified.discordapi.component.interaction;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
+import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.command.exception.InputException;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.capability.EventInteractable;
@@ -14,8 +15,11 @@ import dev.simplified.discordapi.component.scope.TopLevelModalComponent;
 import dev.simplified.discordapi.context.capability.ExceptionContext;
 import dev.simplified.discordapi.context.component.ModalContext;
 import dev.simplified.discordapi.context.scope.ComponentContext;
+import dev.simplified.discordapi.handler.response.CachedResponse;
+import dev.simplified.discordapi.response.Response;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
@@ -196,6 +200,12 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
     @Override
     public int hashCode() {
         return Objects.hash(this.getIdentifier(), this.getTitle(), this.getComponents(), this.interaction);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @NotNull ModalContext createContext(@NotNull DiscordBot discordBot, @NotNull ComponentInteractionEvent event, @NotNull Response response, @NotNull Optional<CachedResponse> followup) {
+        return ModalContext.of(discordBot, (ModalSubmitInteractionEvent) event, response, this, followup);
     }
 
     /** {@inheritDoc} */

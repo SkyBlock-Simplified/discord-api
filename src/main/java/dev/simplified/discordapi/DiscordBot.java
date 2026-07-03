@@ -45,9 +45,7 @@ import dev.simplified.discordapi.listener.command.AutoCompleteListener;
 import dev.simplified.discordapi.listener.command.MessageCommandListener;
 import dev.simplified.discordapi.listener.command.SlashCommandListener;
 import dev.simplified.discordapi.listener.command.UserCommandListener;
-import dev.simplified.discordapi.listener.component.ButtonListener;
-import dev.simplified.discordapi.listener.component.ModalListener;
-import dev.simplified.discordapi.listener.component.SelectMenuListener;
+import dev.simplified.discordapi.listener.component.ComponentListener;
 import dev.simplified.discordapi.listener.message.MessageCreateListener;
 import dev.simplified.discordapi.listener.message.MessageDeleteListener;
 import dev.simplified.discordapi.listener.message.ReactionRemoveListener;
@@ -125,9 +123,9 @@ import java.util.concurrent.TimeUnit;
  *         </ul></li>
  *         <li>Components
  *         <ul>
- *             <li>Buttons ({@link ButtonContext Context}, {@link ButtonListener Listener})</li>
- *             <li>Modals ({@link ModalContext Context}, {@link TextInput Text Input Context}, {@link ModalListener Listener})</li>
- *             <li>Select Menus ({@link SelectMenuContext Context}, {@link OptionContext Option Context}, {@link SelectMenuListener Listener})</li>
+ *             <li>Buttons ({@link ButtonContext Context}, {@link ComponentListener Listener})</li>
+ *             <li>Modals ({@link ModalContext Context}, {@link TextInput Text Input Context}, {@link ComponentListener Listener})</li>
+ *             <li>Select Menus ({@link SelectMenuContext Context}, {@link OptionContext Option Context}, {@link ComponentListener Listener})</li>
  *         </ul></li>
  *         <li>Messages ({@link MessageCreateListener Create Listener}, {@link MessageDeleteListener Delete Listener})</li>
  *         <li>Reactions ({@link ReactionContext Context}, {@link ReactionRemoveListener Add Listener}, {@link ReactionRemoveListener Remove Listener})
