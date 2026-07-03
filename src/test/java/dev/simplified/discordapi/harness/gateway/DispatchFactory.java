@@ -1,6 +1,6 @@
 package dev.simplified.discordapi.harness.gateway;
 
-import dev.simplified.discordapi.harness.data.TestIds;
+import dev.simplified.discordapi.harness.HarnessConfig;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionResolvedData;
 import discord4j.discordjson.json.ComponentData;
@@ -15,6 +15,7 @@ import discord4j.discordjson.json.gateway.MessageCreate;
 import discord4j.discordjson.json.gateway.Ready;
 import discord4j.discordjson.possible.Possible;
 import discord4j.gateway.retry.GatewayStateChange;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,12 @@ public final class DispatchFactory {
     private static final long CONTEXT_MENU_INTERACTION_ID = 950000000000000013L;
     private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
     private static final String GATEWAY_URL = "ws://127.0.0.1/fake-gateway";
+
+    private final HarnessConfig config;
+
+    public DispatchFactory(@NotNull HarnessConfig config) {
+        this.config = config;
+    }
 
     /**
      * Builds a minimal {@code READY} dispatch with an empty guild list.
@@ -70,7 +77,7 @@ public final class DispatchFactory {
     /**
      * Builds an {@code INTERACTION_CREATE} (type 2, chat input) dispatch for a flat slash command with
      * no guild context, so the command runs as a private-channel interaction (skipping bot-permission
-     * and channel resolution). The command id is derived from the name via {@link TestIds#commandId}.
+     * and channel resolution). The command id is derived from the name via {@link HarnessConfig#commandId}.
      *
      * @param name the slash command name
      * @return the interaction-create dispatch
@@ -79,7 +86,7 @@ public final class DispatchFactory {
         return interaction(
             baseInteraction(SLASH_INTERACTION_ID, 2, "interaction-token-" + name)
                 .data(ApplicationCommandInteractionData.builder()
-                    .id(Long.toString(TestIds.commandId(name)))
+                    .id(Long.toString(this.config.commandId(name)))
                     .name(name)
                     .type(1)
                     .build())
@@ -216,7 +223,7 @@ public final class DispatchFactory {
         return interaction(
             baseInteraction(CONTEXT_MENU_INTERACTION_ID, 2, token)
                 .data(ApplicationCommandInteractionData.builder()
-                    .id(Long.toString(TestIds.commandId(name)))
+                    .id(Long.toString(this.config.commandId(name)))
                     .name(name)
                     .type(commandType)
                     .targetId(Long.toString(targetId))
@@ -235,15 +242,15 @@ public final class DispatchFactory {
      * Seeds the fields common to every simulated interaction: ids, type, token, version, the channel,
      * and the (non-bot) acting user, with no guild context so it runs as a private-channel interaction.
      */
-    private static ImmutableInteractionData.Builder baseInteraction(long id, int type, String token) {
+    private ImmutableInteractionData.Builder baseInteraction(long id, int type, String token) {
         return InteractionData.builder()
             .id(id)
-            .applicationId(TestIds.APPLICATION_ID)
+            .applicationId(this.config.getApplicationId())
             .type(type)
             .token(token)
             .version(1)
-            .channelId(TestIds.CHANNEL_ID)
-            .user(actorUser());
+            .channelId(this.config.getChannelId())
+            .user(this.actorUser());
     }
 
     private static ComponentData actionRow(ComponentData child) {
@@ -262,8 +269,8 @@ public final class DispatchFactory {
         return ComponentData.builder().type(23).customId(customId).value(Boolean.toString(checked)).build();
     }
 
-    private static UserData actorUser() {
-        return user(TestIds.USER_ID, "tester", "0001", false);
+    private UserData actorUser() {
+        return user(this.config.getUserId(), "tester", "0001", false);
     }
 
     private static UserData targetUser(long id) {
@@ -286,11 +293,11 @@ public final class DispatchFactory {
             .build();
     }
 
-    private static MessageData messageData(long messageId) {
+    private MessageData messageData(long messageId) {
         return MessageData.builder()
             .id(messageId)
-            .channelId(TestIds.CHANNEL_ID)
-            .author(botUser(TestIds.APPLICATION_ID))
+            .channelId(this.config.getChannelId())
+            .author(botUser(this.config.getApplicationId()))
             .content("press it")
             .timestamp(MESSAGE_TIMESTAMP)
             .editedTimestamp(Optional.empty())

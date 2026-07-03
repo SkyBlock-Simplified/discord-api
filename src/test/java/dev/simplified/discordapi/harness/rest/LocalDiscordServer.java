@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dev.simplified.discordapi.harness.data.TestIds;
+import dev.simplified.discordapi.harness.HarnessConfig;
 import discord4j.common.JacksonResources;
 import discord4j.discordjson.json.ApplicationInfoData;
 import discord4j.discordjson.json.GatewayData;
@@ -43,16 +43,16 @@ public final class LocalDiscordServer {
     // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
     private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
-    private final long botId;
+    private final HarnessConfig config;
     private final boolean debug;
     private DisposableServer server;
 
-    public LocalDiscordServer(long botId) {
-        this(botId, Boolean.getBoolean("harness.debug"));
+    public LocalDiscordServer(@NotNull HarnessConfig config) {
+        this(config, Boolean.getBoolean("harness.debug"));
     }
 
-    public LocalDiscordServer(long botId, boolean debug) {
-        this.botId = botId;
+    public LocalDiscordServer(@NotNull HarnessConfig config, boolean debug) {
+        this.config = config;
         this.debug = debug;
     }
 
@@ -172,9 +172,9 @@ public final class LocalDiscordServer {
                 for (JsonNode command : parsed) {
                     ObjectNode node = (ObjectNode) command.deepCopy();
                     String name = node.has("name") ? node.get("name").asText() : "unknown";
-                    long id = TestIds.commandId(name);
+                    long id = this.config.commandId(name);
                     node.put("id", Long.toString(id));
-                    node.put("application_id", Long.toString(this.botId));
+                    node.put("application_id", Long.toString(this.config.getBotId()));
                     node.put("version", Long.toString(id));
 
                     if (!node.has("type"))
@@ -208,7 +208,7 @@ public final class LocalDiscordServer {
     @SuppressWarnings("deprecation") // discriminator is a required field on UserData even though deprecated
     private UserData botUser() {
         return UserData.builder()
-            .id(this.botId)
+            .id(this.config.getBotId())
             .username("TestBot")
             .discriminator("0000")
             .globalName(Optional.of("TestBot"))
@@ -241,7 +241,7 @@ public final class LocalDiscordServer {
     @SuppressWarnings("deprecation") // summary is a required field on ApplicationInfoData even though deprecated
     private String applicationInfoJson() {
         return this.write(ApplicationInfoData.builder()
-            .id(this.botId)
+            .id(this.config.getBotId())
             .name("TestBot")
             .description("Offline harness application")
             .botPublic(true)
@@ -253,9 +253,9 @@ public final class LocalDiscordServer {
 
     private String guildJson() {
         return this.write(GuildUpdateData.builder()
-            .id(TestIds.GUILD_ID)
+            .id(this.config.getGuildId())
             .name("Harness Guild")
-            .ownerId(TestIds.BOT_ID)
+            .ownerId(this.config.getBotId())
             .afkTimeout(300)
             .verificationLevel(0)
             .defaultMessageNotifications(0)
@@ -271,8 +271,8 @@ public final class LocalDiscordServer {
 
     private String messageJson() {
         return this.write(MessageData.builder()
-            .id(TestIds.REPLY_MESSAGE_ID)
-            .channelId(TestIds.CHANNEL_ID)
+            .id(this.config.getReplyMessageId())
+            .channelId(this.config.getChannelId())
             .author(this.botUser())
             .content("")
             .timestamp(MESSAGE_TIMESTAMP)

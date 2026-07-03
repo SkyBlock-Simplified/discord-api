@@ -2,7 +2,6 @@ package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.command.ModalValuesCommand;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +29,7 @@ class ModalValuesInteractionTest {
             );
 
             // Click the button -> presentModal registers the modal on the cached entry.
-            harness.clickButton(TestIds.REPLY_MESSAGE_ID, ModalValuesCommand.OPEN_BUTTON_ID);
+            harness.clickButton(harness.config().getReplyMessageId(), ModalValuesCommand.OPEN_BUTTON_ID);
             harness.awaitRequest(
                 request -> request.method().equals("POST") && request.path().contains(ModalValuesCommand.OPEN_BUTTON_ID) && request.path().endsWith("/callback"),
                 Duration.ofSeconds(10)
@@ -38,7 +37,7 @@ class ModalValuesInteractionTest {
 
             // Submit the modal with a radio value (blue) and a checked checkbox.
             harness.gateway().emit(harness.dispatches().modalSubmitValues(
-                TestIds.REPLY_MESSAGE_ID,
+                harness.config().getReplyMessageId(),
                 ModalValuesCommand.MODAL_ID,
                 ModalValuesCommand.RADIO_ID,
                 "blue",

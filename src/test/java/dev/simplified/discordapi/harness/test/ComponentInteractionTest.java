@@ -2,7 +2,6 @@ package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.command.ButtonCommand;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +30,7 @@ class ComponentInteractionTest {
             );
 
             // Click it - routes through ComponentListener to the button's onInteract callback.
-            harness.clickButton(TestIds.REPLY_MESSAGE_ID, ButtonCommand.BUTTON_ID);
+            harness.clickButton(harness.config().getReplyMessageId(), ButtonCommand.BUTTON_ID);
 
             RecordedRequest edit = harness.awaitRequest(
                 request -> request.method().equals("PATCH")

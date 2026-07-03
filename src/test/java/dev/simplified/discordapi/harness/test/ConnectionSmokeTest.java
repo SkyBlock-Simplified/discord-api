@@ -1,7 +1,6 @@
 package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -24,14 +23,14 @@ class ConnectionSmokeTest {
 
             // Post-connect command sync ran (implies the ConnectEvent handler executed and listeners registered).
             harness.awaitRequest(
-                request -> request.method().equals("PUT") && request.path().equals("/applications/" + TestIds.BOT_ID + "/commands"),
+                request -> request.method().equals("PUT") && request.path().equals("/applications/" + harness.config().getBotId() + "/commands"),
                 Duration.ofSeconds(10)
             );
 
             // Emoji sync fetches app info then the application emoji list; wait for the emoji list call
             // (its presence proves getApplicationInfo() deserialized and the sync chain did not error).
             harness.awaitRequest(
-                request -> request.path().equals("/applications/" + TestIds.BOT_ID + "/emojis"),
+                request -> request.path().equals("/applications/" + harness.config().getBotId() + "/emojis"),
                 Duration.ofSeconds(10)
             );
 

@@ -2,7 +2,6 @@ package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.command.SelectMenuCommand;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +30,7 @@ class SelectMenuInteractionTest {
             );
 
             // Choose "blue" - routes through ComponentListener to the menu's onInteract callback.
-            harness.clickSelectMenu(TestIds.REPLY_MESSAGE_ID, SelectMenuCommand.SELECT_ID, "blue");
+            harness.clickSelectMenu(harness.config().getReplyMessageId(), SelectMenuCommand.SELECT_ID, "blue");
 
             RecordedRequest edit = harness.awaitRequest(
                 request -> request.path().contains("select-token-" + SelectMenuCommand.SELECT_ID)

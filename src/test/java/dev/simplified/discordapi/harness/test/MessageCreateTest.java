@@ -1,7 +1,6 @@
 package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -26,11 +25,11 @@ class MessageCreateTest {
             );
 
             // Simulate the message-create for that message -> onCreate edits the channel message.
-            harness.emitMessageCreate(TestIds.REPLY_MESSAGE_ID);
+            harness.emitMessageCreate(harness.config().getReplyMessageId());
 
             RecordedRequest edit = harness.awaitRequest(
                 request -> request.method().equals("PATCH")
-                    && request.path().equals("/channels/" + TestIds.CHANNEL_ID + "/messages/" + TestIds.REPLY_MESSAGE_ID),
+                    && request.path().equals("/channels/" + harness.config().getChannelId() + "/messages/" + harness.config().getReplyMessageId()),
                 Duration.ofSeconds(10)
             );
 

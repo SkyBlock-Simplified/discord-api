@@ -2,7 +2,6 @@ package dev.simplified.discordapi.harness.test;
 
 import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.command.ModalCommand;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -28,14 +27,14 @@ class ModalInteractionTest {
             );
 
             // Click the button -> presentModal registers the modal on the cached entry (callback type 9).
-            harness.clickButton(TestIds.REPLY_MESSAGE_ID, ModalCommand.OPEN_BUTTON_ID);
+            harness.clickButton(harness.config().getReplyMessageId(), ModalCommand.OPEN_BUTTON_ID);
             harness.awaitRequest(
                 request -> request.method().equals("POST") && request.path().contains("open_modal") && request.path().endsWith("/callback"),
                 Duration.ofSeconds(10)
             );
 
             // Submit the modal -> ModalListener matches it and runs onInteract, which edits the content.
-            harness.submitModal(TestIds.REPLY_MESSAGE_ID, ModalCommand.MODAL_ID, ModalCommand.INPUT_ID, "hello world");
+            harness.submitModal(harness.config().getReplyMessageId(), ModalCommand.MODAL_ID, ModalCommand.INPUT_ID, "hello world");
 
             // The modal edit goes out as a component callback (type 7 update); assert the submitted text
             // input value folded through into the edited content.

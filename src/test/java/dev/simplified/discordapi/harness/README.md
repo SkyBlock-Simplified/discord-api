@@ -61,10 +61,13 @@ target message to be cached (`awaitResponseCached`).
 
 ## Ids and tokens
 
-`harness.data.TestIds` holds the canonical ids and a structurally-valid fake token (its first segment
-base64-decodes to `BOT_ID`, matching `TokenUtil.getSelfId`). Command ids are derived deterministically
-from the command name (`TestIds.commandId`) so the mock's bulk-overwrite echo and simulated interactions
-agree. The REST mock mints `TestIds.REPLY_MESSAGE_ID` for every reply/followup message.
+`HarnessConfig` (built via `HarnessConfig.builder().build()`) holds the canonical ids and a
+structurally-valid fake token (its first segment base64-decodes to the bot id, matching
+`TokenUtil.getSelfId`). It is passed to `OfflineHarness`, `LocalDiscordServer`, and `DispatchFactory` at
+construction; a test can vary it and reach it via `harness.config()`. Command ids are derived
+deterministically from the command name (`config.commandId(name)`) so the mock's bulk-overwrite echo and
+simulated interactions agree. The REST mock mints `config.getReplyMessageId()` for every reply/followup
+message. Pass a customized `HarnessConfig` to `new OfflineHarness(config)` to change the identity.
 
 ## Debugging
 

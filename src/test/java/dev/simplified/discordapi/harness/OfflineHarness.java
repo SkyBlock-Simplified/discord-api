@@ -1,7 +1,6 @@
 package dev.simplified.discordapi.harness;
 
 import dev.simplified.discordapi.handler.DiscordConfig;
-import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
 import dev.simplified.discordapi.harness.rest.LocalDiscordServer;
@@ -24,24 +23,38 @@ import java.util.function.Predicate;
  */
 public final class OfflineHarness implements AutoCloseable {
 
+    private final HarnessConfig config;
     private final LocalDiscordServer server;
     private final FakeGatewayClient gatewayClient;
-    private final DispatchFactory dispatchFactory = new DispatchFactory();
+    private final DispatchFactory dispatchFactory;
     private final HarnessBot bot;
 
+    /** Boots with the standard harness identity ({@code HarnessConfig.builder().build()}). */
     public OfflineHarness() {
-        this.server = new LocalDiscordServer(TestIds.BOT_ID).start();
+        this(HarnessConfig.builder().build());
+    }
 
-        List<Dispatch> handshake = this.dispatchFactory.handshake(TestIds.BOT_ID);
+    /**
+     * Boots with the given harness identity, threading it through the REST mock, the dispatch factory, and
+     * the bot's {@link DiscordConfig}.
+     *
+     * @param config the harness identity to use
+     */
+    public OfflineHarness(@NotNull HarnessConfig config) {
+        this.config = config;
+        this.dispatchFactory = new DispatchFactory(config);
+        this.server = new LocalDiscordServer(config).start();
+
+        List<Dispatch> handshake = this.dispatchFactory.handshake(config.getBotId());
         this.gatewayClient = new FakeGatewayClient(handshake, 1);
 
         ReactorResources plaintextRest = ReactorResources.builder()
             .httpClient(HttpClient.create().compress(true).followRedirect(true)) // no .secure() -> plaintext http
             .build();
 
-        DiscordConfig config = DiscordConfig.builder()
-            .withToken(TestIds.TOKEN)
-            .withMainGuildId(TestIds.GUILD_ID)
+        DiscordConfig discordConfig = DiscordConfig.builder()
+            .withToken(config.getToken())
+            .withMainGuildId(config.getGuildId())
             .withCommands("dev.simplified.discordapi.harness.command")
             .withApiBaseUrl(this.server.baseUrl())
             .withRestReactorResources(plaintextRest)
@@ -49,7 +62,12 @@ public final class OfflineHarness implements AutoCloseable {
             .withLogLevel(Logging.Level.INFO)
             .build();
 
-        this.bot = new HarnessBot(config);
+        this.bot = new HarnessBot(discordConfig);
+    }
+
+    /** The harness identity backing this run (ids, token, command-id scheme). */
+    public @NotNull HarnessConfig config() {
+        return this.config;
     }
 
     /**
@@ -77,7 +95,7 @@ public final class OfflineHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull OfflineHarness awaitCommandRegistered(@NotNull String name, @NotNull Duration timeout) {
-        long commandId = TestIds.commandId(name);
+        long commandId = this.config.commandId(name);
         awaitTrue(() -> !this.bot.getCommandHandler().getCommandsById(commandId).isEmpty(), timeout, "command '" + name + "' not registered");
         return this;
     }
