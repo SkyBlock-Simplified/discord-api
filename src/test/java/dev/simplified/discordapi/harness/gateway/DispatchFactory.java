@@ -1,9 +1,13 @@
 package dev.simplified.discordapi.harness.gateway;
 
 import dev.simplified.discordapi.harness.HarnessConfig;
+import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
+import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ApplicationCommandInteractionResolvedData;
 import discord4j.discordjson.json.ComponentData;
+import discord4j.discordjson.json.ImmutableApplicationCommandInteractionData;
+import discord4j.discordjson.json.ImmutableApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.ImmutableInteractionData;
 import discord4j.discordjson.json.InteractionData;
 import discord4j.discordjson.json.MessageData;
@@ -16,10 +20,12 @@ import discord4j.discordjson.json.gateway.Ready;
 import discord4j.discordjson.possible.Possible;
 import discord4j.gateway.retry.GatewayStateChange;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,21 +81,40 @@ public final class DispatchFactory {
     }
 
     /**
-     * Builds an {@code INTERACTION_CREATE} (type 2, chat input) dispatch for a flat slash command with
-     * no guild context, so the command runs as a private-channel interaction (skipping bot-permission
+     * Builds an {@code INTERACTION_CREATE} (type 2, chat input) dispatch for a top-level slash command
+     * with no guild context, so the command runs as a private-channel interaction (skipping bot-permission
      * and channel resolution). The command id is derived from the name via {@link HarnessConfig#commandId}.
      *
      * @param name the slash command name
+     * @param options the resolved top-level options, if any
      * @return the interaction-create dispatch
      */
-    public Dispatch slashCommand(String name) {
+    public Dispatch slashCommand(String name, SlashOption... options) {
         return interaction(
             baseInteraction(SLASH_INTERACTION_ID, 2, "interaction-token-" + name)
-                .data(ApplicationCommandInteractionData.builder()
-                    .id(Long.toString(this.config.commandId(name)))
-                    .name(name)
-                    .type(1)
-                    .build())
+                .data(chatInputData(name, leafOptions(options)))
+        );
+    }
+
+    /**
+     * Builds an {@code INTERACTION_CREATE} (type 2, chat input) dispatch for a subcommand nested under a
+     * parent - optionally within a subcommand group - matching the {@code parent [group] sub options} tree
+     * the framework's {@code @Structure} resolution walks. The routing id is the parent's, since Discord
+     * registers the whole tree under one top-level command.
+     *
+     * @param parent the parent command name
+     * @param group the subcommand group name, or {@code null}/blank for a bare subcommand
+     * @param sub the subcommand name
+     * @param options the resolved leaf options, if any
+     * @return the interaction-create dispatch
+     */
+    public Dispatch slashSubCommand(String parent, @Nullable String group, String sub, SlashOption... options) {
+        ApplicationCommandInteractionOptionData subCommand = subCommandOption(sub, options);
+        ApplicationCommandInteractionOptionData top = isPresent(group) ? groupOption(group, subCommand) : subCommand;
+
+        return interaction(
+            baseInteraction(SLASH_INTERACTION_ID, 2, subCommandToken(parent, group, sub))
+                .data(chatInputData(parent, top))
         );
     }
 
@@ -251,6 +276,68 @@ public final class DispatchFactory {
             .version(1)
             .channelId(this.config.getChannelId())
             .user(this.actorUser());
+    }
+
+    /**
+     * Builds the chat-input command data whose top-level {@code name} and routing id both derive from
+     * {@code routingName} - the command name for a flat command, or the parent name for a subcommand tree.
+     */
+    private ApplicationCommandInteractionData chatInputData(String routingName, ApplicationCommandInteractionOptionData... options) {
+        ImmutableApplicationCommandInteractionData.Builder data = ApplicationCommandInteractionData.builder()
+            .id(Long.toString(this.config.commandId(routingName)))
+            .name(routingName)
+            .type(1);
+
+        for (ApplicationCommandInteractionOptionData option : options)
+            data.addOption(option);
+
+        return data.build();
+    }
+
+    private static ApplicationCommandInteractionOptionData[] leafOptions(SlashOption... options) {
+        return Arrays.stream(options)
+            .map(DispatchFactory::leafOption)
+            .toArray(ApplicationCommandInteractionOptionData[]::new);
+    }
+
+    private static ApplicationCommandInteractionOptionData leafOption(SlashOption option) {
+        return ApplicationCommandInteractionOptionData.builder()
+            .name(option.name())
+            .type(option.type().getOptionType().getValue())
+            .value(option.value())
+            .build();
+    }
+
+    private static ApplicationCommandInteractionOptionData subCommandOption(String name, SlashOption... options) {
+        ImmutableApplicationCommandInteractionOptionData.Builder subCommand = ApplicationCommandInteractionOptionData.builder()
+            .name(name)
+            .type(ApplicationCommandOption.Type.SUB_COMMAND.getValue());
+
+        for (SlashOption option : options)
+            subCommand.addOption(leafOption(option));
+
+        return subCommand.build();
+    }
+
+    private static ApplicationCommandInteractionOptionData groupOption(String name, ApplicationCommandInteractionOptionData subCommand) {
+        return ApplicationCommandInteractionOptionData.builder()
+            .name(name)
+            .type(ApplicationCommandOption.Type.SUB_COMMAND_GROUP.getValue())
+            .addOption(subCommand)
+            .build();
+    }
+
+    private static String subCommandToken(String parent, @Nullable String group, String sub) {
+        StringBuilder token = new StringBuilder("interaction-token-").append(parent).append('-');
+
+        if (isPresent(group))
+            token.append(group).append('-');
+
+        return token.append(sub).toString();
+    }
+
+    private static boolean isPresent(@Nullable String value) {
+        return value != null && !value.isBlank();
     }
 
     private static ComponentData actionRow(ComponentData child) {

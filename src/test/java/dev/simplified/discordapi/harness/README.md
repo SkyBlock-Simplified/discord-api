@@ -36,7 +36,9 @@ Add a test command under `harness/command/` (it is discovered by classpath scan 
 
 | Call | Simulates |
 |---|---|
-| `sendSlashCommand(name)` | `/name` chat-input interaction (type 2) |
+| `sendSlashCommand(name, options...)` | `/name` chat-input interaction (type 2), with optional top-level options |
+| `sendSubCommand(parent, sub, options...)` | `/parent sub` bare subcommand interaction |
+| `sendSubCommand(parent, group, sub, options...)` | `/parent group sub` grouped subcommand interaction |
 | `sendUserCommand(name, targetUserId)` | right-click user command (type 2, data.type 2) |
 | `sendMessageCommand(name, targetMessageId)` | right-click message command (type 2, data.type 3) |
 | `clickButton(messageId, customId)` | button click (component interaction, type 3) |
@@ -47,6 +49,10 @@ Add a test command under `harness/command/` (it is discovered by classpath scan 
 Interactions with no `guild_id` run as private-channel interactions, skipping bot-permission/channel
 resolution - the low-friction default the DSL uses. Component/modal/onCreate helpers first wait for the
 target message to be cached (`awaitResponseCached`).
+
+Slash options are supplied as `SlashOption` leaves (`SlashOption.text(name, value)`); the dispatch factory
+places them at the correct depth for flat commands, bare subcommands, or grouped subcommands, matching the
+`parent [group] sub` tree the framework resolves from `@Structure`.
 
 ## Asserting (DSL)
 

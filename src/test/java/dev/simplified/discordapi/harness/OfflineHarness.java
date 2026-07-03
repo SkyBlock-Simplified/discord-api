@@ -3,6 +3,7 @@ package dev.simplified.discordapi.harness;
 import dev.simplified.discordapi.handler.DiscordConfig;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
+import dev.simplified.discordapi.harness.gateway.SlashOption;
 import dev.simplified.discordapi.harness.rest.LocalDiscordServer;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import dev.simplified.util.Logging;
@@ -10,6 +11,7 @@ import discord4j.common.ReactorResources;
 import discord4j.common.util.Snowflake;
 import discord4j.discordjson.json.gateway.Dispatch;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
@@ -102,14 +104,46 @@ public final class OfflineHarness implements AutoCloseable {
 
     /**
      * Waits for the named slash command to be registered, then pushes a simulated {@code type 2}
-     * interaction for it into the live dispatch pipeline.
+     * interaction for it - carrying the given resolved options - into the live dispatch pipeline.
      *
      * @param name the slash command name
+     * @param options the resolved top-level options, if any
      * @return this harness
      */
-    public @NotNull OfflineHarness sendSlashCommand(@NotNull String name) {
+    public @NotNull OfflineHarness sendSlashCommand(@NotNull String name, @NotNull SlashOption... options) {
         this.awaitCommandRegistered(name, Duration.ofSeconds(10));
-        this.gatewayClient.emit(this.dispatchFactory.slashCommand(name));
+        this.gatewayClient.emit(this.dispatchFactory.slashCommand(name, options));
+        return this;
+    }
+
+    /**
+     * Waits for the parent command to be registered, then pushes a simulated bare-subcommand interaction
+     * ({@code parent sub options}) into the live dispatch pipeline. The whole tree registers under the
+     * parent, so registration is awaited on the parent name.
+     *
+     * @param parent the parent command name
+     * @param sub the subcommand name
+     * @param options the resolved leaf options, if any
+     * @return this harness
+     */
+    public @NotNull OfflineHarness sendSubCommand(@NotNull String parent, @NotNull String sub, @NotNull SlashOption... options) {
+        return this.sendSubCommand(parent, null, sub, options);
+    }
+
+    /**
+     * Waits for the parent command to be registered, then pushes a simulated grouped-subcommand interaction
+     * ({@code parent group sub options}) into the live dispatch pipeline. The whole tree registers under the
+     * parent, so registration is awaited on the parent name.
+     *
+     * @param parent the parent command name
+     * @param group the subcommand group name, or {@code null}/blank for a bare subcommand
+     * @param sub the subcommand name
+     * @param options the resolved leaf options, if any
+     * @return this harness
+     */
+    public @NotNull OfflineHarness sendSubCommand(@NotNull String parent, @Nullable String group, @NotNull String sub, @NotNull SlashOption... options) {
+        this.awaitCommandRegistered(parent, Duration.ofSeconds(10));
+        this.gatewayClient.emit(this.dispatchFactory.slashSubCommand(parent, group, sub, options));
         return this;
     }
 

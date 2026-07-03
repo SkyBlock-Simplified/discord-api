@@ -4,20 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-This is a submodule of the SkyBlock-Simplified multi-module Gradle project (Java 21, Gradle 9.4+). Run commands from the monorepo root (`../`).
+This module (Java 21, Gradle 9.4+) is an **included build** named `discord4j-framework` within the `Simplified-Dev` monorepo. It has its own `gradlew`, so tasks can be run bare from this directory, or prefixed with `:discord4j-framework:` from the monorepo root (`../`). The `:discord-api:` project path no longer exists.
 
 ```bash
-# Build this module
-./gradlew :discord-api:build
+# Build this module (from this directory)
+./gradlew build
 
 # Run tests
-./gradlew :discord-api:test
+./gradlew test
 
 # Clean build
-./gradlew :discord-api:clean :discord-api:build
+./gradlew clean build
 
 # Generate SVG hierarchy diagrams
-./gradlew :discord-api:generateDiagrams
+./gradlew generateDiagrams
+
+# Or, from the monorepo root:
+./gradlew :discord4j-framework:test
 ```
 
 **Required environment variables:** `DISCORD_TOKEN`, `DEVELOPER_ERROR_LOG_CHANNEL_ID`
