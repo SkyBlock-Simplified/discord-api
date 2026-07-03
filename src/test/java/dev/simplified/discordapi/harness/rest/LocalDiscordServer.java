@@ -65,6 +65,10 @@ public final class LocalDiscordServer {
                 routes.post("/webhooks/{app}/{token}", fixed(messageJson()));
                 routes.post("/channels/{channel}/messages", fixed(messageJson()));
                 routes.route(
+                    request -> "PATCH".equals(request.method().name()) && stripQuery(request.uri()).matches("/channels/\\d+/messages/\\d+"),
+                    fixed(messageJson())
+                );
+                routes.route(
                     request -> "PATCH".equals(request.method().name()) && stripQuery(request.uri()).endsWith("/messages/@original"),
                     fixed(messageJson())
                 );

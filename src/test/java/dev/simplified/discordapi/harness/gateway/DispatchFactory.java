@@ -126,6 +126,17 @@ public final class DispatchFactory {
             + "}}";
     }
 
+    /**
+     * Builds a {@code MESSAGE_CREATE} dispatch for a bot-authored message with the given id, used to drive
+     * a cached response's {@code onCreate} handler.
+     *
+     * @param messageId the message id (must match a cached response)
+     * @return the message-create dispatch
+     */
+    public Dispatch messageCreate(long messageId) {
+        return this.fromJson("{\"op\":0,\"s\":14,\"t\":\"MESSAGE_CREATE\",\"d\":" + messageObject(messageId) + "}");
+    }
+
     private static String messageObject(long messageId) {
         return "{\"id\":\"" + messageId + "\",\"channel_id\":\"" + TestIds.CHANNEL_ID + "\","
             + "\"author\":{\"id\":\"" + TestIds.APPLICATION_ID + "\",\"username\":\"TestBot\",\"discriminator\":\"0000\",\"avatar\":null,\"bot\":true},"

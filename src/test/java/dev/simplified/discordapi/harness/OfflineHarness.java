@@ -169,6 +169,19 @@ public final class OfflineHarness implements AutoCloseable {
         return this;
     }
 
+    /**
+     * Waits for the reply on the given message to be cached, then pushes a bot-authored
+     * {@code MESSAGE_CREATE} for it, driving the response's {@code onCreate} handler.
+     *
+     * @param messageId the cached message id
+     * @return this harness
+     */
+    public @NotNull OfflineHarness emitMessageCreate(long messageId) {
+        this.awaitResponseCached(messageId, Duration.ofSeconds(10));
+        this.gatewayClient.emit(this.dispatchFactory.messageCreate(messageId));
+        return this;
+    }
+
     public @NotNull DispatchFactory dispatches() {
         return this.dispatchFactory;
     }
@@ -191,6 +204,34 @@ public final class OfflineHarness implements AutoCloseable {
     public @NotNull RecordedRequest awaitRequest(@NotNull Predicate<RecordedRequest> predicate, @NotNull Duration timeout) {
         awaitTrue(() -> this.server.requests().stream().anyMatch(predicate), timeout, "no request matched within " + timeout);
         return this.server.requests().stream().filter(predicate).reduce((first, second) -> second).orElseThrow();
+    }
+
+    /**
+     * Waits (default 10s) for the most recent request matching the predicate.
+     *
+     * @param predicate the request matcher
+     * @return the matching recorded request
+     */
+    public @NotNull RecordedRequest awaitRequest(@NotNull Predicate<RecordedRequest> predicate) {
+        return this.awaitRequest(predicate, Duration.ofSeconds(10));
+    }
+
+    /**
+     * Waits (default 10s) for the most recent interaction reply edit ({@code PATCH .../messages/@original}).
+     *
+     * @return the matching recorded request
+     */
+    public @NotNull RecordedRequest awaitInteractionReply() {
+        return this.awaitRequest(request -> request.method().equals("PATCH") && request.path().endsWith("/messages/@original"));
+    }
+
+    /**
+     * Waits (default 10s) for the most recent interaction callback ({@code POST .../callback}).
+     *
+     * @return the matching recorded request
+     */
+    public @NotNull RecordedRequest awaitInteractionCallback() {
+        return this.awaitRequest(request -> request.method().equals("POST") && request.path().endsWith("/callback"));
     }
 
     private boolean gatewayConnected() {
