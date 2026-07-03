@@ -123,14 +123,16 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                 this.processing = true;
                 return this.process(context);
             }))
-            .thenEmpty(Mono.fromRunnable(() -> this.processing = false))
             .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
                     this.getDiscordBot(),
                     context,
                     throwable
                 )
-            ));
+            ))
+            // Always clear the singleton guard - completion, error, OR cancel. Previously only the success
+            // path reset it, so a singleton command that threw stayed wedged (SingletonCommandException forever).
+            .doFinally(__ -> this.processing = false);
     }
 
     /**
