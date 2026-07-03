@@ -17,6 +17,8 @@ import discord4j.discordjson.possible.Possible;
 import discord4j.gateway.retry.GatewayStateChange;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +37,6 @@ public final class DispatchFactory {
     private static final long COMPONENT_INTERACTION_ID = 950000000000000011L;
     private static final long MODAL_INTERACTION_ID = 950000000000000012L;
     private static final long CONTEXT_MENU_INTERACTION_ID = 950000000000000013L;
-    private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
 
     private final HarnessConfig config;
 
@@ -292,13 +293,21 @@ public final class DispatchFactory {
             .build();
     }
 
+    /**
+     * The current time as an ISO-8601 extended offset date-time (the format Discord sends for message
+     * timestamps), so each simulated message/event carries a real datetime rather than a fixed placeholder.
+     */
+    private static String messageTimestamp() {
+        return OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
     private MessageData messageData(long messageId) {
         return MessageData.builder()
             .id(messageId)
             .channelId(this.config.getChannelId())
             .author(botUser(this.config.getApplicationId()))
             .content("press it")
-            .timestamp(MESSAGE_TIMESTAMP)
+            .timestamp(messageTimestamp())
             .editedTimestamp(Optional.empty())
             .tts(false)
             .mentionEveryone(false)

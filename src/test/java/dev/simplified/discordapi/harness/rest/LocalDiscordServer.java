@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.simplified.discordapi.harness.HarnessConfig;
 import discord4j.common.JacksonResources;
+import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.ApplicationInfoData;
 import discord4j.discordjson.json.GatewayData;
 import discord4j.discordjson.json.GuildUpdateData;
@@ -13,6 +14,7 @@ import discord4j.discordjson.json.MessageData;
 import discord4j.discordjson.json.SessionStartLimitData;
 import discord4j.discordjson.json.UserData;
 import discord4j.discordjson.possible.Possible;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -21,6 +23,8 @@ import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,21 +36,17 @@ import java.util.function.Function;
  * endpoints for the framework's login prologue and post-connect sync, echoes bulk command overwrites
  * with synthetic ids, and records every request for assertions.
  */
+@RequiredArgsConstructor
 public final class LocalDiscordServer {
 
     // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
     private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
-    private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
 
     // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
     private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
     private final HarnessConfig config;
     private DisposableServer server;
-
-    public LocalDiscordServer(@NotNull HarnessConfig config) {
-        this.config = config;
-    }
 
     /**
      * Binds the server on an ephemeral loopback port.
@@ -187,6 +187,14 @@ public final class LocalDiscordServer {
         return index < 0 ? uri : uri.substring(0, index);
     }
 
+    /**
+     * The current time as an ISO-8601 extended offset date-time (the format Discord sends for message
+     * timestamps), so each served message carries a real datetime rather than a fixed placeholder.
+     */
+    private static String messageTimestamp() {
+        return OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
     /** Serializes a discord-json immutable with Discord4J's mapper into the response body. */
     private String write(@NotNull Object data) {
         try {
@@ -249,13 +257,13 @@ public final class LocalDiscordServer {
             .name("Harness Guild")
             .ownerId(this.config.getBotId())
             .afkTimeout(300)
-            .verificationLevel(0)
+            .verificationLevel(Guild.VerificationLevel.NONE.getValue())
             .defaultMessageNotifications(0)
-            .explicitContentFilter(0)
-            .mfaLevel(0)
-            .premiumTier(0)
+            .explicitContentFilter(Guild.ContentFilterLevel.DISABLED.getValue())
+            .mfaLevel(Guild.MfaLevel.NONE.getValue())
+            .premiumTier(Guild.PremiumTier.NONE.getValue())
             .preferredLocale("en-US")
-            .nsfwLevel(0)
+            .nsfwLevel(Guild.NsfwLevel.DEFAULT.getValue())
             .roles(List.of())
             .emojis(List.of())
             .build());
@@ -267,7 +275,7 @@ public final class LocalDiscordServer {
             .channelId(this.config.getChannelId())
             .author(this.botUser())
             .content("")
-            .timestamp(MESSAGE_TIMESTAMP)
+            .timestamp(messageTimestamp())
             .editedTimestamp(Optional.empty())
             .tts(false)
             .mentionEveryone(false)
