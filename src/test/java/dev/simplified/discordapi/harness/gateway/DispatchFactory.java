@@ -263,33 +263,26 @@ public final class DispatchFactory {
     }
 
     private static UserData actorUser() {
-        return UserData.builder()
-            .id(TestIds.USER_ID)
-            .username("tester")
-            .discriminator("0001")
-            .globalName(Optional.empty())
-            .avatar(Optional.empty())
-            .build();
+        return user(TestIds.USER_ID, "tester", "0001", false);
     }
 
     private static UserData targetUser(long id) {
-        return UserData.builder()
-            .id(id)
-            .username("target")
-            .discriminator("0002")
-            .globalName(Optional.empty())
-            .avatar(Optional.empty())
-            .build();
+        return user(id, "target", "0002", false);
     }
 
     private static UserData botUser(long botId) {
+        return user(botId, "TestBot", "0000", true);
+    }
+
+    @SuppressWarnings("deprecation") // discriminator is a required field on UserData even though deprecated
+    private static UserData user(long id, String username, String discriminator, boolean bot) {
         return UserData.builder()
-            .id(botId)
-            .username("TestBot")
-            .discriminator("0000")
+            .id(id)
+            .username(username)
+            .discriminator(discriminator)
             .globalName(Optional.empty())
             .avatar(Optional.empty())
-            .bot(Possible.of(true))
+            .bot(Possible.of(bot))
             .build();
     }
 

@@ -5,6 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.simplified.discordapi.harness.data.TestIds;
+import discord4j.common.JacksonResources;
+import discord4j.discordjson.json.ApplicationInfoData;
+import discord4j.discordjson.json.GatewayData;
+import discord4j.discordjson.json.GuildUpdateData;
+import discord4j.discordjson.json.MessageData;
+import discord4j.discordjson.json.SessionStartLimitData;
+import discord4j.discordjson.json.UserData;
+import discord4j.discordjson.possible.Possible;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -14,6 +22,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -25,10 +34,14 @@ import java.util.function.Function;
  */
 public final class LocalDiscordServer {
 
-    private static final String GATEWAY_JSON = "{\"url\":\"ws://127.0.0.1/fake-gateway\"}";
+    private static final String GATEWAY_URL = "ws://127.0.0.1/fake-gateway";
+    // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
     private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
+    private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
+    private static final String VERIFY_KEY = "0".repeat(64);
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
+    private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
     private final long botId;
     private final boolean debug;
@@ -54,7 +67,7 @@ public final class LocalDiscordServer {
             .port(0)
             .route(routes -> {
                 routes.get("/users/@me", fixed(userJson()));
-                routes.get("/gateway", fixed(GATEWAY_JSON));
+                routes.get("/gateway", fixed(gatewayJson()));
                 routes.get("/gateway/bot", fixed(gatewayBotJson()));
                 routes.get("/oauth2/applications/@me", fixed(applicationInfoJson()));
                 routes.get("/applications/{app}/emojis", fixed(EMPTY_EMOJIS_JSON));
@@ -182,43 +195,93 @@ public final class LocalDiscordServer {
         return index < 0 ? uri : uri.substring(0, index);
     }
 
+    /** Serializes a discord-json immutable with Discord4J's mapper into the response body. */
+    private String write(@NotNull Object data) {
+        try {
+            return this.mapper.writeValueAsString(data);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to serialize " + data.getClass().getSimpleName(), exception);
+        }
+    }
+
+    /** The bot's self user, reused both as {@code GET /users/@me} and as the author of served messages. */
+    @SuppressWarnings("deprecation") // discriminator is a required field on UserData even though deprecated
+    private UserData botUser() {
+        return UserData.builder()
+            .id(this.botId)
+            .username("TestBot")
+            .discriminator("0000")
+            .globalName(Optional.of("TestBot"))
+            .avatar(Optional.empty())
+            .bot(Possible.of(true))
+            .build();
+    }
+
     private String userJson() {
-        return ("{\"id\":\"%d\",\"username\":\"TestBot\",\"discriminator\":\"0000\",\"global_name\":\"TestBot\","
-            + "\"avatar\":null,\"bot\":true,\"system\":false,\"mfa_enabled\":false,\"flags\":0,\"public_flags\":0}")
-            .formatted(this.botId);
+        return this.write(this.botUser());
     }
 
-    private static String gatewayBotJson() {
-        return "{\"url\":\"ws://127.0.0.1/fake-gateway\",\"shards\":1,"
-            + "\"session_start_limit\":{\"total\":1000,\"remaining\":1000,\"reset_after\":0,\"max_concurrency\":1}}";
+    private String gatewayJson() {
+        return this.write(GatewayData.builder().url(GATEWAY_URL).build());
     }
 
+    private String gatewayBotJson() {
+        return this.write(GatewayData.builder()
+            .url(GATEWAY_URL)
+            .shards(1)
+            .sessionStartLimit(SessionStartLimitData.builder()
+                .total(1000)
+                .remaining(1000)
+                .resetAfter(0)
+                .maxConcurrency(1)
+                .build())
+            .build());
+    }
+
+    @SuppressWarnings("deprecation") // summary is a required field on ApplicationInfoData even though deprecated
     private String applicationInfoJson() {
-        return ("{\"id\":\"%d\",\"name\":\"TestBot\",\"icon\":null,\"description\":\"Offline harness application\","
-            + "\"bot_public\":true,\"bot_require_code_grant\":false,"
-            + "\"verify_key\":\"0000000000000000000000000000000000000000000000000000000000000000\","
-            + "\"flags\":0,\"summary\":\"\"}")
-            .formatted(this.botId);
+        return this.write(ApplicationInfoData.builder()
+            .id(this.botId)
+            .name("TestBot")
+            .description("Offline harness application")
+            .botPublic(true)
+            .botRequireCodeGrant(false)
+            .summary("")
+            .verifyKey(VERIFY_KEY)
+            .build());
     }
 
-    private static String guildJson() {
-        return ("{\"id\":\"%d\",\"name\":\"Harness Guild\",\"icon\":null,\"splash\":null,\"discovery_splash\":null,"
-            + "\"owner_id\":\"%d\",\"afk_channel_id\":null,\"afk_timeout\":300,\"verification_level\":0,"
-            + "\"default_message_notifications\":0,\"explicit_content_filter\":0,\"roles\":[],\"emojis\":[],"
-            + "\"features\":[],\"mfa_level\":0,\"application_id\":null,\"system_channel_id\":null,"
-            + "\"system_channel_flags\":0,\"rules_channel_id\":null,\"vanity_url_code\":null,\"description\":null,"
-            + "\"banner\":null,\"premium_tier\":0,\"preferred_locale\":\"en-US\",\"public_updates_channel_id\":null,"
-            + "\"nsfw_level\":0,\"premium_progress_bar_enabled\":false}")
-            .formatted(TestIds.GUILD_ID, TestIds.BOT_ID);
+    private String guildJson() {
+        return this.write(GuildUpdateData.builder()
+            .id(TestIds.GUILD_ID)
+            .name("Harness Guild")
+            .ownerId(TestIds.BOT_ID)
+            .afkTimeout(300)
+            .verificationLevel(0)
+            .defaultMessageNotifications(0)
+            .explicitContentFilter(0)
+            .mfaLevel(0)
+            .premiumTier(0)
+            .preferredLocale("en-US")
+            .nsfwLevel(0)
+            .roles(List.of())
+            .emojis(List.of())
+            .build());
     }
 
     private String messageJson() {
-        return ("{\"id\":\"" + TestIds.REPLY_MESSAGE_ID + "\",\"channel_id\":\"%d\","
-            + "\"author\":{\"id\":\"%d\",\"username\":\"TestBot\",\"discriminator\":\"0000\",\"avatar\":null,\"bot\":true},"
-            + "\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00.000000+00:00\",\"edited_timestamp\":null,"
-            + "\"tts\":false,\"mention_everyone\":false,\"mentions\":[],\"mention_roles\":[],\"attachments\":[],"
-            + "\"embeds\":[],\"pinned\":false,\"type\":0}")
-            .formatted(TestIds.CHANNEL_ID, this.botId);
+        return this.write(MessageData.builder()
+            .id(TestIds.REPLY_MESSAGE_ID)
+            .channelId(TestIds.CHANNEL_ID)
+            .author(this.botUser())
+            .content("")
+            .timestamp(MESSAGE_TIMESTAMP)
+            .editedTimestamp(Optional.empty())
+            .tts(false)
+            .mentionEveryone(false)
+            .pinned(false)
+            .type(0)
+            .build());
     }
 
 }
