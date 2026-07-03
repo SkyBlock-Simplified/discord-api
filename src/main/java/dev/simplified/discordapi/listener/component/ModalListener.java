@@ -68,13 +68,13 @@ public final class ModalListener extends ComponentListener<ModalSubmitInteractio
     @Override
     protected Mono<Void> handleEvent(@NotNull ModalSubmitInteractionEvent event, @NotNull CachedResponse entry) {
         Optional<CachedResponse> followup = entry.isFollowup() ? Optional.of(entry) : Optional.empty();
-        CachedResponse target = followup.orElse(entry);
 
-        return Mono.justOrEmpty(target.getUserModal(event.getInteraction().getUser()))
+        // target always resolves to entry (a followup's own entry is itself); getUserModal reads off it directly.
+        return Mono.justOrEmpty(entry.getUserModal(event.getInteraction().getUser()))
             .filter(modal -> event.getCustomId().equals(modal.getIdentifier()))
-            .doOnNext(modal -> target.clearModal(event.getInteraction().getUser()))
+            .doOnNext(modal -> entry.clearModal(event.getInteraction().getUser()))
+            // handleInteraction finalizes the interaction exactly once (edit-or-record); no trailing update here.
             .flatMap(modal -> this.handleInteraction(event, entry, modal, followup))
-            .then(entry.updateLastInteract())
             .then();
     }
 

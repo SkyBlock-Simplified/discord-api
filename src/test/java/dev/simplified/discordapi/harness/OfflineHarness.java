@@ -124,6 +124,24 @@ public final class OfflineHarness implements AutoCloseable {
     }
 
     /**
+     * Blocks until the component dispatcher has registered a route for the given custom id, so a
+     * simulated interaction targeting an {@link dev.simplified.discordapi.listener.Component @Component}
+     * route (in particular an eternal, cache-miss interaction) will resolve.
+     *
+     * @param customId the route custom id
+     * @param timeout the maximum time to wait
+     * @return this harness
+     */
+    public @NotNull OfflineHarness awaitComponentRoute(@NotNull String customId, @NotNull Duration timeout) {
+        awaitTrue(
+            () -> this.bot.getComponentDispatcher() != null && this.bot.getComponentDispatcher().findRoute(customId).isPresent(),
+            timeout,
+            "component route '" + customId + "' not registered"
+        );
+        return this;
+    }
+
+    /**
      * Blocks until a response for the given message id is present in the response cache, so a simulated
      * component interaction on it will resolve (avoids racing the reply's cache write).
      *
