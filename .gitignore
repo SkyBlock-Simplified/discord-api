@@ -119,3 +119,6 @@ gradle-app.setting
 .gitnexus
 
 .claude/
+
+# Multi-session working notes (offline test harness, etc.)
+notes/

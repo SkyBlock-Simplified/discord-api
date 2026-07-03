@@ -31,6 +31,10 @@ dependencies {
     testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
 
+    // Test logging provider (log4j-api has no binding on the test classpath otherwise)
+    testRuntimeOnly(libs.log4j.core)
+    testRuntimeOnly(libs.log4j.slf4j2)
+
     // https://central.sonatype.com/artifact/com.discord4j/discord4j-core/versions
     api(libs.discord4j)
 
@@ -49,6 +53,7 @@ dependencies {
 tasks {
     test {
         useJUnitPlatform()
+        systemProperty("harness.debug", System.getProperty("harness.debug", "false"))
     }
 
     register<JavaExec>("generateDiagrams") {
