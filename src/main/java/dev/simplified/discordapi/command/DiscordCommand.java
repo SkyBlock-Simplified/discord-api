@@ -130,8 +130,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
                     throwable
                 )
             ))
-            // Always clear the singleton guard - completion, error, OR cancel. Previously only the success
-            // path reset it, so a singleton command that threw stayed wedged (SingletonCommandException forever).
+            // Always clear the singleton guard - completion, error, OR cancel.
             .doFinally(__ -> this.processing = false);
     }
 
