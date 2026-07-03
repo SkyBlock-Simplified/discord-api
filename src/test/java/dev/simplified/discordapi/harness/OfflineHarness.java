@@ -153,7 +153,7 @@ public final class OfflineHarness implements AutoCloseable {
      */
     public @NotNull OfflineHarness sendSubCommand(@NotNull String parent, @Nullable String group, @NotNull String sub, @NotNull SlashOption... options) {
         String path = parent + (group == null ? "" : " " + group) + " " + sub;
-        log.info("-> slash command /{}{}", path, describe(options));
+        log.info("-> slash subcommand /{}{}", path, describe(options));
         this.awaitCommandRegistered(parent, Duration.ofSeconds(10));
         this.gatewayClient.emit(this.dispatchFactory.slashSubCommand(parent, group, sub, options));
         return this;
@@ -361,6 +361,10 @@ public final class OfflineHarness implements AutoCloseable {
         }
     }
 
+    // Polls rather than awaits a signal: the conditions (gateway connected, command registered, response
+    // cached, request matched) are external state mutated on the bot's reactive/netty threads with nothing
+    // to latch on, so a bounded 25ms poll is the pragmatic harness primitive.
+    @SuppressWarnings("BusyWait")
     private void awaitTrue(@NotNull java.util.function.BooleanSupplier condition, @NotNull Duration timeout, @NotNull String message) {
         long deadline = System.nanoTime() + timeout.toNanos();
 

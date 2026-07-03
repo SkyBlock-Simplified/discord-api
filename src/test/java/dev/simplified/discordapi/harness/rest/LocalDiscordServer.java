@@ -97,10 +97,13 @@ public final class LocalDiscordServer {
     }
 
     /**
-     * The base url to hand to {@code DiscordConfig.withApiBaseUrl}.
+     * The base url to hand to {@code DiscordConfig.withApiBaseUrl}. Deliberately plaintext {@code http} -
+     * this is an in-process loopback stand-in for the REST API and the bot is pointed at it with a
+     * plaintext (non-{@code .secure()}) client, so https would fail the handshake.
      *
      * @return the loopback base url
      */
+    @SuppressWarnings("HttpUrlsUsage") // plaintext loopback mock, never a real endpoint
     public @NotNull String baseUrl() {
         return "http://" + this.config.getGatewayHost() + ":" + this.server.port();
     }
@@ -204,7 +207,7 @@ public final class LocalDiscordServer {
 
             if (parsed.isArray()) {
                 for (JsonNode command : parsed) {
-                    ObjectNode node = (ObjectNode) command.deepCopy();
+                    ObjectNode node = command.deepCopy();
                     String name = node.has("name") ? node.get("name").asText() : "unknown";
                     long id = this.config.commandId(name);
                     node.put("id", Long.toString(id));
