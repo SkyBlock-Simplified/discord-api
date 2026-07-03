@@ -174,6 +174,21 @@ public final class OfflineHarness implements AutoCloseable {
     }
 
     /**
+     * Waits for the reply on the given message to be cached, then pushes a simulated string select menu
+     * interaction carrying the given selected values into the live dispatch pipeline.
+     *
+     * @param messageId the cached message id the select menu lives on
+     * @param customId the select menu custom id
+     * @param values the selected option values
+     * @return this harness
+     */
+    public @NotNull OfflineHarness clickSelectMenu(long messageId, @NotNull String customId, @NotNull String... values) {
+        this.awaitResponseCached(messageId, Duration.ofSeconds(10));
+        this.gatewayClient.emit(this.dispatchFactory.selectMenu(messageId, customId, values));
+        return this;
+    }
+
+    /**
      * Pushes a simulated modal submit for a modal that was opened from the given cached message.
      *
      * @param messageId the cached message the modal belongs to

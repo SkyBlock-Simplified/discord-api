@@ -71,6 +71,7 @@ public final class CachedResponse {
 
     private volatile @NotNull Response response;
     private volatile @NotNull State state;
+    private volatile boolean acknowledged;
     private volatile long lastInteract;
     private volatile @NotNull NavState navState;
 
@@ -86,6 +87,7 @@ public final class CachedResponse {
         this.expiresAt = builder.expiresAt;
         this.response = builder.response;
         this.state = builder.state;
+        this.acknowledged = builder.state == State.DEFERRED || builder.state == State.ACKNOWLEDGED;
         this.lastInteract = builder.lastInteract;
         this.navState = builder.navState;
     }
@@ -202,29 +204,38 @@ public final class CachedResponse {
         return !this.isActive();
     }
 
-    /** Marks this entry as currently being processed. */
+    /** Marks this entry as currently being processed, resetting the per-event acknowledgment flag. */
     public void setBusy() {
         this.state = State.BUSY;
+        this.acknowledged = false;
     }
 
     /** Marks this entry as deferred (the initial Discord ack has been sent). */
     public void setDeferred() {
         this.state = State.DEFERRED;
+        this.acknowledged = true;
     }
 
     /** Marks this entry's interaction as acknowledged with a response (an edit or a presented modal). */
     public void setAcknowledged() {
         this.state = State.ACKNOWLEDGED;
+        this.acknowledged = true;
     }
 
     /**
      * Whether the current interaction has already been acknowledged to Discord - deferred or responded.
      * Discord permits exactly one interaction callback, so subsequent output must use the webhook.
      *
-     * @return {@code true} if the state is {@link State#DEFERRED} or {@link State#ACKNOWLEDGED}
+     * <p>
+     * Tracked as a per-event flag (reset by {@link #setBusy()} at the start of each interaction) rather
+     * than derived from {@link #getState() state}, so it survives the mid-dispatch {@link
+     * #updateLastInteract()} that returns the entry to {@link State#IDLE} for expiry - a later
+     * {@code deferEdit} in the same dispatch (e.g. a select menu's per-option fallback) stays idempotent.
+     *
+     * @return {@code true} once the interaction has been deferred or responded to
      */
     public boolean isAcknowledged() {
-        return this.state == State.DEFERRED || this.state == State.ACKNOWLEDGED;
+        return this.acknowledged;
     }
 
     /** Replaces the bound {@link Response} with the given updated instance. */
