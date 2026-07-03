@@ -20,20 +20,10 @@ class SlashCommandTest {
             harness.sendSlashCommand("ping");
 
             // apply() defers first (interaction callback), then process() replies via webhook edit.
-            harness.awaitRequest(
-                request -> request.method().equals("POST") && request.path().endsWith("/callback"),
-                Duration.ofSeconds(10)
-            );
+            harness.awaitInteractionCallback();
+            RecordedRequest reply = harness.awaitInteractionReply();
 
-            RecordedRequest edit = harness.awaitRequest(
-                request -> request.method().equals("PATCH") && request.path().endsWith("/messages/@original"),
-                Duration.ofSeconds(10)
-            );
-
-            assertTrue(
-                edit.body().contains("pong"),
-                "reply body should contain the command's content; body=" + edit.body()
-            );
+            assertTrue(reply.bodyContains("pong"), "reply should contain the command's content; body=" + reply.body());
         }
     }
 
