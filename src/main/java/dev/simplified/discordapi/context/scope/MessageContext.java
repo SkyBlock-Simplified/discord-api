@@ -134,7 +134,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
      * @return a {@link Mono} emitting the edited message
      */
     default Mono<Message> discordEditMessage(@NotNull Response response) {
-        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec()));
+        return this.getMessage().flatMap(message -> message.edit(response.getD4jEditSpec(this.getEmojis())));
     }
 
     /**
@@ -148,7 +148,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     default Mono<Message> discordEditMessage(@NotNull Snowflake messageId, @NotNull Response response) {
         return this.getChannel()
             .flatMap(channel -> channel.getMessageById(messageId))
-            .flatMap(message -> message.edit(response.getD4jEditSpec()));
+            .flatMap(message -> message.edit(response.getD4jEditSpec(this.getEmojis())));
     }
 
     /**

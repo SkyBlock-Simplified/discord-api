@@ -38,7 +38,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
         return this.deferEdit(response.isEphemeral()).then( // idempotent ack; a no-op if already acknowledged
             this.getEvent()
-                .createFollowup(response.getD4jInteractionFollowupCreateSpec())
+                .createFollowup(response.getD4jInteractionFollowupCreateSpec(this.getEmojis()))
                 .publishOn(response.getReactorScheduler())
         );
     }
@@ -72,7 +72,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
     default Mono<Message> discordEditFollowup(@NotNull String identifier, @NotNull Response response) {
         return this.deferEdit(response.isEphemeral()).then(
             this.findFollowup(identifier)
-                .flatMap(followup -> this.getEvent().editFollowup(followup.getMessageId(), response.getD4jInteractionReplyEditSpec()))
+                .flatMap(followup -> this.getEvent().editFollowup(followup.getMessageId(), response.getD4jInteractionReplyEditSpec(this.getEmojis())))
                 .publishOn(response.getReactorScheduler())
         );
     }
@@ -93,10 +93,10 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
             // Already acknowledged: update through the interaction webhook. Otherwise this edit IS the
             // acknowledgment (a single component callback), after which the entry is marked acknowledged.
             if (entry.isAcknowledged())
-                return this.getEvent().editReply(response.getD4jInteractionReplyEditSpec());
+                return this.getEvent().editReply(response.getD4jInteractionReplyEditSpec(this.getEmojis()));
 
             return this.getEvent()
-                .edit(response.getD4jComponentCallbackSpec())
+                .edit(response.getD4jComponentCallbackSpec(this.getEmojis()))
                 .then(Mono.fromRunnable(entry::setAcknowledged))
                 .then(Mono.justOrEmpty(this.getEvent().getMessage()));
         })

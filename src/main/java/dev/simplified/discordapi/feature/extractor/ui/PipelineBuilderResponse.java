@@ -99,7 +99,6 @@ public final class PipelineBuilderResponse {
 
     private @NotNull Response build() {
         return Response.builder()
-            .withBot(this.bot)
             .withTimeToLive(TTL_SECONDS)
             .isEphemeral()
             .withPages(this.renderMainPage())

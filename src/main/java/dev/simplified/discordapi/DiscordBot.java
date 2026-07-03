@@ -246,7 +246,7 @@ public abstract class DiscordBot {
                                         .disableAllComponents()
                                         .isRenderingPagingComponents(false)
                                         .build()
-                                        .getD4jEditSpec()
+                                        .getD4jEditSpec(this.getEmojiHandler())
                                 )))
                             )
                         )

@@ -223,7 +223,7 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
      * event's custom id.
      */
     private @NotNull Optional<EventInteractable<?>> matchComponent(@NotNull ComponentInteractionEvent event, @NotNull Response response) {
-        return response.getCurrentComponents()
+        return response.getCurrentComponents(this.getDiscordBot().getEmojiHandler())
             .flatMap(Component::flattenComponents)
             .filter(EventInteractable.class::isInstance)
             .filter(UserInteractable.class::isInstance)

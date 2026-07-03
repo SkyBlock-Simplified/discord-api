@@ -2,7 +2,6 @@ package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
-import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.interaction.Button;
 import dev.simplified.discordapi.component.interaction.CheckboxGroup;
@@ -18,12 +17,11 @@ import dev.simplified.discordapi.context.component.ButtonContext;
 import dev.simplified.discordapi.context.component.ModalContext;
 import dev.simplified.discordapi.context.component.SelectMenuContext;
 import dev.simplified.discordapi.response.Emoji;
+import dev.simplified.discordapi.response.EmojiResolver;
 import dev.simplified.discordapi.response.page.Page;
-import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.util.NumberUtil;
 import dev.simplified.util.Range;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -43,11 +41,7 @@ import java.util.function.Function;
  * @see SelectMenu.PageType
  * @see TextInput.SearchType
  */
-public class PaginationHandler extends DiscordReference {
-
-    public PaginationHandler(@NotNull DiscordBot discordBot) {
-        super(discordBot);
-    }
+public class PaginationHandler {
 
     // --- Button Interactions ---
 
@@ -255,18 +249,6 @@ public class PaginationHandler extends DiscordReference {
     }
 
     /**
-     * Builds a pagination button for the given page type, resolving an emoji by name.
-     *
-     * @param pageType the page type identifier
-     * @param emojiName the emoji name to resolve, or null for no emoji
-     * @return the built button
-     */
-    public @NotNull Button buildButton(@NotNull Button.PageType pageType, @Nullable String emojiName) {
-        Optional<Emoji> emoji = emojiName != null ? this.getEmoji(emojiName) : Optional.empty();
-        return buildButton(pageType, emoji);
-    }
-
-    /**
      * Builds a pagination button for the given page type with an optional emoji.
      *
      * @param pageType the page type identifier
@@ -300,21 +282,20 @@ public class PaginationHandler extends DiscordReference {
     }
 
     /**
-     * Builds all pagination buttons, resolving emojis by name.
+     * Builds all pagination buttons, resolving each button's emoji through the given resolver. The INDEX
+     * button opens the search modal, so it carries the {@code SEARCH} emoji; the SORT button carries
+     * {@code SORT}.
      *
-     * @param previousEmoji the previous button emoji name, or null
-     * @param searchEmoji the search button emoji name, or null
-     * @param filterEmoji the filter button emoji name, or null
-     * @param nextEmoji the next button emoji name, or null
-     * @return the list of pagination buttons with emojis
+     * @param emojis the emoji resolver
+     * @return the list of pagination buttons
      */
-    public @NotNull ConcurrentList<Button> buildPaginationButtons(@Nullable String previousEmoji, @Nullable String searchEmoji, @Nullable String filterEmoji, @Nullable String nextEmoji) {
+    public @NotNull ConcurrentList<Button> buildPaginationButtons(@NotNull EmojiResolver emojis) {
         return Concurrent.newList(
-            this.buildButton(Button.PageType.PREVIOUS, previousEmoji),
-            this.buildButton(Button.PageType.SORT, searchEmoji),
-            buildButton(Button.PageType.INDEX),
-            this.buildButton(Button.PageType.FILTER, filterEmoji),
-            this.buildButton(Button.PageType.NEXT, nextEmoji)
+            buildButton(Button.PageType.PREVIOUS, emojis.getEmoji("ARROW_LEFT")),
+            buildButton(Button.PageType.SORT, emojis.getEmoji("SORT")),
+            buildButton(Button.PageType.INDEX, emojis.getEmoji("SEARCH")),
+            buildButton(Button.PageType.FILTER, emojis.getEmoji("FILTER")),
+            buildButton(Button.PageType.NEXT, emojis.getEmoji("ARROW_RIGHT"))
         );
     }
 
@@ -372,17 +353,6 @@ public class PaginationHandler extends DiscordReference {
             .build();
     }
 
-    // --- Instance methods with emoji support ---
-
-    /**
-     * Builds all pagination buttons with emoji resolution from the bot.
-     *
-     * @return the list of pagination buttons with emojis
-     */
-    public @NotNull ConcurrentList<Button> buildPaginationButtonsWithEmoji() {
-        return this.buildPaginationButtons("ARROW_LEFT", "SEARCH", "FILTER", "ARROW_RIGHT");
-    }
-
     // --- Cached Page Components ---
 
     /**
@@ -390,9 +360,10 @@ public class PaginationHandler extends DiscordReference {
      * select menus, item pagination buttons, editor menus, and button state updates.
      *
      * @param historyHandler the history handler to build components for
+     * @param emojis the emoji resolver used for navigation button/option emojis
      * @return the built pagination components
      */
-    public @NotNull ConcurrentList<TopLevelMessageComponent> buildCachedPageComponents(@NotNull HistoryHandler<? extends Page, String> historyHandler) {
+    public @NotNull ConcurrentList<TopLevelMessageComponent> buildCachedPageComponents(@NotNull HistoryHandler<? extends Page, String> historyHandler, @NotNull EmojiResolver emojis) {
         ConcurrentList<TopLevelMessageComponent> pageComponents = Concurrent.newList();
         Page currentPage = historyHandler.getCurrentPage();
 
@@ -431,7 +402,7 @@ public class PaginationHandler extends DiscordReference {
                         SelectMenu.Option.builder()
                             .withValue("BACK")
                             .withLabel("Back")
-                            .withEmoji(this.getEmoji("ARROW_LEFT"))
+                            .withEmoji(emojis.getEmoji("ARROW_LEFT"))
                             .build()
                     );
                 }
@@ -460,7 +431,7 @@ public class PaginationHandler extends DiscordReference {
 
         if (currentPage.hasItems()) {
             // Item List
-            pageComponents.add(ActionRow.of(this.buildPaginationButtonsWithEmoji()));
+            pageComponents.add(ActionRow.of(this.buildPaginationButtons(emojis)));
         }
 
         ConcurrentList<TopLevelMessageComponent> result = pageComponents.toUnmodifiable();

@@ -7,6 +7,7 @@ import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.command.Structure;
 import dev.simplified.discordapi.response.Emoji;
+import dev.simplified.discordapi.response.EmojiResolver;
 import dev.simplified.util.StringUtil;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -102,11 +103,17 @@ public abstract class DiscordReference {
      * @param name the emoji name to search for
      * @return the matching emoji, or empty if not found
      */
-    protected final @NotNull Optional<Emoji> getEmoji(@NotNull String name) {
-        return this.getDiscordBot()
-            .getEmojiHandler()
-            .getEmojis()
-            .matchFirst(emoji -> emoji.getName().equalsIgnoreCase(name));
+    protected @NotNull Optional<Emoji> getEmoji(@NotNull String name) {
+        return this.getEmojiResolver().getEmoji(name);
+    }
+
+    /**
+     * Returns the bot's emoji resolver, the bot-free capability used to render custom emoji at draw time.
+     *
+     * @return the emoji resolver
+     */
+    protected final @NotNull EmojiResolver getEmojiResolver() {
+        return this.getDiscordBot().getEmojiHandler();
     }
 
     /**

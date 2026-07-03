@@ -67,7 +67,6 @@ public class DebugComponentsCommand extends DiscordCommand<SlashCommandContext> 
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
         return commandContext.reply(
             Response.builder()
-                .withBot(commandContext.getDiscordBot())
                 .withTimeToLive(30)
                 /*.withAttachments(
                     Attachment.of(

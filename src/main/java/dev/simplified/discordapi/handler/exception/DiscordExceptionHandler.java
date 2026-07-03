@@ -398,7 +398,6 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
 
         // Build User Error
         Response userErrorResponse = Response.builder()
-            .withBot(exceptionContext.getDiscordBot())
             .isEphemeral(true)
             .withPages(
                 TreePage.builder()
@@ -436,7 +435,6 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
                         return messageIdMono.flatMap(messageId -> {
                             // Build Exception Response
                             Response logResponse = Response.builder()
-                                .withBot(exceptionContext.getDiscordBot())
                                 .withException(exceptionContext.getException())
                                 .withPages(
                                     TreePage.builder()
@@ -447,7 +445,7 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
 
                             return Mono.just(messageChannel)
                                 .publishOn(logResponse.getReactorScheduler())
-                                .flatMap(logResponse::getD4jCreateMono)
+                                .flatMap(channel -> logResponse.getD4jCreateMono(channel, this.getEmojiResolver()))
                                 .flatMap(__ -> messageId
                                     .map(id -> this.getDiscordBot()
                                         .getResponseLocator()

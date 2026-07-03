@@ -29,15 +29,9 @@ public interface ActionComponentContext extends ComponentContext {
      * @return a mono completing when the component has been updated in the page
      */
     default Mono<Void> modify(@NotNull ActionComponent actionComponent) {
-        return Mono.just(this.getResponse())
-            .doOnNext(response -> response.mutate().editPage(
-                    response.getHistoryHandler()
-                    .getCurrentPage()
-                    .mutate()
-                    .editComponent(actionComponent)
-                    .build()
-            ))
-            .then();
+        return Mono.fromRunnable(() -> this.getResponse()
+            .getHistoryHandler()
+            .editCurrentPage(page -> page.mutate().editComponent(actionComponent).build()));
     }
 
 }

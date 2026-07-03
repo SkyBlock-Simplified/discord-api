@@ -38,7 +38,7 @@ public interface DeferrableInteractionContext<T extends DeferrableInteractionEve
     @Override
     default Mono<Message> discordBuildMessage(@NotNull Response response) {
         return this.getEvent()
-            .editReply(response.getD4jInteractionReplyEditSpec())
+            .editReply(response.getD4jInteractionReplyEditSpec(this.getEmojis()))
             .publishOn(response.getReactorScheduler());
     }
 

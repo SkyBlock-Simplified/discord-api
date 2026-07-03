@@ -5,6 +5,7 @@ import dev.simplified.collection.ConcurrentList;
 import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.response.Emoji;
+import dev.simplified.discordapi.response.EmojiResolver;
 import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.info.ResourceInfo;
 import dev.simplified.util.Range;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -33,7 +35,7 @@ import java.util.function.Function;
  */
 @Getter
 @Log4j2
-public final class EmojiHandler extends DiscordReference {
+public final class EmojiHandler extends DiscordReference implements EmojiResolver {
 
     /** Valid Discord emoji name length range. */
     private static final Range<Integer> EMOJI_NAME_LENGTH = Range.between(2, 32);
@@ -59,6 +61,18 @@ public final class EmojiHandler extends DiscordReference {
             .stream()
             .map(ResourceEmoji::new)
             .collect(Concurrent.toUnmodifiableSet());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Overrides {@link DiscordReference#getEmoji(String)} publicly (satisfying {@link EmojiResolver}) and
+     * resolves against this handler's own cache rather than delegating back through the bot to itself.
+     */
+    @Override
+    public @NotNull Optional<Emoji> getEmoji(@NotNull String name) {
+        return EmojiResolver.super.getEmoji(name);
     }
 
     /**

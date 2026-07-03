@@ -8,6 +8,7 @@ import dev.simplified.discordapi.context.scope.InteractionContext;
 import dev.simplified.discordapi.context.scope.MessageContext;
 import dev.simplified.discordapi.handler.exception.ExceptionHandler;
 import dev.simplified.discordapi.handler.response.ResponseLocator;
+import dev.simplified.discordapi.response.EmojiResolver;
 import dev.simplified.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
@@ -55,12 +56,22 @@ import java.util.function.Function;
 public interface EventContext<T extends Event> {
 
     /**
-     * Creates a new {@link Response.Builder} pre-wired with this context's bot.
+     * Creates a new {@link Response.Builder}.
      *
-     * @return the pre-wired response builder
+     * @return the response builder
      */
     default @NotNull Response.Builder buildResponse() {
-        return Response.builder().withBot(this.getDiscordBot());
+        return Response.builder();
+    }
+
+    /**
+     * The bot's {@link EmojiResolver}, supplied to a {@link Response} at render time so its data classes
+     * need no bot reference of their own.
+     *
+     * @return the emoji resolver
+     */
+    default @NotNull EmojiResolver getEmojis() {
+        return this.getDiscordBot().getEmojiHandler();
     }
 
     /**
@@ -72,7 +83,7 @@ public interface EventContext<T extends Event> {
      */
     default Mono<Message> discordBuildMessage(@NotNull Response response) {
         return this.getChannel()
-            .flatMap(response::getD4jCreateMono)
+            .flatMap(channel -> response.getD4jCreateMono(channel, this.getEmojis()))
             .publishOn(response.getReactorScheduler());
     }
 

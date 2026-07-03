@@ -3,12 +3,12 @@ package dev.simplified.discordapi.response;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.collection.query.SearchFunction;
-import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.media.Attachment;
 import dev.simplified.discordapi.component.media.MediaData;
 import dev.simplified.discordapi.component.scope.TopLevelMessageComponent;
 import dev.simplified.discordapi.context.scope.MessageContext;
+import dev.simplified.discordapi.handler.response.NavState;
 import dev.simplified.discordapi.response.embed.Embed;
 import dev.simplified.discordapi.response.handler.HistoryHandler;
 import dev.simplified.discordapi.response.handler.PaginationHandler;
@@ -64,7 +64,6 @@ public final class Response {
 
     private final long buildTime = System.currentTimeMillis();
     private final @NotNull UUID uniqueId;
-    private final @NotNull DiscordBot discordBot;
     private final @NotNull Optional<Snowflake> referenceId;
     private final @NotNull Scheduler reactorScheduler;
     private final @NotNull AllowedMentions allowedMentions;
@@ -84,7 +83,6 @@ public final class Response {
 
     public static @NotNull Builder from(@NotNull Response response) {
         return builder()
-            .withBot(response.getDiscordBot())
             .withUniqueId(response.getUniqueId())
             .withPages(response.getPages())
             .withAttachments(response.getAttachments())
@@ -93,14 +91,13 @@ public final class Response {
             .withTimeToLive(response.getTimeToLive())
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral())
-            .withPageHistory(response.getHistoryHandler().getIdentifierHistory())
-            .withItemPage(response.getHistoryHandler().getCurrentPage().getItemHandler().getCurrentIndex())
+            .withNavState(NavState.capture(response.getHistoryHandler()))
             .onCreate(response.getCreateInteraction());
     }
 
-    public @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents() {
+    public @NotNull ConcurrentList<TopLevelMessageComponent> getCachedPageComponents(@NotNull EmojiResolver emojis) {
         if (this.isRenderingPagingComponents() && this.isCacheUpdateRequired())
-            this.cachedPageComponents = this.getPaginationHandler().buildCachedPageComponents(this.getHistoryHandler());
+            this.cachedPageComponents = this.getPaginationHandler().buildCachedPageComponents(this.getHistoryHandler(), emojis);
 
         return this.cachedPageComponents;
     }
@@ -136,28 +133,28 @@ public final class Response {
 
     // --- Reply Streams ---
 
-    public @NotNull Stream<Attachment> getPendingAttachments() {
+    public @NotNull Stream<Attachment> getPendingAttachments(@NotNull ConcurrentList<TopLevelMessageComponent> components) {
         return Stream.concat(
             this.getAttachments().stream(),
-            this.getCurrentComponents()
+            components.stream()
                 .flatMap(Component::flattenComponents)
                 .filter(Attachment.class::isInstance)
                 .map(Attachment.class::cast)
         ).filter(Attachment::isPendingUpload);
     }
 
-    public @NotNull Stream<TopLevelMessageComponent> getCurrentComponents() {
-        return Stream.concat(this.getCachedPageComponents().stream(), this.getHistoryHandler().getCurrentPage().getComponents().stream());
+    public @NotNull Stream<TopLevelMessageComponent> getCurrentComponents(@NotNull EmojiResolver emojis) {
+        return Stream.concat(this.getCachedPageComponents(emojis).stream(), this.getHistoryHandler().getCurrentPage().getComponents().stream());
     }
 
-    public @NotNull ConcurrentList<Message.Flag> getCurrentFlags() {
+    public @NotNull ConcurrentList<Message.Flag> getFlags(@NotNull ConcurrentList<TopLevelMessageComponent> components) {
         ConcurrentList<Message.Flag> flags = Concurrent.newList();
-        flags.addIf(this::isComponentsV2, Message.Flag.IS_COMPONENTS_V2);
+        flags.addIf(() -> isComponentsV2(components), Message.Flag.IS_COMPONENTS_V2);
         return flags;
     }
 
-    public boolean isComponentsV2() {
-        return this.getCurrentComponents()
+    public boolean isComponentsV2(@NotNull ConcurrentList<TopLevelMessageComponent> components) {
+        return components.stream()
             .flatMap(Component::flattenComponents)
             .anyMatch(component -> component.getType().isRequireFlag());
     }
@@ -238,95 +235,82 @@ public final class Response {
 
     // --- D4J Specs ---
 
-    public @NotNull MessageCreateSpec getD4jCreateSpec() {
+    public @NotNull MessageCreateSpec getD4jCreateSpec(@NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return MessageCreateSpec.builder()
             .content(this.getCurrentContent().orElse(""))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .flags(this.getCurrentFlags())
+            .flags(this.getFlags(components))
             .nonce(this.getUniqueId().toString().substring(0, 25))
             .allowedMentions(this.getAllowedMentions())
             .messageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
-            .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            )
+            .files(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .components(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
     }
 
-    public @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel) {
+    public @NotNull MessageCreateMono getD4jCreateMono(@NotNull MessageChannel channel, @NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return MessageCreateMono.of(channel)
             .withContent(this.getCurrentContent().orElse(""))
             .withEmbeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .withFlags(this.getCurrentFlags())
+            .withFlags(this.getFlags(components))
             .withNonce(this.getUniqueId().toString().substring(0, 25))
-            .withFlags()
             .withAllowedMentions(this.getAllowedMentions())
             .withMessageReference(this.getReferenceId().isPresent() ? Possible.of(MessageReferenceData.builder().messageId(this.getReferenceId().get().asLong()).build()) : Possible.absent())
-            .withFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .withComponents(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            );
+            .withFiles(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .withComponents(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()));
     }
 
-    public @NotNull MessageEditSpec getD4jEditSpec() {
+    public @NotNull MessageEditSpec getD4jEditSpec(@NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return MessageEditSpec.builder()
             .contentOrNull(this.getCurrentContent().orElse(""))
             .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
-            .addAllFlags(this.getCurrentFlags())
-            .addAllFiles(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .addAllComponents(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            )
+            .addAllFlags(this.getFlags(components))
+            .addAllFiles(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .addAllComponents(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
     }
 
-    public @NotNull InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec() {
+    public @NotNull InteractionApplicationCommandCallbackSpec getD4jComponentCallbackSpec(@NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return InteractionApplicationCommandCallbackSpec.builder()
             .content(this.getCurrentContent().orElse(""))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .ephemeral(this.isEphemeral())
             .allowedMentions(AllowedMentions.suppressEveryone())
-            .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            )
+            .files(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .components(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
     }
 
-    public @NotNull InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec() {
+    public @NotNull InteractionFollowupCreateSpec getD4jInteractionFollowupCreateSpec(@NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return InteractionFollowupCreateSpec.builder()
             .content(this.getCurrentContent().orElse(""))
             .embeds(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .ephemeral(this.isEphemeral())
             .allowedMentions(this.getAllowedMentions())
-            .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .components(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            )
+            .files(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .components(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
     }
 
-    public @NotNull InteractionReplyEditSpec getD4jInteractionReplyEditSpec() {
+    public @NotNull InteractionReplyEditSpec getD4jInteractionReplyEditSpec(@NotNull EmojiResolver emojis) {
+        ConcurrentList<TopLevelMessageComponent> components = this.getCurrentComponents(emojis).collect(Concurrent.toList());
+
         return InteractionReplyEditSpec.builder()
             .contentOrNull(this.getCurrentContent().orElse(""))
             .embedsOrNull(this.getCurrentEmbeds().stream().map(Embed::getD4jEmbed).collect(Concurrent.toList()))
             .allowedMentionsOrNull(this.getAllowedMentions())
-            .files(this.getPendingAttachments().map(Attachment::getD4jFile).collect(Concurrent.toList()))
-            .componentsOrNull(
-                this.getCurrentComponents()
-                    .map(TopLevelMessageComponent::getD4jComponent)
-                    .collect(Concurrent.toList())
-            )
+            .files(this.getPendingAttachments(components).map(Attachment::getD4jFile).collect(Concurrent.toList()))
+            .componentsOrNull(components.stream().map(TopLevelMessageComponent::getD4jComponent).collect(Concurrent.toList()))
             .build();
     }
 
@@ -337,8 +321,6 @@ public final class Response {
 
         @BuildFlag(nonNull = true)
         private UUID uniqueId = UUID.randomUUID();
-        @BuildFlag(nonNull = true)
-        private DiscordBot discordBot;
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<Page> pages = Concurrent.newList();
         private final ConcurrentList<Attachment> attachments = Concurrent.newList();
@@ -354,26 +336,13 @@ public final class Response {
 
         // Navigation state
         private Optional<String> defaultPage = Optional.empty();
-        private ConcurrentList<String> pageHistory = Concurrent.newList();
-        private int currentItemPage = 1;
+        private NavState navState = NavState.empty();
 
         /**
          * Recursively disable all interactable components from all {@link Page Pages} in {@link Response}.
          */
         public Builder disableAllComponents() {
             this.pages.forEach(page -> this.editPage(page.mutate().disableComponents(true).build()));
-            return this;
-        }
-
-        /**
-         * Binds this {@link Response} to a {@link DiscordBot} instance, required
-         * for emoji resolution, scheduler access, and pagination handler
-         * construction.
-         *
-         * @param discordBot the bot this response belongs to
-         */
-        public Builder withBot(@NotNull DiscordBot discordBot) {
-            this.discordBot = discordBot;
             return this;
         }
 
@@ -527,13 +496,8 @@ public final class Response {
             return this;
         }
 
-        private Builder withItemPage(int currentItemPage) {
-            this.currentItemPage = currentItemPage;
-            return this;
-        }
-
-        private Builder withPageHistory(@NotNull ConcurrentList<String> pageHistory) {
-            this.pageHistory = pageHistory;
+        private Builder withNavState(@NotNull NavState navState) {
+            this.navState = navState;
             return this;
         }
 
@@ -653,7 +617,7 @@ public final class Response {
         }
 
         /**
-         * Sets the time in seconds for the {@link Response} to live in {@link DiscordBot#getResponseLocator()}.
+         * Sets the time in seconds for the {@link Response} to live in the bot's response locator.
          * <br><br>
          * This value moves whenever the user interacts with the {@link Response}.
          * <br><br>
@@ -686,7 +650,6 @@ public final class Response {
 
             Response response = new Response(
                 this.uniqueId,
-                this.discordBot,
                 this.referenceId,
                 this.reactorScheduler,
                 this.allowedMentions,
@@ -700,20 +663,14 @@ public final class Response {
                     .withMatcher((page, identifier) -> page.getOption().getValue().equals(identifier))
                     .withTransformer(page -> page.getOption().getValue())
                     .build(),
-                new PaginationHandler(this.discordBot)
+                new PaginationHandler()
             );
 
-            // Navigation state restoration
+            // Navigation state restoration: an explicit default page wins, otherwise replay the captured coordinate.
             if (this.defaultPage.isPresent() && response.getHistoryHandler().getPage(this.defaultPage.get()).isPresent())
                 response.getHistoryHandler().gotoTopLevelPage(this.defaultPage.get());
-            else {
-                if (!this.pageHistory.isEmpty()) {
-                    response.getHistoryHandler().gotoTopLevelPage(this.pageHistory.removeFirst());
-                    this.pageHistory.forEach(identifier -> response.getHistoryHandler().gotoSubPage(identifier));
-                    response.getHistoryHandler().getCurrentPage().getItemHandler().gotoPage(this.currentItemPage);
-                } else
-                    response.getHistoryHandler().gotoPage(response.getPages().getFirst());
-            }
+            else
+                this.navState.applyTo(response.getHistoryHandler());
 
             return response;
         }

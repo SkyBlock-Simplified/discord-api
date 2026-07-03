@@ -296,7 +296,7 @@ public interface ExceptionContext<T extends Event> extends EventContext<T> {
         @Override
         public @NotNull Mono<Void> reply(@NotNull Response response) {
             return this.getChannel()
-                .flatMap(response::getD4jCreateMono)
+                .flatMap(channel -> response.getD4jCreateMono(channel, this.getEmojis()))
                 .then();
         }
 
