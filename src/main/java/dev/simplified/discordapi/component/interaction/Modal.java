@@ -264,17 +264,19 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
          * @param event the modal submit interaction event
          */
         public Builder updateComponents(@NotNull ModalSubmitInteractionEvent event) {
-            event.getComponents(discord4j.core.object.component.LayoutComponent.class)
-                .stream()
-                .map(discord4j.core.object.component.LayoutComponent::getChildren)
-                .flatMap(List::stream)
-                .forEach(d4jComponent -> this.components.stream()
-                    .filter(Label.class::isInstance)
-                    .map(Label.class::cast)
-                    .filter(label -> label.getComponent().getIdentifier().equals(d4jComponent.getData().customId().get()))
-                    .findFirst()
-                    .ifPresent(label -> label.getComponent().updateFromData(d4jComponent.getData()))
-                );
+            // Discord4J's getComponents(Class) already flattens each action-row/label to its children and
+            // filters those by the type, so request the child components directly. Passing LayoutComponent
+            // here always yields nothing (children are action components, never layouts), which silently
+            // dropped every submitted value.
+            event.getComponents(discord4j.core.object.component.MessageComponent.class)
+                .forEach(submitted -> submitted.getData().customId().toOptional().ifPresent(customId ->
+                    this.components.stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .filter(label -> label.getComponent().getIdentifier().equals(customId))
+                        .findFirst()
+                        .ifPresent(label -> label.getComponent().updateFromData(submitted.getData()))
+                ));
 
             return this;
         }

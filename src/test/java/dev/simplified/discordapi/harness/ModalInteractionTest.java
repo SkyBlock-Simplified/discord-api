@@ -35,18 +35,16 @@ class ModalInteractionTest {
             // Submit the modal -> ModalListener matches it and runs onInteract, which edits the content.
             harness.submitModal(TestIds.REPLY_MESSAGE_ID, ModalCommand.MODAL_ID, ModalCommand.INPUT_ID, "hello world");
 
-            // The modal edit goes out as a component callback (type 7 update). Assert the callback RAN
-            // (content starts with "modal:"). NOTE: the submitted value currently folds as "none" due to
-            // main-code bug H3 (Modal.updateComponents walks getComponents(LayoutComponent.class), which
-            // D4J always returns empty for modals). Once H3 is fixed this should be "modal: hello world".
+            // The modal edit goes out as a component callback (type 7 update); assert the submitted text
+            // input value folded through into the edited content.
             RecordedRequest edit = harness.awaitRequest(
                 request -> request.path().contains("modal-token") && request.body().contains("modal:"),
                 Duration.ofSeconds(10)
             );
 
             assertTrue(
-                edit.body().contains("modal:"),
-                "modal submit callback should run and edit the content; body=" + edit.body()
+                edit.body().contains("modal: hello world"),
+                "modal submit should fold the input value into the content; body=" + edit.body()
             );
         }
     }
