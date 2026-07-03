@@ -168,9 +168,12 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
             .filter(Label.class::isInstance)
             .map(Label.class::cast)
             .map(Label::getComponent)
-            .next()
-            //.flatMap(Mono::justOrEmpty)
+            // Only text inputs carry search/validation behavior; skip non-text-input label components
+            // (radio groups, checkboxes) - which fold their values via updateFromData - so a modal that
+            // does not lead with a text input no longer throws a ClassCastException.
+            .filter(TextInput.class::isInstance)
             .map(TextInput.class::cast)
+            .next()
             .filter(textInput -> textInput.getValue().isPresent())
             .flatMap(textInput -> {
                 boolean validInput = textInput.getValue()

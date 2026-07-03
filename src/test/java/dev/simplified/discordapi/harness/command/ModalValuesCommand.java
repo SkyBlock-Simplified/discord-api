@@ -7,7 +7,6 @@ import dev.simplified.discordapi.component.interaction.Button;
 import dev.simplified.discordapi.component.interaction.Checkbox;
 import dev.simplified.discordapi.component.interaction.Modal;
 import dev.simplified.discordapi.component.interaction.RadioGroup;
-import dev.simplified.discordapi.component.interaction.TextInput;
 import dev.simplified.discordapi.component.layout.ActionRow;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.context.command.SlashCommandContext;
@@ -61,19 +60,9 @@ public class ModalValuesCommand extends DiscordCommand<SlashCommandContext> {
                                             .withTitle("Preferences")
                                             .withIdentifier(MODAL_ID)
                                             .withComponents(
-                                                // Modal.getInteraction() casts the first label's component to
-                                                // TextInput, so a leading text input is required for the modal
-                                                // callback to reach the handler (see main-code-issues H5).
-                                                Label.builder()
-                                                    .withTitle("Notes")
-                                                    .withComponent(
-                                                        TextInput.builder()
-                                                            .withStyle(TextInput.Style.SHORT)
-                                                            .withIdentifier("notes")
-                                                            .isRequired(false)
-                                                            .build()
-                                                    )
-                                                    .build(),
+                                                // Leads with a radio group (no text input): exercises the H5 fix
+                                                // where Modal.getInteraction no longer casts the first label
+                                                // component to TextInput.
                                                 Label.builder()
                                                     .withTitle("Favorite color")
                                                     .withComponent(
