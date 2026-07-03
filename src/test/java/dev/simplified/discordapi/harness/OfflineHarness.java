@@ -1,7 +1,5 @@
 package dev.simplified.discordapi.harness;
 
-import dev.simplified.discordapi.command.DiscordCommand;
-import dev.simplified.discordapi.handler.CommandHandler;
 import dev.simplified.discordapi.handler.DiscordConfig;
 import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
@@ -63,33 +61,7 @@ public final class OfflineHarness implements AutoCloseable {
     public @NotNull OfflineHarness boot(@NotNull Duration timeout) {
         this.bot.bootAsync();
         awaitTrue(this::gatewayConnected, timeout, "gateway did not connect");
-        seedContextMenuCommandIds();
         return this;
-    }
-
-    /**
-     * Workaround for main-code bug H4: {@code CommandHandler.buildCommandRequests} only registers slash
-     * commands, so user/message (context-menu) command ids are never mapped and their invocations cannot
-     * route. Seed the id map with the same deterministic ids the mock assigns, so the dispatch pathway is
-     * testable. Idempotent with the real fix (same ids), so it stays correct once H4 is addressed.
-     */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void seedContextMenuCommandIds() {
-        CommandHandler handler = this.bot.getCommandHandler();
-
-        try {
-            java.lang.reflect.Field field = CommandHandler.class.getDeclaredField("commandIds");
-            field.setAccessible(true);
-            java.util.Map ids = (java.util.Map) field.get(handler);
-
-            java.util.stream.Stream.concat(handler.getUserCommands().stream(), handler.getMessageCommands().stream())
-                .forEach((Object command) -> ids.put(
-                    command.getClass(),
-                    TestIds.commandId(((DiscordCommand<?>) command).getStructure().name())
-                ));
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Failed to seed context-menu command ids (harness workaround for H4)", exception);
-        }
     }
 
     public @NotNull FakeGatewayClient gateway() {

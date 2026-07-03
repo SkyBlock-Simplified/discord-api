@@ -156,6 +156,7 @@ public final class CommandHandler extends DiscordReference {
      */
     private @NotNull ConcurrentList<ApplicationCommandRequest> buildCommandRequests(long guildId) {
         return Stream.concat(
+                Stream.concat(
                 // Handle Parent Commands
                 this.getSlashCommands()
                     .stream()
@@ -205,6 +206,11 @@ public final class CommandHandler extends DiscordReference {
                             )
                             .build();
                     })
+                ),
+                // Handle Context-Menu Commands (user + message) - registration previously omitted these
+                Stream.concat(this.getUserCommands().stream(), this.getMessageCommands().stream())
+                    .filter(command -> command.getStructure().guildId() == guildId)
+                    .map(command -> this.buildCommand(command).build())
             )
             .map(ApplicationCommandRequest.class::cast)
             .collect(Concurrent.toUnmodifiableList());
@@ -258,16 +264,23 @@ public final class CommandHandler extends DiscordReference {
      */
     private @NotNull ImmutableApplicationCommandRequest.Builder buildCommand(@NotNull DiscordCommand command) {
         String path = pathOf(command);
-        return ApplicationCommandRequest.builder()
+        ImmutableApplicationCommandRequest.Builder builder = ApplicationCommandRequest.builder()
             .type(command.getType().getValue())
             .name(command.getStructure().name())
-            .description(command.getStructure().description())
             .nameLocalizationsOrNull(nullIfEmpty(this.localeHandler.getCommandNameLocalizations(path)))
-            .descriptionLocalizationsOrNull(nullIfEmpty(this.localeHandler.getCommandDescriptionLocalizations(path)))
             .nsfw(command.getStructure().nsfw())
             .defaultMemberPermissions(String.valueOf(PermissionSet.of(command.getStructure().userPermissions()).getRawValue()))
             .integrationTypes(DiscordCommand.Install.intValues(command.getStructure().integrations()))
             .contexts(DiscordCommand.Access.intValues(command.getStructure().contexts()));
+
+        // Discord rejects a description (and description localizations) on USER/MESSAGE context-menu commands
+        if (command.getType() == DiscordCommand.Type.CHAT_INPUT)
+            builder.description(command.getStructure().description())
+                .descriptionLocalizationsOrNull(nullIfEmpty(this.localeHandler.getCommandDescriptionLocalizations(path)));
+        else
+            builder.description("");
+
+        return builder;
     }
 
     /**
