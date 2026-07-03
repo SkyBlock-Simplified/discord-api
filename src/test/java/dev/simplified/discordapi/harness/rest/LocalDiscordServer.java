@@ -34,26 +34,18 @@ import java.util.function.Function;
  */
 public final class LocalDiscordServer {
 
-    private static final String GATEWAY_URL = "ws://127.0.0.1/fake-gateway";
     // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
     private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
     private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
-    private static final String VERIFY_KEY = "0".repeat(64);
 
     // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
     private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
     private final HarnessConfig config;
-    private final boolean debug;
     private DisposableServer server;
 
     public LocalDiscordServer(@NotNull HarnessConfig config) {
-        this(config, Boolean.getBoolean("harness.debug"));
-    }
-
-    public LocalDiscordServer(@NotNull HarnessConfig config, boolean debug) {
         this.config = config;
-        this.debug = debug;
     }
 
     /**
@@ -143,7 +135,7 @@ public final class LocalDiscordServer {
                 String path = stripQuery(request.uri());
                 this.requests.add(new RecordedRequest(request.method().name(), path, body));
 
-                if (this.debug)
+                if (this.config.isDebug())
                     System.out.println("[mock] " + request.method().name() + " " + path + (body.isEmpty() ? "" : " " + body));
 
                 if (responder == null)
@@ -222,12 +214,12 @@ public final class LocalDiscordServer {
     }
 
     private String gatewayJson() {
-        return this.write(GatewayData.builder().url(GATEWAY_URL).build());
+        return this.write(GatewayData.builder().url(this.config.getGatewayUrl()).build());
     }
 
     private String gatewayBotJson() {
         return this.write(GatewayData.builder()
-            .url(GATEWAY_URL)
+            .url(this.config.getGatewayUrl())
             .shards(1)
             .sessionStartLimit(SessionStartLimitData.builder()
                 .total(1000)
@@ -247,7 +239,7 @@ public final class LocalDiscordServer {
             .botPublic(true)
             .botRequireCodeGrant(false)
             .summary("")
-            .verifyKey(VERIFY_KEY)
+            .verifyKey(this.config.getVerifyKey())
             .build());
     }
 

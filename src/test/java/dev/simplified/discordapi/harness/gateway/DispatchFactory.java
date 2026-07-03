@@ -36,7 +36,6 @@ public final class DispatchFactory {
     private static final long MODAL_INTERACTION_ID = 950000000000000012L;
     private static final long CONTEXT_MENU_INTERACTION_ID = 950000000000000013L;
     private static final String MESSAGE_TIMESTAMP = "2020-01-01T00:00:00.000000+00:00";
-    private static final String GATEWAY_URL = "ws://127.0.0.1/fake-gateway";
 
     private final HarnessConfig config;
 
@@ -55,7 +54,7 @@ public final class DispatchFactory {
             .v(10)
             .user(botUser(botId))
             .sessionId("fake-session")
-            .resumeGatewayUrl(GATEWAY_URL)
+            .resumeGatewayUrl(this.config.getGatewayUrl())
             .application(PartialApplicationInfoData.builder().id(Long.toString(botId)).build())
             .build();
     }
