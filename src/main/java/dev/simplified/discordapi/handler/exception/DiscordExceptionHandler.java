@@ -413,8 +413,11 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
             exceptionContext.reply(userErrorResponse);
 
         return reply.then(Mono.justOrEmpty(userReactiveError).switchIfEmpty(
-                // Log to debug channel when it's not an expected reactive user error
-                Mono.just(this.getDiscordBot().getMainGuild())
+                // Log to the debug channel only for unexpected errors. Resolved lazily and reactively
+                // (never the blocking getMainGuild()) so it cannot block the error path or throw at assembly.
+                Mono.defer(() -> this.getDiscordBot()
+                        .getGateway()
+                        .getGuildById(Snowflake.of(this.getDiscordBot().getConfig().getMainGuildId())))
                     .flatMap(guild -> guild.getChannelById(this.getLogChannel()))
                     .ofType(MessageChannel.class)
                     .flatMap(messageChannel -> {
@@ -453,8 +456,15 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
                                     )
                                     .orElse(Mono.empty())
                                 )
-                                .then(Mono.empty());
+                                .then(Mono.<Embed>empty());
                         });
+                    })
+                    // Graceful fallback: a debug-channel resolution or send failure must never mask the
+                    // real cause, so report the original exception locally and swallow the reporting error.
+                    .onErrorResume(reportError -> {
+                        this.getLog().error("Failed to report an exception to the debug channel; original exception follows", exceptionContext.getException());
+                        this.getLog().debug("Debug-channel reporting failed", reportError);
+                        return Mono.empty();
                     })
             ))
             .then(Mono.empty());
