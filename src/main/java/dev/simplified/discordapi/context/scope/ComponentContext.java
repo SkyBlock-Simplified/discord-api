@@ -36,7 +36,7 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
      */
     @Override
     default Mono<Message> discordBuildFollowup(@NotNull Response response) {
-        return this.deferReply(response.isEphemeral()).then(
+        return this.deferEdit(response.isEphemeral()).then( // idempotent ack; a no-op if already acknowledged
             this.getEvent()
                 .createFollowup(response.getD4jInteractionFollowupCreateSpec())
                 .publishOn(response.getReactorScheduler())
@@ -87,15 +87,20 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
      */
     @Override
     default Mono<Message> discordEditMessage(@NotNull Response response) {
-        return Mono.just(this.getResponseCacheEntry())
-            .filter(entry -> entry.getState() == CachedResponse.State.DEFERRED)
-            .flatMap(entry -> this.getEvent().editReply(response.getD4jInteractionReplyEditSpec()))
-            .switchIfEmpty(
-                this.getEvent()
-                    .edit(response.getD4jComponentCallbackSpec())
-                    .then(Mono.justOrEmpty(this.getEvent().getMessage()))
-            )
-            .publishOn(response.getReactorScheduler());
+        return Mono.defer(() -> {
+            CachedResponse entry = this.getResponseCacheEntry();
+
+            // Already acknowledged: update through the interaction webhook. Otherwise this edit IS the
+            // acknowledgment (a single component callback), after which the entry is marked acknowledged.
+            if (entry.isAcknowledged())
+                return this.getEvent().editReply(response.getD4jInteractionReplyEditSpec());
+
+            return this.getEvent()
+                .edit(response.getD4jComponentCallbackSpec())
+                .then(Mono.fromRunnable(entry::setAcknowledged))
+                .then(Mono.justOrEmpty(this.getEvent().getMessage()));
+        })
+        .publishOn(response.getReactorScheduler());
     }
 
     /**
@@ -114,9 +119,16 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
      * @return a mono completing when the deferral is acknowledged
      */
     default Mono<Void> deferEdit(boolean ephemeral) {
-        return this.getEvent()
-            .deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build())
-            .then(Mono.fromRunnable(() -> this.getResponseCacheEntry().setDeferred()));
+        return Mono.defer(() -> {
+            CachedResponse entry = this.getResponseCacheEntry();
+
+            if (entry.isAcknowledged()) // Discord permits exactly one interaction callback
+                return Mono.empty();
+
+            return this.getEvent()
+                .deferEdit(InteractionCallbackSpec.builder().ephemeral(ephemeral).build())
+                .then(Mono.fromRunnable(entry::setDeferred));
+        });
     }
 
     /** {@inheritDoc} */
@@ -148,9 +160,18 @@ public interface ComponentContext extends MessageContext<ComponentInteractionEve
      * @return a mono completing when the modal is presented
      */
     default Mono<Void> presentModal(@NotNull Modal modal) {
-        return Mono.justOrEmpty(this.getResponseCacheEntry())
-            .doOnNext(entry -> entry.setUserModal(this.getInteractUser(), modal))
-            .flatMap(entry -> this.getEvent().presentModal(modal.getD4jPresentSpec()));
+        return Mono.defer(() -> {
+            CachedResponse entry = this.getResponseCacheEntry();
+            entry.setUserModal(this.getInteractUser(), modal);
+
+            // A modal can only be shown as the sole acknowledgment; skip if the interaction is already spent.
+            if (entry.isAcknowledged())
+                return Mono.empty();
+
+            return this.getEvent()
+                .presentModal(modal.getD4jPresentSpec())
+                .then(Mono.fromRunnable(entry::setAcknowledged));
+        });
     }
 
 }

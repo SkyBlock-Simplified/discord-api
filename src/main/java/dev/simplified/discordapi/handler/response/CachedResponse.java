@@ -47,11 +47,14 @@ public final class CachedResponse {
         /** No interaction is currently in flight; the entry is eligible for expiry checks. */
         IDLE,
 
-        /** A handler is actively processing an interaction targeting this entry. */
+        /** A handler is actively processing an interaction targeting this entry, not yet acknowledged. */
         BUSY,
 
-        /** An interaction has been deferred to Discord but its handler has not yet responded. */
-        DEFERRED
+        /** The interaction was acknowledged with a deferral; its real response is still pending. */
+        DEFERRED,
+
+        /** The interaction was acknowledged with a response (edit or modal); further output uses the webhook. */
+        ACKNOWLEDGED
 
     }
 
@@ -207,6 +210,21 @@ public final class CachedResponse {
     /** Marks this entry as deferred (the initial Discord ack has been sent). */
     public void setDeferred() {
         this.state = State.DEFERRED;
+    }
+
+    /** Marks this entry's interaction as acknowledged with a response (an edit or a presented modal). */
+    public void setAcknowledged() {
+        this.state = State.ACKNOWLEDGED;
+    }
+
+    /**
+     * Whether the current interaction has already been acknowledged to Discord - deferred or responded.
+     * Discord permits exactly one interaction callback, so subsequent output must use the webhook.
+     *
+     * @return {@code true} if the state is {@link State#DEFERRED} or {@link State#ACKNOWLEDGED}
+     */
+    public boolean isAcknowledged() {
+        return this.state == State.DEFERRED || this.state == State.ACKNOWLEDGED;
     }
 
     /** Replaces the bound {@link Response} with the given updated instance. */

@@ -74,8 +74,12 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
         return this.getDiscordBot()
             .getResponseLocator()
             .findByMessage(event.getMessageId())
-            .flatMap(entry -> this.handleEvent(event, entry))
-            .switchIfEmpty(Mono.defer(() -> this.tryDispatchEternal(event)))
+            // thenReturn keeps the entry emitting so switchIfEmpty fires ONLY on a genuine cache miss -
+            // handleEvent returns Mono<Void> (emits nothing), which would otherwise always trip the eternal
+            // fallback and double-acknowledge the interaction.
+            .flatMap(entry -> this.handleEvent(event, entry).thenReturn(entry))
+            .switchIfEmpty(Mono.defer(() -> this.tryDispatchEternal(event).then(Mono.empty())))
+            .then()
             .subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -321,8 +325,9 @@ public abstract class ComponentListener<E extends ComponentInteractionEvent, C e
      */
     protected final @NotNull Mono<Void> handleInteraction(@NotNull E event, @NotNull CachedResponse entry, @NotNull T component, @NotNull Optional<CachedResponse> followup) {
         C context = this.getContext(event, entry.getResponse(), component, followup);
+        entry.setBusy(); // reset acknowledgment state for this interaction (each event has its own ack budget)
 
-        Mono<Void> deferEdit = Mono.defer(() -> entry.getState() == CachedResponse.State.DEFERRED ? Mono.empty() : context.deferEdit());
+        Mono<Void> deferEdit = context.deferEdit(); // idempotent: a no-op once the interaction is acknowledged
 
         return (component.isDeferEdit() ? deferEdit : Mono.<Void>empty())
             .then(Mono.defer(() -> component.getInteraction().apply(context)))

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -42,6 +43,10 @@ class ComponentInteractionTest {
                 edit.body().contains("clicked"),
                 "button click should edit the content to 'clicked'; body=" + edit.body()
             );
+
+            // Discord permits exactly one interaction callback - regression guard against the double-ACK.
+            assertEquals(1, harness.callbackCount("button-token-" + ButtonCommand.BUTTON_ID),
+                "the button click must acknowledge exactly once");
         }
     }
 

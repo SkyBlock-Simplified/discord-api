@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -46,6 +47,12 @@ class ModalInteractionTest {
                 edit.body().contains("modal: hello world"),
                 "modal submit should fold the input value into the content; body=" + edit.body()
             );
+
+            // Each interaction acknowledges exactly once - the open button (modal) and the submit (edit).
+            assertEquals(1, harness.callbackCount("button-token-" + ModalCommand.OPEN_BUTTON_ID),
+                "presenting the modal must acknowledge the button exactly once");
+            assertEquals(1, harness.callbackCount("modal-token-" + ModalCommand.MODAL_ID),
+                "the modal submit must acknowledge exactly once");
         }
     }
 

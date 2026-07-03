@@ -234,6 +234,21 @@ public final class OfflineHarness implements AutoCloseable {
         return this.awaitRequest(request -> request.method().equals("POST") && request.path().endsWith("/callback"));
     }
 
+    /**
+     * Counts the interaction callbacks ({@code POST .../callback}) whose path contains the given token,
+     * i.e. how many times that interaction was acknowledged. Discord permits exactly one.
+     *
+     * @param tokenContains a substring of the interaction token/path to match
+     * @return the number of acknowledgment callbacks recorded for it
+     */
+    public long callbackCount(@NotNull String tokenContains) {
+        return this.server.requests().stream()
+            .filter(request -> request.method().equals("POST")
+                && request.path().contains(tokenContains)
+                && request.path().endsWith("/callback"))
+            .count();
+    }
+
     private boolean gatewayConnected() {
         try {
             this.bot.getGateway();
