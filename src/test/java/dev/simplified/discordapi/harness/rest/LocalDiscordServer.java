@@ -55,7 +55,7 @@ public final class LocalDiscordServer {
      */
     public @NotNull LocalDiscordServer start() {
         this.server = HttpServer.create()
-            .host("127.0.0.1")
+            .host(this.config.getGatewayHost())
             .port(0)
             .route(routes -> {
                 routes.get("/users/@me", fixed(userJson()));
@@ -89,7 +89,7 @@ public final class LocalDiscordServer {
      * @return the loopback base url
      */
     public @NotNull String baseUrl() {
-        return "http://127.0.0.1:" + this.server.port();
+        return "http://" + this.config.getGatewayHost() + ":" + this.server.port();
     }
 
     public int port() {
