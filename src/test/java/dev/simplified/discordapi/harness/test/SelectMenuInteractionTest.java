@@ -1,5 +1,6 @@
-package dev.simplified.discordapi.harness;
+package dev.simplified.discordapi.harness.test;
 
+import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.command.SelectMenuCommand;
 import dev.simplified.discordapi.harness.data.TestIds;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
