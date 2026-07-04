@@ -2,6 +2,7 @@ package dev.simplified.discordapi.harness;
 
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
+import dev.simplified.discordapi.harness.json.HarnessEntities;
 import dev.simplified.discordapi.harness.rest.LocalDiscordServer;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import discord4j.discordjson.json.gateway.Dispatch;
@@ -44,8 +45,9 @@ public final class OfflineHarness implements AutoCloseable {
      */
     public OfflineHarness(@NotNull HarnessConfig config) {
         this.config = config;
-        this.dispatchFactory = new DispatchFactory(config);
-        this.server = new LocalDiscordServer(config).start();
+        HarnessEntities entities = new HarnessEntities(config);
+        this.dispatchFactory = new DispatchFactory(config, entities);
+        this.server = new LocalDiscordServer(config, entities).start();
 
         List<Dispatch> handshake = this.dispatchFactory.handshake(config.getBotId());
         this.gatewayClient = new FakeGatewayClient(handshake, 1);

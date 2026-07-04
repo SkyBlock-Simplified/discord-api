@@ -1,19 +1,10 @@
 package dev.simplified.discordapi.harness.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.simplified.discordapi.harness.HarnessConfig;
-import discord4j.common.JacksonResources;
-import discord4j.core.object.entity.Guild;
-import discord4j.discordjson.json.ApplicationInfoData;
-import discord4j.discordjson.json.GatewayData;
-import discord4j.discordjson.json.GuildUpdateData;
-import discord4j.discordjson.json.MessageData;
-import discord4j.discordjson.json.SessionStartLimitData;
-import discord4j.discordjson.json.UserData;
-import discord4j.discordjson.possible.Possible;
+import dev.simplified.discordapi.harness.json.HarnessEntities;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
@@ -25,43 +16,40 @@ import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * A minimal localhost stand-in for the Discord REST API, backed by reactor-netty. Serves just enough
- * endpoints for the framework's login prologue and post-connect sync, echoes bulk command overwrites
- * with synthetic ids, and records every request for assertions.
+ * endpoints for the framework's login prologue and post-connect sync, echoes bulk command overwrites with
+ * synthetic ids, and records every request for assertions.
+ * <p>
+ * The endpoint list lives in the {@link Route} table; {@code start()} loads it and appends a catch-all. The
+ * response bodies come from the shared {@link HarnessEntities}, so this class holds only server plumbing.
  */
 @Log4j2
 @RequiredArgsConstructor
 public final class LocalDiscordServer {
 
-    // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
-    private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
-
     // Matches an interaction-callback path, capturing the interaction token in group 1.
     private static final Pattern CALLBACK_PATTERN = Pattern.compile("/interactions/\\d+/([^/]+)/callback");
 
-    // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
-    private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
     private final List<RecordedRequest> requests = new CopyOnWriteArrayList<>();
     // Interaction tokens already acknowledged (via a callback); a repeat is the "already acknowledged" bug.
     private final Set<String> acknowledgedTokens = ConcurrentHashMap.newKeySet();
     private final HarnessConfig config;
+    private final HarnessEntities entities;
     private DisposableServer server;
 
     /**
-     * Binds the server on an ephemeral loopback port.
+     * Binds the server on an ephemeral loopback port, loading every {@link Route} ahead of the catch-all.
      *
      * @return this server
      */
@@ -70,26 +58,10 @@ public final class LocalDiscordServer {
             .host(this.config.getGatewayHost())
             .port(0)
             .route(routes -> {
-                routes.get("/users/@me", fixed(userJson()));
-                routes.get("/gateway", fixed(gatewayJson()));
-                routes.get("/gateway/bot", fixed(gatewayBotJson()));
-                routes.get("/oauth2/applications/@me", fixed(applicationInfoJson()));
-                routes.get("/applications/{app}/emojis", fixed(EMPTY_EMOJIS_JSON));
-                routes.get("/guilds/{guild}", fixed(guildJson()));
-                routes.put("/applications/{app}/commands", commandEcho());
-                routes.put("/applications/{app}/guilds/{guild}/commands", commandEcho());
-                routes.post("/interactions/{id}/{token}/callback", noContent());
-                routes.post("/webhooks/{app}/{token}", fixed(messageJson()));
-                routes.post("/channels/{channel}/messages", fixed(messageJson()));
-                routes.route(
-                    request -> "PATCH".equals(request.method().name()) && stripQuery(request.uri()).matches("/channels/\\d+/messages/\\d+"),
-                    fixed(messageJson())
-                );
-                routes.route(
-                    request -> "PATCH".equals(request.method().name()) && stripQuery(request.uri()).endsWith("/messages/@original"),
-                    fixed(messageJson())
-                );
-                routes.route(request -> true, catchAll());
+                for (Route route : Route.values())
+                    routes.route(this.matcher(route), this.handlerFor(route));
+
+                routes.route(request -> true, this.catchAll());
             })
             .bindNow();
         log.debug("REST mock bound at {}", this.baseUrl());
@@ -97,9 +69,9 @@ public final class LocalDiscordServer {
     }
 
     /**
-     * The base url to hand to {@code DiscordConfig.withApiBaseUrl}. Deliberately plaintext {@code http} -
-     * this is an in-process loopback stand-in for the REST API and the bot is pointed at it with a
-     * plaintext (non-{@code .secure()}) client, so https would fail the handshake.
+     * The base url to hand to {@code DiscordConfig.withApiBaseUrl}. Deliberately plaintext {@code http} - this
+     * is an in-process loopback stand-in for the REST API and the bot is pointed at it with a plaintext
+     * (non-{@code .secure()}) client, so https would fail the handshake.
      *
      * @return the loopback base url
      */
@@ -128,16 +100,18 @@ public final class LocalDiscordServer {
         }
     }
 
-    private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> fixed(String body) {
-        return (request, response) -> respond(request, response, 200, ignored -> body);
+    /** Matches a request against a route by method and query-stripped path. */
+    private Predicate<HttpServerRequest> matcher(Route route) {
+        return request -> route.matches(request.method().name(), stripQuery(request.uri()));
     }
 
-    private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> commandEcho() {
-        return (request, response) -> respond(request, response, 200, this::echoCommands);
-    }
-
-    private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> noContent() {
-        return (request, response) -> respond(request, response, 204, null);
+    /** Builds the handler for a route's response {@link Route.Kind}, over the shared {@code respond} pipeline. */
+    private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> handlerFor(Route route) {
+        return switch (route.kind()) {
+            case JSON -> (request, response) -> respond(request, response, 200, ignored -> route.body(this.entities));
+            case ECHO -> (request, response) -> respond(request, response, 200, this::echoCommands);
+            case NO_CONTENT -> (request, response) -> respond(request, response, 204, null);
+        };
     }
 
     private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> catchAll() {
@@ -183,8 +157,8 @@ public final class LocalDiscordServer {
     }
 
     /**
-     * Warns when an interaction token is acknowledged more than once. Discord permits exactly one callback
-     * per interaction and rejects a second with "interaction has already been acknowledged" (error 40060);
+     * Warns when an interaction token is acknowledged more than once. Discord permits exactly one callback per
+     * interaction and rejects a second with "interaction has already been acknowledged" (error 40060);
      * surfacing it here catches the double-acknowledge class of bug this harness has hunted before.
      */
     private void warnOnDoubleAcknowledge(@NotNull String method, @NotNull String path) {
@@ -202,8 +176,9 @@ public final class LocalDiscordServer {
             if (body == null || body.isBlank())
                 return "[]";
 
-            JsonNode parsed = this.mapper.readTree(body);
-            ArrayNode out = this.mapper.createArrayNode();
+            var mapper = this.entities.mapper();
+            JsonNode parsed = mapper.readTree(body);
+            ArrayNode out = mapper.createArrayNode();
 
             if (parsed.isArray()) {
                 for (JsonNode command : parsed) {
@@ -221,7 +196,7 @@ public final class LocalDiscordServer {
                 }
             }
 
-            return this.mapper.writeValueAsString(out);
+            return mapper.writeValueAsString(out);
         } catch (Exception exception) {
             log.warn("Failed to echo command bulk-overwrite payload; returning an empty array", exception);
             return "[]";
@@ -231,104 +206,6 @@ public final class LocalDiscordServer {
     private static String stripQuery(String uri) {
         int index = uri.indexOf('?');
         return index < 0 ? uri : uri.substring(0, index);
-    }
-
-    /**
-     * The current time as an ISO-8601 extended offset date-time (the format Discord sends for message
-     * timestamps), so each served message carries a real datetime rather than a fixed placeholder.
-     */
-    private static String messageTimestamp() {
-        return OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-    }
-
-    /** Serializes a discord-json immutable with Discord4J's mapper into the response body. */
-    private String write(@NotNull Object data) {
-        try {
-            return this.mapper.writeValueAsString(data);
-        } catch (Exception exception) {
-            log.error("Failed to serialize {} for a mock response", data.getClass().getSimpleName(), exception);
-            throw new IllegalStateException("Failed to serialize " + data.getClass().getSimpleName(), exception);
-        }
-    }
-
-    /** The bot's self user, reused both as {@code GET /users/@me} and as the author of served messages. */
-    @SuppressWarnings("deprecation") // discriminator is a required field on UserData even though deprecated
-    private UserData botUser() {
-        return UserData.builder()
-            .id(this.config.getBotId())
-            .username("TestBot")
-            .discriminator("0000")
-            .globalName(Optional.of("TestBot"))
-            .avatar(Optional.empty())
-            .bot(Possible.of(true))
-            .build();
-    }
-
-    private String userJson() {
-        return this.write(this.botUser());
-    }
-
-    private String gatewayJson() {
-        return this.write(GatewayData.builder().url(this.config.getGatewayUrl()).build());
-    }
-
-    private String gatewayBotJson() {
-        return this.write(GatewayData.builder()
-            .url(this.config.getGatewayUrl())
-            .shards(1)
-            .sessionStartLimit(SessionStartLimitData.builder()
-                .total(1000)
-                .remaining(1000)
-                .resetAfter(0)
-                .maxConcurrency(1)
-                .build())
-            .build());
-    }
-
-    @SuppressWarnings("deprecation") // summary is a required field on ApplicationInfoData even though deprecated
-    private String applicationInfoJson() {
-        return this.write(ApplicationInfoData.builder()
-            .id(this.config.getBotId())
-            .name("TestBot")
-            .description("Offline harness application")
-            .botPublic(true)
-            .botRequireCodeGrant(false)
-            .summary("")
-            .verifyKey(this.config.getVerifyKey())
-            .build());
-    }
-
-    private String guildJson() {
-        return this.write(GuildUpdateData.builder()
-            .id(this.config.getGuildId())
-            .name("Harness Guild")
-            .ownerId(this.config.getBotId())
-            .afkTimeout(300)
-            .verificationLevel(Guild.VerificationLevel.NONE.getValue())
-            .defaultMessageNotifications(0)
-            .explicitContentFilter(Guild.ContentFilterLevel.DISABLED.getValue())
-            .mfaLevel(Guild.MfaLevel.NONE.getValue())
-            .premiumTier(Guild.PremiumTier.NONE.getValue())
-            .preferredLocale("en-US")
-            .nsfwLevel(Guild.NsfwLevel.DEFAULT.getValue())
-            .roles(List.of())
-            .emojis(List.of())
-            .build());
-    }
-
-    private String messageJson() {
-        return this.write(MessageData.builder()
-            .id(this.config.getReplyMessageId())
-            .channelId(this.config.getChannelId())
-            .author(this.botUser())
-            .content("")
-            .timestamp(messageTimestamp())
-            .editedTimestamp(Optional.empty())
-            .tts(false)
-            .mentionEveryone(false)
-            .pinned(false)
-            .type(0)
-            .build());
     }
 
 }
