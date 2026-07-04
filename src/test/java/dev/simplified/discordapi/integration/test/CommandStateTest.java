@@ -50,7 +50,9 @@ class CommandStateTest {
             DiscordCommand<?> ping = command(harness, PingCommand.class);
 
             resolver.disable(ping);
+            assertTrue(resolver.isDisabled(ping.getCommandKey()), "precondition: disable must register, else re-enable proves nothing");
             resolver.enable(ping);
+            assertFalse(resolver.isDisabled(ping.getCommandKey()), "enable must clear the disabled state");
 
             harness.sendSlashCommand("ping");
 
@@ -70,7 +72,11 @@ class CommandStateTest {
             .build();
 
         try (IntegrationHarness harness = new IntegrationHarness(asDeveloper).boot(BOOT)) {
-            resolver(harness).disable(command(harness, PingCommand.class));
+            InMemoryCommandStateResolver resolver = resolver(harness);
+            DiscordCommand<?> ping = command(harness, PingCommand.class);
+
+            resolver.disable(ping);
+            assertTrue(resolver.isDisabled(ping.getCommandKey()), "precondition: ping must actually be disabled, else the bypass is untested");
 
             harness.sendSlashCommand("ping");
 
