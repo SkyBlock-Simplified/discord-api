@@ -58,6 +58,7 @@ DiscordCommand<MessageCommandContext>  → Right-click message commands
 - `process(C context)` is the abstract method to implement command logic, returns `Mono<Void>`
 - Commands are discovered via `Reflection.getResources().filterPackage(...).getTypesOf(DiscordCommand.class)` and registered through `CommandHandler`
 - The `apply()` method in `DiscordCommand` handles permission checks, parameter validation, and error handling before calling `process()`
+- **Runtime enable/disable** — `apply()` consults a pluggable `CommandStateResolver` (`command/`) at dispatch; a downstream bot toggles commands live by supplying one via `DiscordConfig.Builder.withCommandStateResolver(...)` (default `InMemoryCommandStateResolver`, held on `CommandHandler` as `stateResolver`). The resolver returns `Mono<Boolean>` (developers bypass; `false` → `DisabledCommandException`) and keys commands by the `Serializable` `CommandKey` (type + guildId + parent + group + name), since a command's name and Discord id are both non-unique
 - Command-specific exceptions in `command/exception/`: `CommandException`, `PermissionException`, `BotPermissionException`, `DeveloperPermissionException`, `InputException`, `ExpectedInputException`, `ParameterException`, `DisabledCommandException`, `SingletonCommandException`
 
 ### Response System

@@ -7,6 +7,7 @@ import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.collection.StreamUtil;
 import dev.simplified.collection.tuple.pair.Pair;
 import dev.simplified.discordapi.DiscordBot;
+import dev.simplified.discordapi.command.CommandStateResolver;
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.command.Structure;
 import dev.simplified.discordapi.command.parameter.Parameter;
@@ -75,6 +76,9 @@ public final class CommandHandler extends DiscordReference {
     /** Source of localization overrides injected into every command spec. */
     private final @NotNull LocaleHandler localeHandler;
 
+    /** Resolver deciding whether a command is enabled at dispatch time. */
+    @Getter private final @NotNull CommandStateResolver stateResolver;
+
     /** All validated and de-duplicated command instances. */
     @Getter private final @NotNull ConcurrentList<DiscordCommand> loadedCommands;
 
@@ -102,6 +106,7 @@ public final class CommandHandler extends DiscordReference {
     ) {
         super(discordBot);
         this.localeHandler = localeHandler;
+        this.stateResolver = discordBot.getConfig().getCommandStateResolver();
 
         this.getLog().info("Validating Commands");
         this.loadedCommands = this.validateCommands(discordBot, commands);

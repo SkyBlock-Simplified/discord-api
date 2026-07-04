@@ -96,32 +96,41 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     public final @NotNull Mono<Void> apply(@NotNull C context) {
         return context.deferReply(this.getStructure().ephemeral())
             .then(Mono.defer(() -> {
+                boolean developer = this.isDeveloper(context.getInteractUserId());
+
                 // Handle Developer Command
-                if (this.getStructure().developerOnly() && !this.isDeveloper(context.getInteractUserId()))
+                if (this.getStructure().developerOnly() && !developer)
                     throw new DeveloperPermissionException();
 
-                // Handle Disabled Command
-                if (!this.isEnabled() && !this.isDeveloper(context.getInteractUserId()))
-                    throw new DisabledCommandException();
+                // Handle Disabled Command (developers bypass; the resolver decides for everyone else)
+                Mono<Void> disabledGate = developer
+                    ? Mono.empty()
+                    : this.getDiscordBot().getCommandHandler().getStateResolver().isEnabled(this, context)
+                        .defaultIfEmpty(true)
+                        .filter(Boolean::booleanValue)
+                        .switchIfEmpty(Mono.error(DisabledCommandException::new))
+                        .then();
 
-                // Handle Bot Permissions
-                if (!context.isPrivateChannel()) {
-                    // Handle Required Permissions
-                    if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), context.getChannel().ofType(GuildChannel.class), this.getStructure().botPermissions()))
-                        throw new BotPermissionException(context, Concurrent.newUnmodifiableSet(this.getStructure().botPermissions()));
-                }
+                return disabledGate.then(Mono.defer(() -> {
+                    // Handle Bot Permissions
+                    if (!context.isPrivateChannel()) {
+                        // Handle Required Permissions
+                        if (!this.hasChannelPermissions(this.getDiscordBot().getClientId(), context.getChannel().ofType(GuildChannel.class), this.getStructure().botPermissions()))
+                            throw new BotPermissionException(context, Concurrent.newUnmodifiableSet(this.getStructure().botPermissions()));
+                    }
 
-                // Handle Singleton Command
-                if (this.getStructure().singleton() && this.isProcessing())
-                    throw new SingletonCommandException();
+                    // Handle Singleton Command
+                    if (this.getStructure().singleton() && this.isProcessing())
+                        throw new SingletonCommandException();
 
-                // Process Parameter Checks
-                if (context instanceof SlashCommandContext slashCommandContext)
-                    this.handleParameterChecks(slashCommandContext);
+                    // Process Parameter Checks
+                    if (context instanceof SlashCommandContext slashCommandContext)
+                        this.handleParameterChecks(slashCommandContext);
 
-                // Process Command
-                this.processing = true;
-                return this.process(context);
+                    // Process Command
+                    this.processing = true;
+                    return this.process(context);
+                }));
             }))
             .onErrorResume(throwable -> this.getDiscordBot().getExceptionHandler().handleException(
                 ExceptionContext.of(
@@ -213,15 +222,6 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
             if (!parameter.isValid(value, slashCommandContext))
                 throw new ParameterException(parameter, value, "Value '%s' does not validate against parameter '%s'.", value, parameter.getName());
         }
-    }
-
-    /**
-     * Returns whether this command is currently enabled.
-     *
-     * @return {@code true} if the command is enabled
-     */
-    public boolean isEnabled() {
-        return true; // TODO: Reimplement
     }
 
     /**

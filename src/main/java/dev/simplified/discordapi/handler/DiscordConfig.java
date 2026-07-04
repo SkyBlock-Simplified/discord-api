@@ -2,7 +2,10 @@ package dev.simplified.discordapi.handler;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentSet;
+import dev.simplified.discordapi.command.CommandKey;
+import dev.simplified.discordapi.command.CommandStateResolver;
 import dev.simplified.discordapi.command.DiscordCommand;
+import dev.simplified.discordapi.command.InMemoryCommandStateResolver;
 import dev.simplified.discordapi.event.BotEvent;
 import dev.simplified.discordapi.feature.extractor.ExtractorStore;
 import dev.simplified.discordapi.feature.extractor.InMemoryExtractorStore;
@@ -55,6 +58,7 @@ public final class DiscordConfig {
     private final @NotNull Logging.Level logLevel;
     private final @NotNull ExtractorStore extractorStore;
     private final @NotNull EternalResponseRepository eternalRepository;
+    private final @NotNull CommandStateResolver commandStateResolver;
 
     // Endpoint overrides (custom Discord-compatible endpoint / self-host / proxy / offline test harness)
     private final @NotNull Optional<String> apiBaseUrl;
@@ -99,6 +103,8 @@ public final class DiscordConfig {
         private ExtractorStore extractorStore = InMemoryExtractorStore.of();
         @BuildFlag(nonNull = true)
         private EternalResponseRepository eternalRepository = InMemoryEternalResponseRepository.of();
+        @BuildFlag(nonNull = true)
+        private CommandStateResolver commandStateResolver = InMemoryCommandStateResolver.of();
 
         // Endpoint overrides (default empty = stock Discord)
         private Optional<String> apiBaseUrl = Optional.empty();
@@ -265,6 +271,19 @@ public final class DiscordConfig {
         }
 
         /**
+         * Sets the {@link CommandStateResolver} deciding whether a command is enabled at dispatch time.
+         * Defaults to {@link InMemoryCommandStateResolver} - bots that want disable toggles to survive
+         * restarts should plug a durable implementation keyed by {@link CommandKey}.
+         *
+         * @param commandStateResolver the resolver implementation
+         * @return this builder
+         */
+        public Builder withCommandStateResolver(@NotNull CommandStateResolver commandStateResolver) {
+            this.commandStateResolver = commandStateResolver;
+            return this;
+        }
+
+        /**
          * Overrides the Discord REST API base url (defaults to the stock Discord endpoint).
          * <p>
          * Redirects all REST traffic - and, transitively, the gateway endpoint resolved from
@@ -324,6 +343,7 @@ public final class DiscordConfig {
                 this.logLevel,
                 this.extractorStore,
                 this.eternalRepository,
+                this.commandStateResolver,
                 this.apiBaseUrl,
                 this.restReactorResources,
                 this.gatewayClientFactory
