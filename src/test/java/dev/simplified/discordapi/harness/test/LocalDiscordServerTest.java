@@ -53,7 +53,18 @@ class LocalDiscordServerTest {
             new Case("webhook message", HttpMethod.POST, "/webhooks/111/tok-abc", "{}", 200, "TestBot"),
             new Case("channel message", HttpMethod.POST, "/channels/333/messages", "{}", 200, "TestBot"),
             new Case("edit channel message", HttpMethod.PATCH, "/channels/333/messages/999", "{}", 200, "TestBot"),
-            new Case("edit original", HttpMethod.PATCH, "/webhooks/111/tok-abc/messages/@original", "{}", 200, "TestBot")
+            new Case("edit original", HttpMethod.PATCH, "/webhooks/111/tok-abc/messages/@original", "{}", 200, "TestBot"),
+            new Case("edit followup", HttpMethod.PATCH, "/webhooks/111/tok-abc/messages/999", "{}", 200, "TestBot"),
+            new Case("delete followup", HttpMethod.DELETE, "/webhooks/111/tok-abc/messages/999", null, 204, ""),
+            new Case("get channel", HttpMethod.GET, "/channels/333", null, 200, "\"type\":0"),
+            new Case("get channel message", HttpMethod.GET, "/channels/333/messages/999", null, 200, "TestBot"),
+            new Case("delete channel message", HttpMethod.DELETE, "/channels/333/messages/999", null, 204, ""),
+            new Case("get reactions", HttpMethod.GET, "/channels/333/messages/999/reactions/smile", null, 200, "[]"),
+            new Case("add self reaction", HttpMethod.PUT, "/channels/333/messages/999/reactions/smile/@me", null, 204, ""),
+            new Case("delete self reaction", HttpMethod.DELETE, "/channels/333/messages/999/reactions/smile/@me", null, 204, ""),
+            new Case("delete user reaction", HttpMethod.DELETE, "/channels/333/messages/999/reactions/smile/444", null, 204, ""),
+            new Case("delete emoji reactions", HttpMethod.DELETE, "/channels/333/messages/999/reactions/smile", null, 204, ""),
+            new Case("create emoji", HttpMethod.POST, "/applications/111/emojis", "{\"name\":\"harness\"}", 200, "harness")
         );
 
         for (Case route : cases) {

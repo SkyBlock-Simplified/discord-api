@@ -3,7 +3,10 @@ package dev.simplified.discordapi.harness.json;
 import dev.simplified.discordapi.harness.HarnessConfig;
 import discord4j.common.JacksonResources;
 import discord4j.core.object.entity.Guild;
+import discord4j.discordjson.Id;
 import discord4j.discordjson.json.ApplicationInfoData;
+import discord4j.discordjson.json.ChannelData;
+import discord4j.discordjson.json.EmojiData;
 import discord4j.discordjson.json.GatewayData;
 import discord4j.discordjson.json.GuildUpdateData;
 import discord4j.discordjson.json.MessageData;
@@ -35,6 +38,9 @@ public final class HarnessEntities {
 
     // Empty list container returned by GET application emojis; not a Discord entity, so kept as a literal.
     private static final String EMPTY_EMOJIS_JSON = "{\"items\":[]}";
+
+    // The id minted for a created application emoji.
+    private static final long CREATED_EMOJI_ID = 900000000000000001L;
 
     // Discord4J's own mapper, so the discord-json immutables below serialize exactly as the bot expects.
     private final ObjectMapper mapper = JacksonResources.create().getObjectMapper();
@@ -145,6 +151,27 @@ public final class HarnessEntities {
     /** {@code GET /applications/{app}/emojis} - an empty emoji list container. */
     public @NotNull String emptyEmojisJson() {
         return EMPTY_EMOJIS_JSON;
+    }
+
+    /** {@code POST /applications/{app}/emojis} - a created application emoji. */
+    public @NotNull String emojiJson() {
+        return this.write(EmojiData.builder()
+            .id(CREATED_EMOJI_ID)
+            .name("harness")
+            .build());
+    }
+
+    /** {@code GET /channels/{channel}} - a minimal text channel. */
+    public @NotNull String channelJson() {
+        return this.write(ChannelData.builder()
+            .id(Id.of(this.config.getChannelId()))
+            .type(0)
+            .build());
+    }
+
+    /** {@code GET /channels/{channel}/messages/{message}/reactions/{emoji}} - the users who reacted (none). */
+    public @NotNull String reactionUsersJson() {
+        return "[]";
     }
 
     // --- shared builders ---

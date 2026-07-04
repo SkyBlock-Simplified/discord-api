@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.simplified.discordapi.harness.HarnessConfig;
 import dev.simplified.discordapi.harness.json.HarnessEntities;
 import discord4j.discordjson.json.ApplicationInfoData;
+import discord4j.discordjson.json.ChannelData;
+import discord4j.discordjson.json.EmojiData;
 import discord4j.discordjson.json.GatewayData;
 import discord4j.discordjson.json.GuildUpdateData;
 import discord4j.discordjson.json.MessageData;
@@ -69,6 +71,26 @@ class HarnessEntitiesTest {
     void empty_emojis_is_an_empty_item_list() throws Exception {
         JsonNode node = this.mapper.readTree(this.entities.emptyEmojisJson());
         assertTrue(node.get("items").isArray() && node.get("items").isEmpty());
+    }
+
+    @Test
+    void created_emoji_round_trips() throws Exception {
+        EmojiData emoji = this.mapper.readValue(this.entities.emojiJson(), EmojiData.class);
+        assertEquals("harness", emoji.name().orElseThrow());
+        assertTrue(emoji.id().isPresent());
+    }
+
+    @Test
+    void channel_round_trips() throws Exception {
+        ChannelData channel = this.mapper.readValue(this.entities.channelJson(), ChannelData.class);
+        assertEquals(this.config.getChannelId(), channel.id().asLong());
+        assertEquals(0, channel.type());
+    }
+
+    @Test
+    void reaction_users_is_an_empty_array() throws Exception {
+        JsonNode node = this.mapper.readTree(this.entities.reactionUsersJson());
+        assertTrue(node.isArray() && node.isEmpty());
     }
 
     @Test

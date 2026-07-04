@@ -31,7 +31,26 @@ enum Route {
     WEBHOOK_MESSAGE("POST", "/webhooks/[^/]+/[^/]+", Kind.JSON, HarnessEntities::messageJson),
     CHANNEL_MESSAGE("POST", "/channels/[^/]+/messages", Kind.JSON, HarnessEntities::messageJson),
     EDIT_CHANNEL_MESSAGE("PATCH", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
-    EDIT_ORIGINAL_MESSAGE("PATCH", ".*/messages/@original", Kind.JSON, HarnessEntities::messageJson);
+    EDIT_ORIGINAL_MESSAGE("PATCH", ".*/messages/@original", Kind.JSON, HarnessEntities::messageJson),
+
+    // Followup messages (webhook + interaction token)
+    EDIT_FOLLOWUP("PATCH", "/webhooks/[^/]+/[^/]+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
+    DELETE_FOLLOWUP("DELETE", "/webhooks/[^/]+/[^/]+/messages/[^/]+", Kind.NO_CONTENT, null),
+
+    // Channel and message fetch/delete
+    GET_CHANNEL("GET", "/channels/\\d+", Kind.JSON, HarnessEntities::channelJson),
+    GET_CHANNEL_MESSAGE("GET", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
+    DELETE_CHANNEL_MESSAGE("DELETE", "/channels/\\d+/messages/\\d+", Kind.NO_CONTENT, null),
+
+    // Reactions
+    GET_REACTIONS("GET", "/channels/\\d+/messages/\\d+/reactions/[^/]+", Kind.JSON, HarnessEntities::reactionUsersJson),
+    ADD_SELF_REACTION("PUT", "/channels/\\d+/messages/\\d+/reactions/[^/]+/@me", Kind.NO_CONTENT, null),
+    DELETE_SELF_REACTION("DELETE", "/channels/\\d+/messages/\\d+/reactions/[^/]+/@me", Kind.NO_CONTENT, null),
+    DELETE_USER_REACTION("DELETE", "/channels/\\d+/messages/\\d+/reactions/[^/]+/\\d+", Kind.NO_CONTENT, null),
+    DELETE_EMOJI_REACTIONS("DELETE", "/channels/\\d+/messages/\\d+/reactions/[^/]+", Kind.NO_CONTENT, null),
+
+    // Application emojis
+    CREATE_EMOJI("POST", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emojiJson);
 
     /** How a matched route produces its response. */
     enum Kind {
