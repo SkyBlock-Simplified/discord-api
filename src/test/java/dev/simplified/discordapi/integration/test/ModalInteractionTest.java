@@ -1,7 +1,7 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.ModalCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.ModalCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ class ModalInteractionTest {
 
     @Test
     void modal_submit_runs_callback_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant the message with the open-modal button.
             harness.sendSlashCommand("modal");
             harness.awaitRequest(

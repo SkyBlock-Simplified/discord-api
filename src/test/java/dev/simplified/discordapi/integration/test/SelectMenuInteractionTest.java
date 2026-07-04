@@ -1,7 +1,7 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.SelectMenuCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.SelectMenuCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +19,7 @@ class SelectMenuInteractionTest {
 
     @Test
     void select_menu_folds_value_and_runs_callback_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant the message that carries the select menu.
             harness.sendSlashCommand("select");
             harness.awaitRequest(

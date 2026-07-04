@@ -1,6 +1,6 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
+import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class MessageUserCommandTest {
 
     @Test
     void user_command_replies_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendUserCommand("greet", harness.config().getUserId());
 
             RecordedRequest edit = harness.awaitRequest(
@@ -32,7 +32,7 @@ class MessageUserCommandTest {
 
     @Test
     void message_command_replies_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendMessageCommand("inspect", harness.config().getReplyMessageId());
 
             RecordedRequest edit = harness.awaitRequest(

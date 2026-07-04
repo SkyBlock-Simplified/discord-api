@@ -1,4 +1,4 @@
-package dev.simplified.discordapi.harness.command;
+package dev.simplified.discordapi.integration.command;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
@@ -14,19 +14,22 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * A flat global {@code /echo <text>} slash command for the offline harness that replies with the resolved
- * value of its top-level {@code text} option, exercising slash-command option resolution end-to-end.
+ * A grouped subcommand ({@code /config user add <name>}) for the offline harness with a fully resolved
+ * {@code @Structure} - parent {@code config}, group {@code user}, and name {@code add} all populated.
+ * Exercises the deepest slash-command nesting: parent -> subcommand group -> subcommand -> leaf option.
  */
 @Structure(
-    name = "echo",
-    description = "Echoes the supplied text"
+    name = "add",
+    description = "Adds a config user",
+    parent = @Structure.Parent(name = "config", description = "Manage configuration"),
+    group = @Structure.Group(name = "user", description = "Manage config users")
 )
-public class EchoCommand extends DiscordCommand<SlashCommandContext> {
+public class ConfigUserAddCommand extends DiscordCommand<SlashCommandContext> {
 
-    /** Slash-option identifier for the text to echo. */
-    public static final @NotNull String OPTION_TEXT = "text";
+    /** Slash-option identifier for the user name to add. */
+    public static final @NotNull String OPTION_NAME = "name";
 
-    public EchoCommand(@NotNull DiscordBot discordBot) {
+    public ConfigUserAddCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
@@ -35,8 +38,8 @@ public class EchoCommand extends DiscordCommand<SlashCommandContext> {
     public @NotNull ConcurrentList<Parameter> getParameters() {
         return Concurrent.newUnmodifiableList(
             Parameter.builder()
-                .withName(OPTION_TEXT)
-                .withDescription("The text to echo back")
+                .withName(OPTION_NAME)
+                .withDescription("The user name to add")
                 .withType(Parameter.Type.TEXT)
                 .isRequired()
                 .build()
@@ -46,12 +49,12 @@ public class EchoCommand extends DiscordCommand<SlashCommandContext> {
     /** {@inheritDoc} */
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
-        String text = commandContext.getArgument(OPTION_TEXT).map(Argument::asString).orElse("<none>");
+        String name = commandContext.getArgument(OPTION_NAME).map(Argument::asString).orElse("<none>");
 
         return commandContext.reply(
             commandContext.buildResponse()
                 .withTimeToLive(30)
-                .withPages(Page.builder().withContent("echo " + text).build())
+                .withPages(Page.builder().withContent("config user add name=" + name).build())
                 .build()
         );
     }

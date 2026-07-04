@@ -1,7 +1,7 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.ButtonCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.ButtonCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +19,7 @@ class ComponentInteractionTest {
 
     @Test
     void button_click_runs_callback_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant the message that carries the button.
             harness.sendSlashCommand("button");
             harness.awaitRequest(

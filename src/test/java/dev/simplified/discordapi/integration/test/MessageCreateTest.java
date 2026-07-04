@@ -1,6 +1,6 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
+import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class MessageCreateTest {
 
     @Test
     void on_create_handler_runs_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant a response that carries an onCreate handler.
             harness.sendSlashCommand("oncreate");
             harness.awaitRequest(

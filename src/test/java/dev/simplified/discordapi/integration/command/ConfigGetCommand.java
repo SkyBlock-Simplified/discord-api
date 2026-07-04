@@ -1,4 +1,4 @@
-package dev.simplified.discordapi.harness.command;
+package dev.simplified.discordapi.integration.command;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
@@ -14,22 +14,20 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * A grouped subcommand ({@code /config user add <name>}) for the offline harness with a fully resolved
- * {@code @Structure} - parent {@code config}, group {@code user}, and name {@code add} all populated.
- * Exercises the deepest slash-command nesting: parent -> subcommand group -> subcommand -> leaf option.
+ * A bare subcommand ({@code /config get <key>}) for the offline harness, nested directly under the
+ * {@code config} parent with no group. Exercises parent/subcommand routing plus leaf-option resolution.
  */
 @Structure(
-    name = "add",
-    description = "Adds a config user",
-    parent = @Structure.Parent(name = "config", description = "Manage configuration"),
-    group = @Structure.Group(name = "user", description = "Manage config users")
+    name = "get",
+    description = "Reads a config value",
+    parent = @Structure.Parent(name = "config", description = "Manage configuration")
 )
-public class ConfigUserAddCommand extends DiscordCommand<SlashCommandContext> {
+public class ConfigGetCommand extends DiscordCommand<SlashCommandContext> {
 
-    /** Slash-option identifier for the user name to add. */
-    public static final @NotNull String OPTION_NAME = "name";
+    /** Slash-option identifier for the config key to read. */
+    public static final @NotNull String OPTION_KEY = "key";
 
-    public ConfigUserAddCommand(@NotNull DiscordBot discordBot) {
+    public ConfigGetCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
@@ -38,8 +36,8 @@ public class ConfigUserAddCommand extends DiscordCommand<SlashCommandContext> {
     public @NotNull ConcurrentList<Parameter> getParameters() {
         return Concurrent.newUnmodifiableList(
             Parameter.builder()
-                .withName(OPTION_NAME)
-                .withDescription("The user name to add")
+                .withName(OPTION_KEY)
+                .withDescription("The config key to read")
                 .withType(Parameter.Type.TEXT)
                 .isRequired()
                 .build()
@@ -49,12 +47,12 @@ public class ConfigUserAddCommand extends DiscordCommand<SlashCommandContext> {
     /** {@inheritDoc} */
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
-        String name = commandContext.getArgument(OPTION_NAME).map(Argument::asString).orElse("<none>");
+        String key = commandContext.getArgument(OPTION_KEY).map(Argument::asString).orElse("<none>");
 
         return commandContext.reply(
             commandContext.buildResponse()
                 .withTimeToLive(30)
-                .withPages(Page.builder().withContent("config user add name=" + name).build())
+                .withPages(Page.builder().withContent("config get key=" + key).build())
                 .build()
         );
     }

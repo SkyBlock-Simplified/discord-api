@@ -1,8 +1,8 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.simplified.discordapi.harness.OfflineHarness;
+import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.gateway.SlashOption;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import discord4j.core.object.command.ApplicationCommand;
@@ -29,7 +29,7 @@ class SlashCommandDataTest {
 
     @Test
     void top_level_option_resolves_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendSlashCommand("echo", SlashOption.text("text", "hello harness"));
 
             RecordedRequest reply = harness.awaitRequest(
@@ -44,7 +44,7 @@ class SlashCommandDataTest {
 
     @Test
     void bare_subcommand_routes_and_resolves_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendSubCommand("config", "get", SlashOption.text("key", "color"));
 
             RecordedRequest reply = harness.awaitRequest(
@@ -59,7 +59,7 @@ class SlashCommandDataTest {
 
     @Test
     void grouped_subcommand_routes_and_resolves_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendSubCommand("config", "user", "add", SlashOption.text("name", "alice"));
 
             RecordedRequest reply = harness.awaitRequest(
@@ -74,7 +74,7 @@ class SlashCommandDataTest {
 
     @Test
     void fully_resolved_structure_registers_full_command_tree() throws Exception {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.awaitCommandRegistered("config", Duration.ofSeconds(10));
 
             RecordedRequest overwrite = harness.awaitRequest(

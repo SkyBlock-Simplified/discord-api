@@ -1,6 +1,6 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
+import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class ConnectionSmokeTest {
 
     @Test
     void bot_connects_and_syncs_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // The gateway is connected (login + connect completed against the fakes).
             assertNotNull(harness.bot().getGateway(), "gateway should be connected");
 

@@ -1,7 +1,7 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.AnnotatedButtonCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.AnnotatedButtonCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +20,7 @@ class AnnotationRouteInteractionTest {
 
     @Test
     void cached_annotation_route_wins_over_inline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant the annotation-routed button.
             harness.sendSlashCommand("annotated");
             harness.awaitRequest(

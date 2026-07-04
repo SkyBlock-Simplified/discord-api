@@ -1,7 +1,7 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.ModalValuesCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.ModalValuesCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +20,7 @@ class ModalValuesInteractionTest {
 
     @Test
     void modal_folds_radio_and_checkbox_values() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Plant the message with the open-modal button.
             harness.sendSlashCommand("modalvalues");
             harness.awaitRequest(

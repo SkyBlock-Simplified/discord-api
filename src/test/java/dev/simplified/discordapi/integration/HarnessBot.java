@@ -1,4 +1,4 @@
-package dev.simplified.discordapi.harness;
+package dev.simplified.discordapi.integration;
 
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.handler.DiscordConfig;

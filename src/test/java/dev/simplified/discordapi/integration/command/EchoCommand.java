@@ -1,4 +1,4 @@
-package dev.simplified.discordapi.harness.command;
+package dev.simplified.discordapi.integration.command;
 
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
@@ -14,20 +14,19 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
- * A bare subcommand ({@code /config get <key>}) for the offline harness, nested directly under the
- * {@code config} parent with no group. Exercises parent/subcommand routing plus leaf-option resolution.
+ * A flat global {@code /echo <text>} slash command for the offline harness that replies with the resolved
+ * value of its top-level {@code text} option, exercising slash-command option resolution end-to-end.
  */
 @Structure(
-    name = "get",
-    description = "Reads a config value",
-    parent = @Structure.Parent(name = "config", description = "Manage configuration")
+    name = "echo",
+    description = "Echoes the supplied text"
 )
-public class ConfigGetCommand extends DiscordCommand<SlashCommandContext> {
+public class EchoCommand extends DiscordCommand<SlashCommandContext> {
 
-    /** Slash-option identifier for the config key to read. */
-    public static final @NotNull String OPTION_KEY = "key";
+    /** Slash-option identifier for the text to echo. */
+    public static final @NotNull String OPTION_TEXT = "text";
 
-    public ConfigGetCommand(@NotNull DiscordBot discordBot) {
+    public EchoCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
     }
 
@@ -36,8 +35,8 @@ public class ConfigGetCommand extends DiscordCommand<SlashCommandContext> {
     public @NotNull ConcurrentList<Parameter> getParameters() {
         return Concurrent.newUnmodifiableList(
             Parameter.builder()
-                .withName(OPTION_KEY)
-                .withDescription("The config key to read")
+                .withName(OPTION_TEXT)
+                .withDescription("The text to echo back")
                 .withType(Parameter.Type.TEXT)
                 .isRequired()
                 .build()
@@ -47,12 +46,12 @@ public class ConfigGetCommand extends DiscordCommand<SlashCommandContext> {
     /** {@inheritDoc} */
     @Override
     protected @NotNull Mono<Void> process(@NotNull SlashCommandContext commandContext) throws DiscordException {
-        String key = commandContext.getArgument(OPTION_KEY).map(Argument::asString).orElse("<none>");
+        String text = commandContext.getArgument(OPTION_TEXT).map(Argument::asString).orElse("<none>");
 
         return commandContext.reply(
             commandContext.buildResponse()
                 .withTimeToLive(30)
-                .withPages(Page.builder().withContent("config get key=" + key).build())
+                .withPages(Page.builder().withContent("echo " + text).build())
                 .build()
         );
     }

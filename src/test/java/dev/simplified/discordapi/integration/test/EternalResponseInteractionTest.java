@@ -1,11 +1,11 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.handler.response.EternalResponseRepository;
 import dev.simplified.discordapi.handler.response.GsonEternalResponseRepository;
 import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
 import dev.simplified.discordapi.harness.HarnessConfig;
-import dev.simplified.discordapi.harness.OfflineHarness;
-import dev.simplified.discordapi.harness.command.EternalButtonCommand;
+import dev.simplified.discordapi.integration.IntegrationHarness;
+import dev.simplified.discordapi.integration.command.EternalButtonCommand;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import discord4j.common.util.Snowflake;
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +61,7 @@ class EternalResponseInteractionTest {
 
         // Boot #1: create the eternal message; it writes through to the cold store.
         EternalResponseRepository firstBootStore = coldStoreFactory.get();
-        try (OfflineHarness harness = new OfflineHarness(HarnessConfig.builder().build(), firstBootStore).boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness(HarnessConfig.builder().build(), firstBootStore).boot(Duration.ofSeconds(30))) {
             harness.sendSlashCommand("eternal");
             harness.awaitInteractionReply();
             awaitColdRecord(firstBootStore, eternalMessageId, Duration.ofSeconds(10));
@@ -70,7 +70,7 @@ class EternalResponseInteractionTest {
         // Boot #2: a fresh hot tier + a fresh cold store over the same backing store, with a distinct
         // reply id so the warm-up reply is cached under a different message than the eternal one.
         HarnessConfig secondBoot = HarnessConfig.builder().withReplyMessageId(SECOND_BOOT_REPLY_ID).build();
-        try (OfflineHarness harness = new OfflineHarness(secondBoot, coldStoreFactory.get()).boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness(secondBoot, coldStoreFactory.get()).boot(Duration.ofSeconds(30))) {
             // Warm the listener pipeline up (registers the component listener alongside the slash listener).
             harness.sendSlashCommand("annotated");
             harness.awaitInteractionReply();
@@ -95,7 +95,7 @@ class EternalResponseInteractionTest {
 
     @Test
     void unknown_message_with_no_record_is_dropped() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             // Warm the listener pipeline up.
             harness.sendSlashCommand("annotated");
             harness.awaitInteractionReply();

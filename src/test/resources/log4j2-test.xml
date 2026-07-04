@@ -9,8 +9,10 @@
     <Loggers>
         <Logger name="io.netty" level="WARN"/>
         <Logger name="reactor" level="WARN"/>
-        <!-- Harness narrates driven events at INFO; raise to DEBUG for REST/gateway detail, TRACE for every built dispatch. -->
+        <!-- Harness server (REST/gateway) at INFO; raise to DEBUG for REST/gateway detail, TRACE for every built dispatch. -->
         <Logger name="dev.simplified.discordapi.harness" level="INFO"/>
+        <!-- Integration driver narrates each driven event at INFO; raise to DEBUG/TRACE for more detail. -->
+        <Logger name="dev.simplified.discordapi.integration" level="INFO"/>
         <Root level="INFO">
             <AppenderRef ref="Console"/>
         </Root>

@@ -4,7 +4,7 @@ import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.interaction.Button;
 import dev.simplified.discordapi.component.layout.ActionRow;
 import dev.simplified.discordapi.handler.DiscordConfig;
-import dev.simplified.discordapi.harness.HarnessBot;
+import dev.simplified.discordapi.integration.HarnessBot;
 import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.response.page.Page;
 import discord4j.common.util.Snowflake;

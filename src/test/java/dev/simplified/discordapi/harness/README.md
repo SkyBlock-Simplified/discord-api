@@ -1,27 +1,39 @@
 # Offline Discord Test Harness
 
-Runs the bot **fully offline** so a slash command, a component/modal interaction, a right-click
+Runs a bot **fully offline** so a slash command, a component/modal interaction, a right-click
 user/message command, or a message event executes the **real** code path
 (`Listener -> apply/process -> callback -> reply/edit`) with no network and no human. Tests push a
 simulated gateway event and assert on the REST calls the bot makes in response.
 
+The harness is split into two layers with a strict one-way dependency (**consumer → harness**, never the
+reverse), so the harness can later be extracted into its own project:
+
+- **`harness/`** (this package) - reusable, discord4j-specific **server** infrastructure. It stands in for
+  Discord itself and has no concept of a bot.
+- **`integration/`** - this project's **consumer**: `HarnessBot` (the project's `DiscordBot`) plus
+  `IntegrationHarness`, which connects the bot to a harness server and exposes the driving DSL.
+
 ## How it works (hybrid relay)
 
-- **`LocalDiscordServer`** - a tiny reactor-netty HTTP server that stands in for the Discord REST API,
-  serves the endpoints the bot touches, and **records every request** for assertions.
-- **`FakeGatewayClient`** - an in-JVM `discord4j.gateway.GatewayClient` (no socket). It replays a
-  `READY` + `GatewayStateChange.connected()` handshake so login completes, and lets tests push further
-  dispatches into Discord4J's *real* pipeline (`DispatchHandlers` -> events -> entities -> your listeners).
-- **`HarnessBot`** - a `DiscordBot` pointed at both, started on a daemon thread.
-- **`OfflineHarness`** - wires it together and exposes the DSL below.
+- **`LocalDiscordServer`** (`harness/rest/`) - a tiny reactor-netty HTTP server that stands in for the
+  Discord REST API, serves the endpoints the bot touches, and **records every request** for assertions.
+- **`FakeGatewayClient`** (`harness/gateway/`) - an in-JVM `discord4j.gateway.GatewayClient` (no socket). It
+  replays a `READY` + `GatewayStateChange.connected()` handshake so login completes, and lets tests push
+  further dispatches into Discord4J's *real* pipeline (`DispatchHandlers` -> events -> entities -> your
+  listeners).
+- **`OfflineHarness`** (`harness/`) - the **server** aggregate: owns the REST mock, the fake gateway, the
+  `DispatchFactory`, the `HarnessConfig` identity, and the durable eternal store. Exposes `baseUrl()`,
+  `gateway()`, `dispatches()`, and the request-assertion helpers. Knows nothing about a bot.
+- **`IntegrationHarness`** (`integration/`) - this project's **consumer/driver**: builds `HarnessBot`'s
+  `DiscordConfig` pointed at the server, boots it on a daemon thread, and exposes the DSL below.
 
-The bot is redirected via the opt-in framework seams `DiscordConfig.withApiBaseUrl(...)`,
+The bot is redirected onto the harness via the opt-in framework seams `DiscordConfig.withApiBaseUrl(...)`,
 `withRestReactorResources(...)` and `withGatewayClientFactory(...)` (all no-op by default).
 
 ## Quick start
 
 ```java
-try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
     harness.sendSlashCommand("ping");                 // push a simulated /ping interaction
     harness.awaitInteractionCallback();               // apply() defers
     RecordedRequest reply = harness.awaitInteractionReply();
@@ -29,10 +41,10 @@ try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30)))
 }
 ```
 
-Add a test command under `harness/command/` (it is discovered by classpath scan of that package). Use
+Add a test command under `integration/command/` (it is discovered by classpath scan of that package). Use
 `context.buildResponse()` (NOT bare `Response.builder()`, which NPEs without a bot).
 
-## Driving events (DSL)
+## Driving events (DSL, on `IntegrationHarness`)
 
 | Call | Simulates |
 |---|---|
@@ -63,7 +75,8 @@ places them at the correct depth for flat commands, bare subcommands, or grouped
 | `awaitRequest(predicate[, timeout])` | last request matching the predicate |
 | `requests()` | all recorded requests, in order |
 
-`RecordedRequest` exposes `method()`, `path()` (query stripped), `body()`, and `bodyContains(text)`.
+`RecordedRequest` exposes `method()`, `path()` (query stripped), `body()`, and `bodyContains(text)`. These
+helpers live on the server (`OfflineHarness`) and are re-exposed by `IntegrationHarness` for convenience.
 
 ## Ids and tokens
 
@@ -73,13 +86,13 @@ structurally-valid fake token (its first segment base64-decodes to the bot id, m
 construction; a test can vary it and reach it via `harness.config()`. Command ids are derived
 deterministically from the command name (`config.commandId(name)`) so the mock's bulk-overwrite echo and
 simulated interactions agree. The REST mock mints `config.getReplyMessageId()` for every reply/followup
-message. Pass a customized `HarnessConfig` to `new OfflineHarness(config)` to change the identity.
+message. Pass a customized `HarnessConfig` to `new IntegrationHarness(config)` to change the identity.
 
 ## Debugging
 
 The harness logs through Log4j2 (no `System.out`). By level:
 
-- **INFO** - the DSL narrates each driven event (`-> slash command /ping`, `-> click button ...`) plus
+- **INFO** - the driver narrates each driven event (`-> slash command /ping`, `-> click button ...`) plus
   boot/connect lifecycle. On by default.
 - **DEBUG** - REST mock bind/stop, per-request `[mock] METHOD /path body`, and gateway handshake/close.
 - **TRACE** - every dispatch the factory builds and every event emitted into the pipeline.
@@ -87,10 +100,12 @@ The harness logs through Log4j2 (no `System.out`). By level:
   (error 40060), a REST endpoint the mock does not model, or a swallowed mock error.
 - **ERROR** - a bot startup failure on the daemon thread (otherwise silent) or a wait that timed out.
 
-Raise the harness logger in `log4j2-test.xml` to see the detail:
+Raise the loggers in `log4j2-test.xml` to see the detail (`dev.simplified.discordapi.harness` for the
+server's REST/gateway detail, `dev.simplified.discordapi.integration` for the driver's narration):
 
 ```xml
 <Logger name="dev.simplified.discordapi.harness" level="TRACE"/>
+<Logger name="dev.simplified.discordapi.integration" level="DEBUG"/>
 ```
 
 `-Dharness.debug=true` elevates the per-request `[mock] ...` firehose to INFO so it shows without touching
@@ -98,7 +113,7 @@ the config - the fastest way to see how far a pathway got. Framework logs surfac
 libs are dampened to WARN.
 
 ```
-./gradlew test --tests "dev.simplified.discordapi.harness.*" -Dharness.debug=true
+./gradlew test --tests "dev.simplified.discordapi.integration.test.*" -Dharness.debug=true
 ```
 
 ## Notes

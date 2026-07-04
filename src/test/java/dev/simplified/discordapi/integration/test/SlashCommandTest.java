@@ -1,6 +1,6 @@
-package dev.simplified.discordapi.harness.test;
+package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.OfflineHarness;
+import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +17,7 @@ class SlashCommandTest {
 
     @Test
     void slash_command_replies_offline() {
-        try (OfflineHarness harness = new OfflineHarness().boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
             harness.sendSlashCommand("ping");
 
             // apply() defers first (interaction callback), then process() replies via webhook edit.
