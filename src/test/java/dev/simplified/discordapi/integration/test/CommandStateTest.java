@@ -2,6 +2,7 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.command.InMemoryCommandStateResolver;
+import dev.simplified.discordapi.harness.HarnessConfig;
 import dev.simplified.discordapi.harness.gateway.SlashOption;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import dev.simplified.discordapi.integration.IntegrationHarness;
@@ -22,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code CommandKey}, exactly as a downstream bot would.
  *
  * <p>
- * The offline harness serves no application owner, so {@code isDeveloper} is always false here; the
- * developer-bypass branch ({@code developer ? empty : resolver...}) therefore cannot be exercised end-to-end
- * and is not asserted.
+ * The default actor is not the application owner, so {@code isDeveloper} is false for it; the developer-bypass
+ * branch is covered by pointing the interaction actor at the harness owner ({@code developerUserId}), so
+ * {@code isDeveloper} resolves true and a disabled command still runs.
  */
 class CommandStateTest {
 
@@ -55,6 +56,26 @@ class CommandStateTest {
 
             RecordedRequest reply = harness.awaitRequest(request -> request.bodyContains("pong"));
             assertTrue(reply.bodyContains("pong"), "re-enabled command should reply; body=" + reply.body());
+        }
+    }
+
+    @Test
+    void developer_bypasses_a_disabled_command() {
+        // Point the interaction actor at the application owner, so isDeveloper() is true and the disabled gate
+        // is bypassed even though the command is disabled for everyone else.
+        long developerId = 555555555555555555L;
+        HarnessConfig asDeveloper = HarnessConfig.builder()
+            .withUserId(developerId)
+            .withDeveloperUserId(developerId)
+            .build();
+
+        try (IntegrationHarness harness = new IntegrationHarness(asDeveloper).boot(BOOT)) {
+            resolver(harness).disable(command(harness, PingCommand.class));
+
+            harness.sendSlashCommand("ping");
+
+            RecordedRequest reply = harness.awaitRequest(request -> request.bodyContains("pong"));
+            assertTrue(reply.bodyContains("pong"), "developer should bypass the disabled gate; body=" + reply.body());
         }
     }
 

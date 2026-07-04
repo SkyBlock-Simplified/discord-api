@@ -10,6 +10,7 @@ import discord4j.discordjson.json.EmojiData;
 import discord4j.discordjson.json.GatewayData;
 import discord4j.discordjson.json.GuildUpdateData;
 import discord4j.discordjson.json.MessageData;
+import discord4j.discordjson.json.PartialUserData;
 import discord4j.discordjson.json.SessionStartLimitData;
 import discord4j.discordjson.json.UserData;
 import discord4j.discordjson.possible.Possible;
@@ -61,6 +62,15 @@ public final class HarnessEntities {
     /** The non-bot user that acts as the invoker of simulated interactions. */
     public @NotNull UserData actorUser() {
         return user(this.config.getUserId(), "tester", "0001", false);
+    }
+
+    /** The partial user served as the application owner, so {@code DiscordReference#isDeveloper} resolves true for it. */
+    public @NotNull PartialUserData developerUser() {
+        return PartialUserData.builder()
+            .id(this.config.getDeveloperUserId())
+            .username("developer")
+            .discriminator("0003")
+            .build();
     }
 
     /**
@@ -121,6 +131,7 @@ public final class HarnessEntities {
             .botRequireCodeGrant(false)
             .summary("")
             .verifyKey(this.config.getVerifyKey())
+            .owner(this.developerUser())
             .build());
     }
 

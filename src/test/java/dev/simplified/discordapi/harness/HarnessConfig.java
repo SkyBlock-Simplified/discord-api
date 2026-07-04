@@ -39,6 +39,9 @@ public final class HarnessConfig {
     /** The non-bot user id used as the actor for simulated interactions. */
     private final long userId;
 
+    /** The user id served as the application owner, so {@code isDeveloper} resolves true for it. */
+    private final long developerUserId;
+
     /** The id the REST mock assigns to every reply/followup message. */
     private final long replyMessageId;
 
@@ -66,6 +69,7 @@ public final class HarnessConfig {
         this.guildId = builder.guildId;
         this.channelId = builder.channelId;
         this.userId = builder.userId;
+        this.developerUserId = builder.developerUserId;
         this.replyMessageId = builder.replyMessageId;
         this.token = builder.token != null ? builder.token : buildToken(builder.botId);
         this.gatewayHost = builder.gatewayHost;
@@ -116,6 +120,7 @@ public final class HarnessConfig {
         private long guildId = 208023865127862272L;
         private long channelId = 222222222222222222L;
         private long userId = 333333333333333333L;
+        private long developerUserId = 444444444444444444L;
         private long replyMessageId = 800000000000000001L;
         private String token = null;
         private String gatewayHost = "127.0.0.1";
@@ -151,6 +156,12 @@ public final class HarnessConfig {
         /** Sets the actor user id. */
         public @NotNull Builder withUserId(long userId) {
             this.userId = userId;
+            return this;
+        }
+
+        /** Sets the application-owner (developer) user id served in the application info. */
+        public @NotNull Builder withDeveloperUserId(long developerUserId) {
+            this.developerUserId = developerUserId;
             return this;
         }
 
