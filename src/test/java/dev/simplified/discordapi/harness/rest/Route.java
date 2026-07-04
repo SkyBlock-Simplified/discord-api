@@ -19,28 +19,30 @@ import java.util.function.Function;
  */
 enum Route {
 
+    // Login prologue - gateway and identity reads
     SELF_USER("GET", "/users/@me", Kind.JSON, HarnessEntities::userJson),
     GATEWAY("GET", "/gateway", Kind.JSON, HarnessEntities::gatewayJson),
     GATEWAY_BOT("GET", "/gateway/bot", Kind.JSON, HarnessEntities::gatewayBotJson),
     APPLICATION_INFO("GET", "/oauth2/applications/@me", Kind.JSON, HarnessEntities::applicationInfoJson),
-    EMOJIS("GET", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emptyEmojisJson),
     GUILD("GET", "/guilds/[^/]+", Kind.JSON, HarnessEntities::guildJson),
+
+    // Command registration - bulk-overwrite echo
     GLOBAL_COMMANDS("PUT", "/applications/[^/]+/commands", Kind.ECHO, null),
     GUILD_COMMANDS("PUT", "/applications/[^/]+/guilds/[^/]+/commands", Kind.ECHO, null),
+
+    // Interaction responses - callback, reply, and followups (webhook + token)
     INTERACTION_CALLBACK("POST", "/interactions/[^/]+/[^/]+/callback", Kind.NO_CONTENT, null),
     WEBHOOK_MESSAGE("POST", "/webhooks/[^/]+/[^/]+", Kind.JSON, HarnessEntities::messageJson),
-    CHANNEL_MESSAGE("POST", "/channels/[^/]+/messages", Kind.JSON, HarnessEntities::messageJson),
-    EDIT_CHANNEL_MESSAGE("PATCH", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     EDIT_ORIGINAL_MESSAGE("PATCH", ".*/messages/@original", Kind.JSON, HarnessEntities::messageJson),
-
-    // Followup messages (webhook + interaction token)
     EDIT_FOLLOWUP("PATCH", "/webhooks/[^/]+/[^/]+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     DELETE_FOLLOWUP("DELETE", "/webhooks/[^/]+/[^/]+/messages/[^/]+", Kind.NO_CONTENT, null),
 
-    // Channel and message fetch/delete
-    GET_CHANNEL("GET", "/channels/\\d+", Kind.JSON, HarnessEntities::channelJson),
+    // Channel messages
+    CHANNEL_MESSAGE("POST", "/channels/[^/]+/messages", Kind.JSON, HarnessEntities::messageJson),
+    EDIT_CHANNEL_MESSAGE("PATCH", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     GET_CHANNEL_MESSAGE("GET", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     DELETE_CHANNEL_MESSAGE("DELETE", "/channels/\\d+/messages/\\d+", Kind.NO_CONTENT, null),
+    GET_CHANNEL("GET", "/channels/\\d+", Kind.JSON, HarnessEntities::channelJson),
 
     // Reactions
     GET_REACTIONS("GET", "/channels/\\d+/messages/\\d+/reactions/[^/]+", Kind.JSON, HarnessEntities::reactionUsersJson),
@@ -50,6 +52,7 @@ enum Route {
     DELETE_EMOJI_REACTIONS("DELETE", "/channels/\\d+/messages/\\d+/reactions/[^/]+", Kind.NO_CONTENT, null),
 
     // Application emojis
+    EMOJIS("GET", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emptyEmojisJson),
     CREATE_EMOJI("POST", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emojiJson);
 
     /** How a matched route produces its response. */
