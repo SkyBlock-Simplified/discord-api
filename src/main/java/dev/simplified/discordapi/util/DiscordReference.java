@@ -4,11 +4,10 @@ import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentLinkedMap;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.DiscordBot;
+import dev.simplified.discordapi.command.CommandKey;
 import dev.simplified.discordapi.command.DiscordCommand;
-import dev.simplified.discordapi.command.Structure;
 import dev.simplified.discordapi.response.Emoji;
 import dev.simplified.discordapi.response.EmojiResolver;
-import dev.simplified.util.StringUtil;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
@@ -117,8 +116,8 @@ public abstract class DiscordReference {
     }
 
     /**
-     * Checks whether the given interaction data matches the specified command's
-     * {@link Structure} name, parent, and group hierarchy.
+     * Checks whether the given interaction data resolves to the specified command, comparing the incoming
+     * parent/group/leaf identity against the command's {@link CommandKey}.
      *
      * @param command the command to match against
      * @param commandData the interaction data from Discord
@@ -128,36 +127,34 @@ public abstract class DiscordReference {
         if (commandData.name().isAbsent())
             return false;
 
-        String compareName = commandData.name().get();
+        // Derive the incoming leaf identity (parent / group / name) from the interaction option tree, then
+        // match it against the command's stable identity. Subcommand options are type 1, groups type 2.
+        String parent = "";
+        String group = "";
+        String name = commandData.name().get();
+        List<ApplicationCommandInteractionOptionData> options =
+            commandData.options().isAbsent() ? List.of() : commandData.options().get();
 
-        if (StringUtil.isNotEmpty(command.getStructure().parent().name())) {
-            if (commandData.options().isAbsent() || commandData.options().get().isEmpty())
-                return false;
-
-            List<ApplicationCommandInteractionOptionData> options = commandData.options().get();
+        if (!options.isEmpty() && options.getFirst().type() <= 2) {
             ApplicationCommandInteractionOptionData option = options.getFirst();
+            parent = name;
 
-            if (!compareName.equals(command.getStructure().parent().name()))
-                return false;
+            if (option.type() == 2) {
+                group = option.name();
+                List<ApplicationCommandInteractionOptionData> groupOptions =
+                    option.options().isAbsent() ? List.of() : option.options().get();
 
-            if (options.getFirst().type() > 2)
-                return false;
-
-            if (StringUtil.isNotEmpty(command.getStructure().group().name())) {
-                if (!option.name().equals(command.getStructure().group().name()))
+                if (groupOptions.isEmpty())
                     return false;
 
-                if (option.options().isAbsent() || option.options().get().isEmpty())
-                    return false;
-
-                options = option.options().get();
-                option = options.getFirst();
+                option = groupOptions.getFirst();
             }
 
-            compareName = option.name();
+            name = option.name();
         }
 
-        return compareName.equals(command.getStructure().name());
+        CommandKey key = command.getCommandKey();
+        return key.parent().equals(parent) && key.group().equals(group) && key.name().equals(name);
     }
 
     // --- Permissions ---

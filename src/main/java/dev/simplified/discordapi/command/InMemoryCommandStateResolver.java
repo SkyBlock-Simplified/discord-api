@@ -38,7 +38,7 @@ public final class InMemoryCommandStateResolver implements CommandStateResolver 
      * @param command the command to disable
      */
     public void disable(@NotNull DiscordCommand<?> command) {
-        this.disable(CommandKey.of(command));
+        this.disable(command.getCommandKey());
     }
 
     /**
@@ -56,7 +56,7 @@ public final class InMemoryCommandStateResolver implements CommandStateResolver 
      * @param command the command to enable
      */
     public void enable(@NotNull DiscordCommand<?> command) {
-        this.enable(CommandKey.of(command));
+        this.enable(command.getCommandKey());
     }
 
     /**
@@ -90,7 +90,7 @@ public final class InMemoryCommandStateResolver implements CommandStateResolver 
     /** {@inheritDoc} */
     @Override
     public @NotNull Mono<Boolean> isEnabled(@NotNull DiscordCommand<?> command, @NotNull CommandContext<?> context) {
-        return Mono.just(!this.disabled.contains(CommandKey.of(command)));
+        return Mono.just(!this.disabled.contains(command.getCommandKey()));
     }
 
 }

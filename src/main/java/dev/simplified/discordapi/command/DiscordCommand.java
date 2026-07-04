@@ -65,6 +65,11 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
     protected final @NotNull Type type;
 
     /**
+     * The stable, serializable identity of this command.
+     */
+    protected final @NotNull CommandKey commandKey;
+
+    /**
      * Whether this command is currently being executed.
      */
     private boolean processing = false;
@@ -81,6 +86,7 @@ public abstract class DiscordCommand<C extends CommandContext<?>> extends Discor
         this.structure = super.getAnnotation(Structure.class, this.getClass())
             .orElseThrow(() -> new CommandException("Cannot instantiate a command with no structure."));
         this.type = Type.of(Reflection.getSuperClass(this));
+        this.commandKey = CommandKey.of(this);
     }
 
     /**

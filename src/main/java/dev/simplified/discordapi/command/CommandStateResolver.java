@@ -14,7 +14,8 @@ import reactor.core.publisher.Mono;
  * The framework defines this interface and ships {@link InMemoryCommandStateResolver} as a process-local
  * default. Consumers that need enabled-state to survive restarts wire a database-backed implementation through
  * {@link DiscordConfig.Builder#withCommandStateResolver}; the framework consults the interface only. Identify
- * a command with the serializable {@link CommandKey#of(DiscordCommand)}, never its name or numeric id alone.
+ * a command by its serializable {@link DiscordCommand#getCommandKey() CommandKey}, never its name or numeric
+ * id alone.
  *
  * <p>
  * The resolver is consulted for non-developers only - developers bypass the disabled gate - and a rejected
