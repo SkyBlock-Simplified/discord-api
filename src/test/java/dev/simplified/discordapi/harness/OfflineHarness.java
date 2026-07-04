@@ -1,7 +1,5 @@
 package dev.simplified.discordapi.harness;
 
-import dev.simplified.discordapi.handler.response.EternalResponseRepository;
-import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
 import dev.simplified.discordapi.harness.rest.LocalDiscordServer;
@@ -17,14 +15,11 @@ import java.util.function.Predicate;
 
 /**
  * The server side of the offline harness: a localhost REST mock, a fake in-JVM gateway, and the deterministic
- * identity ({@link HarnessConfig}) plus durable eternal store the two share. It stands in for Discord itself
- * and knows nothing about any bot - a consumer wires its own {@code DiscordBot} to {@link #baseUrl()} and
- * {@link #gateway()}, drives dispatches built by {@link #dispatches()}, and asserts on the captured REST
- * traffic exposed here.
+ * identity ({@link HarnessConfig}) the two share. It stands in for Discord itself and knows nothing about any
+ * bot - a consumer wires its own {@code DiscordBot} to {@link #baseUrl()} and {@link #gateway()}, drives
+ * dispatches built by {@link #dispatches()}, and asserts on the captured REST traffic exposed here.
  * <p>
- * Each instance is one fresh deployment: server, gateway, and dispatch factory are recreated per harness,
- * while the pluggable {@link EternalResponseRepository} can be shared across two harnesses to simulate a
- * reboot (the second, with a fresh hot tier, re-hydrates from the same cold store).
+ * Each instance is one fresh deployment: server, gateway, and dispatch factory are recreated per harness.
  * <p>
  * Narrates construction and teardown through Log4j2; raise the {@code dev.simplified.discordapi.harness}
  * logger to DEBUG or TRACE to see the REST and dispatch detail.
@@ -33,7 +28,6 @@ import java.util.function.Predicate;
 public final class OfflineHarness implements AutoCloseable {
 
     private final HarnessConfig config;
-    private final EternalResponseRepository eternalRepository;
     private final LocalDiscordServer server;
     private final FakeGatewayClient gatewayClient;
     private final DispatchFactory dispatchFactory;
@@ -44,26 +38,12 @@ public final class OfflineHarness implements AutoCloseable {
     }
 
     /**
-     * Boots with the given harness identity and a fresh in-memory eternal store.
+     * Boots with the given harness identity, threading it through the REST mock and the dispatch factory.
      *
      * @param config the harness identity to use
      */
     public OfflineHarness(@NotNull HarnessConfig config) {
-        this(config, InMemoryEternalResponseRepository.of());
-    }
-
-    /**
-     * Boots with the given harness identity and an explicit {@link EternalResponseRepository}, threading them
-     * through the REST mock and the dispatch factory. Pass the same store to two successive harnesses to
-     * simulate a reboot: the first creates an eternal message, the second (with a fresh hot tier) re-hydrates
-     * it from the shared cold store.
-     *
-     * @param config the harness identity to use
-     * @param eternalRepository the eternal cold store to back this run
-     */
-    public OfflineHarness(@NotNull HarnessConfig config, @NotNull EternalResponseRepository eternalRepository) {
         this.config = config;
-        this.eternalRepository = eternalRepository;
         this.dispatchFactory = new DispatchFactory(config);
         this.server = new LocalDiscordServer(config).start();
 
@@ -76,11 +56,6 @@ public final class OfflineHarness implements AutoCloseable {
     /** The harness identity backing this run (ids, token, command-id scheme). */
     public @NotNull HarnessConfig config() {
         return this.config;
-    }
-
-    /** The eternal cold store backing this run; share it across two harnesses to simulate a reboot. */
-    public @NotNull EternalResponseRepository eternalRepository() {
-        return this.eternalRepository;
     }
 
     /** The base url of the localhost REST mock; point a bot's {@code DiscordConfig.withApiBaseUrl} at it. */

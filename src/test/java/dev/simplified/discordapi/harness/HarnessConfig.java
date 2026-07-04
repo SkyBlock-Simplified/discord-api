@@ -19,7 +19,7 @@ import java.util.Base64;
  * {@link dev.simplified.discordapi.harness.rest.LocalDiscordServer LocalDiscordServer}, and
  * {@link dev.simplified.discordapi.harness.gateway.DispatchFactory DispatchFactory} at construction, so a test
  * can vary the identity by supplying a customized config. This is deliberately NOT a
- * {@link dev.simplified.discordapi.handler.DiscordConfig DiscordConfig} - it is harness-only metadata.
+ * {@code DiscordConfig} - it is harness-only metadata.
  */
 @Getter
 public final class HarnessConfig {

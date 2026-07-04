@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 public final class IntegrationHarness implements AutoCloseable {
 
     private final HarnessConfig config;
+    private final EternalResponseRepository eternalRepository;
     private final OfflineHarness server;
     private final HarnessBot bot;
 
@@ -64,7 +65,8 @@ public final class IntegrationHarness implements AutoCloseable {
      */
     public IntegrationHarness(@NotNull HarnessConfig config, @NotNull EternalResponseRepository eternalRepository) {
         this.config = config;
-        this.server = new OfflineHarness(config, eternalRepository);
+        this.eternalRepository = eternalRepository;
+        this.server = new OfflineHarness(config);
 
         ReactorResources plaintextRest = ReactorResources.builder()
             .httpClient(HttpClient.create().compress(true).followRedirect(true)) // no .secure() -> plaintext http
@@ -77,7 +79,7 @@ public final class IntegrationHarness implements AutoCloseable {
             .withApiBaseUrl(this.server.baseUrl())
             .withRestReactorResources(plaintextRest)
             .withGatewayClientFactory(options -> this.server.gateway())
-            .withEternalRepository(this.server.eternalRepository())
+            .withEternalRepository(this.eternalRepository)
             .withLogLevel(Logging.Level.INFO)
             .build();
 
@@ -92,7 +94,7 @@ public final class IntegrationHarness implements AutoCloseable {
 
     /** The eternal cold store backing this run; share it across two harnesses to simulate a reboot. */
     public @NotNull EternalResponseRepository eternalRepository() {
-        return this.server.eternalRepository();
+        return this.eternalRepository;
     }
 
     /**

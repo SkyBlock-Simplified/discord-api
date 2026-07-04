@@ -318,7 +318,7 @@ public final class DispatchFactory {
     private static ApplicationCommandInteractionOptionData leafOption(SlashOption option) {
         return ApplicationCommandInteractionOptionData.builder()
             .name(option.name())
-            .type(option.type().getOptionType().getValue())
+            .type(option.type().getValue())
             .value(option.value())
             .build();
     }
