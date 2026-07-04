@@ -194,7 +194,7 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
                     "Followup Delete Exception"
                 )
             ))
-            .then(locator.remove(followup.getUniqueId()));
+            .then(locator.evict(followup.getUniqueId()));
     }
 
     /**
@@ -364,32 +364,14 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     Snowflake getMessageId();
 
     /**
-     * The cached {@link Response} from the response locator if one exists,
-     * or empty for eternal/dispatched contexts whose backing message has no
-     * cache entry.
-     */
-    default @NotNull Optional<Response> findResponse() {
-        return this.findResponseCacheEntry().map(CachedResponse::getResponse);
-    }
-
-    /**
-     * The {@link CachedResponse} entry for this context's response id if one
-     * exists, or empty for eternal/dispatched contexts whose backing message
-     * has no cache entry.
-     */
-    default @NotNull Optional<CachedResponse> findResponseCacheEntry() {
-        return this.getDiscordBot()
-            .getResponseLocator()
-            .findByResponseId(this.getResponseId())
-            .blockOptional();
-    }
-
-    /**
-     * The cached {@link Response} from the response locator.
+     * The cached {@link Response} bound to this context.
      *
-     * @throws IllegalStateException when invoked on an eternal/dispatched
-     *     context whose backing message has no cache entry; use
-     *     {@link #findResponse()} for the optional variant
+     * <p>
+     * A {@link MessageContext} is only ever constructed after the locator holds a real entry for its
+     * response id - either a hot-tier hit or a transparently hydrated eternal - so this always
+     * resolves for a dispatched interaction. No {@code Optional} variant is needed.
+     *
+     * @throws IllegalStateException when no entry exists, indicating a violated framework invariant
      */
     default @NotNull Response getResponse() {
         return this.getResponseCacheEntry().getResponse();
@@ -398,15 +380,15 @@ public interface MessageContext<T extends Event> extends EventContext<T> {
     /**
      * The {@link CachedResponse} entry for this context's response id.
      *
-     * @throws IllegalStateException when invoked on an eternal/dispatched
-     *     context whose backing message has no cache entry; use
-     *     {@link #findResponseCacheEntry()} for the optional variant
+     * @throws IllegalStateException when no entry exists (see {@link #getResponse()})
      */
     default @NotNull CachedResponse getResponseCacheEntry() {
-        return this.findResponseCacheEntry()
+        return this.getDiscordBot()
+            .getResponseLocator()
+            .findByResponseId(this.getResponseId())
+            .blockOptional()
             .orElseThrow(() -> new IllegalStateException(
                 "No cached response entry exists for response id " + this.getResponseId()
-                    + " (the context may be eternal or dispatched without a cached entry; use findResponse()/findResponseCacheEntry())"
             ));
     }
 

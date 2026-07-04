@@ -57,30 +57,6 @@ public interface ModalContext extends ComponentContext {
     }
 
     /**
-     * Creates a new eternal {@code ModalContext} for an annotation-dispatched
-     * modal submit whose backing message has no cache entry. The
-     * {@link #getResponseId() responseId} is a deterministic UUID derived
-     * from the message snowflake.
-     *
-     * @param discordBot the bot instance
-     * @param event the modal submit interaction event
-     * @param modal the synthesized modal stub carrying the {@code customId} and submitted values
-     * @param eternalResponseId the deterministic eternal response id
-     * @return a new eternal modal context
-     */
-    static @NotNull ModalContext ofEternal(@NotNull DiscordBot discordBot, @NotNull ModalSubmitInteractionEvent event, @NotNull Modal modal, @NotNull UUID eternalResponseId) {
-        return new Impl(
-            discordBot,
-            event,
-            eternalResponseId,
-            modal.mutate()
-                .updateComponents(event)
-                .build(),
-            Optional.empty()
-        );
-    }
-
-    /**
      * Default implementation of {@link ModalContext}.
      */
     @Getter

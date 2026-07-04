@@ -65,6 +65,7 @@ public final class CachedResponse {
     private final @NotNull Optional<Snowflake> guildId;
     private final @NotNull Optional<UUID> parentId;
     private final @NotNull Optional<String> followupIdentifier;
+    private final @NotNull Optional<String> builderKey;
     private final @NotNull ConcurrentMap<Snowflake, Modal> activeModals = Concurrent.newMap();
     private final @NotNull Instant createdAt;
     private final @NotNull Optional<Instant> expiresAt;
@@ -82,6 +83,7 @@ public final class CachedResponse {
         this.guildId = builder.guildId;
         this.parentId = builder.parentId;
         this.followupIdentifier = builder.followupIdentifier;
+        this.builderKey = builder.builderKey;
         this.createdAt = builder.createdAt;
         this.expiresAt = builder.expiresAt;
         this.response = builder.response;
@@ -131,6 +133,22 @@ public final class CachedResponse {
     /** Optional user-supplied identifier for the followup, used to address it by name. */
     public @NotNull Optional<String> getFollowupIdentifier() {
         return this.followupIdentifier;
+    }
+
+    /** The eternal builder key when this entry is eternal, or empty for temporary entries. */
+    public @NotNull Optional<String> getBuilderKey() {
+        return this.builderKey;
+    }
+
+    /**
+     * Whether this entry is eternal - rebuildable from a registered builder and persisted in the
+     * cold tier. Eternal entries are evicted from the hot tier without disabling their components,
+     * so the backing message stays interactive and re-hydrates on the next interaction.
+     *
+     * @return {@code true} when an eternal builder key is present
+     */
+    public boolean isEternal() {
+        return this.builderKey.isPresent();
     }
 
     /** The current {@link Response} bound to this entry. */
@@ -357,6 +375,7 @@ public final class CachedResponse {
         private Optional<Snowflake> guildId = Optional.empty();
         private Optional<UUID> parentId = Optional.empty();
         private Optional<String> followupIdentifier = Optional.empty();
+        private Optional<String> builderKey = Optional.empty();
         private Instant createdAt = Instant.now();
         private Optional<Instant> expiresAt = Optional.empty();
         private Response response;
@@ -411,6 +430,17 @@ public final class CachedResponse {
         /** Sets the optional user-supplied followup identifier. */
         public @NotNull Builder withFollowupIdentifier(@NotNull Optional<String> identifier) {
             this.followupIdentifier = identifier;
+            return this;
+        }
+
+        /** Marks this entry as eternal with the given builder key. */
+        public @NotNull Builder withBuilderKey(@NotNull String builderKey) {
+            return this.withBuilderKey(Optional.of(builderKey));
+        }
+
+        /** Sets the optional eternal builder key; empty leaves the entry temporary. */
+        public @NotNull Builder withBuilderKey(@NotNull Optional<String> builderKey) {
+            this.builderKey = builderKey;
             return this;
         }
 

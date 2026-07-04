@@ -71,6 +71,7 @@ public final class InMemoryResponseLocator implements ResponseLocator {
                 .withChannelId(message.getChannelId())
                 .withUserId(creatorContext.getInteractUserId())
                 .withGuildId(creatorContext.getGuildId())
+                .withBuilderKey(response.getBuilderKey())
                 .withResponse(response)
                 .withCreatedAt(Instant.now())
                 .withExpiresAt(this.computeExpiresAt(response, ttlOverride));
@@ -107,7 +108,7 @@ public final class InMemoryResponseLocator implements ResponseLocator {
     }
 
     @Override
-    public @NotNull Mono<Void> remove(@NotNull UUID responseId) {
+    public @NotNull Mono<Void> evict(@NotNull UUID responseId) {
         return Mono.fromRunnable(() -> {
             CachedResponse removed = this.entries.remove(responseId);
             if (removed != null)
@@ -122,6 +123,23 @@ public final class InMemoryResponseLocator implements ResponseLocator {
                     this.entries.remove(followup.getUniqueId());
                     this.messageIndex.remove(followup.getMessageId());
                 });
+        });
+    }
+
+    @Override
+    public @NotNull Mono<Void> deleteByMessage(@NotNull Snowflake messageId) {
+        return Mono.defer(() -> {
+            UUID responseId = this.messageIndex.get(messageId);
+            return responseId != null ? this.evict(responseId) : Mono.empty();
+        });
+    }
+
+    @Override
+    public @NotNull Mono<CachedResponse> seed(@NotNull CachedResponse entry) {
+        return Mono.fromCallable(() -> {
+            CachedResponse canonical = this.entries.computeIfAbsent(entry.getUniqueId(), id -> entry);
+            this.messageIndex.put(canonical.getMessageId(), canonical.getUniqueId());
+            return canonical;
         });
     }
 

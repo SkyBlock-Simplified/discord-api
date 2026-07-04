@@ -20,8 +20,7 @@ import reactor.core.publisher.Mono;
  * <p>
  * The reply plants a button whose custom id ({@link #CACHED_ID}) matches a {@code @Component}
  * route, so a cached click routes through {@code dispatchAnnotation} (the annotation handler wins
- * over the inline handler). A separate route ({@link #ETERNAL_ID}) has no planted button, so a
- * click on an uncached message routes through {@code tryDispatchEternal}.
+ * over the inline handler).
  */
 @Structure(
     name = "annotated",
@@ -31,14 +30,10 @@ public class AnnotatedButtonCommand extends DiscordCommand<SlashCommandContext> 
 
     /** Custom id of the planted button, routed to {@link #onCached(ButtonContext)}. */
     public static final @NotNull String CACHED_ID = "anno_cached";
-    /** Custom id with no planted button, routed to {@link #onEternal(ButtonContext)} via the eternal path. */
-    public static final @NotNull String ETERNAL_ID = "anno_eternal";
     /** Content the annotation handler edits to (proves the annotation path ran, not the inline one). */
     public static final @NotNull String ANNOTATED_CONTENT = "annotated";
     /** Content the bypassed inline handler would edit to (must never appear). */
     public static final @NotNull String INLINE_CONTENT = "inline-ran";
-    /** Followup content the eternal handler creates (a drop would never produce this). */
-    public static final @NotNull String ETERNAL_CONTENT = "eternal handled";
 
     public AnnotatedButtonCommand(@NotNull DiscordBot discordBot) {
         super(discordBot);
@@ -77,18 +72,6 @@ public class AnnotatedButtonCommand extends DiscordCommand<SlashCommandContext> 
     @Component(CACHED_ID)
     Mono<Void> onCached(@NotNull ButtonContext context) {
         return context.edit(response -> response.editCurrentPage(builder -> builder.withContent(ANNOTATED_CONTENT)));
-    }
-
-    /**
-     * Annotation route with no cached backing message. Acknowledges the interaction and creates a
-     * followup, verifying the {@code tryDispatchEternal} (cache-miss) path produces a distinct effect
-     * a plain drop never would.
-     */
-    @Component(ETERNAL_ID)
-    Mono<Void> onEternal(@NotNull ButtonContext context) {
-        return context.getEvent()
-            .deferEdit()
-            .then(context.getEvent().createFollowup(ETERNAL_CONTENT).then());
     }
 
 }

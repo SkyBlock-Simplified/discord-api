@@ -8,9 +8,11 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
 /**
- * Listener for message delete events, removing the corresponding
- * {@link CachedResponse} entry (top-level or followup) from the response
- * locator when a tracked message is deleted.
+ * Listener for message delete events, tearing down the corresponding
+ * {@link CachedResponse} entry (top-level or followup) and any eternal cold
+ * record when a tracked message is deleted - so a deleted eternal message is
+ * not resurrected by a later interaction. The teardown is message-keyed because
+ * a rebooted eternal may be cold-only with no hot entry to resolve an id from.
  */
 public class MessageDeleteListener extends DiscordListener<MessageDeleteEvent> {
 
@@ -27,8 +29,7 @@ public class MessageDeleteListener extends DiscordListener<MessageDeleteEvent> {
     public final @NotNull Publisher<Void> apply(@NotNull MessageDeleteEvent event) {
         return this.getDiscordBot()
             .getResponseLocator()
-            .findByMessage(event.getMessageId())
-            .flatMap(entry -> this.getDiscordBot().getResponseLocator().remove(entry.getUniqueId()));
+            .deleteByMessage(event.getMessageId());
     }
 
 }

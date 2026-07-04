@@ -1,18 +1,10 @@
 package dev.simplified.discordapi.listener.component;
 
-import dev.simplified.collection.Concurrent;
-import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.capability.EventInteractable;
 import dev.simplified.discordapi.component.capability.UserInteractable;
-import dev.simplified.discordapi.component.interaction.Button;
-import dev.simplified.discordapi.component.interaction.Modal;
-import dev.simplified.discordapi.component.interaction.SelectMenu;
 import dev.simplified.discordapi.context.capability.ExceptionContext;
-import dev.simplified.discordapi.context.component.ButtonContext;
-import dev.simplified.discordapi.context.component.ModalContext;
-import dev.simplified.discordapi.context.component.SelectMenuContext;
 import dev.simplified.discordapi.context.scope.ComponentContext;
 import dev.simplified.discordapi.handler.ComponentDispatcher;
 import dev.simplified.discordapi.handler.ComponentRouteTtlContextKey;
@@ -20,21 +12,15 @@ import dev.simplified.discordapi.handler.response.CachedResponse;
 import dev.simplified.discordapi.handler.response.ResponseLocator;
 import dev.simplified.discordapi.listener.DiscordListener;
 import dev.simplified.discordapi.response.Response;
-import dev.simplified.reflection.Reflection;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Function;
 
 /**
  * Single listener for all component interactions (buttons, select menus, and modal submits),
@@ -51,15 +37,13 @@ import java.util.function.Function;
  * <p>
  * Dispatch precedence for button/select clicks:
  * <ul>
- *   <li><b>Cache hit + annotation route</b> - the matched
- *       {@link dev.simplified.discordapi.listener.Component @Component} handler is invoked
- *       with a context built from the cached response</li>
- *   <li><b>Cache hit + inline component</b> - the cached component's
- *       interaction lambda is invoked</li>
- *   <li><b>Cache miss + annotation route</b> - an eternal context is
- *       synthesized and the {@code @Component} handler is invoked</li>
- *   <li><b>Cache miss + no route</b> - the interaction is dropped via
- *       {@code deferEdit().then()}</li>
+ *   <li><b>Annotation route</b> - the matched
+ *       {@link dev.simplified.discordapi.listener.Component @Component} handler is invoked with a
+ *       context built from the resolved response (a hot-tier hit or a transparently hydrated
+ *       eternal)</li>
+ *   <li><b>Inline component</b> - the resolved component's interaction lambda is invoked</li>
+ *   <li><b>No owner</b> - when neither a hot entry nor an eternal record exists for the message,
+ *       the interaction is dropped via {@code deferEdit().then()}</li>
  * </ul>
  */
 public final class ComponentListener extends DiscordListener<ComponentInteractionEvent> {
@@ -80,12 +64,12 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
 
         return this.getDiscordBot()
             .getResponseLocator()
-            .findByMessage(event.getMessageId())
-            // thenReturn keeps the entry emitting so switchIfEmpty fires ONLY on a genuine cache miss -
-            // handleEvent returns Mono<Void> (emits nothing), which would otherwise always trip the eternal
-            // fallback and double-acknowledge the interaction.
+            .findForInteraction(event)
+            // thenReturn keeps the entry emitting so switchIfEmpty fires ONLY on a genuine miss (no hot
+            // entry AND no eternal record) - handleEvent returns Mono<Void> (emits nothing), which would
+            // otherwise always trip the drop and double-acknowledge the interaction.
             .flatMap(entry -> this.handleEvent(event, entry).thenReturn(entry))
-            .switchIfEmpty(Mono.defer(() -> this.tryDispatchEternal(event).then(Mono.empty())))
+            .switchIfEmpty(Mono.defer(() -> this.dropInteraction(event).then(Mono.empty())))
             .then()
             .subscribeOn(Schedulers.boundedElastic());
     }
@@ -164,7 +148,7 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
         return (component.isDeferEdit() ? deferEdit : Mono.<Void>empty())
             .then(Mono.defer(() -> component.getInteraction().apply(context)))
             .checkpoint("ComponentListener#dispatchInline Processing")
-            .onErrorResume(throwable -> this.onDispatchError(event, context, throwable))
+            .onErrorResume(throwable -> this.onDispatchError(context, throwable))
             .then(this.editIfModified(entry, context, followup));
     }
 
@@ -184,33 +168,8 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
 
         Mono<Void> dispatchMono = this.invokeRoute(route, context)
             .checkpoint("ComponentListener#dispatchAnnotation Processing")
-            .onErrorResume(throwable -> this.onDispatchError(event, context, throwable))
+            .onErrorResume(throwable -> this.onDispatchError(context, throwable))
             .then(this.editIfModified(entry, context, followup));
-
-        return this.withCacheTtl(dispatchMono, route);
-    }
-
-    /**
-     * Eternal dispatch: invoked when the response locator has no cached entry for the incoming event's
-     * message. Resolves an annotation route; on a dispatchable route, synthesizes an eternal context
-     * and invokes it. On a miss, ambiguous match, or context-type mismatch, the interaction is dropped.
-     */
-    private @NotNull Mono<Void> tryDispatchEternal(@NotNull ComponentInteractionEvent event) {
-        RouteResolution resolution = this.resolveRoute(event);
-        if (resolution.kind() != RouteResolution.Kind.DISPATCH)
-            return this.dropInteraction(event);
-
-        ComponentDispatcher.ComponentRoute route = resolution.route().orElseThrow();
-        ComponentContext context = this.createEternalContext(event);
-        if (!route.getExpectedContextType().isInstance(context)) {
-            this.warnContextMismatch(event, route);
-            return this.dropInteraction(event);
-        }
-
-        Mono<Void> dispatchMono = this.invokeRoute(route, context)
-            .checkpoint("ComponentListener#tryDispatchEternal Processing")
-            .onErrorResume(throwable -> this.onDispatchError(event, context, throwable))
-            .then();
 
         return this.withCacheTtl(dispatchMono, route);
     }
@@ -243,6 +202,8 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
                 ? (followup.isEmpty() ? context.edit() : context.editFollowup())
                 : Mono.<Void>empty())
             .then(entry.finalizeInteraction())
+            // Write-through: persists an eternal's navigation coordinate when it changed (no-op for mortals).
+            .then(this.getDiscordBot().getResponseLocator().update(entry))
             .then();
     }
 
@@ -252,13 +213,13 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
     }
 
     /**
-     * Acknowledges the interaction before reporting a handler error, so Discord does not surface
-     * "interaction failed". Cached contexts acknowledge through the guarded cache entry; eternal
-     * contexts fall back to the raw event. A failing acknowledgment is swallowed so it cannot mask
-     * the original error.
+     * Acknowledges the interaction through its guarded cache entry before reporting a handler error,
+     * so Discord does not surface "interaction failed". Every dispatched context now has a real entry
+     * (hot or hydrated), so the acknowledgment always routes through the entry. A failing
+     * acknowledgment is swallowed so it cannot mask the original error.
      */
-    private @NotNull Mono<Void> onDispatchError(@NotNull ComponentInteractionEvent event, @NotNull ComponentContext context, @NotNull Throwable throwable) {
-        return Mono.defer(() -> context.findResponseCacheEntry().isPresent() ? context.deferEdit() : event.deferEdit())
+    private @NotNull Mono<Void> onDispatchError(@NotNull ComponentContext context, @NotNull Throwable throwable) {
+        return context.deferEdit()
             .onErrorResume(ignored -> Mono.empty())
             .then(this.reportException(context, throwable));
     }
@@ -300,62 +261,9 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
         return dispatch.contextWrite(reactorCtx -> reactorCtx.put(ComponentRouteTtlContextKey.KEY, ttl));
     }
 
-    /**
-     * Synthesizes the eternal context for an annotation-dispatched interaction whose backing message
-     * has no cache entry, building a minimal stub component carrying the {@code customId} (and any
-     * submitted values) whose responseId is the deterministic id from
-     * {@link #computeEternalResponseId(ComponentInteractionEvent)}.
-     */
-    private @NotNull ComponentContext createEternalContext(@NotNull ComponentInteractionEvent event) {
-        UUID eternalResponseId = computeEternalResponseId(event);
-
-        if (event instanceof ButtonInteractionEvent buttonEvent)
-            return ButtonContext.ofEternal(this.getDiscordBot(), buttonEvent, syntheticButton(event.getCustomId()), eternalResponseId);
-
-        if (event instanceof SelectMenuInteractionEvent selectEvent)
-            return SelectMenuContext.ofEternal(this.getDiscordBot(), selectEvent, syntheticSelectMenu(selectEvent), eternalResponseId);
-
-        if (event instanceof ModalSubmitInteractionEvent modalEvent)
-            return ModalContext.ofEternal(this.getDiscordBot(), modalEvent, syntheticModal(event.getCustomId()), eternalResponseId);
-
-        throw new IllegalStateException("Unsupported component interaction event type: " + event.getClass().getName());
-    }
-
     /** Wraps an entry as a followup when it represents one, so followup edits target the correct message. */
     private static @NotNull Optional<CachedResponse> followupOf(@NotNull CachedResponse entry) {
         return entry.isFollowup() ? Optional.of(entry) : Optional.empty();
-    }
-
-    /** Builds a stub button carrying only the interaction's custom id for an eternal dispatch. */
-    private static @NotNull Button syntheticButton(@NotNull String customId) {
-        return Button.builder()
-            .withIdentifier(customId)
-            .withStyle(Button.Style.SECONDARY)
-            .withLabel("eternal")
-            .build();
-    }
-
-    /** Builds a stub string menu carrying the interaction's custom id and submitted values for an eternal dispatch. */
-    private static @NotNull SelectMenu syntheticSelectMenu(@NotNull SelectMenuInteractionEvent event) {
-        return SelectMenu.StringMenu.builder()
-            .withIdentifier(event.getCustomId())
-            .build()
-            .updateSelected(event.getValues());
-    }
-
-    /**
-     * Builds a stub modal carrying the interaction's custom id for an eternal dispatch. The modal's
-     * {@code Builder} validation requires a non-empty title and components, neither of which is
-     * meaningful for a synthesized submit, so the modal is instantiated directly via its private
-     * all-args constructor.
-     */
-    private static @NotNull Modal syntheticModal(@NotNull String customId) {
-        return new Reflection<>(Modal.class).newInstance(
-            customId,
-            Optional.<String>empty(),
-            (ConcurrentList<?>) Concurrent.newUnmodifiableList(),
-            (Function<ModalContext, Mono<Void>>) ComponentContext::deferEdit
-        );
     }
 
     /** Reflection helper that throws checked exceptions through {@link RuntimeException}. */
@@ -365,18 +273,6 @@ public final class ComponentListener extends DiscordListener<ComponentInteractio
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
-    }
-
-    /**
-     * Computes the deterministic eternal {@link UUID} for the given event's message snowflake. The
-     * same message always yields the same UUID, so a synthesized context for an eternal interaction
-     * is stable across dispatches.
-     *
-     * @param event the component interaction event
-     * @return the deterministic eternal response id
-     */
-    private static @NotNull UUID computeEternalResponseId(@NotNull ComponentInteractionEvent event) {
-        return UUID.nameUUIDFromBytes(("eternal:" + event.getMessageId().asLong()).getBytes(StandardCharsets.UTF_8));
     }
 
     /**

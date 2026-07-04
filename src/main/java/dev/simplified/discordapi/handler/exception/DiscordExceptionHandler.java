@@ -450,7 +450,7 @@ public final class DiscordExceptionHandler extends ExceptionHandler {
                                     .map(id -> this.getDiscordBot()
                                         .getResponseLocator()
                                         .findByMessage(id)
-                                        .flatMap(entry -> this.getDiscordBot().getResponseLocator().remove(entry.getUniqueId()))
+                                        .flatMap(entry -> this.getDiscordBot().getResponseLocator().evict(entry.getUniqueId()))
                                     )
                                     .orElse(Mono.empty())
                                 )

@@ -8,6 +8,7 @@ import dev.simplified.discordapi.command.Structure;
 import dev.simplified.discordapi.command.parameter.Argument;
 import dev.simplified.discordapi.command.parameter.Parameter;
 import dev.simplified.discordapi.component.interaction.TextInput;
+import dev.simplified.discordapi.context.EternalBuildContext;
 import dev.simplified.discordapi.context.capability.ExceptionContext;
 import dev.simplified.discordapi.context.command.AutoCompleteContext;
 import dev.simplified.discordapi.context.command.MessageCommandContext;
@@ -35,12 +36,16 @@ import dev.simplified.discordapi.handler.exception.DiscordExceptionHandler;
 import dev.simplified.discordapi.handler.exception.ExceptionHandler;
 import dev.simplified.discordapi.handler.exception.SentryExceptionHandler;
 import dev.simplified.discordapi.handler.response.CachedResponse;
+import dev.simplified.discordapi.handler.response.CompositeResponseLocator;
+import dev.simplified.discordapi.handler.response.EternalResponseLocator;
+import dev.simplified.discordapi.handler.response.EternalResponseRepository;
 import dev.simplified.discordapi.handler.response.InMemoryResponseLocator;
+import dev.simplified.discordapi.handler.response.ResponseExpiryTask;
 import dev.simplified.discordapi.handler.response.ResponseLocator;
 import dev.simplified.discordapi.handler.shard.ShardHandler;
 import dev.simplified.discordapi.listener.BotEventListener;
 import dev.simplified.discordapi.listener.DiscordListener;
-import dev.simplified.discordapi.listener.PersistentComponentListener;
+import dev.simplified.discordapi.listener.EternalComponentListener;
 import dev.simplified.discordapi.listener.command.AutoCompleteListener;
 import dev.simplified.discordapi.listener.command.MessageCommandListener;
 import dev.simplified.discordapi.listener.command.SlashCommandListener;
@@ -66,6 +71,7 @@ import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.lifecycle.ConnectEvent;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.shard.GatewayBootstrap;
 import discord4j.discordjson.json.UserData;
@@ -90,7 +96,8 @@ import reactor.util.retry.Retry;
 import java.lang.reflect.Modifier;
 import java.net.SocketException;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Discord4J Framework Wrapper for Discord Bots.
@@ -153,8 +160,10 @@ public abstract class DiscordBot {
     private final @NotNull LocaleHandler localeHandler;
     private final @NotNull CommandHandler commandHandler;
     private final @NotNull ResponseLocator responseLocator;
+    private final @NotNull EternalResponseRepository eternalRepository;
     private final @NotNull ExtractorStore extractorStore;
     private ComponentDispatcher componentDispatcher;
+    private ResponseExpiryTask responseExpiryTask;
 
     // REST
     private DiscordClient client;
@@ -176,7 +185,11 @@ public abstract class DiscordBot {
             .withLocaleHandler(this.localeHandler)
             .build();
 
-        this.responseLocator = new InMemoryResponseLocator();
+        this.eternalRepository = config.getEternalRepository();
+        this.responseLocator = new CompositeResponseLocator(Concurrent.newList(
+            new InMemoryResponseLocator(),
+            new EternalResponseLocator(this.eternalRepository, () -> this.componentDispatcher, this)
+        ));
         this.extractorStore = config.getExtractorStore();
     }
 
@@ -220,9 +233,9 @@ public abstract class DiscordBot {
                     log.info("Gateway Connected");
                     this.emitBotEvent(new GatewayConnectBotEvent(this, gatewayDiscordClient));
 
-                    ConcurrentSet<Class<? extends PersistentComponentListener>> persistentListenerClasses = Reflection.getResources()
-                        .filterPackage(PersistentComponentListener.class)
-                        .getSubtypesOf(PersistentComponentListener.class)
+                    ConcurrentSet<Class<? extends EternalComponentListener>> eternalListenerClasses = Reflection.getResources()
+                        .filterPackage(EternalComponentListener.class)
+                        .getSubtypesOf(EternalComponentListener.class)
                         .stream()
                         .filter(listenerClass -> !Modifier.isAbstract(listenerClass.getModifiers()))
                         .collect(Concurrent.toSet());
@@ -230,27 +243,12 @@ public abstract class DiscordBot {
                     this.componentDispatcher = new ComponentDispatcher(
                         this,
                         this.getCommandHandler().getLoadedCommands(),
-                        persistentListenerClasses
+                        eternalListenerClasses
                     );
 
                     log.info("Scheduling Cache Cleaner");
-                    this.scheduler.scheduleAsync(() -> this.responseLocator.findExpired()
-                        .doOnNext(entry -> this.responseLocator.remove(entry.getUniqueId()).subscribe())
-                        .flatMap(entry -> this.getGateway()
-                            .getChannelById(entry.getChannelId())
-                            .ofType(MessageChannel.class)
-                            .flatMap(channel -> channel.getMessageById(entry.getMessageId()))
-                            .flatMap(message -> Mono.just(entry.getResponse())
-                                .flatMap(response -> message.removeAllReactions().then(message.edit(
-                                    response.mutate()
-                                        .disableAllComponents()
-                                        .isRenderingPagingComponents(false)
-                                        .build()
-                                        .getD4jEditSpec(this.getEmojiHandler())
-                                )))
-                            )
-                        )
-                        .subscribe(), 0, 1, TimeUnit.SECONDS);
+                    this.responseExpiryTask = new ResponseExpiryTask(this);
+                    this.responseExpiryTask.start();
 
                     log.info("Registering Event Listeners");
                     ConcurrentList<Publisher<Void>> eventListeners = Reflection.getResources()
@@ -382,6 +380,54 @@ public abstract class DiscordBot {
             .getGuildById(Snowflake.of(this.getConfig().getMainGuildId()))
             .blockOptional()
             .orElseThrow(() -> new DiscordGatewayException("Unable to locate main guild."));
+    }
+
+    /**
+     * Re-renders an eternal response from its cold record, editing the backing Discord message in
+     * place without needing a hot-tier entry. Rebuilds the response from the registered
+     * {@link dev.simplified.discordapi.listener.Eternal @Eternal} builder, restores the persisted
+     * navigation coordinate, and applies the edit. A no-op when no record exists or its builder is
+     * no longer registered.
+     *
+     * @param responseId the stable id of the eternal response to refresh
+     * @return a {@link Mono} completing when the message has been re-rendered
+     */
+    public final @NotNull Mono<Void> refreshEternal(@NotNull UUID responseId) {
+        return this.eternalRepository.findByResponseId(responseId)
+            .flatMap(record -> {
+                Optional<ComponentDispatcher.EternalRoute> builder = this.componentDispatcher.findEternalBuilder(record.builderKey());
+
+                if (builder.isEmpty()) {
+                    log.warn("No @Eternal builder registered for key '{}' (response {}); skipping refresh", record.builderKey(), responseId);
+                    return Mono.empty();
+                }
+
+                Mono<Message> message = this.getGateway()
+                    .getChannelById(record.channelId())
+                    .ofType(MessageChannel.class)
+                    .flatMap(channel -> channel.getMessageById(record.messageId()));
+
+                return Mono.zip(message, this.getGateway().getUserById(record.userId()))
+                    .flatMap(tuple -> {
+                        EternalBuildContext buildContext = EternalBuildContext.ofRefresh(
+                            this,
+                            record.channelId(),
+                            record.guildId(),
+                            tuple.getT2(),
+                            record.responseId(),
+                            record.payload()
+                        );
+
+                        Response built = this.componentDispatcher.invokeEternalBuilder(builder.get(), buildContext);
+                        Response hydrated = built.mutate()
+                            .withUniqueId(record.responseId())
+                            .asEternal(record.builderKey(), record.payload())
+                            .build();
+                        record.navState().applyTo(hydrated.getHistoryHandler());
+
+                        return tuple.getT1().edit(hydrated.getD4jEditSpec(this.getEmojiHandler())).then();
+                    });
+            });
     }
 
     /**

@@ -39,7 +39,9 @@ DiscordBot (abstract) → DiscordConfig (handler/) → initialize() → login() 
     │   ├── DiscordExceptionHandler  — formats errors into Discord embeds
     │   ├── SentryExceptionHandler   — captures to Sentry with Discord context
     │   └── CompositeExceptionHandler — chains multiple handlers in sequence
-    ├── ResponseHandler       — caches active Response messages (handler/response/)
+    ├── ResponseLocator       — hot cache + cold eternal repository (handler/response/)
+    ├── ComponentDispatcher   — @Component/@Eternal route registry (handler/)
+    ├── ResponseExpiryTask    — scheduled hot-cache reaper (handler/response/)
     └── ShardHandler          — gateway shard management (handler/shard/)
 ```
 
@@ -67,12 +69,11 @@ DiscordCommand<MessageCommandContext>  → Right-click message commands
 Page hierarchy:
 ```
 Page (interface)
-├── TreePage  — implements Subpages<TreePage>; supports nested subpages, embeds, content
-└── FormPage  — form/question pages for sequential input
+├── TreePage    — implements Subpages<TreePage>; supports nested subpages, embeds, content
+└── EditorPage  — page/editor/; in-place page editing
 ```
 
-- `Page.builder()` → `TreePage.TreePageBuilder`
-- `Page.form()` → `FormPage.QuestionBuilder`
+- `Page.builder()` → `TreePage.TreePageBuilder` (the concrete page)
 - `Response.builder()` builds the response; `Response.from()` creates a pre-filled builder from an existing response; `response.mutate()` is shorthand for `Response.from(this)`
 
 Response features:
@@ -83,8 +84,8 @@ Response features:
 - Interactive components (`Button`, `SelectMenu`, `TextInput`, `Modal`, `RadioGroup`, `Checkbox`, `CheckboxGroup`)
 - Attachments, embeds, reactions
 - Auto-expiration via `timeToLive` (5-300 seconds)
-- Automatic Discord4J spec generation (`getD4jCreateSpec()`, `getD4jEditSpec()`, etc.)
-- **Persistence** via `Response.builder().isPersistent(true)` — writes the entry through to a JPA cold tier so the message survives bot restarts. Requires a matching `@PersistentResponse`-annotated builder method on the dispatching `DiscordCommand` (or a `PersistentComponentListener`) that accepts an `EventContext<?>` and returns a `Response`. Persistent components must use explicit user-supplied `customId` strings so `@Component(customId)` handlers can route the click after hydration. See the `handler/response/` and `handler/PersistentComponentHandler` sections below for the full flow.
+- Automatic Discord4J spec generation (`getD4jCreateSpec(EmojiResolver)`, `getD4jEditSpec(EmojiResolver)`, etc.) — `Response`/`Page`/`Component` are pure data; emoji resolution is injected at render time via `response/EmojiResolver` (sourced from `EventContext.getEmojis()`)
+- **Eternal (reboot-surviving) responses** via `Response.builder().asEternal(builderKey, payload)` (usually through `EventContext.replyEternal(builderKey, payload)`). The structure is rebuilt on demand by an `@Eternal(builderKey)`-annotated method that returns a `Response`; only a tiny coordinate (ids + `builderKey` + opaque `payload` + `NavState`) is persisted to the storage-agnostic cold store. See the `handler/response/` section below for the full flow.
 
 ### Component System (top-level `component/` package)
 
@@ -127,7 +128,7 @@ Contexts provide: `reply()`, `edit()`, `followup()`, `presentModal()`, `deleteFo
 
 ### Listener System
 
-There are two parallel listener hierarchies, both auto-registered via classpath scanning of the `dev.sbs.discordapi.listener` package:
+There are two parallel listener hierarchies, both auto-registered via classpath scanning of the `dev.simplified.discordapi.listener` package:
 
 - **`DiscordListener<T extends discord4j.core.event.domain.Event>`** — handles Discord4J gateway events. Subscribed to Discord4J's `EventDispatcher`. Errors are routed through the `ExceptionHandler` chain.
 - **`BotEventListener<T extends BotEvent>`** — handles bot-internal events emitted by `DiscordBot` itself (lifecycle hooks, future custom events). Subscribed to a `Sinks.Many<BotEvent>` replay sink owned by `DiscordBot` (last 16 events replayed to late subscribers, so listeners registered inside `connect()` still receive events emitted during `login()`). Errors are logged locally.
@@ -138,20 +139,20 @@ Additional listeners of either type can be registered through `DiscordConfig.Bui
 listener/                 — DiscordListener, BotEventListener (base classes)
 listener/command/         — SlashCommandListener, UserCommandListener,
                             MessageCommandListener, AutoCompleteListener
-listener/component/       — ComponentListener, ButtonListener, SelectMenuListener,
-                            ModalListener, CheckboxListener, CheckboxGroupListener,
-                            RadioGroupListener
+listener/component/       — ComponentListener (single listener; all component kinds
+                            dispatched polymorphically)
 listener/message/         — MessageCreateListener, MessageDeleteListener,
-                            ReactionListener, ReactionAddListener, ReactionRemoveListener
+                            ReactionAddListener, ReactionRemoveListener
 listener/lifecycle/       — DisconnectListener (BotEventListener), GuildCreateListener
-listener/                 — PersistentComponentListener (base for shared @Component
-                            and @PersistentResponse hosts; classpath-scanned at startup)
-                          — Component (annotation in dev.sbs.discordapi.listener)
+listener/                 — EternalComponentListener (base for shared @Component click
+                            handlers and @Eternal builders; classpath-scanned at startup)
+                          — Component (@Component click-handler annotation)
+                          — Eternal (@Eternal response-rebuild annotation)
 ```
 
 #### Bot Event Hierarchy
 
-`dev.sbs.discordapi.event` houses internal events that are emitted by `DiscordBot` and consumed by `BotEventListener` subclasses. Lifecycle hooks (`onClientCreated`, `onGatewayConnected`, `onGatewayDisconnect`) are NOT exposed as protected methods on `DiscordBot` — `DiscordBot` is the single bridge that translates Discord4J gateway events into bot events, and listeners are the only extension point.
+`dev.simplified.discordapi.event` houses internal events that are emitted by `DiscordBot` and consumed by `BotEventListener` subclasses. Lifecycle hooks (`onClientCreated`, `onGatewayConnected`, `onGatewayDisconnect`) are NOT exposed as protected methods on `DiscordBot` — `DiscordBot` is the single bridge that translates Discord4J gateway events into bot events, and listeners are the only extension point.
 
 ```
 event/                    — BotEvent (marker interface)
@@ -167,28 +168,27 @@ event/lifecycle/          — ClientCreatedBotEvent, GatewayConnectBotEvent,
 - **`SentryExceptionHandler`** — captures exceptions to Sentry with enriched Discord context tags
 - **`CompositeExceptionHandler`** — chains multiple handlers in sequence
 
-**`handler/response/`** — two-tier response cache (hot in-memory + optional cold JPA):
-- **`ResponseLocator`** — reactive interface exposing `findByMessage`, `findForInteraction`, `findByResponseId`, `findFollowupByIdentifier`, `store`, `storeFollowup`, `update`, `remove`, `findExpired`. Persistence branching is internal to implementations.
-- **`InMemoryResponseLocator`** — hot tier backed by a `uniqueId → CachedResponse` map plus a `messageId → uniqueId` index for O(1) lookups.
-- **`JpaResponseLocator`** — cold tier writing `PersistentResponseEntity` rows via raw `JpaSession.transaction(...)`. Reads run on `Schedulers.boundedElastic()`.
-- **`CompositeResponseLocator`** — wraps both tiers, performs cold-tier hydration on hot-tier miss via the `PersistentComponentHandler` builder route registry.
-- **`CachedResponse`** — single concrete entry type representing both top-level replies and followups (followups have `parentId` set). Lifecycle is a `State` enum (`IDLE`, `BUSY`, `DEFERRED`); content dirty-tracking flows through `Response.isCacheUpdateRequired()`. Persistent entries carry `ownerClass` + `builderId` for hydration.
-- **`NavState`** — `@GsonType`-marked snapshot of the mutable navigation coordinates (current page, item page, page history) persisted to the `nav_state` JSON column.
-- **`jpa/PersistentResponseEntity`** — `@Entity` backing the `discord_persistent_response` table; followups are independent rows with `parent_id` set, cascade-deleted in app code.
+**`handler/response/`** — one `ResponseLocator` contract with hot and cold tiers as peer implementations and a dumb composite chain (modeled on `CompositeExceptionHandler`). "Locator" = a cache tier resolving live `CachedResponse`s; "Repository" = the durable record backend one layer down:
+- **`ResponseLocator`** — the reactive contract: `findForInteraction` (the only rebuild-capable read; defaults to `findByMessage`), the plain finders (`findByMessage`/`findByResponseId`/`findFollowupBy*`), `store`/`storeFollowup`, `update` (nav-coordinate write-through), `evict(UUID)` (hot-only drop, for the reaper + temporary cleanup), `deleteByMessage(Snowflake)` (all-tier, message-keyed teardown), `seed(CachedResponse)` (cache a pre-built entry, returning the canonical instance), `findExpired`.
+- **`InMemoryResponseLocator`** — hot tier backed by a `uniqueId → CachedResponse` map plus a `messageId → uniqueId` index for O(1) lookups. `store` copies the response's `builderKey` onto the entry; `seed` is an atomic `computeIfAbsent` returning the canonical entry.
+- **`EternalResponseLocator`** — cold peer that rebuilds eternals on demand from an `EternalResponseRepository`. The ONE place that knows how to rebuild a `Response` (`findForInteraction`), persist a cold record (`store`), write NavState through on change (`update`, dirty-checked), and tear down (`deleteByMessage`). Every other method is a truthful no-op, so plain reads never fire an `@Eternal` builder.
+- **`CompositeResponseLocator`** — holds `List<ResponseLocator>` (hot-first), knowing nothing but the interface. Reads resolve to the first tier that answers; `findForInteraction` additionally promotes a cold-tier hit up into the hot tier via `seed` (read-through cache promotion, single-flight on the canonical). Writes fan out to every tier.
+- **`CachedResponse`** — single concrete entry type representing both top-level replies and followups (followups have `parentId` set). Lifecycle is a `State` enum (`IDLE`, `BUSY`, `DEFERRED`, `ACKNOWLEDGED`); content dirty-tracking flows through `Response.isCacheUpdateRequired()`. Eternal entries carry `builderKey` (`isEternal()`), so the reaper evicts them without disabling their components.
+- **`NavState`** — `Serializable`, value-equal snapshot of the mutable navigation coordinate (current page, item page, page history) with `capture`/`applyTo`; carried across `Response.from()`/`mutate()` and persisted in the cold record.
+- **`EternalResponseRepository`** (SPI) + **`InMemoryEternalResponseRepository`** (default) + **`GsonEternalResponseRepository`** (file/JSON built-in) + **`EternalResponseRecord`** (the small persisted coordinate) — the storage-agnostic durable backend, used only by `EternalResponseLocator`. The app plugs a database-backed implementation (e.g. Hibernate) via `DiscordConfig.Builder.withEternalRepository(...)`; only the flat record ever crosses the boundary, never the rendered response.
+- **`ResponseExpiryTask`** — the scheduled reaper (replaces the old inline `connect()` sweep): one error-isolated pipeline, overlap-guarded, `evict`-ing mortal entries with component-disable and eternal entries without. Reaped by `DisconnectListener`'s `scheduler.shutdown()`.
 
-**`handler/PersistentComponentHandler`** — routing registry for persistent component interactions:
-- Scanned at bot startup over loaded `DiscordCommand` instances and `PersistentComponentListener` subclasses.
-- `@Component(customId)`-annotated methods (in `listener.dev.simplified.discordapi.Component`) register a route from custom id → `MethodHandle`. Methods take a `ComponentContext` subtype and return a `Publisher<Void>`.
-- `@PersistentResponse([id])`-annotated methods (in `dev.sbs.discordapi.response.PersistentResponse`) register a route from `(ownerClass, builderId)` → `MethodHandle`. Methods take an `EventContext<?>` and return a `Response`. Invoked at both creation time (with the dispatching command's context) and hydration time (with a `HydrationContext`).
-- `HydrationContext` (`context/HydrationContext`) is a lightweight `EventContext<ComponentInteractionEvent>` that intentionally does NOT extend `MessageContext`, so builder methods cannot accidentally call `getResponse()` against a not-yet-existing cache entry.
+**Eternal component/builder routing** (`handler/ComponentDispatcher`) — one registry for both hot and cold:
+- Scanned at bot startup over loaded `DiscordCommand` instances and `EternalComponentListener` subclasses.
+- `@Component(value[, regex, cacheTtl])`-annotated methods (`listener/Component`) register a click route from custom id → `MethodHandle` (exact + regex). Methods take a `ComponentContext` subtype and return a `Publisher<Void>`. The same route serves hot and (post-hydration) cold clicks.
+- `@Eternal(value)`-annotated methods (`listener/Eternal`) register a rebuild route from `builderKey` → `MethodHandle`. Methods take an `EternalBuildContext` and return a `Response`. Invoked at creation, at hydration, and at refresh.
+- `context/EternalBuildContext` is a lightweight `EventContext` that deliberately does NOT extend `MessageContext`, so a builder cannot call `getResponse()` while building one.
 
-**`handler/DispatchingClassContextKey`** — Reactor `Context` key (`"dev.sbs.discordapi.dispatching-class"`) carrying the dispatching `Class<?>` through the reactive pipeline. Written by `DiscordCommand.apply` (around `process()`) and by `ComponentListener.dispatchPersistent` (around the `@Component` invocation). Read by `InMemoryResponseLocator.store` to bind the owner class to persistent entries.
-
-**Persistent response flow:**
-1. `DiscordConfig.Builder.withJpaConfig(JpaConfig)` enables the cold tier; `DiscordBot` derives an internal `JpaConfig` whose `RepositoryFactory` scans `dev.sbs.discordapi.handler.response.jpa` and connects its own `JpaSession` so the discord-api entity discovery is independent of any user-supplied factory.
-2. A command's `process()` calls `context.reply(Response.builder().isPersistent(true)...build())`. `EventContext.reply` delegates to `responseLocator.store`, which writes through to both the hot tier and the cold tier.
-3. After a restart, when the user clicks the persistent component, `ComponentListener` calls `responseLocator.findForInteraction(event)`. The composite locator misses the hot tier, hits the JPA row, looks up the registered `@PersistentResponse` builder via `PersistentComponentHandler`, invokes it with a `HydrationContext` to rebuild the `Response`, restores the persisted `NavState`, seeds the hot tier, and returns the hydrated `CachedResponse`.
-4. `ComponentListener.dispatchPersistent` then routes to the `@Component`-annotated handler via `MethodHandle`, wrapping the publisher with the dispatching class context key so any nested `reply()` from inside the handler is also persistence-aware.
+**Eternal response flow:**
+1. `DiscordConfig.Builder.withEternalRepository(EternalResponseRepository)` supplies the durable backend (defaults to `InMemoryEternalResponseRepository`; `GsonEternalResponseRepository` for a file); `DiscordBot` builds a `CompositeResponseLocator` over `[InMemoryResponseLocator, EternalResponseLocator]`, the cold peer wrapping the repository + the (late-bound) `@Eternal` registry.
+2. A command's `process()` calls `context.replyEternal(builderKey, payload)`: the framework invokes the `@Eternal` builder to build the `Response`, stamps its id + eternal marker, replies, and `store` writes both the hot entry and a cold `EternalResponseRecord`.
+3. After a restart, when the user clicks the persisted component, `ComponentListener.apply` calls `responseLocator.findForInteraction(event)`. The composite misses the hot tier, reads the cold record, invokes the registered `@Eternal` builder with an `EternalBuildContext` to rebuild the `Response`, restores `NavState`, seeds the hot tier, and returns the hydrated `CachedResponse`.
+4. Dispatch then proceeds exactly as for a hot hit — `matchComponent` finds the real rebuilt component and the `@Component` handler runs against a real `Response`; a navigating handler's `NavState` is written through to the cold record via `update`. `MessageDeleteListener` tears down both tiers via `deleteByMessage`; `DiscordBot.refreshEternal(responseId)` re-renders an eternal from its record without a hot entry.
 
 **`response/handler/`** — page navigation and pagination:
 - **`HistoryHandler<P, I>`** — generic stack-based page navigation (sibling and child navigation via `Subpages`)

@@ -69,6 +69,8 @@ public final class Response {
     private final @NotNull AllowedMentions allowedMentions;
     private final int timeToLive;
     private final boolean ephemeral;
+    private final @NotNull Optional<String> builderKey;
+    private final @NotNull Optional<String> payload;
     private final @NotNull ConcurrentList<Attachment> attachments;
     private final @NotNull Function<MessageContext<MessageCreateEvent>, Mono<Void>> createInteraction;
     private final boolean renderingPagingComponents;
@@ -91,6 +93,7 @@ public final class Response {
             .withTimeToLive(response.getTimeToLive())
             .isRenderingPagingComponents(response.isRenderingPagingComponents())
             .isEphemeral(response.isEphemeral())
+            .asEternal(response.getBuilderKey(), response.getPayload())
             .withNavState(NavState.capture(response.getHistoryHandler()))
             .onCreate(response.getCreateInteraction());
     }
@@ -108,6 +111,16 @@ public final class Response {
 
     public @NotNull Builder mutate() {
         return from(this);
+    }
+
+    /**
+     * Whether this response was marked eternal via {@link Builder#asEternal}, carrying a stable
+     * builder key so it can be rebuilt on demand and persisted for reboot survival.
+     *
+     * @return {@code true} when a builder key is present
+     */
+    public boolean isEternal() {
+        return this.builderKey.isPresent();
     }
 
     // --- Content/Embed helpers ---
@@ -330,6 +343,8 @@ public final class Response {
         private int timeToLive = 10;
         private boolean renderingPagingComponents = true;
         private boolean ephemeral = false;
+        private Optional<String> builderKey = Optional.empty();
+        private Optional<String> payload = Optional.empty();
         @BuildFlag(nonNull = true)
         private AllowedMentions allowedMentions = AllowedMentions.suppressEveryone();
         private Optional<Function<MessageContext<MessageCreateEvent>, Mono<Void>>> createInteraction = Optional.empty();
@@ -496,6 +511,32 @@ public final class Response {
             return this;
         }
 
+        /**
+         * Marks the {@link Response} as eternal: it survives bot restarts and is rebuilt on demand
+         * by the registered {@link dev.simplified.discordapi.listener.Eternal @Eternal} builder with
+         * the matching key. The opaque payload is the builder's own input, persisted verbatim and
+         * handed back at rebuild time; the framework never interprets it.
+         *
+         * @param builderKey the stable key of the registered rebuild function
+         * @param payload the opaque builder input to persist
+         */
+        public Builder asEternal(@NotNull String builderKey, @NotNull String payload) {
+            return this.asEternal(Optional.of(builderKey), Optional.of(payload));
+        }
+
+        /**
+         * Sets the eternal coordinate from optional values, used to carry it across
+         * {@link #from(Response)}/{@link #mutate()}. Empty values leave the response temporary.
+         *
+         * @param builderKey the stable rebuild key, or empty for a temporary response
+         * @param payload the opaque builder input, or empty
+         */
+        public Builder asEternal(@NotNull Optional<String> builderKey, @NotNull Optional<String> payload) {
+            this.builderKey = builderKey;
+            this.payload = payload;
+            return this;
+        }
+
         private Builder withNavState(@NotNull NavState navState) {
             this.navState = navState;
             return this;
@@ -655,6 +696,8 @@ public final class Response {
                 this.allowedMentions,
                 this.timeToLive,
                 this.ephemeral,
+                this.builderKey,
+                this.payload,
                 this.attachments,
                 this.createInteraction.orElse(__ -> Mono.empty()),
                 this.renderingPagingComponents,

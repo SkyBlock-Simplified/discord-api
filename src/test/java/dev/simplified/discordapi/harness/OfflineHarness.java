@@ -1,6 +1,8 @@
 package dev.simplified.discordapi.harness;
 
 import dev.simplified.discordapi.handler.DiscordConfig;
+import dev.simplified.discordapi.handler.response.EternalResponseRepository;
+import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
 import dev.simplified.discordapi.harness.gateway.SlashOption;
@@ -32,6 +34,7 @@ import java.util.function.Predicate;
 public final class OfflineHarness implements AutoCloseable {
 
     private final HarnessConfig config;
+    private final EternalResponseRepository eternalRepository;
     private final LocalDiscordServer server;
     private final FakeGatewayClient gatewayClient;
     private final DispatchFactory dispatchFactory;
@@ -43,13 +46,26 @@ public final class OfflineHarness implements AutoCloseable {
     }
 
     /**
-     * Boots with the given harness identity, threading it through the REST mock, the dispatch factory, and
-     * the bot's {@link DiscordConfig}.
+     * Boots with the given harness identity and a fresh in-memory eternal store.
      *
      * @param config the harness identity to use
      */
     public OfflineHarness(@NotNull HarnessConfig config) {
+        this(config, InMemoryEternalResponseRepository.of());
+    }
+
+    /**
+     * Boots with the given harness identity and an explicit {@link EternalResponseRepository}, threading them
+     * through the REST mock, the dispatch factory, and the bot's {@link DiscordConfig}. Pass the same store
+     * to two successive harnesses to simulate a reboot: the first creates an eternal message, the second
+     * (with a fresh hot tier) re-hydrates it from the shared cold store.
+     *
+     * @param config the harness identity to use
+     * @param eternalRepository the eternal cold store to back this run
+     */
+    public OfflineHarness(@NotNull HarnessConfig config, @NotNull EternalResponseRepository eternalRepository) {
         this.config = config;
+        this.eternalRepository = eternalRepository;
         this.dispatchFactory = new DispatchFactory(config);
         this.server = new LocalDiscordServer(config).start();
 
@@ -67,6 +83,7 @@ public final class OfflineHarness implements AutoCloseable {
             .withApiBaseUrl(this.server.baseUrl())
             .withRestReactorResources(plaintextRest)
             .withGatewayClientFactory(options -> this.gatewayClient)
+            .withEternalRepository(this.eternalRepository)
             .withLogLevel(Logging.Level.INFO)
             .build();
 
@@ -77,6 +94,11 @@ public final class OfflineHarness implements AutoCloseable {
     /** The harness identity backing this run (ids, token, command-id scheme). */
     public @NotNull HarnessConfig config() {
         return this.config;
+    }
+
+    /** The eternal cold store backing this run; share it across two harnesses to simulate a reboot. */
+    public @NotNull EternalResponseRepository eternalRepository() {
+        return this.eternalRepository;
     }
 
     /**

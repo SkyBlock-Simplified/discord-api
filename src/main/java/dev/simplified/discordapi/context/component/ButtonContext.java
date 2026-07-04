@@ -67,28 +67,6 @@ public interface ButtonContext extends ActionComponentContext {
     }
 
     /**
-     * Creates a new eternal {@code ButtonContext} for an annotation-dispatched
-     * interaction whose backing message has no cache entry. The
-     * {@link #getResponseId() responseId} is a deterministic UUID derived from
-     * the message snowflake.
-     *
-     * @param discordBot the bot instance
-     * @param event the button interaction event
-     * @param button the synthesized button stub carrying the {@code customId}
-     * @param eternalResponseId the deterministic eternal response id
-     * @return a new eternal button context
-     */
-    static @NotNull ButtonContext ofEternal(@NotNull DiscordBot discordBot, @NotNull ButtonInteractionEvent event, @NotNull Button button, @NotNull UUID eternalResponseId) {
-        return new Impl(
-            discordBot,
-            event,
-            eternalResponseId,
-            button,
-            Optional.empty()
-        );
-    }
-
-    /**
      * Default implementation of {@link ButtonContext}.
      */
     @Getter

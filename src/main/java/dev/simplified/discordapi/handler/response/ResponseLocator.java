@@ -3,6 +3,7 @@ package dev.simplified.discordapi.handler.response;
 import dev.simplified.discordapi.context.EventContext;
 import dev.simplified.discordapi.response.Response;
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
@@ -18,6 +19,19 @@ import java.util.UUID;
  * @see CachedResponse
  */
 public interface ResponseLocator {
+
+    /**
+     * Resolves the cached entry to dispatch an incoming component interaction against, transparently
+     * hydrating and seeding an eternal entry on a hot-tier miss so callers always receive a real
+     * entry to dispatch. The default resolves the hot tier only; the composite locator overrides it
+     * to add cold-tier hydration. An empty result means the interaction has no owner and is dropped.
+     *
+     * @param event the incoming component interaction event
+     * @return a mono emitting the entry to dispatch, or empty when none can be resolved
+     */
+    default Mono<CachedResponse> findForInteraction(@NotNull ComponentInteractionEvent event) {
+        return this.findByMessage(event.getMessageId());
+    }
 
     /**
      * Looks up a cached entry by Discord message snowflake.
@@ -85,17 +99,42 @@ public interface ResponseLocator {
     );
 
     /**
-     * Removes an entry by stable response id. Cascades to followup entries
-     * that reference this entry as their parent.
+     * Evicts a live entry from the cache by stable response id, cascading to its followups. This is
+     * a hot-tier drop only: a cold-tier implementation persisting an eternal response is a no-op, so
+     * an evicted eternal survives and re-hydrates on its next interaction. Used by the expiry reaper
+     * and by temporary-response cleanup.
      *
-     * @param responseId the stable response id to remove
-     * @return a mono completing when removal finishes
+     * @param responseId the stable response id to evict
+     * @return a mono completing when eviction finishes
      */
-    Mono<Void> remove(@NotNull UUID responseId);
+    Mono<Void> evict(@NotNull UUID responseId);
 
     /**
-     * Persists mutable changes to an existing entry (state transitions,
-     * lastInteractAt updates, and navigation state changes).
+     * Deletes the response backing the given message from every tier - the hot live entry (and its
+     * followups) and any durable cold record. Message-keyed because a rebooted eternal may be
+     * cold-only with no hot entry to resolve an id from. Used by message-delete teardown.
+     *
+     * @param messageId the Discord message snowflake whose response should be torn down
+     * @return a mono completing when teardown finishes
+     */
+    Mono<Void> deleteByMessage(@NotNull Snowflake messageId);
+
+    /**
+     * Caches a pre-built entry and returns the <b>canonical</b> instance for its id - the value the
+     * cache actually holds, which under a concurrent seed is the first winner, not necessarily the
+     * argument. The composite uses this to promote a cold-tier hit into the hot tier while keeping
+     * concurrent first-interactions converged on one entry. A tier that holds no live entries
+     * returns the argument unchanged.
+     *
+     * @param entry the entry to cache
+     * @return a mono emitting the canonical cached entry
+     */
+    Mono<CachedResponse> seed(@NotNull CachedResponse entry);
+
+    /**
+     * Persists mutable changes to an existing entry (navigation state in particular). Hot tiers hold
+     * entries by reference so this is a no-op there; a cold tier write-through persists the eternal's
+     * navigation coordinate when it changed.
      *
      * @param entry the entry whose in-memory state has been mutated
      * @return a mono completing when the update finishes

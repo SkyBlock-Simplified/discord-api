@@ -6,6 +6,8 @@ import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.event.BotEvent;
 import dev.simplified.discordapi.feature.extractor.ExtractorStore;
 import dev.simplified.discordapi.feature.extractor.InMemoryExtractorStore;
+import dev.simplified.discordapi.handler.response.EternalResponseRepository;
+import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
 import dev.simplified.discordapi.listener.BotEventListener;
 import dev.simplified.discordapi.listener.DiscordListener;
 import dev.simplified.reflection.Reflection;
@@ -52,6 +54,7 @@ public final class DiscordConfig {
     private final @NotNull MemberRequestFilter memberRequestFilter;
     private final @NotNull Logging.Level logLevel;
     private final @NotNull ExtractorStore extractorStore;
+    private final @NotNull EternalResponseRepository eternalRepository;
 
     // Endpoint overrides (custom Discord-compatible endpoint / self-host / proxy / offline test harness)
     private final @NotNull Optional<String> apiBaseUrl;
@@ -94,6 +97,8 @@ public final class DiscordConfig {
         private Logging.Level logLevel = Logging.Level.WARN;
         @BuildFlag(nonNull = true)
         private ExtractorStore extractorStore = InMemoryExtractorStore.of();
+        @BuildFlag(nonNull = true)
+        private EternalResponseRepository eternalRepository = InMemoryEternalResponseRepository.of();
 
         // Endpoint overrides (default empty = stock Discord)
         private Optional<String> apiBaseUrl = Optional.empty();
@@ -247,6 +252,19 @@ public final class DiscordConfig {
         }
 
         /**
+         * Sets the {@link EternalResponseRepository} backing eternal (reboot-surviving) responses.
+         * Defaults to {@link InMemoryEternalResponseRepository} - bots that want eternal messages to
+         * survive restarts should plug a durable implementation (for example Hibernate).
+         *
+         * @param eternalRepository the store implementation
+         * @return this builder
+         */
+        public Builder withEternalRepository(@NotNull EternalResponseRepository eternalRepository) {
+            this.eternalRepository = eternalRepository;
+            return this;
+        }
+
+        /**
          * Overrides the Discord REST API base url (defaults to the stock Discord endpoint).
          * <p>
          * Redirects all REST traffic - and, transitively, the gateway endpoint resolved from
@@ -305,6 +323,7 @@ public final class DiscordConfig {
                 this.memberRequestFilter,
                 this.logLevel,
                 this.extractorStore,
+                this.eternalRepository,
                 this.apiBaseUrl,
                 this.restReactorResources,
                 this.gatewayClientFactory

@@ -375,7 +375,7 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
         return context.getMessage()
             .flatMap(Message::delete)
             .onErrorResume(throwable -> Mono.empty())
-            .then(context.getDiscordBot().getResponseLocator().remove(context.getResponseId()));
+            .then(context.getDiscordBot().getResponseLocator().evict(context.getResponseId()));
     }
 
     /** The configuration for a Cancel or Close button rendered in the action row. */

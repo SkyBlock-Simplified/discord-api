@@ -2,7 +2,6 @@ package dev.simplified.discordapi.listener;
 
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.context.scope.ComponentContext;
-import dev.simplified.discordapi.context.scope.MessageContext;
 import dev.simplified.discordapi.response.Response;
 
 import java.lang.annotation.ElementType;
@@ -15,7 +14,7 @@ import java.lang.annotation.Target;
  *
  * <p>
  * Methods annotated with {@code @Component} are discovered at startup by
- * scanning {@link DiscordCommand} subclasses and {@link PersistentComponentListener}
+ * scanning {@link DiscordCommand} subclasses and {@link EternalComponentListener}
  * subclasses. Each annotated method is registered by its {@link #value() custom id}
  * pattern in a global routing map. When a component interaction arrives whose
  * {@code customId} matches the route, the framework dispatches the event to
@@ -44,13 +43,13 @@ import java.lang.annotation.Target;
  * </ul>
  *
  * <p>
- * Components whose custom id matches a route may be either currently cached
- * (the response is in the in-memory locator) or eternal (the cached entry has
- * expired or never existed). The handler signature is identical in both
- * cases; the difference is whether {@link MessageContext#findResponse()
- * findResponse()} returns a value.
+ * A component whose custom id matches a route may be backed by a currently
+ * cached response (in the in-memory locator) or by an eternal response that is
+ * transparently rehydrated on demand. The handler signature and the context it
+ * receives are identical in both cases; by the time the handler runs, a real
+ * {@link ComponentContext} over a real {@link Response} always exists.
  *
- * @see PersistentComponentListener
+ * @see EternalComponentListener
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

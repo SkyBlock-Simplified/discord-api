@@ -6,6 +6,7 @@ import dev.simplified.discordapi.context.capability.TypingContext;
 import dev.simplified.discordapi.context.message.ReactionContext;
 import dev.simplified.discordapi.context.scope.InteractionContext;
 import dev.simplified.discordapi.context.scope.MessageContext;
+import dev.simplified.discordapi.handler.ComponentDispatcher;
 import dev.simplified.discordapi.handler.exception.ExceptionHandler;
 import dev.simplified.discordapi.handler.response.ResponseLocator;
 import dev.simplified.discordapi.response.EmojiResolver;
@@ -177,6 +178,42 @@ public interface EventContext<T extends Event> {
                 )
                 .then()
             );
+    }
+
+    /**
+     * Sends an eternal (reboot-surviving) {@link Response} built by the registered
+     * {@link dev.simplified.discordapi.listener.Eternal @Eternal} function for the given key. The
+     * builder is invoked with an {@link EternalBuildContext} carrying the opaque payload; the
+     * resulting response is stamped with a fresh id, marked eternal, and sent through
+     * {@link #reply(Response)}, which writes it through to the cold store.
+     *
+     * @param builderKey the stable key of the registered rebuild function
+     * @param payload the opaque builder input, persisted verbatim and replayed at hydration
+     * @return a {@link Mono} completing when the eternal reply has been sent and persisted
+     * @throws IllegalStateException when no builder is registered for the given key
+     */
+    default Mono<Void> replyEternal(@NotNull String builderKey, @NotNull String payload) {
+        ComponentDispatcher dispatcher = this.getDiscordBot().getComponentDispatcher();
+        ComponentDispatcher.EternalRoute route = dispatcher.findEternalBuilder(builderKey)
+            .orElseThrow(() -> new IllegalStateException("No @Eternal builder registered for key '" + builderKey + "'"));
+
+        EternalBuildContext buildContext = EternalBuildContext.of(
+            this.getDiscordBot(),
+            this.getEvent(),
+            this.getChannelId(),
+            this.getGuildId(),
+            this.getInteractUser(),
+            UUID.randomUUID(),
+            payload
+        );
+
+        Response response = dispatcher.invokeEternalBuilder(route, buildContext)
+            .mutate()
+            .withUniqueId(buildContext.getResponseId())
+            .asEternal(builderKey, payload)
+            .build();
+
+        return this.reply(response);
     }
 
     /**

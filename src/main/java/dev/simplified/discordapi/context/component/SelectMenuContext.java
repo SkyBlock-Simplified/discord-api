@@ -74,28 +74,6 @@ public interface SelectMenuContext extends ActionComponentContext {
     }
 
     /**
-     * Creates a new eternal {@code SelectMenuContext} for an
-     * annotation-dispatched interaction whose backing message has no cache
-     * entry. The {@link #getResponseId() responseId} is a deterministic UUID
-     * derived from the message snowflake.
-     *
-     * @param discordBot the bot instance
-     * @param event the select menu interaction event
-     * @param selectMenu the synthesized select menu stub carrying the {@code customId} and selected values
-     * @param eternalResponseId the deterministic eternal response id
-     * @return a new eternal select menu context
-     */
-    static @NotNull SelectMenuContext ofEternal(@NotNull DiscordBot discordBot, @NotNull SelectMenuInteractionEvent event, @NotNull SelectMenu selectMenu, @NotNull UUID eternalResponseId) {
-        return new Impl(
-            discordBot,
-            event,
-            eternalResponseId,
-            selectMenu,
-            Optional.empty()
-        );
-    }
-
-    /**
      * Default implementation of {@link SelectMenuContext}.
      */
     @Getter

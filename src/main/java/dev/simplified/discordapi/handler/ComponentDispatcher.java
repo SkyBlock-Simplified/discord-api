@@ -6,9 +6,12 @@ import dev.simplified.collection.ConcurrentMap;
 import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.command.DiscordCommand;
+import dev.simplified.discordapi.context.EternalBuildContext;
 import dev.simplified.discordapi.context.scope.ComponentContext;
 import dev.simplified.discordapi.listener.Component;
-import dev.simplified.discordapi.listener.PersistentComponentListener;
+import dev.simplified.discordapi.listener.Eternal;
+import dev.simplified.discordapi.listener.EternalComponentListener;
+import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.Reflection;
 import lombok.AccessLevel;
@@ -30,7 +33,7 @@ import java.util.regex.PatternSyntaxException;
  * interaction handlers. Constructed once per bot during
  * {@link DiscordBot#connect()}, AFTER the {@link CommandHandler} (which it
  * reads from) and AFTER classpath scanning has produced the set of
- * {@link PersistentComponentListener} subclasses.
+ * {@link EternalComponentListener} subclasses.
  *
  * <p>
  * Discovery walks each command and listener instance's declared methods,
@@ -50,7 +53,7 @@ import java.util.regex.PatternSyntaxException;
  * the interaction.
  *
  * @see Component
- * @see PersistentComponentListener
+ * @see EternalComponentListener
  */
 @Log4j2
 public final class ComponentDispatcher extends DiscordReference {
@@ -149,14 +152,33 @@ public final class ComponentDispatcher extends DiscordReference {
 
     }
 
-    /** Loaded {@link PersistentComponentListener} instances, in registration order. */
-    @Getter private final @NotNull ConcurrentList<PersistentComponentListener> loadedListeners;
+    /** Routing entry for an {@link Eternal @Eternal}-annotated response rebuild function. */
+    @Getter
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class EternalRoute {
+
+        /** The instance hosting the annotated method. */
+        private final @NotNull Object instance;
+
+        /** The class hosting the annotated method - the dispatching owner. */
+        private final @NotNull Class<?> ownerClass;
+
+        /** Reflection-free invocation handle for the method. */
+        private final @NotNull MethodHandle methodHandle;
+
+    }
+
+    /** Loaded {@link EternalComponentListener} instances, in registration order. */
+    @Getter private final @NotNull ConcurrentList<EternalComponentListener> loadedListeners;
 
     /** Map from explicit {@code custom_id} to its routing entry. */
     @Getter private final @NotNull ConcurrentMap<String, ComponentRoute> exactRoutes = Concurrent.newMap();
 
     /** Ordered list of regex routes, scanned only on exact-route miss. */
     @Getter private final @NotNull ConcurrentList<RegexRoute> regexRoutes = Concurrent.newList();
+
+    /** Map from an {@link Eternal @Eternal} key to its rebuild-function route. */
+    @Getter private final @NotNull ConcurrentMap<String, EternalRoute> eternalRoutes = Concurrent.newMap();
 
     /**
      * Constructs the registry by scanning the given commands and listeners
@@ -170,26 +192,53 @@ public final class ComponentDispatcher extends DiscordReference {
     public ComponentDispatcher(
         @NotNull DiscordBot discordBot,
         @NotNull ConcurrentList<DiscordCommand> loadedCommands,
-        @NotNull ConcurrentSet<Class<? extends PersistentComponentListener>> listenerClasses
+        @NotNull ConcurrentSet<Class<? extends EternalComponentListener>> listenerClasses
     ) {
         super(discordBot);
 
         this.getLog().info("Loading Component Dispatcher");
         this.loadedListeners = listenerClasses.stream()
-            .map(listenerClass -> (PersistentComponentListener) new Reflection<>(listenerClass).newInstance(discordBot))
+            .map(listenerClass -> (EternalComponentListener) new Reflection<>(listenerClass).newInstance(discordBot))
             .collect(Concurrent.toList());
 
         loadedCommands.forEach(command -> this.scanInstance(command, command.getClass()));
         this.loadedListeners.forEach(listener -> this.scanInstance(listener, listener.getClass()));
 
         this.getLog().info(
-            "Discovered {} component routes ({} exact, {} regex)",
+            "Discovered {} component routes ({} exact, {} regex), {} eternal builders",
             this.exactRoutes.size() + this.regexRoutes.size(),
             this.exactRoutes.size(),
-            this.regexRoutes.size()
+            this.regexRoutes.size(),
+            this.eternalRoutes.size()
         );
 
         this.warnOverlappingRoutes();
+    }
+
+    /**
+     * Finds the registered {@link Eternal @Eternal} rebuild function for the given key.
+     *
+     * @param builderKey the stable eternal key
+     * @return the matching builder route, or empty if none is registered
+     */
+    public @NotNull Optional<EternalRoute> findEternalBuilder(@NotNull String builderKey) {
+        return Optional.ofNullable(this.eternalRoutes.get(builderKey));
+    }
+
+    /**
+     * Invokes an eternal rebuild function, returning the freshly built response. The framework
+     * stamps identity, the eternal marker, and the navigation coordinate around this call.
+     *
+     * @param route the eternal builder route to invoke
+     * @param context the build context carrying the payload and originating metadata
+     * @return the rebuilt response
+     */
+    public @NotNull Response invokeEternalBuilder(@NotNull EternalRoute route, @NotNull EternalBuildContext context) {
+        try {
+            return (Response) route.getMethodHandle().invoke(route.getInstance(), context);
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
     }
 
     /**
@@ -228,15 +277,70 @@ public final class ComponentDispatcher extends DiscordReference {
 
     /**
      * Reflectively scans the given instance's declared methods for
-     * {@link Component @Component} annotations, validating signatures and
-     * registering routes.
+     * {@link Component @Component} and {@link Eternal @Eternal} annotations,
+     * validating signatures and registering routes.
      */
     private void scanInstance(@NotNull Object instance, @NotNull Class<?> ownerClass) {
         for (Method method : ownerClass.getDeclaredMethods()) {
             Component componentAnnotation = method.getAnnotation(Component.class);
             if (componentAnnotation != null)
                 this.registerComponentRoute(instance, ownerClass, method, componentAnnotation);
+
+            Eternal eternalAnnotation = method.getAnnotation(Eternal.class);
+            if (eternalAnnotation != null)
+                this.registerEternalRoute(instance, ownerClass, method, eternalAnnotation);
         }
+    }
+
+    /** Validates and registers an {@code @Eternal}-annotated rebuild function. */
+    private void registerEternalRoute(@NotNull Object instance, @NotNull Class<?> ownerClass, @NotNull Method method, @NotNull Eternal annotation) {
+        if (method.getParameterCount() != 1 || !method.getParameterTypes()[0].isAssignableFrom(EternalBuildContext.class)) {
+            this.getLog().warn(
+                "@Eternal method '{}#{}' must declare exactly one parameter assignable from EternalBuildContext, ignoring",
+                ownerClass.getName(),
+                method.getName()
+            );
+            return;
+        }
+
+        if (!Response.class.isAssignableFrom(method.getReturnType())) {
+            this.getLog().warn(
+                "@Eternal method '{}#{}' must return a Response, found '{}', ignoring",
+                ownerClass.getName(),
+                method.getName(),
+                method.getReturnType().getName()
+            );
+            return;
+        }
+
+        MethodHandle handle;
+        try {
+            method.setAccessible(true);
+            handle = MethodHandles.lookup().unreflect(method);
+        } catch (IllegalAccessException ex) {
+            this.getLog().error(
+                "@Eternal method '{}#{}' could not be unreflected, ignoring",
+                ownerClass.getName(),
+                method.getName(),
+                ex
+            );
+            return;
+        }
+
+        String builderKey = annotation.value();
+        if (this.eternalRoutes.containsKey(builderKey)) {
+            EternalRoute existing = this.eternalRoutes.get(builderKey);
+            this.getLog().warn(
+                "@Eternal key '{}' on '{}#{}' conflicts with '{}', ignoring",
+                builderKey,
+                ownerClass.getName(),
+                method.getName(),
+                existing.getOwnerClass().getName()
+            );
+            return;
+        }
+
+        this.eternalRoutes.put(builderKey, new EternalRoute(instance, ownerClass, handle));
     }
 
     /** Validates and registers a {@code @Component}-annotated method. */
