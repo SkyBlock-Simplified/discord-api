@@ -3,10 +3,12 @@ package dev.simplified.discordapi.component.interaction;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.Component;
+import dev.simplified.discordapi.component.capability.ModalProcessable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
+import dev.simplified.discordapi.context.component.ModalContext;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
@@ -19,11 +21,13 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -43,7 +47,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RadioGroup implements ActionComponent, LabelComponent, Toggleable {
+public final class RadioGroup implements ActionComponent, LabelComponent, Toggleable, ModalProcessable {
 
     /** The unique identifier for this radio group. */
     private final @NotNull String identifier;
@@ -59,6 +63,10 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
 
     /** Whether this radio group is currently enabled. */
     private boolean enabled;
+
+    /** The processor invoked with this group on modal submit. */
+    @Getter(AccessLevel.NONE)
+    private @NotNull Optional<BiFunction<ModalContext, RadioGroup, Mono<Void>>> submitProcessor;
 
     /**
      * Creates a new builder with a random identifier.
@@ -108,7 +116,8 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
             .withIdentifier(radioGroup.getIdentifier())
             .setDisabled(radioGroup.isEnabled())
             .withOptions(radioGroup.getOptions())
-            .setRequired(radioGroup.isRequired());
+            .setRequired(radioGroup.isRequired())
+            .withSubmitProcessor(radioGroup.submitProcessor);
     }
 
     /** {@inheritDoc} */
@@ -157,6 +166,18 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
 
     /** {@inheritDoc} */
     @Override
+    public @NotNull Mono<Void> processModalSubmit(@NotNull ModalContext context) {
+        return this.submitProcessor.map(processor -> processor.apply(context, this)).orElseGet(Mono::empty);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void bindSubmitProcessor(@NotNull Function<ModalContext, Mono<Void>> processor) {
+        this.submitProcessor = Optional.of((context, self) -> processor.apply(context));
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setEnabled(boolean value) {
         this.enabled = value;
     }
@@ -194,6 +215,22 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean required;
+        private Optional<BiFunction<ModalContext, RadioGroup, Mono<Void>>> submitProcessor = Optional.empty();
+
+        /**
+         * Sets the processor invoked with this group when the enclosing {@link Modal} is submitted.
+         *
+         * @param processor the submit processor, receiving the modal context and this group
+         */
+        public Builder onSubmit(@NotNull BiFunction<ModalContext, RadioGroup, Mono<Void>> processor) {
+            this.submitProcessor = Optional.of(processor);
+            return this;
+        }
+
+        private Builder withSubmitProcessor(@NotNull Optional<BiFunction<ModalContext, RadioGroup, Mono<Void>>> submitProcessor) {
+            this.submitProcessor = submitProcessor;
+            return this;
+        }
 
         /**
          * Sets the {@link RadioGroup} as disabled.
@@ -298,7 +335,8 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
                 this.options,
                 this.required,
                 Optional.empty(),
-                this.enabled
+                this.enabled,
+                this.submitProcessor
             );
         }
 

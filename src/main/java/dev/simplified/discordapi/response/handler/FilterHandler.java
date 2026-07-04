@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -28,6 +29,26 @@ public class FilterHandler<T> implements OutputHandler<Filter<T>> {
     @Override
     public int hashCode() {
         return Objects.hash(this.getItems(), this.isCacheUpdateRequired());
+    }
+
+    /**
+     * Enables exactly the filters whose identifiers appear in the given set and disables the
+     * rest, marking the cache stale so the item pipeline re-filters on the next render.
+     *
+     * @param enabledIdentifiers the identifiers of the filters to enable
+     */
+    public void applyEnabled(@NotNull Set<String> enabledIdentifiers) {
+        ConcurrentList<Filter<T>> current = this.getItems();
+
+        for (int index = 0; index < current.size(); index++) {
+            Filter<T> filter = current.get(index);
+            boolean enable = enabledIdentifiers.contains(filter.getIdentifier());
+
+            if (filter.isEnabled() != enable)
+                current.set(index, filter.mutate().isEnabled(enable).build());
+        }
+
+        this.setCacheUpdateRequired();
     }
 
 }

@@ -8,12 +8,14 @@ import dev.simplified.discordapi.component.media.Attachment;
 import dev.simplified.discordapi.component.media.MediaData;
 import dev.simplified.discordapi.component.scope.TopLevelMessageComponent;
 import dev.simplified.discordapi.context.scope.MessageContext;
+import dev.simplified.discordapi.exception.DiscordException;
 import dev.simplified.discordapi.handler.response.NavState;
 import dev.simplified.discordapi.response.embed.Embed;
 import dev.simplified.discordapi.response.handler.HistoryHandler;
 import dev.simplified.discordapi.response.handler.PaginationHandler;
 import dev.simplified.discordapi.response.page.Page;
 import dev.simplified.discordapi.response.page.TreePage;
+import dev.simplified.discordapi.response.page.editor.EditorPage;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.ExceptionUtil;
@@ -688,6 +690,12 @@ public final class Response {
          */
         public @NotNull Response build() {
             Reflection.validateFlags(this);
+
+            // Eternal responses are rebuilt from a persisted coordinate after a reboot, but an EditorPage
+            // carries live per-field save handlers that cannot be reconstructed from that coordinate, so
+            // an eternal response containing one can never be faithfully rehydrated.
+            if (this.builderKey.isPresent() && this.pages.stream().anyMatch(EditorPage.class::isInstance))
+                throw new DiscordException("Eternal responses cannot contain an EditorPage");
 
             Response response = new Response(
                 this.uniqueId,

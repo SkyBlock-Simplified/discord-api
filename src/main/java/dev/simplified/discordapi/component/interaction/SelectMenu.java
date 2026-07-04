@@ -6,9 +6,11 @@ import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.capability.EventInteractable;
+import dev.simplified.discordapi.component.capability.ModalProcessable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
+import dev.simplified.discordapi.context.component.ModalContext;
 import dev.simplified.discordapi.context.component.OptionContext;
 import dev.simplified.discordapi.context.component.SelectMenuContext;
 import dev.simplified.discordapi.handler.response.CachedResponse;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -550,7 +553,7 @@ public sealed interface SelectMenu
      */
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    final class StringMenu implements SelectMenu {
+    final class StringMenu implements SelectMenu, ModalProcessable {
 
         /** The unique identifier for this select menu. */
         private final @NotNull String identifier;
@@ -590,6 +593,10 @@ public sealed interface SelectMenu
 
         /** Whether this select menu is currently enabled. */
         private boolean enabled;
+
+        /** The processor invoked with this menu on modal submit, when hosted inside a modal. */
+        @Getter(AccessLevel.NONE)
+        private @NotNull Optional<BiFunction<ModalContext, StringMenu, Mono<Void>>> submitProcessor;
 
         /**
          * Creates a new builder with a random identifier.
@@ -650,7 +657,8 @@ public sealed interface SelectMenu
                 .withPlaceholderShowingSelectedOption(selectMenu.isPlaceholderShowingSelectedOption())
                 .withOptions(selectMenu.getOptions())
                 .onInteract(selectMenu.userInteraction)
-                .withPageType(selectMenu.getPageType());
+                .withPageType(selectMenu.getPageType())
+                .withSubmitProcessor(selectMenu.submitProcessor);
         }
 
         /** {@inheritDoc} */
@@ -723,6 +731,18 @@ public sealed interface SelectMenu
 
         /** {@inheritDoc} */
         @Override
+        public @NotNull Mono<Void> processModalSubmit(@NotNull ModalContext context) {
+            return this.submitProcessor.map(processor -> processor.apply(context, this)).orElseGet(Mono::empty);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public void bindSubmitProcessor(@NotNull Function<ModalContext, Mono<Void>> processor) {
+            this.submitProcessor = Optional.of((context, self) -> processor.apply(context));
+        }
+
+        /** {@inheritDoc} */
+        @Override
         public void setEnabled(boolean value) {
             this.enabled = value;
         }
@@ -784,7 +804,23 @@ public sealed interface SelectMenu
             private boolean deferEdit;
             private boolean required;
             private Optional<Function<SelectMenuContext, Mono<Void>>> interaction = Optional.empty();
+            private Optional<BiFunction<ModalContext, StringMenu, Mono<Void>>> submitProcessor = Optional.empty();
             private PageType pageType = PageType.NONE;
+
+            /**
+             * Sets the processor invoked with this menu when the enclosing {@link Modal} is submitted.
+             *
+             * @param processor the submit processor, receiving the modal context and this menu
+             */
+            public Builder onSubmit(@NotNull BiFunction<ModalContext, StringMenu, Mono<Void>> processor) {
+                this.submitProcessor = Optional.of(processor);
+                return this;
+            }
+
+            private Builder withSubmitProcessor(@NotNull Optional<BiFunction<ModalContext, StringMenu, Mono<Void>>> submitProcessor) {
+                this.submitProcessor = submitProcessor;
+                return this;
+            }
 
             /**
              * Replaces an existing {@link Option} matched by unique ID with the given option.
@@ -1030,7 +1066,8 @@ public sealed interface SelectMenu
                     this.pageType,
                     Concurrent.newUnmodifiableList(),
                     Concurrent.newUnmodifiableList(),
-                    this.enabled
+                    this.enabled,
+                    this.submitProcessor
                 );
             }
 

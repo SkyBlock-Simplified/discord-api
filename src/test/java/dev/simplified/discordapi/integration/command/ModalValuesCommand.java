@@ -84,7 +84,7 @@ public class ModalValuesCommand extends DiscordCommand<SlashCommandContext> {
                                                     )
                                                     .build()
                                             )
-                                            .onInteract(context -> context.edit(response -> response.editCurrentPage(builder -> builder.withContent(
+                                            .onSubmit(context -> context.edit(response -> response.editCurrentPage(builder -> builder.withContent(
                                                 "radio: " + context.getComponent()
                                                     .findComponent(RadioGroup.class, RadioGroup::getIdentifier, RADIO_ID)
                                                     .flatMap(RadioGroup::getSelected)

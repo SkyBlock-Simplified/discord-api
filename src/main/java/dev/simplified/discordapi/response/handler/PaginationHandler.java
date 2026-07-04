@@ -25,7 +25,9 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Builds pagination components with emoji access and provides interaction handlers
@@ -69,7 +71,7 @@ public class PaginationHandler {
             ItemHandler<?> itemHandler = response.getHistoryHandler().getCurrentPage().getItemHandler();
             SortHandler<?> sortHandler = itemHandler.getSortHandler();
 
-            RadioGroup.Builder radioBuilder = RadioGroup.builder();
+            RadioGroup.Builder radioBuilder = RadioGroup.builder().onSubmit(PaginationHandler::applySortSelection);
             sortHandler.getItems().forEach(sorter -> radioBuilder.withOptions(sorter.buildOption()));
 
             RadioGroup radioGroup = radioBuilder.build();
@@ -82,6 +84,26 @@ public class PaginationHandler {
                     .build()
             );
         });
+    }
+
+    /**
+     * Reads the sorter chosen in the submitted Sort modal and makes it the current sorter,
+     * re-triggering the item pipeline on the next render.
+     *
+     * @param context the modal submit context
+     * @param radioGroup the folded sort radio group carrying the user's pick
+     * @return the reactive completion
+     */
+    private static @NotNull Mono<Void> applySortSelection(@NotNull ModalContext context, @NotNull RadioGroup radioGroup) {
+        return context.consumeResponse(response -> radioGroup.getSelected()
+            .map(RadioGroup.Option::getValue)
+            .ifPresent(sorterId -> response.getHistoryHandler()
+                .getCurrentPage()
+                .getItemHandler()
+                .getSortHandler()
+                .setCurrent(sorterId)
+            )
+        );
     }
 
     /**
@@ -128,7 +150,8 @@ public class PaginationHandler {
 
             CheckboxGroup.Builder checkboxBuilder = CheckboxGroup.builder()
                 .withMinValues(0)
-                .withMaxValues(filterHandler.getItems().size());
+                .withMaxValues(filterHandler.getItems().size())
+                .onSubmit(PaginationHandler::applyFilterSelection);
 
             filterHandler.getItems().forEach(filter -> checkboxBuilder.withOptions(filter.buildOption()));
 
@@ -146,6 +169,29 @@ public class PaginationHandler {
                     .withComponents(Label.builder().withTitle("Active Filters").withComponent(checkboxGroup).build())
                     .build()
             );
+        });
+    }
+
+    /**
+     * Reads the filters checked in the submitted Filters modal and enables exactly those,
+     * disabling the rest, re-triggering the item pipeline on the next render.
+     *
+     * @param context the modal submit context
+     * @param checkboxGroup the folded filter checkbox group carrying the user's selection
+     * @return the reactive completion
+     */
+    private static @NotNull Mono<Void> applyFilterSelection(@NotNull ModalContext context, @NotNull CheckboxGroup checkboxGroup) {
+        return context.consumeResponse(response -> {
+            Set<String> enabled = checkboxGroup.getSelected()
+                .stream()
+                .map(CheckboxGroup.Option::getValue)
+                .collect(Collectors.toSet());
+
+            response.getHistoryHandler()
+                .getCurrentPage()
+                .getItemHandler()
+                .getFilterHandler()
+                .applyEnabled(enabled);
         });
     }
 
@@ -430,46 +476,33 @@ public class PaginationHandler {
         }
 
         if (currentPage.hasItems()) {
-            // Item List
-            pageComponents.add(ActionRow.of(this.buildPaginationButtons(emojis)));
+            // Item List - each button is built with its enabled/label state already applied, so there is no
+            // post-build mutation of the (unmodifiable) action row.
+            pageComponents.add(ActionRow.of(this.buildPaginationButtons(emojis, currentPage.getItemHandler())));
         }
 
-        ConcurrentList<TopLevelMessageComponent> result = pageComponents.toUnmodifiable();
+        return pageComponents.toUnmodifiable();
+    }
 
-        // Button state updates
-        editButton(result, Button::getPageType, Button.PageType.PREVIOUS, builder -> builder.setEnabled(currentPage.getItemHandler().hasPreviousItemPage()));
-        editButton(result, Button::getPageType, Button.PageType.NEXT, builder -> builder.setEnabled(currentPage.getItemHandler().hasNextItemPage()));
-        editButton(result, Button::getPageType, Button.PageType.SORT, builder -> builder.setEnabled(currentPage.getItemHandler().getSortHandler().notEmpty()));
-        editButton(result, Button::getPageType, Button.PageType.FILTER, builder -> builder.setEnabled(currentPage.getItemHandler().getFilterHandler().notEmpty()));
-        editButton(
-            result,
-            Button::getPageType,
-            Button.PageType.INDEX,
-            builder -> builder.withLabel(
-                "%s / %s",
-                currentPage.getItemHandler().getCurrentIndex(),
-                currentPage.getItemHandler().getTotalPages()
-            )
+    /**
+     * Builds all pagination buttons for the given item handler, each already carrying its enabled state
+     * (prev/next/sort/filter) or page-index label (index), resolving emojis through the given resolver.
+     *
+     * @param emojis the emoji resolver
+     * @param itemHandler the item handler whose paging state drives each button's enabled/label state
+     * @return the state-applied pagination buttons
+     */
+    public @NotNull ConcurrentList<Button> buildPaginationButtons(@NotNull EmojiResolver emojis, @NotNull ItemHandler<?> itemHandler) {
+        return Concurrent.newList(
+            buildButton(Button.PageType.PREVIOUS, emojis.getEmoji("ARROW_LEFT")).mutate().setEnabled(itemHandler.hasPreviousItemPage()).build(),
+            buildButton(Button.PageType.SORT, emojis.getEmoji("SORT")).mutate().setEnabled(itemHandler.getSortHandler().notEmpty()).build(),
+            buildButton(Button.PageType.INDEX, emojis.getEmoji("SEARCH")).mutate().withLabel("%s / %s", itemHandler.getCurrentIndex(), itemHandler.getTotalPages()).build(),
+            buildButton(Button.PageType.FILTER, emojis.getEmoji("FILTER")).mutate().setEnabled(itemHandler.getFilterHandler().notEmpty()).build(),
+            buildButton(Button.PageType.NEXT, emojis.getEmoji("ARROW_RIGHT")).mutate().setEnabled(itemHandler.hasNextItemPage()).build()
         );
-
-        return result;
     }
 
     // --- Internal Helpers ---
-
-    @SuppressWarnings("unchecked")
-    private static <S> void editButton(@NotNull ConcurrentList<TopLevelMessageComponent> components, @NotNull Function<Button, S> function, S value, @NotNull Function<Button.Builder, Button.Builder> buttonBuilder) {
-        components.forEach(topLevelComponent -> topLevelComponent.flattenComponents()
-            .filter(LayoutComponent.class::isInstance)
-            .map(LayoutComponent.class::cast)
-            .forEach(layoutComponent -> layoutComponent.findComponent(Button.class, function, value)
-                .ifPresent(button -> ((ConcurrentList<Component>) layoutComponent.getComponents()).set(
-                    layoutComponent.getComponents().indexOf(button),
-                    buttonBuilder.apply(button.mutate()).build()
-                ))
-            )
-        );
-    }
 
     private static @NotNull Function<ButtonContext, Mono<Void>> getButtonInteraction(@NotNull Button.PageType pageType) {
         return switch (pageType) {

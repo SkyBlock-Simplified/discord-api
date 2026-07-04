@@ -6,6 +6,7 @@ import dev.simplified.discordapi.harness.gateway.dispatch.InteractionDispatches;
 import dev.simplified.discordapi.harness.gateway.dispatch.LifecycleDispatches;
 import dev.simplified.discordapi.harness.gateway.dispatch.MessageDispatches;
 import dev.simplified.discordapi.harness.json.HarnessEntities;
+import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.json.gateway.Dispatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -127,6 +128,18 @@ public final class DispatchFactory {
      */
     public @NotNull Dispatch modalSubmit(long messageId, @NotNull String modalCustomId, @NotNull String inputId, @NotNull String value) {
         return this.components.modalSubmit(messageId, modalCustomId, inputId, value);
+    }
+
+    /**
+     * Builds a modal submit {@code INTERACTION_CREATE} carrying the given already-built component rows.
+     *
+     * @param messageId the id of the cached message the modal belongs to
+     * @param modalCustomId the modal's custom id
+     * @param components the top-level component rows carrying the submitted values
+     * @return the modal submit dispatch
+     */
+    public @NotNull Dispatch modalSubmit(long messageId, @NotNull String modalCustomId, @NotNull List<ComponentData> components) {
+        return this.components.modalSubmit(messageId, modalCustomId, components);
     }
 
     /**

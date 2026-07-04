@@ -66,7 +66,7 @@ public class ModalCommand extends DiscordCommand<SlashCommandContext> {
                                                     )
                                                     .build()
                                             )
-                                            .onInteract(context -> context.edit(response -> response.editCurrentPage(builder -> builder.withContent(
+                                            .onSubmit(context -> context.edit(response -> response.editCurrentPage(builder -> builder.withContent(
                                                 "modal: " + context.getComponent()
                                                     .findComponent(TextInput.class, TextInput::getIdentifier, INPUT_ID)
                                                     .flatMap(TextInput::getValue)

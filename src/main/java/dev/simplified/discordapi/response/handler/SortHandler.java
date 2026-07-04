@@ -58,4 +58,21 @@ public class SortHandler<T> implements OutputHandler<Sorter<T>> {
         this.setCacheUpdateRequired();
     }
 
+    /**
+     * Selects the sorter with the given identifier as the current sorter, marking the cache
+     * stale so the item pipeline re-sorts on the next render.
+     *
+     * @param identifier the identifier of the sorter to make current
+     */
+    public void setCurrent(@NotNull String identifier) {
+        this.getItems()
+            .stream()
+            .filter(sorter -> sorter.getIdentifier().equals(identifier))
+            .findFirst()
+            .ifPresent(sorter -> {
+                this.currentSorterIndex = this.getItems().indexOf(sorter);
+                this.setCacheUpdateRequired();
+            });
+    }
+
 }

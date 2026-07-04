@@ -6,15 +6,16 @@ import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.command.exception.InputException;
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.component.capability.EventInteractable;
+import dev.simplified.discordapi.component.capability.ModalProcessable;
 import dev.simplified.discordapi.component.capability.ModalUpdatable;
 import dev.simplified.discordapi.component.capability.UserInteractable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
+import dev.simplified.discordapi.component.scope.LabelComponent;
 import dev.simplified.discordapi.component.scope.LayoutComponent;
 import dev.simplified.discordapi.component.scope.TopLevelModalComponent;
 import dev.simplified.discordapi.context.capability.ExceptionContext;
 import dev.simplified.discordapi.context.component.ModalContext;
-import dev.simplified.discordapi.context.scope.ComponentContext;
 import dev.simplified.discordapi.handler.response.CachedResponse;
 import dev.simplified.discordapi.response.Response;
 import dev.simplified.reflection.Reflection;
@@ -38,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * An immutable modal dialog presented to a user as a pop-up form.
@@ -66,8 +68,6 @@ import java.util.function.Function;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Modal implements EventInteractable<ModalContext>, UserInteractable {
 
-    private static final @NotNull Function<ModalContext, Mono<Void>> NOOP_HANDLER = ComponentContext::deferEdit;
-
     /** The unique identifier for this modal. */
     private final @NotNull String identifier;
 
@@ -76,9 +76,6 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
 
     /** The top-level modal components contained in this modal. */
     private final @NotNull ConcurrentList<TopLevelModalComponent> components;
-
-    /** The interaction handler invoked when this modal is submitted. */
-    private final @NotNull Function<ModalContext, Mono<Void>> interaction;
 
     /**
      * Creates a new builder with a random identifier.
@@ -97,8 +94,7 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
 
         return Objects.equals(this.getIdentifier(), modal.getIdentifier())
             && Objects.equals(this.getTitle(), modal.getTitle())
-            && Objects.equals(this.getComponents(), modal.getComponents())
-            && Objects.equals(this.interaction, modal.interaction);
+            && Objects.equals(this.getComponents(), modal.getComponents());
     }
 
     /**
@@ -111,8 +107,7 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
         return new Builder()
             .withIdentifier(modal.getIdentifier())
             .withTitle(modal.getTitle())
-            .withComponents(modal.getComponents())
-            .onInteract(modal.interaction);
+            .withComponents(modal.getComponents());
     }
 
     /**
@@ -157,52 +152,56 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
 
     /**
      * {@inheritDoc}
+     *
      * <p>
-     * Validates each {@link TextInput} value against its validator, dispatches to
-     * {@link TextInput.SearchType} handlers for search-enabled inputs, and falls back
-     * to the modal-level interaction handler for remaining submissions.
+     * First validates each {@link TextInput} value against its validator, raising an
+     * {@link InputException} through the exception handler on the first invalid input without
+     * running any processor. When all inputs are valid, each inner {@link ModalProcessable}
+     * component processes its own folded value in order - there is no modal-level handler; the
+     * submit logic lives on the components themselves (see {@link ModalProcessable}).
      */
     @Override
     public @NotNull Function<ModalContext, Mono<Void>> getInteraction() {
-        return modalContext -> Flux.fromIterable(modalContext.getComponent().getComponents())
+        return modalContext -> {
+            Modal folded = modalContext.getComponent();
+
+            Optional<TextInput> invalid = folded.innerComponents()
+                .filter(TextInput.class::isInstance)
+                .map(TextInput.class::cast)
+                .filter(textInput -> textInput.getValue().isPresent())
+                .filter(textInput -> !textInput.getValidator().test(textInput.getValue().orElseThrow()))
+                .findFirst();
+
+            if (invalid.isPresent())
+                return modalContext.getDiscordBot().getExceptionHandler().handleException(
+                    ExceptionContext.of(
+                        modalContext.getDiscordBot(),
+                        modalContext,
+                        new InputException(invalid.get().getValue()),
+                        "Modal Interaction Exception"
+                    )
+                );
+
+            return Flux.fromStream(folded.innerComponents()
+                    .filter(ModalProcessable.class::isInstance)
+                    .map(ModalProcessable.class::cast))
+                .concatMap(processable -> processable.processModalSubmit(modalContext))
+                .then();
+        };
+    }
+
+    /** Streams this modal's inner components, unwrapping each {@link Label}. */
+    private @NotNull Stream<LabelComponent> innerComponents() {
+        return this.getComponents()
+            .stream()
             .filter(Label.class::isInstance)
             .map(Label.class::cast)
-            .map(Label::getComponent)
-            // Only text inputs carry search/validation behavior; skip non-text-input label components
-            // (radio groups, checkboxes) - which fold their values via updateFromData - so a modal that
-            // does not lead with a text input no longer throws a ClassCastException.
-            .filter(TextInput.class::isInstance)
-            .map(TextInput.class::cast)
-            .next()
-            .filter(textInput -> textInput.getValue().isPresent())
-            .flatMap(textInput -> {
-                boolean validInput = textInput.getValue()
-                    .map(value -> textInput.getValidator().test(value))
-                    .orElse(true);
-
-                if (!validInput) {
-                    return modalContext.getDiscordBot().getExceptionHandler().handleException(
-                        ExceptionContext.of(
-                            modalContext.getDiscordBot(),
-                            modalContext,
-                            new InputException(textInput.getValue()),
-                            "Modal Interaction Exception"
-                        )
-                    );
-                }
-
-                return Mono.just(textInput);
-            })
-            // Search Checks Top-Most
-            .filter(textInput -> textInput.getSearchType() != TextInput.SearchType.NONE)
-            //.next()
-            .switchIfEmpty(this.interaction.apply(modalContext).then(Mono.empty()))
-            .flatMap(textInput -> textInput.getSearchType().getInteraction().apply(modalContext, textInput));
+            .map(Label::getComponent);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getTitle(), this.getComponents(), this.interaction);
+        return Objects.hash(this.getIdentifier(), this.getTitle(), this.getComponents());
     }
 
     /** {@inheritDoc} */
@@ -238,7 +237,6 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
         private Optional<String> title = Optional.empty();
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<TopLevelModalComponent> components = Concurrent.newList();
-        private Optional<Function<ModalContext, Mono<Void>>> interaction = Optional.empty();
 
         /**
          * Clears all components from the {@link Modal}.
@@ -249,21 +247,26 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
         }
 
         /**
-         * Sets the interaction handler invoked when the {@link Modal} is submitted.
+         * Binds a whole-modal submit processor to the first {@link ModalProcessable} component.
          *
-         * @param interaction the interaction function, or {@code null} for the default no-op handler
-         */
-        public Builder onInteract(@Nullable Function<ModalContext, Mono<Void>> interaction) {
-            return this.onInteract(Optional.ofNullable(interaction));
-        }
-
-        /**
-         * Sets the interaction handler invoked when the {@link Modal} is submitted.
+         * <p>
+         * A modal carries no interaction handler of its own; this convenience attaches a handler
+         * that reads the whole submitted modal (via {@link ModalContext#getComponent()}) to the
+         * first processable component, so callers with multi-field or single-action modals do not
+         * have to pick a component. Prefer a component's own {@code onSubmit} when the handler
+         * only needs that component's value.
          *
-         * @param interaction the optional interaction function
+         * @param processor the processor invoked with the modal submit context
          */
-        public Builder onInteract(@NotNull Optional<Function<ModalContext, Mono<Void>>> interaction) {
-            this.interaction = interaction;
+        public Builder onSubmit(@NotNull Function<ModalContext, Mono<Void>> processor) {
+            this.components.stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .map(Label::getComponent)
+                .filter(ModalProcessable.class::isInstance)
+                .map(ModalProcessable.class::cast)
+                .findFirst()
+                .ifPresent(processable -> processable.bindSubmitProcessor(processor));
             return this;
         }
 
@@ -354,8 +357,7 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
             return new Modal(
                 this.identifier,
                 this.title,
-                this.components,
-                this.interaction.orElse(NOOP_HANDLER)
+                this.components
             );
         }
 

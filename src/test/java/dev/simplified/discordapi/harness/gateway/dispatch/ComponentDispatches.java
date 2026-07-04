@@ -105,7 +105,16 @@ public final class ComponentDispatches {
         ));
     }
 
-    private @NotNull Dispatch modalSubmit(long messageId, @NotNull String modalCustomId, @NotNull List<ComponentData> components) {
+    /**
+     * Builds an {@code INTERACTION_CREATE} (type 5, modal submit) dispatch carrying the given already-built
+     * component rows, so a fluent multi-component submit can assemble any mix of inner components.
+     *
+     * @param messageId the id of the cached message the modal belongs to
+     * @param modalCustomId the modal's custom id
+     * @param components the top-level component rows carrying the submitted values
+     * @return the modal submit dispatch
+     */
+    public @NotNull Dispatch modalSubmit(long messageId, @NotNull String modalCustomId, @NotNull List<ComponentData> components) {
         log.trace("Building modal submit: modal='{}' message={} with {} component row(s)", modalCustomId, messageId, components.size());
         return this.interactions.interaction(
             this.interactions.baseInteraction(MODAL_INTERACTION_ID, 5, "modal-token-" + modalCustomId)
@@ -115,6 +124,63 @@ public final class ComponentDispatches {
                     .components(components)
                     .build())
         );
+    }
+
+    /**
+     * Builds an action-row-wrapped text input value row (component type 4).
+     *
+     * @param inputId the text input's custom id
+     * @param value the submitted text value
+     * @return the row carrying the text input
+     */
+    public static @NotNull ComponentData textRow(@NotNull String inputId, @NotNull String value) {
+        return actionRow(textInput(inputId, value));
+    }
+
+    /**
+     * Builds an action-row-wrapped radio group value row (component type 21, {@code values}).
+     *
+     * @param radioId the radio group's custom id
+     * @param value the selected radio option value
+     * @return the row carrying the radio group
+     */
+    public static @NotNull ComponentData radioRow(@NotNull String radioId, @NotNull String value) {
+        return actionRow(radio(radioId, value));
+    }
+
+    /**
+     * Builds an action-row-wrapped string select value row (component type 3, {@code values}), used for a
+     * select menu hosted inside a modal.
+     *
+     * @param selectId the select menu's custom id
+     * @param values the selected option values
+     * @return the row carrying the select menu
+     */
+    public static @NotNull ComponentData selectRow(@NotNull String selectId, @NotNull String... values) {
+        return actionRow(stringSelect(selectId, values));
+    }
+
+    /**
+     * Builds an action-row-wrapped single checkbox value row (component type 23, {@code value}).
+     *
+     * @param checkboxId the checkbox's custom id
+     * @param checked whether the checkbox was checked
+     * @return the row carrying the checkbox
+     */
+    public static @NotNull ComponentData checkboxRow(@NotNull String checkboxId, boolean checked) {
+        return actionRow(checkbox(checkboxId, checked));
+    }
+
+    /**
+     * Builds an action-row-wrapped checkbox group value row (component type 22, {@code values}), used for the
+     * multi-select filter group hosted inside a modal.
+     *
+     * @param groupId the checkbox group's custom id
+     * @param values the selected option values
+     * @return the row carrying the checkbox group
+     */
+    public static @NotNull ComponentData checkboxGroupRow(@NotNull String groupId, @NotNull String... values) {
+        return actionRow(checkboxGroup(groupId, values));
     }
 
     private static ComponentData actionRow(ComponentData child) {
@@ -129,8 +195,16 @@ public final class ComponentDispatches {
         return ComponentData.builder().type(21).customId(customId).values(value).build();
     }
 
+    private static ComponentData stringSelect(String customId, String... values) {
+        return ComponentData.builder().type(3).customId(customId).values(values).build();
+    }
+
     private static ComponentData checkbox(String customId, boolean checked) {
         return ComponentData.builder().type(23).customId(customId).value(Boolean.toString(checked)).build();
+    }
+
+    private static ComponentData checkboxGroup(String customId, String... values) {
+        return ComponentData.builder().type(22).customId(customId).values(values).build();
     }
 
 }

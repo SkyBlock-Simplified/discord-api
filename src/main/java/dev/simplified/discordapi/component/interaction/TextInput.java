@@ -1,6 +1,7 @@
 package dev.simplified.discordapi.component.interaction;
 
 import dev.simplified.discordapi.component.Component;
+import dev.simplified.discordapi.component.capability.ModalProcessable;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
 import dev.simplified.discordapi.context.component.ModalContext;
@@ -25,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -45,7 +47,7 @@ import java.util.function.Predicate;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class TextInput implements ActionComponent, LabelComponent {
+public final class TextInput implements ActionComponent, LabelComponent, ModalProcessable {
 
     private static final @NotNull Predicate<String> NOOP_HANDLER = __ -> true;
 
@@ -75,6 +77,10 @@ public final class TextInput implements ActionComponent, LabelComponent {
 
     /** Whether this text input must be filled before the modal can be submitted. */
     private final boolean required;
+
+    /** The processor invoked with this input on modal submit, when it carries no search type. */
+    @Getter(AccessLevel.NONE)
+    private @NotNull Optional<BiFunction<ModalContext, TextInput, Mono<Void>>> submitProcessor;
 
     /**
      * Creates a new builder with a random identifier.
@@ -120,7 +126,8 @@ public final class TextInput implements ActionComponent, LabelComponent {
             .withValidator(textInput.getValidator())
             .withMinLength(textInput.getMinLength())
             .withMaxLength(textInput.getMaxLength())
-            .isRequired(textInput.isRequired());
+            .isRequired(textInput.isRequired())
+            .withSubmitProcessor(textInput.submitProcessor);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +174,31 @@ public final class TextInput implements ActionComponent, LabelComponent {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * A {@link SearchType} takes precedence - when present and the input carries a value it drives
+     * the submit dispatch, so search-enabled inputs keep their built-in navigation behavior (an
+     * empty search input is skipped, since its handler reads the submitted value). Otherwise the
+     * bound submit processor runs, if any.
+     */
+    @Override
+    public @NotNull Mono<Void> processModalSubmit(@NotNull ModalContext context) {
+        if (this.searchType != SearchType.NONE)
+            return this.getValue().isPresent()
+                ? this.searchType.getInteraction().apply(context, this)
+                : Mono.empty();
+
+        return this.submitProcessor.map(processor -> processor.apply(context, this)).orElseGet(Mono::empty);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void bindSubmitProcessor(@NotNull Function<ModalContext, Mono<Void>> processor) {
+        this.submitProcessor = Optional.of((context, self) -> processor.apply(context));
+    }
+
+    /**
      * A builder for constructing {@link TextInput} instances.
      */
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -189,6 +221,22 @@ public final class TextInput implements ActionComponent, LabelComponent {
         private TextInput.SearchType searchType = TextInput.SearchType.NONE;
         @BuildFlag(nonNull = true)
         private Optional<Predicate<String>> validator = Optional.empty();
+        private Optional<BiFunction<ModalContext, TextInput, Mono<Void>>> submitProcessor = Optional.empty();
+
+        /**
+         * Sets the processor invoked with this input when the enclosing {@link Modal} is submitted.
+         *
+         * @param processor the submit processor, receiving the modal context and this input
+         */
+        public Builder onSubmit(@NotNull BiFunction<ModalContext, TextInput, Mono<Void>> processor) {
+            this.submitProcessor = Optional.of(processor);
+            return this;
+        }
+
+        private Builder withSubmitProcessor(@NotNull Optional<BiFunction<ModalContext, TextInput, Mono<Void>>> submitProcessor) {
+            this.submitProcessor = submitProcessor;
+            return this;
+        }
 
         /**
          * Sets the {@link TextInput} as required when submitting a {@link Modal}.
@@ -360,7 +408,8 @@ public final class TextInput implements ActionComponent, LabelComponent {
                 this.validator.orElse(NOOP_HANDLER),
                 this.minLength,
                 this.maxLength,
-                this.required
+                this.required,
+                this.submitProcessor
             );
         }
 

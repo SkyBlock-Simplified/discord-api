@@ -8,16 +8,19 @@ import dev.simplified.discordapi.harness.OfflineHarness;
 import dev.simplified.discordapi.harness.gateway.DispatchFactory;
 import dev.simplified.discordapi.harness.gateway.FakeGatewayClient;
 import dev.simplified.discordapi.harness.gateway.SlashOption;
+import dev.simplified.discordapi.harness.gateway.dispatch.ComponentDispatches;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import dev.simplified.util.Logging;
 import discord4j.common.ReactorResources;
 import discord4j.common.util.Snowflake;
+import discord4j.discordjson.json.ComponentData;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -286,7 +289,8 @@ public final class IntegrationHarness implements AutoCloseable {
     }
 
     /**
-     * Pushes a simulated modal submit for a modal that was opened from the given cached message.
+     * Single-text-input modal submit convenience. Waits for the presentModal callback, then pushes a modal
+     * submit carrying one text input value.
      *
      * @param messageId the cached message the modal belongs to
      * @param modalCustomId the modal's custom id
@@ -295,9 +299,21 @@ public final class IntegrationHarness implements AutoCloseable {
      * @return this harness
      */
     public @NotNull IntegrationHarness submitModal(long messageId, @NotNull String modalCustomId, @NotNull String inputId, @NotNull String value) {
-        log.info("-> submit modal '{}' input '{}'='{}' on message {}", modalCustomId, inputId, value, messageId);
-        this.server.gateway().emit(this.server.dispatches().modalSubmit(messageId, modalCustomId, inputId, value));
-        return this;
+        return this.submitModal(messageId, modalCustomId).withText(inputId, value).submit();
+    }
+
+    /**
+     * Begins a fluent multi-component modal submit for a modal opened from the given cached message. Add
+     * component values with {@code withText}/{@code withRadio}/{@code withSelect}/{@code withCheckbox}/
+     * {@code withCheckboxGroup}, then call {@link ModalSubmit#submit()} - which first awaits the presentModal
+     * callback so the submit never races the modal's registration.
+     *
+     * @param messageId the cached message the modal belongs to
+     * @param modalCustomId the modal's custom id
+     * @return a fluent modal submit builder
+     */
+    public @NotNull ModalSubmit submitModal(long messageId, @NotNull String modalCustomId) {
+        return new ModalSubmit(this, messageId, modalCustomId);
     }
 
     /**
@@ -387,6 +403,106 @@ public final class IntegrationHarness implements AutoCloseable {
     public void close() {
         log.debug("Closing integration harness");
         this.server.close();
+    }
+
+    /**
+     * A fluent builder that accumulates the inner-component values of a modal submit and dispatches it.
+     *
+     * <p>
+     * Each {@code with*} call adds one component row; {@link #submit()} first awaits the presentModal
+     * callback (a {@code POST .../callback} whose body carries the modal id) so the submit never races the
+     * modal's registration on the cached entry, then pushes the modal submit dispatch.
+     */
+    public static final class ModalSubmit {
+
+        private final IntegrationHarness harness;
+        private final long messageId;
+        private final String modalCustomId;
+        private final List<ComponentData> rows = new ArrayList<>();
+
+        private ModalSubmit(@NotNull IntegrationHarness harness, long messageId, @NotNull String modalCustomId) {
+            this.harness = harness;
+            this.messageId = messageId;
+            this.modalCustomId = modalCustomId;
+        }
+
+        /**
+         * Adds a text input value.
+         *
+         * @param inputId the text input's custom id
+         * @param value the submitted text
+         * @return this builder
+         */
+        public @NotNull ModalSubmit withText(@NotNull String inputId, @NotNull String value) {
+            this.rows.add(ComponentDispatches.textRow(inputId, value));
+            return this;
+        }
+
+        /**
+         * Adds a radio group selection.
+         *
+         * @param radioId the radio group's custom id
+         * @param value the selected option value
+         * @return this builder
+         */
+        public @NotNull ModalSubmit withRadio(@NotNull String radioId, @NotNull String value) {
+            this.rows.add(ComponentDispatches.radioRow(radioId, value));
+            return this;
+        }
+
+        /**
+         * Adds a string select menu selection (for a select menu hosted inside a modal).
+         *
+         * @param selectId the select menu's custom id
+         * @param values the selected option values
+         * @return this builder
+         */
+        public @NotNull ModalSubmit withSelect(@NotNull String selectId, @NotNull String... values) {
+            this.rows.add(ComponentDispatches.selectRow(selectId, values));
+            return this;
+        }
+
+        /**
+         * Adds a single checkbox value.
+         *
+         * @param checkboxId the checkbox's custom id
+         * @param checked whether it is checked
+         * @return this builder
+         */
+        public @NotNull ModalSubmit withCheckbox(@NotNull String checkboxId, boolean checked) {
+            this.rows.add(ComponentDispatches.checkboxRow(checkboxId, checked));
+            return this;
+        }
+
+        /**
+         * Adds a checkbox group selection (for the multi-select filter group hosted inside a modal).
+         *
+         * @param groupId the checkbox group's custom id
+         * @param values the selected option values
+         * @return this builder
+         */
+        public @NotNull ModalSubmit withCheckboxGroup(@NotNull String groupId, @NotNull String... values) {
+            this.rows.add(ComponentDispatches.checkboxGroupRow(groupId, values));
+            return this;
+        }
+
+        /**
+         * Awaits the presentModal callback, then dispatches the accumulated modal submit.
+         *
+         * @return the owning harness
+         */
+        public @NotNull IntegrationHarness submit() {
+            log.info("-> submit modal '{}' with {} component(s) on message {}", this.modalCustomId, this.rows.size(), this.messageId);
+            this.harness.awaitRequest(
+                request -> request.method().equals("POST")
+                    && request.path().endsWith("/callback")
+                    && request.bodyContains(this.modalCustomId),
+                Duration.ofSeconds(10)
+            );
+            this.harness.gateway().emit(this.harness.dispatches().modalSubmit(this.messageId, this.modalCustomId, this.rows));
+            return this.harness;
+        }
+
     }
 
 }

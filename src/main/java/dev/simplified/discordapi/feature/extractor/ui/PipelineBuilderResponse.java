@@ -196,7 +196,7 @@ public final class PipelineBuilderResponse {
             return rerender(ctx);
         }
         return ctx.presentModal(StageEditModal.forAdd(stageClass).mutate()
-            .onInteract(modalCtx -> onAddModalSubmitted(modalCtx, stageClass))
+            .onSubmit(modalCtx -> onAddModalSubmitted(modalCtx, stageClass))
             .build());
     }
 
@@ -250,7 +250,7 @@ public final class PipelineBuilderResponse {
             return rerender(ctx);
         }
         return ctx.presentModal(StageEditModal.forEdit(stageIndex, stageClass, stage.config()).mutate()
-            .onInteract(modalCtx -> onEditModalSubmitted(modalCtx, stageIndex, stageClass))
+            .onSubmit(modalCtx -> onEditModalSubmitted(modalCtx, stageIndex, stageClass))
             .build());
     }
 
@@ -270,7 +270,7 @@ public final class PipelineBuilderResponse {
 
     private @NotNull Mono<Void> onSaveClicked(@NotNull ButtonContext ctx) {
         return ctx.presentModal(SaveExtractorModal.of(this.session.state()).mutate()
-            .onInteract(this::onSaveModalSubmitted)
+            .onSubmit(this::onSaveModalSubmitted)
             .build());
     }
 

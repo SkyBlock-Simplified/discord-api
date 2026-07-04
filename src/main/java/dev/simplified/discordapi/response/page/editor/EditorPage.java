@@ -133,6 +133,20 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * An editor renders every field itself inside one container - it is not a paginated item list, so it
+     * never contributes item-pagination controls (prev/next/sort/filter/search) to the enclosing response.
+     * The fields still live in the item handler for dirty-tracking and iteration; this only decouples them
+     * from the response's pagination machinery.
+     */
+    @Override
+    public boolean hasItems() {
+        return false;
+    }
+
+    /**
      * Computes and caches the editor's layout components from the current state.
      *
      * @return the unmodifiable list of layout components
@@ -570,16 +584,11 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
                 return Mono.empty();
             }
 
-            Optional<Modal> built = FieldModalFactory.forField(field, currentOpt);
+            Optional<Modal> built = FieldModalFactory.forField(field, currentOpt, this.editButtonCustomId(field.identifier()), modalCtx -> this.handleModalSubmit(modalCtx, field));
             if (built.isEmpty())
                 return Mono.empty();
 
-            Modal modal = built.get()
-                .mutate()
-                .onInteract(modalCtx -> this.handleModalSubmit(modalCtx, field))
-                .build();
-
-            return context.presentModal(modal);
+            return context.presentModal(built.get());
         }
 
         private <V> @NotNull Mono<Void> handleModalSubmit(@NotNull ModalContext context, @NotNull AggregateField<T, V> field) {
@@ -592,8 +601,6 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
                 return context.deferEdit();
 
             V oldValue = field.getter().apply(this.currentValue);
-            if (oldValue == null)
-                return context.deferEdit();
 
             return field.liveSaver().apply(this.currentValue, new FieldEdit<>(field.identifier(), oldValue, newValue))
                 .doOnNext(this::setCurrentValue)
@@ -992,16 +999,11 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
                 return Mono.empty();
             }
 
-            Optional<Modal> built = FieldModalFactory.forField(field, currentOpt);
+            Optional<Modal> built = FieldModalFactory.forField(field, currentOpt, this.editButtonCustomId(field.identifier()), modalCtx -> this.handleModalSubmit(modalCtx, field));
             if (built.isEmpty())
                 return Mono.empty();
 
-            Modal modal = built.get()
-                .mutate()
-                .onInteract(modalCtx -> this.handleModalSubmit(modalCtx, field))
-                .build();
-
-            return context.presentModal(modal);
+            return context.presentModal(built.get());
         }
 
         private <V> @NotNull Mono<Void> handleModalSubmit(@NotNull ModalContext context, @NotNull BuilderField<T, V> field) {

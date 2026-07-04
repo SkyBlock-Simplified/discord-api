@@ -3,10 +3,12 @@ package dev.simplified.discordapi.component.interaction;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.Component;
+import dev.simplified.discordapi.component.capability.ModalProcessable;
 import dev.simplified.discordapi.component.capability.Toggleable;
 import dev.simplified.discordapi.component.layout.Label;
 import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.LabelComponent;
+import dev.simplified.discordapi.context.component.ModalContext;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
@@ -18,12 +20,14 @@ import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -44,7 +48,7 @@ import java.util.function.Function;
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class CheckboxGroup implements ActionComponent, LabelComponent, Toggleable {
+public final class CheckboxGroup implements ActionComponent, LabelComponent, Toggleable, ModalProcessable {
 
     /** The unique identifier for this checkbox group. */
     private final @NotNull String identifier;
@@ -66,6 +70,10 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
 
     /** Whether this checkbox group is currently enabled. */
     private boolean enabled;
+
+    /** The processor invoked with this group on modal submit. */
+    @Getter(AccessLevel.NONE)
+    private @NotNull Optional<BiFunction<ModalContext, CheckboxGroup, Mono<Void>>> submitProcessor;
 
     /**
      * Creates a new builder with a random identifier.
@@ -119,7 +127,8 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
             .withOptions(checkboxGroup.getOptions())
             .withMinValues(checkboxGroup.getMinValues())
             .withMaxValues(checkboxGroup.getMaxValues())
-            .setRequired(checkboxGroup.isRequired());
+            .setRequired(checkboxGroup.isRequired())
+            .withSubmitProcessor(checkboxGroup.submitProcessor);
     }
 
     /** {@inheritDoc} */
@@ -162,6 +171,18 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
     @Override
     public void updateFromData(@NotNull ComponentData data) {
         this.updateSelected(data.values().toOptional().orElse(Concurrent.newList()));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @NotNull Mono<Void> processModalSubmit(@NotNull ModalContext context) {
+        return this.submitProcessor.map(processor -> processor.apply(context, this)).orElseGet(Mono::empty);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void bindSubmitProcessor(@NotNull Function<ModalContext, Mono<Void>> processor) {
+        this.submitProcessor = Optional.of((context, self) -> processor.apply(context));
     }
 
     /** {@inheritDoc} */
@@ -217,6 +238,22 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
         private int minValues = 0;
         private int maxValues = 1;
         private boolean required;
+        private Optional<BiFunction<ModalContext, CheckboxGroup, Mono<Void>>> submitProcessor = Optional.empty();
+
+        /**
+         * Sets the processor invoked with this group when the enclosing {@link Modal} is submitted.
+         *
+         * @param processor the submit processor, receiving the modal context and this group
+         */
+        public Builder onSubmit(@NotNull BiFunction<ModalContext, CheckboxGroup, Mono<Void>> processor) {
+            this.submitProcessor = Optional.of(processor);
+            return this;
+        }
+
+        private Builder withSubmitProcessor(@NotNull Optional<BiFunction<ModalContext, CheckboxGroup, Mono<Void>>> submitProcessor) {
+            this.submitProcessor = submitProcessor;
+            return this;
+        }
 
         /**
          * Sets the {@link CheckboxGroup} as disabled.
@@ -343,7 +380,8 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
                 this.maxValues,
                 this.required,
                 Concurrent.newUnmodifiableList(),
-                this.enabled
+                this.enabled,
+                this.submitProcessor
             );
         }
 
