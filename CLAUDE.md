@@ -23,9 +23,7 @@ This module (Java 21, Gradle 9.4+) is an **included build** named `discord4j-fra
 ./gradlew :discord4j-framework:test
 ```
 
-**Required environment variables:** `DISCORD_TOKEN`, `DEVELOPER_ERROR_LOG_CHANNEL_ID`
-
-The debug bot (`src/test/.../debug/DebugBot.java`) can be run directly to test commands in isolation.
+**Required environment variables:** `DISCORD_TOKEN`, `DEVELOPER_ERROR_LOG_CHANNEL_ID` (for running a real bot; the offline harness tests use fakes and need none).
 
 ## Architecture Overview
 
