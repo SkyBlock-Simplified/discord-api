@@ -32,13 +32,13 @@ enum Route {
 
     // Interaction responses - callback, reply, and followups (webhook + token)
     INTERACTION_CALLBACK("POST", "/interactions/[^/]+/[^/]+/callback", Kind.NO_CONTENT, null),
-    WEBHOOK_MESSAGE("POST", "/webhooks/[^/]+/[^/]+", Kind.JSON, HarnessEntities::messageJson),
+    CREATE_FOLLOWUP("POST", "/webhooks/[^/]+/[^/]+", Kind.JSON, HarnessEntities::messageJson),
     EDIT_ORIGINAL_MESSAGE("PATCH", ".*/messages/@original", Kind.JSON, HarnessEntities::messageJson),
     EDIT_FOLLOWUP("PATCH", "/webhooks/[^/]+/[^/]+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     DELETE_FOLLOWUP("DELETE", "/webhooks/[^/]+/[^/]+/messages/[^/]+", Kind.NO_CONTENT, null),
 
     // Channel messages
-    CHANNEL_MESSAGE("POST", "/channels/[^/]+/messages", Kind.JSON, HarnessEntities::messageJson),
+    CREATE_CHANNEL_MESSAGE("POST", "/channels/[^/]+/messages", Kind.JSON, HarnessEntities::messageJson),
     EDIT_CHANNEL_MESSAGE("PATCH", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     GET_CHANNEL_MESSAGE("GET", "/channels/\\d+/messages/\\d+", Kind.JSON, HarnessEntities::messageJson),
     DELETE_CHANNEL_MESSAGE("DELETE", "/channels/\\d+/messages/\\d+", Kind.NO_CONTENT, null),
@@ -52,7 +52,7 @@ enum Route {
     DELETE_EMOJI_REACTIONS("DELETE", "/channels/\\d+/messages/\\d+/reactions/[^/]+", Kind.NO_CONTENT, null),
 
     // Application emojis
-    EMOJIS("GET", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emptyEmojisJson),
+    LIST_EMOJIS("GET", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emptyEmojisJson),
     CREATE_EMOJI("POST", "/applications/[^/]+/emojis", Kind.JSON, HarnessEntities::emojiJson);
 
     /** How a matched route produces its response. */
