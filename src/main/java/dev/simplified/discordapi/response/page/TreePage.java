@@ -337,13 +337,13 @@ public final class TreePage implements Page, Subpages<TreePage> {
 
         @Override
         public TreePageBuilder withValue(@NotNull String value) {
-            super.withLabel(value);
+            super.withValue(value);
             return this;
         }
 
         @Override
         public TreePageBuilder withValue(@PrintFormat @NotNull String value, @Nullable Object... args) {
-            super.withLabel(value, args);
+            super.withValue(value, args);
             return this;
         }
 

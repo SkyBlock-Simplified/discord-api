@@ -650,7 +650,7 @@ public sealed interface SelectMenu
         public static @NotNull Builder from(@NotNull StringMenu selectMenu) {
             return new Builder()
                 .withIdentifier(selectMenu.getIdentifier())
-                .setDisabled(selectMenu.isEnabled())
+                .setEnabled(selectMenu.isEnabled())
                 .withPlaceholder(selectMenu.getPlaceholder())
                 .withMinValues(selectMenu.getMinValues())
                 .withMaxValues(selectMenu.getMaxValues())
@@ -792,7 +792,7 @@ public sealed interface SelectMenu
 
             @BuildFlag(nonNull = true)
             private String identifier;
-            private boolean enabled;
+            private boolean enabled = true;
             private Optional<String> placeholder = Optional.empty();
             private boolean placeholderShowingSelectedOption;
             @Range(from = 0, to = Option.MAX_ALLOWED)
@@ -1173,7 +1173,7 @@ public sealed interface SelectMenu
         public static @NotNull Builder from(@NotNull EntityMenu selectMenu) {
             return new Builder(selectMenu.getMenuType())
                 .withIdentifier(selectMenu.getIdentifier())
-                .setDisabled(selectMenu.isEnabled())
+                .setEnabled(selectMenu.isEnabled())
                 .withPlaceholder(selectMenu.getPlaceholder())
                 .withMinValues(selectMenu.getMinValues())
                 .withMaxValues(selectMenu.getMaxValues())
@@ -1270,7 +1270,7 @@ public sealed interface SelectMenu
             private final @NotNull Type menuType;
             @BuildFlag(nonNull = true)
             private String identifier;
-            private boolean enabled;
+            private boolean enabled = true;
             private Optional<String> placeholder = Optional.empty();
             @Range(from = 0, to = 25)
             private int minValues = 1;

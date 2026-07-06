@@ -195,10 +195,10 @@ class EditorAggregateInteractionTest {
 
             harness.clickButton(message, "editor:agg:cancel");
 
-            // cancel closes the response by deleting the message and evicting the cache entry; the close path
-            // does not itself emit an interaction callback, so the guard here is only that it never double-acks
+            // cancel closes the response by deferring (acknowledging) the interaction, deleting the message, and
+            // evicting the cache entry: exactly one interaction callback, so Discord never shows "interaction failed"
             harness.awaitRequest(request -> request.method().equals("DELETE"));
-            assertTrue(harness.callbackCount("button-token-editor:agg:cancel") <= 1, "cancel must not double-acknowledge");
+            assertEquals(1, harness.callbackCount("button-token-editor:agg:cancel"), "cancel acknowledges exactly once");
         }
     }
 
@@ -217,10 +217,11 @@ class EditorAggregateInteractionTest {
             assertTrue(confirming.hasComponent("editor:agg:confirm-delete"), "confirm-delete button");
             assertTrue(confirming.hasComponent("editor:agg:cancel-delete"), "go-back button");
 
-            // confirming runs onDelete and deletes the message
+            // confirming runs onDelete, acknowledges the interaction, and deletes the message
             harness.clickButton(message, "editor:agg:confirm-delete");
             harness.awaitRequest(request -> request.method().equals("DELETE"));
             assertTrue(loaded(harness).getModel().deleted, "the delete handler should have run");
+            assertEquals(1, harness.callbackCount("button-token-editor:agg:confirm-delete"), "confirm-delete acknowledges exactly once");
         }
     }
 

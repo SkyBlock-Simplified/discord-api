@@ -117,7 +117,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
         return new Builder()
             .withIdentifier(button.getIdentifier())
             .withStyle(button.getStyle())
-            .setDisabled(button.isEnabled())
+            .setEnabled(button.isEnabled())
             .withEmoji(button.getEmoji())
             .withLabel(button.getLabel())
             .withUrl(button.getUrl())
@@ -138,7 +138,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
             case DANGER -> discord4j.core.object.component.Button.danger(this.getIdentifier(), d4jReaction, label);
             case LINK -> discord4j.core.object.component.Button.link(this.getUrl().orElse(""), d4jReaction, label);
             case SECONDARY, UNKNOWN -> discord4j.core.object.component.Button.secondary(this.getIdentifier(), d4jReaction, label);
-        }).disabled(this.isEnabled());
+        }).disabled(this.isDisabled());
     }
 
     /** {@inheritDoc} */
@@ -183,7 +183,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
         private String identifier;
         @BuildFlag(nonNull = true)
         private Style style = Style.UNKNOWN;
-        private boolean disabled;
+        private boolean enabled = true;
         private boolean deferEdit;
         @BuildFlag(nonNull = true)
         private PageType pageType = PageType.NONE;
@@ -226,7 +226,8 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
          * @param value {@code true} to enable the button
          */
         public Builder setEnabled(boolean value) {
-            return this.setDisabled(!value);
+            this.enabled = value;
+            return this;
         }
 
         /**
@@ -242,8 +243,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
          * @param value {@code true} to disable the button
          */
         public Builder setDisabled(boolean value) {
-            this.disabled = value;
-            return this;
+            return this.setEnabled(!value);
         }
 
         /**
@@ -398,7 +398,7 @@ public final class Button implements ActionComponent, AccessoryComponent, EventI
                 this.deferEdit,
                 this.pageType,
                 this.interaction.orElse(NOOP_HANDLER),
-                this.disabled
+                this.enabled
             );
         }
 

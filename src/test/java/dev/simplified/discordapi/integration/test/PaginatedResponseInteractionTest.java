@@ -25,9 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>
  * The pagination/nav components carry random-UUID ids, so each step discovers the id it needs from a
- * {@link RenderedMessage} of the current render (by label or placeholder) before clicking it. The item list
- * itself is not rendered into the page, so pagination outcomes are asserted against the cached response's live
- * handler state (sort/filter/index), which is exactly what the interactions mutate.
+ * {@link RenderedMessage} of the current render (by label or placeholder) before clicking it. The current item
+ * slice renders as a {@code Container} of {@code Section}s, so item outcomes are asserted both against the
+ * rendered body ({@code |row-N|} markers) and against the cached response's live handler state
+ * (sort/filter/index), which is exactly what the interactions mutate.
  */
 class PaginatedResponseInteractionTest {
 
@@ -41,11 +42,18 @@ class PaginatedResponseInteractionTest {
             RenderedMessage rendered = RenderedMessage.of(harness.awaitInteractionReply());
 
             assertTrue(rendered.customIdByPlaceholder(PAGE_SELECTOR_PLACEHOLDER).isPresent(), "page selector present");
+            assertFalse(rendered.isDisabled(rendered.customIdByPlaceholder(PAGE_SELECTOR_PLACEHOLDER).orElseThrow()), "the page selector renders enabled (Toggleable enabled-state fix)");
             assertTrue(rendered.customIdByLabel("Previous").isPresent(), "previous button present");
             assertTrue(rendered.customIdByLabel("Sort").isPresent(), "sort button present");
             assertTrue(rendered.customIdByLabel("Filter").isPresent(), "filter button present");
             assertTrue(rendered.customIdByLabel("Next").isPresent(), "next button present");
             assertTrue(rendered.customIdByLabel("1 / 2").isPresent(), "index button shows the page count");
+            assertFalse(rendered.isDisabled(rendered.customIdByLabel("1 / 2").orElseThrow()), "the search (index) button renders enabled");
+
+            // the current item slice renders as sections (ascending sort, 5 per page -> rows 0..4)
+            assertTrue(rendered.textContains("|row-0|"), "the first item renders");
+            assertTrue(rendered.textContains("|row-4|"), "the last item of page 1 renders");
+            assertFalse(rendered.textContains("|row-5|"), "page 2 items do not render on page 1");
         }
     }
 
@@ -99,8 +107,15 @@ class PaginatedResponseInteractionTest {
             assertEquals(1, itemHandler(harness, message).getCurrentIndex(), "starts on item page 1");
 
             harness.clickButton(message, next);
-            harness.awaitRequest(request -> request.path().contains("button-token-" + next));
+            // an inline pagination button edits via a type-7 update callback (no deferEdit), so the re-render
+            // body lands on the .../callback POST rather than a webhook PATCH
+            RenderedMessage advanced = RenderedMessage.of(harness.awaitRequest(
+                request -> request.path().contains("button-token-" + next) && request.path().endsWith("/callback")
+            ));
+
             assertEquals(2, itemHandler(harness, message).getCurrentIndex(), "next advances to item page 2");
+            assertTrue(advanced.textContains("|row-5|"), "page 2 items now render");
+            assertFalse(advanced.textContains("|row-0|"), "page 1 items no longer render");
         }
     }
 
@@ -121,9 +136,13 @@ class PaginatedResponseInteractionTest {
             String radioId = modal.customIdsByType(Component.Type.RADIO_GROUP.getValue()).getFirst();
 
             harness.submitModal(message, modalId).withRadio(radioId, PaginatedCommand.SORTER_DOWN).submit();
-            harness.awaitRequest(request -> request.path().contains("modal-token-" + modalId));
+            RenderedMessage sorted = RenderedMessage.of(harness.awaitRequest(
+                request -> request.path().contains("modal-token-" + modalId) && request.path().endsWith("/callback")
+            ));
 
             assertEquals(PaginatedCommand.SORTER_DOWN, currentSorter(harness, message), "the sort submit selects the chosen sorter");
+            assertTrue(sorted.textContains("|row-9|"), "descending sort renders the highest row on page 1");
+            assertFalse(sorted.textContains("|row-0|"), "the ascending-first rows move off page 1 under descending sort");
         }
     }
 
@@ -144,10 +163,14 @@ class PaginatedResponseInteractionTest {
             String checkboxGroupId = modal.customIdsByType(Component.Type.CHECKBOX_GROUP.getValue()).getFirst();
 
             harness.submitModal(message, modalId).withCheckboxGroup(checkboxGroupId, PaginatedCommand.FILTER_HIGH).submit();
-            harness.awaitRequest(request -> request.path().contains("modal-token-" + modalId));
+            RenderedMessage filtered = RenderedMessage.of(harness.awaitRequest(
+                request -> request.path().contains("modal-token-" + modalId) && request.path().endsWith("/callback")
+            ));
 
             assertTrue(filterEnabled(harness, message, PaginatedCommand.FILTER_HIGH), "the filter submit enables the chosen filter");
             assertFalse(filterEnabled(harness, message, PaginatedCommand.FILTER_LOW), "the unchosen filter is disabled");
+            assertTrue(filtered.textContains("|row-5|"), "the high-half filter renders row 5");
+            assertFalse(filtered.textContains("|row-0|"), "the low-half rows are filtered out");
         }
     }
 

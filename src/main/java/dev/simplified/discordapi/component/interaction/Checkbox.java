@@ -78,7 +78,7 @@ public final class Checkbox implements ActionComponent, LabelComponent, Toggleab
     public static @NotNull Builder from(@NotNull Checkbox checkbox) {
         return new Builder()
             .withIdentifier(checkbox.getIdentifier())
-            .setDisabled(checkbox.isEnabled());
+            .setEnabled(checkbox.isEnabled());
     }
 
     /** {@inheritDoc} */
@@ -127,7 +127,7 @@ public final class Checkbox implements ActionComponent, LabelComponent, Toggleab
 
         @BuildFlag(nonNull = true)
         private String identifier;
-        private boolean enabled;
+        private boolean enabled = true;
 
         /**
          * Sets the {@link Checkbox} as disabled.

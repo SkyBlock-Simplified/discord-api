@@ -64,8 +64,15 @@ class EternalResponseInteractionTest {
         try (IntegrationHarness harness = new IntegrationHarness(HarnessConfig.builder().build(), firstBootStore).boot(Duration.ofSeconds(30))) {
             harness.sendSlashCommand("eternal");
             harness.awaitInteractionReply();
-            awaitColdRecord(firstBootStore, eternalMessageId, Duration.ofSeconds(10));
+            awaitColdRecord(() -> firstBootStore, eternalMessageId, Duration.ofSeconds(10));
         }
+
+        // Boot #1 has fully closed. Before boot #2 clicks, confirm the record is durably readable from a FRESH
+        // store over the same backing store: the gson findByMessage reads its in-memory map outside the write
+        // lock, so the previous check could observe the record after the map put but before the file flush
+        // landed, letting boot #2 load a stale file (the intermittent timeout). Re-reading the file until the
+        // record appears removes that race.
+        awaitColdRecord(coldStoreFactory, eternalMessageId, Duration.ofSeconds(10));
 
         // Boot #2: a fresh hot tier + a fresh cold store over the same backing store, with a distinct
         // reply id so the warm-up reply is cached under a different message than the eternal one.
@@ -120,13 +127,17 @@ class EternalResponseInteractionTest {
         }
     }
 
-    /** Polls the cold store until a record for the given message is present, or fails after the timeout. */
+    /**
+     * Polls a cold store obtained fresh from the factory each iteration until a record for the given message is
+     * present, or fails after the timeout. Re-obtaining the store per poll lets a file-backed factory re-read
+     * the backing file, so this observes the durable write rather than an early, still-flushing map mutation.
+     */
     @SuppressWarnings("BusyWait")
-    private static void awaitColdRecord(@NotNull EternalResponseRepository store, long messageId, @NotNull Duration timeout) {
+    private static void awaitColdRecord(@NotNull Supplier<EternalResponseRepository> storeFactory, long messageId, @NotNull Duration timeout) {
         long deadline = System.nanoTime() + timeout.toNanos();
 
         while (System.nanoTime() < deadline) {
-            if (store.findByMessage(Snowflake.of(messageId)).block(Duration.ofSeconds(1)) != null)
+            if (storeFactory.get().findByMessage(Snowflake.of(messageId)).block(Duration.ofSeconds(1)) != null)
                 return;
 
             try {

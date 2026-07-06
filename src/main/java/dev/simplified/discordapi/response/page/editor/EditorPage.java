@@ -380,15 +380,17 @@ public abstract sealed class EditorPage<T> implements Page permits EditorPage.Ag
     }
 
     /**
-     * Deletes the Discord message and removes the response cache entry.
+     * Acknowledges the triggering interaction, deletes the Discord message, and removes the response cache entry.
      *
      * @param context the component context whose response should be closed
-     * @return the reactive completion of the delete + cache removal chain
+     * @return the reactive completion of the acknowledge + delete + cache removal chain
      */
     protected @NotNull Mono<Void> closeResponse(@NotNull ButtonContext context) {
-        return context.getMessage()
-            .flatMap(Message::delete)
-            .onErrorResume(throwable -> Mono.empty())
+        // Acknowledge the interaction before tearing the message down. deferEdit is idempotent (a no-op once the
+        // interaction is acknowledged), so this never double-acks; without it the close paths would delete the
+        // message but leave the triggering click unacknowledged, and Discord would surface "interaction failed".
+        return context.deferEdit()
+            .then(context.getMessage().flatMap(Message::delete).onErrorResume(throwable -> Mono.empty()))
             .then(context.getDiscordBot().getResponseLocator().evict(context.getResponseId()));
     }
 

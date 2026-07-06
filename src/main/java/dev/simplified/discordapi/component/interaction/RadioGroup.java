@@ -114,7 +114,7 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
     public static @NotNull Builder from(@NotNull RadioGroup radioGroup) {
         return new Builder()
             .withIdentifier(radioGroup.getIdentifier())
-            .setDisabled(radioGroup.isEnabled())
+            .setEnabled(radioGroup.isEnabled())
             .withOptions(radioGroup.getOptions())
             .setRequired(radioGroup.isRequired())
             .withSubmitProcessor(radioGroup.submitProcessor);
@@ -131,7 +131,7 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
                     .collect(Concurrent.toList())
             )
             .required(true)
-            .disabled(true);
+            .disabled(this.isDisabled());
     }
 
     /** {@inheritDoc} */
@@ -211,7 +211,7 @@ public final class RadioGroup implements ActionComponent, LabelComponent, Toggle
 
         @BuildFlag(nonNull = true)
         private String identifier;
-        private boolean enabled;
+        private boolean enabled = true;
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<Option> options = Concurrent.newList();
         private boolean required;

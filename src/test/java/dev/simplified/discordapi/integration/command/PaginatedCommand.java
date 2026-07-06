@@ -87,14 +87,25 @@ public class PaginatedCommand extends DiscordCommand<SlashCommandContext> {
         ItemHandler<Integer> items = ItemHandler.<Integer>builder()
             .withItems(rows)
             .withAmountPerPage(5)
+            // A Section requires an accessory (Discord Components V2), so each item row carries an inert
+            // secondary button alongside its "|row-N|" text display.
             .withTransformer((row, index, size) -> Section.builder()
+                .withAccessory(
+                    Button.builder()
+                        .withStyle(Button.Style.SECONDARY)
+                        .withLabel("Open")
+                        .withIdentifier("paginated:row:" + row)
+                        .build()
+                )
                 .withComponents(TextDisplay.of("|row-" + row + "|"))
                 .build())
+            // The net sort direction is the Sorter's top-level order (withOrder); the per-comparator order is
+            // kept neutral (ASCENDING = natural) so the label matches behavior: ASCENDING -> 0..9, DESCENDING -> 9..0.
             .withSorters(
                 Sorter.<Integer>builder().withIdentifier(SORTER_UP).withLabel("Ascending").isEnabled()
-                    .withFunctions(SortOrder.ASCENDING, row -> row).build(),
+                    .withOrder(SortOrder.ASCENDING).withFunctions(SortOrder.ASCENDING, row -> row).build(),
                 Sorter.<Integer>builder().withIdentifier(SORTER_DOWN).withLabel("Descending").isEnabled()
-                    .withFunctions(SortOrder.DESCENDING, row -> row).build()
+                    .withOrder(SortOrder.DESCENDING).withFunctions(SortOrder.ASCENDING, row -> row).build()
             )
             .withFilters(
                 Filter.<Integer>builder().withIdentifier(FILTER_LOW).withLabel("Low half")
@@ -105,7 +116,8 @@ public class PaginatedCommand extends DiscordCommand<SlashCommandContext> {
             .build();
 
         return TreePage.builder()
-            .withOption(SelectMenu.Option.builder().withLabel("Items").withValue(PAGE_ITEMS).build())
+            .withLabel("Items")
+            .withValue(PAGE_ITEMS)
             .withContent("Rows")
             .withItemHandler(items)
             .build();
@@ -144,29 +156,25 @@ public class PaginatedCommand extends DiscordCommand<SlashCommandContext> {
             .build();
 
         return TreePage.builder()
-            .withOption(SelectMenu.Option.builder().withLabel("Controls").withValue(PAGE_CONTROLS).build())
+            .withLabel("Controls")
+            .withValue(PAGE_CONTROLS)
             .withContent("Controls")
             .withComponents(ActionRow.of(button), ActionRow.of(menu))
             .build();
     }
 
     private TreePage treePage() {
-        // The child carries its own (grand)subpage so that, while viewing the child, the subpage selector -
-        // and therefore its BACK option - still renders: the selector is gated on the CURRENT page having
-        // subpages (a leaf subpage renders no BACK - see main-code-issues [L7]).
-        TreePage grandchild = TreePage.builder()
-            .withOption(SelectMenu.Option.builder().withLabel("Grandchild").withValue("grandchild").build())
-            .withContent("Grandchild page")
-            .build();
-
+        // The child is a leaf subpage (no subpages of its own): the framework renders the subpage selector -
+        // and its BACK option - for any subpage that has page history, so a leaf is no longer a dead-end.
         TreePage child = TreePage.builder()
-            .withOption(SelectMenu.Option.builder().withLabel("Child").withValue(SUBPAGE_CHILD).build())
+            .withLabel("Child")
+            .withValue(SUBPAGE_CHILD)
             .withContent("Child page")
-            .withPages(grandchild)
             .build();
 
         return TreePage.builder()
-            .withOption(SelectMenu.Option.builder().withLabel("Tree").withValue(PAGE_TREE).build())
+            .withLabel("Tree")
+            .withValue(PAGE_TREE)
             .withContent("Parent page")
             .withPages(child)
             .build();

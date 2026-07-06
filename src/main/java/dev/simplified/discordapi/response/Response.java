@@ -159,7 +159,19 @@ public final class Response {
     }
 
     public @NotNull Stream<TopLevelMessageComponent> getCurrentComponents(@NotNull EmojiResolver emojis) {
-        return Stream.concat(this.getCachedPageComponents(emojis).stream(), this.getHistoryHandler().getCurrentPage().getComponents().stream());
+        Page currentPage = this.getHistoryHandler().getCurrentPage();
+
+        // A paginated page renders its current item slice as a Container of Sections, sitting between the
+        // pagination controls and the page's own components. The editor opts out (EditorPage#hasItems is false)
+        // because it renders its fields itself; a plain page without items contributes nothing here.
+        Stream<TopLevelMessageComponent> itemComponents = currentPage.hasItems()
+            ? Stream.<TopLevelMessageComponent>of(currentPage.getItemHandler().getRenderContainer())
+            : Stream.empty();
+
+        return Stream.concat(
+            Stream.concat(this.getCachedPageComponents(emojis).stream(), itemComponents),
+            currentPage.getComponents().stream()
+        );
     }
 
     public @NotNull ConcurrentList<Message.Flag> getFlags(@NotNull ConcurrentList<TopLevelMessageComponent> components) {

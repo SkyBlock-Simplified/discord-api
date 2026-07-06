@@ -123,7 +123,7 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
     public static @NotNull Builder from(@NotNull CheckboxGroup checkboxGroup) {
         return new Builder()
             .withIdentifier(checkboxGroup.getIdentifier())
-            .setDisabled(checkboxGroup.isEnabled())
+            .setEnabled(checkboxGroup.isEnabled())
             .withOptions(checkboxGroup.getOptions())
             .withMinValues(checkboxGroup.getMinValues())
             .withMaxValues(checkboxGroup.getMaxValues())
@@ -144,7 +144,7 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
             .withMinValues(this.getMinValues())
             .withMaxValues(this.getMaxValues())
             .required(true)
-            .disabled(true);
+            .disabled(this.isDisabled());
     }
 
     /** {@inheritDoc} */
@@ -232,7 +232,7 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
 
         @BuildFlag(nonNull = true)
         private String identifier;
-        private boolean enabled;
+        private boolean enabled = true;
         @BuildFlag(notEmpty = true)
         private final ConcurrentList<Option> options = Concurrent.newList();
         private int minValues = 0;

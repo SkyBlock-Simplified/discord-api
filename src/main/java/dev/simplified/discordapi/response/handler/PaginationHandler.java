@@ -432,8 +432,10 @@ public class PaginationHandler {
             ));
         }
 
-        // SubPage List
-        if (historyHandler.hasChildNavigation()) {
+        // SubPage List - render the subpage selector (and its BACK option) whenever the current page has its
+        // own subpages OR we have navigated into a subpage. A leaf subpage (no subpages of its own) still needs
+        // the selector so it can render BACK and its sibling subpages; otherwise it is a navigation dead-end.
+        if (historyHandler.hasChildNavigation() || historyHandler.hasPageHistory()) {
             HistoryHandler<?, String> pageHistory = currentPage.getHistoryHandler();
 
             if (pageHistory.getItems().notEmpty() || historyHandler.hasPageHistory()) {
@@ -496,7 +498,7 @@ public class PaginationHandler {
         return Concurrent.newList(
             buildButton(Button.PageType.PREVIOUS, emojis.getEmoji("ARROW_LEFT")).mutate().setEnabled(itemHandler.hasPreviousItemPage()).build(),
             buildButton(Button.PageType.SORT, emojis.getEmoji("SORT")).mutate().setEnabled(itemHandler.getSortHandler().notEmpty()).build(),
-            buildButton(Button.PageType.INDEX, emojis.getEmoji("SEARCH")).mutate().withLabel("%s / %s", itemHandler.getCurrentIndex(), itemHandler.getTotalPages()).build(),
+            buildButton(Button.PageType.INDEX, emojis.getEmoji("SEARCH")).mutate().setEnabled(true).withLabel("%s / %s", itemHandler.getCurrentIndex(), itemHandler.getTotalPages()).build(),
             buildButton(Button.PageType.FILTER, emojis.getEmoji("FILTER")).mutate().setEnabled(itemHandler.getFilterHandler().notEmpty()).build(),
             buildButton(Button.PageType.NEXT, emojis.getEmoji("ARROW_RIGHT")).mutate().setEnabled(itemHandler.hasNextItemPage()).build()
         );
