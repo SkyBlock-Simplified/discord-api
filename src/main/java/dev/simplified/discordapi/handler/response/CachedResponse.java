@@ -1,5 +1,6 @@
 package dev.simplified.discordapi.handler.response;
 
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.collection.ConcurrentMap;
@@ -39,6 +40,7 @@ import java.util.UUID;
  * @see ResponseLocator
  * @see NavState
  */
+@EqualsAndHashCode(of = "uniqueId")
 public final class CachedResponse {
 
     /** Lifecycle states for a cached entry. */
@@ -347,19 +349,6 @@ public final class CachedResponse {
     /** Removes the active modal dialog for the given user. */
     public void clearModal(@NotNull User user) {
         this.activeModals.remove(user.getId());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CachedResponse that = (CachedResponse) o;
-        return Objects.equals(this.uniqueId, that.uniqueId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(this.uniqueId);
     }
 
     /**

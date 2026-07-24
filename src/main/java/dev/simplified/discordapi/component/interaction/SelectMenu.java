@@ -28,6 +28,7 @@ import discord4j.core.object.entity.channel.Channel;
 import discord4j.discordjson.json.ComponentData;
 import dev.simplified.annotations.AccessLevel;
 import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
@@ -214,6 +215,7 @@ public sealed interface SelectMenu
      * description and {@link Emoji}. An option-level interaction handler is invoked when the
      * enclosing {@link StringMenu} is limited to a single selection.
      */
+    @EqualsAndHashCode(exclude = "interaction")
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     final class Option {
@@ -249,20 +251,6 @@ public sealed interface SelectMenu
             return new Builder(UUID.randomUUID());
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Option option = (Option) o;
-
-            return Objects.equals(this.getUniqueId(), option.getUniqueId())
-                && Objects.equals(this.getLabel(), option.getLabel())
-                && Objects.equals(this.getValue(), option.getValue())
-                && Objects.equals(this.getDescription(), option.getDescription())
-                && Objects.equals(this.getEmoji(), option.getEmoji());
-        }
-
         /**
          * Creates a pre-filled builder from the given option.
          *
@@ -276,11 +264,6 @@ public sealed interface SelectMenu
                 .withDescription(option.getDescription())
                 .withEmoji(option.getEmoji())
                 .onInteract(option.interaction);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.getUniqueId(), this.getLabel(), this.getValue(), this.getDescription(), this.getEmoji());
         }
 
         /**
@@ -551,6 +534,7 @@ public sealed interface SelectMenu
      *
      * @see Option
      */
+    @EqualsAndHashCode(exclude = {"selectedValues", "submitProcessor"})
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     final class StringMenu implements SelectMenu, ModalProcessable {
@@ -605,26 +589,6 @@ public sealed interface SelectMenu
          */
         public static @NotNull Builder builder() {
             return new Builder().withIdentifier(UUID.randomUUID().toString());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) return false;
-
-            StringMenu that = (StringMenu) o;
-
-            return this.getMinValues() == that.getMinValues()
-                && this.getMaxValues() == that.getMaxValues()
-                && this.isPlaceholderShowingSelectedOption() == that.isPlaceholderShowingSelectedOption()
-                && this.isDeferEdit() == that.isDeferEdit()
-                && this.isRequired() == that.isRequired()
-                && this.isEnabled() == that.isEnabled()
-                && Objects.equals(this.getIdentifier(), that.getIdentifier())
-                && Objects.equals(this.getPlaceholder(), that.getPlaceholder())
-                && Objects.equals(this.getOptions(), that.getOptions())
-                && Objects.equals(this.userInteraction, that.userInteraction)
-                && Objects.equals(this.getSelected(), that.getSelected())
-                && Objects.equals(this.getPageType(), that.getPageType());
         }
 
         /**
@@ -707,11 +671,6 @@ public sealed interface SelectMenu
 
             return Mono.justOrEmpty(this.getSelected().findFirst())
                 .flatMap(option -> option.getInteraction().apply(OptionContext.of(context, context.getResponse(), option)));
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.getIdentifier(), this.getPlaceholder(), this.getMinValues(), this.getMaxValues(), this.isPlaceholderShowingSelectedOption(), this.getOptions(), this.isDeferEdit(), this.isRequired(), this.userInteraction, this.getSelected(), this.isEnabled(), this.getPageType());
         }
 
         /**
@@ -1087,6 +1046,7 @@ public sealed interface SelectMenu
      *
      * @see DefaultValue
      */
+    @EqualsAndHashCode(exclude = "selectedValues")
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     final class EntityMenu implements SelectMenu {
@@ -1144,26 +1104,6 @@ public sealed interface SelectMenu
             return new Builder(type).withIdentifier(UUID.randomUUID().toString());
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) return false;
-
-            EntityMenu that = (EntityMenu) o;
-
-            return this.getMinValues() == that.getMinValues()
-                && this.getMaxValues() == that.getMaxValues()
-                && this.isDeferEdit() == that.isDeferEdit()
-                && this.isRequired() == that.isRequired()
-                && this.isEnabled() == that.isEnabled()
-                && Objects.equals(this.getIdentifier(), that.getIdentifier())
-                && Objects.equals(this.getPlaceholder(), that.getPlaceholder())
-                && Objects.equals(this.userInteraction, that.userInteraction)
-                && Objects.equals(this.getMenuType(), that.getMenuType())
-                && Objects.equals(this.getDefaultValues(), that.getDefaultValues())
-                && Objects.equals(this.getAllowedChannelTypes(), that.getAllowedChannelTypes())
-                && Objects.equals(this.getSelectedSnowflakes(), that.getSelectedSnowflakes());
-        }
-
         /**
          * Creates a pre-filled builder from the given entity menu.
          *
@@ -1216,11 +1156,6 @@ public sealed interface SelectMenu
                 .flatMap(interaction -> interaction.apply(context))
                 // Fallback ack when the menu handler did not acknowledge; idempotent no-op if it did.
                 .then(context.deferEdit());
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.getIdentifier(), this.getPlaceholder(), this.getMinValues(), this.getMaxValues(), this.isDeferEdit(), this.isRequired(), this.userInteraction, this.getMenuType(), this.getDefaultValues(), this.getAllowedChannelTypes(), this.getSelectedSnowflakes(), this.isEnabled());
         }
 
         /**

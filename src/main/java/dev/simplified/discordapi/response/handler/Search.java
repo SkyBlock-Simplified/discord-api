@@ -7,6 +7,7 @@ import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -18,10 +19,10 @@ import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
+@EqualsAndHashCode(exclude = "lastMatch")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Search<T> {
@@ -45,26 +46,10 @@ public class Search<T> {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Search<?> search = (Search<?>) o;
-
-        return Objects.equals(this.getTextInput(), search.getTextInput())
-            && Objects.equals(this.getPredicates(), search.getPredicates());
-    }
-
     public static <T> @NotNull Builder<T> from(@NotNull Search<T> searcher) {
         return new Builder<T>()
             .withPlaceholder(searcher.getTextInput().getPlaceholder())
             .withPredicates(searcher.getPredicates());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getTextInput(), this.getPredicates());
     }
 
     public @NotNull Builder<T> mutate() {

@@ -9,6 +9,7 @@ import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -17,11 +18,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractable {
@@ -57,20 +58,6 @@ public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractable 
         return new Builder<>();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Filter<?> filter = (Filter<?>) o;
-
-        return Objects.equals(this.getIdentifier(), filter.getIdentifier())
-            && Objects.equals(this.getLabel(), filter.getLabel())
-            && Objects.equals(this.getDescription(), filter.getDescription())
-            && Objects.equals(this.getPredicates(), filter.getPredicates())
-            && this.isEnabled() == filter.isEnabled();
-    }
-
     public static <T> @NotNull Builder<T> from(@NotNull Filter<T> filter) {
         return new Builder<T>()
             .withIdentifier(filter.getIdentifier())
@@ -78,17 +65,6 @@ public class Filter<T> implements TriPredicate<T, Long, Long>, UserInteractable 
             .withDescription(filter.getDescription())
             .withTriPredicates(filter.getPredicates())
             .isEnabled(filter.isEnabled());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-            this.getIdentifier(),
-            this.getLabel(),
-            this.getDescription(),
-            this.getPredicates(),
-            this.isEnabled()
-        );
     }
 
     public @NotNull Builder<T> mutate() {

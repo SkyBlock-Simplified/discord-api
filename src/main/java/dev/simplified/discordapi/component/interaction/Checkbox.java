@@ -11,13 +11,13 @@ import discord4j.core.object.component.CheckboxAction;
 import discord4j.discordjson.json.ComponentData;
 import dev.simplified.annotations.AccessLevel;
 import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -35,6 +35,7 @@ import java.util.UUID;
  * @see Label
  * @see Modal
  */
+@EqualsAndHashCode
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Checkbox implements ActionComponent, LabelComponent, Toggleable {
@@ -55,18 +56,6 @@ public final class Checkbox implements ActionComponent, LabelComponent, Toggleab
      */
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Checkbox that = (Checkbox) o;
-
-        return this.isSelected() == that.isSelected()
-            && this.isEnabled() == that.isEnabled()
-            && Objects.equals(this.getIdentifier(), that.getIdentifier());
     }
 
     /**
@@ -91,11 +80,6 @@ public final class Checkbox implements ActionComponent, LabelComponent, Toggleab
     @Override
     public @NotNull Component.Type getType() {
         return Component.Type.CHECKBOX;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.isSelected(), this.isEnabled());
     }
 
     /**

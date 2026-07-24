@@ -7,13 +7,12 @@ import dev.simplified.discordapi.component.scope.SectionComponent;
 import dev.simplified.discordapi.component.scope.TopLevelMessageComponent;
 import dev.simplified.discordapi.component.scope.TopLevelModalComponent;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * An immutable text display component for Discord's Components V2 system.
@@ -30,22 +29,13 @@ import java.util.Objects;
  * @see Container
  * @see Section
  */
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TextDisplay implements ContainerComponent, SectionComponent, TopLevelMessageComponent, TopLevelModalComponent {
 
     /** The text content rendered by this display. */
     private final @NotNull String content;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TextDisplay textDisplay = (TextDisplay) o;
-
-        return Objects.equals(this.getContent(), textDisplay.getContent());
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -79,11 +69,6 @@ public final class TextDisplay implements ContainerComponent, SectionComponent, 
     @Override
     public @NotNull discord4j.core.object.component.TextDisplay getD4jComponent() {
         return discord4j.core.object.component.TextDisplay.of(this.getContent());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getContent());
     }
 
 }

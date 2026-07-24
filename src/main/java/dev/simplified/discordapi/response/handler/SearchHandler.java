@@ -2,13 +2,14 @@ package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.interaction.TextInput;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor
 public class SearchHandler<T> implements OutputHandler<Search<T>> {
@@ -16,17 +17,6 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
     private final @NotNull ConcurrentList<Search<T>> items;
     private @NotNull Optional<Search<T>> pending = Optional.empty();
     private boolean cacheUpdateRequired;
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SearchHandler<?> that = (SearchHandler<?>) o;
-
-        return this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
-            && Objects.equals(this.getPending(), that.getPending())
-            && Objects.equals(this.getItems(), that.getItems());
-    }
 
     public void search(@NotNull TextInput textInput) {
         if (this.notEmpty()) {
@@ -40,11 +30,6 @@ public class SearchHandler<T> implements OutputHandler<Search<T>> {
                 this.setCacheUpdateRequired();
             }
         }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getItems(), this.getPending(), this.isCacheUpdateRequired());
     }
 
     @Override

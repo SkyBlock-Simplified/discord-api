@@ -15,6 +15,7 @@ import dev.simplified.util.StringUtil;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.possible.Possible;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -23,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -43,6 +43,7 @@ import java.util.stream.Stream;
  * @see Modal
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Label implements LayoutComponent, TopLevelModalComponent {
 
@@ -62,17 +63,6 @@ public final class Label implements LayoutComponent, TopLevelModalComponent {
      */
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Label label = (Label) o;
-
-        return Objects.equals(this.getTitle(), label.getTitle())
-            && Objects.equals(this.getDescription(), label.getDescription())
-            && Objects.equals(this.getComponent(), label.getComponent());
     }
 
     /**
@@ -124,11 +114,6 @@ public final class Label implements LayoutComponent, TopLevelModalComponent {
     @Override
     public @NotNull Type getType() {
         return Type.LABEL;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getTitle(), this.getDescription(), this.getComponent());
     }
 
     /**

@@ -6,6 +6,7 @@ import dev.simplified.util.StringUtil;
 import discord4j.core.object.component.MediaGalleryItem;
 import discord4j.core.object.component.UnfurledMediaItem;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -31,6 +31,7 @@ import java.util.Optional;
  * @see MediaGallery
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Thumbnail implements AccessoryComponent {
 
@@ -47,16 +48,6 @@ public class Thumbnail implements AccessoryComponent {
      */
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Thumbnail thumbnail = (Thumbnail) o;
-
-        return Objects.equals(this.getMediaData(), thumbnail.getMediaData())
-            && Objects.equals(this.getDescription(), thumbnail.getDescription());
     }
 
     /**
@@ -100,11 +91,6 @@ public class Thumbnail implements AccessoryComponent {
     @Override
     public @NotNull Type getType() {
         return Type.THUMBNAIL;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getMediaData(), this.getDescription());
     }
 
     /**

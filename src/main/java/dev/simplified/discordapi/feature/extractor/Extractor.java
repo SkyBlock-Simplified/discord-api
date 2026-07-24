@@ -2,13 +2,13 @@ package dev.simplified.discordapi.feature.extractor;
 
 import dev.simplified.dataflow.DataPipeline;
 import dev.simplified.dataflow.serde.PipelineGson;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -21,6 +21,7 @@ import java.util.UUID;
  * The pipeline body is held as a JSON blob in {@link #getDefinitionJson()}, round-tripped
  * through {@link PipelineGson} via {@link #pipeline()} and {@link #setPipeline(DataPipeline)}.
  */
+@EqualsAndHashCode(of = "id")
 @Getter
 @Setter
 public final class Extractor {
@@ -89,19 +90,6 @@ public final class Extractor {
             case GUILD -> this.guildId != null && this.guildId.equals(callerGuildId);
             case PUBLIC -> true;
         };
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Extractor that = (Extractor) o;
-        return Objects.equals(this.id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(this.id);
     }
 
     /** Sharing scope of a saved extractor. */

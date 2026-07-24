@@ -15,6 +15,7 @@ import dev.simplified.util.StringUtil;
 import discord4j.core.spec.EmbedCreateSpec;
 import dev.simplified.annotations.AccessLevel;
 import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
@@ -26,10 +27,10 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
+@EqualsAndHashCode
 @Getter
 @AllArgsConstructor
 public final class Embed {
@@ -47,24 +48,6 @@ public final class Embed {
 
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Embed embed = (Embed) o;
-
-        return Objects.equals(this.getColor(), embed.getColor())
-            && Objects.equals(this.getAuthor(), embed.getAuthor())
-            && Objects.equals(this.getTitle(), embed.getTitle())
-            && Objects.equals(this.getUrl(), embed.getUrl())
-            && Objects.equals(this.getThumbnailUrl(), embed.getThumbnailUrl())
-            && Objects.equals(this.getDescription(), embed.getDescription())
-            && Objects.equals(this.getImageUrl(), embed.getImageUrl())
-            && Objects.equals(this.getFooter(), embed.getFooter())
-            && Objects.equals(this.getFields(), embed.getFields());
     }
 
     public static @NotNull Builder from(@NotNull Embed embed) {
@@ -183,11 +166,6 @@ public final class Embed {
             builder.withComponents(TextDisplay.of(footerLine));
 
         return builder.build().getD4jComponent();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getColor(), this.getAuthor(), this.getTitle(), this.getUrl(), this.getThumbnailUrl(), this.getDescription(), this.getImageUrl(), this.getFooter(), this.getFields());
     }
 
     public @NotNull Builder mutate() {

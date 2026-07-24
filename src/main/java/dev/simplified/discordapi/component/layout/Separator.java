@@ -3,11 +3,10 @@ package dev.simplified.discordapi.component.layout;
 import dev.simplified.discordapi.component.scope.ContainerComponent;
 import dev.simplified.discordapi.component.scope.TopLevelMessageComponent;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 /**
  * An immutable visual divider placed between components in a message or container.
@@ -19,6 +18,7 @@ import java.util.Objects;
  * @see Container
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Separator implements TopLevelMessageComponent, ContainerComponent {
 
@@ -27,17 +27,6 @@ public final class Separator implements TopLevelMessageComponent, ContainerCompo
 
     /** Whether the divider line is visually rendered. */
     private final boolean visible;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Separator separator = (Separator) o;
-
-        return Objects.equals(this.getSize(), separator.getSize())
-            && this.isVisible() == separator.isVisible();
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -90,11 +79,6 @@ public final class Separator implements TopLevelMessageComponent, ContainerCompo
             this.isVisible(),
             discord4j.core.object.component.Separator.SpacingSize.of(this.getSize().getValue())
         );
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getSize(), this.isVisible());
     }
 
     /** The spacing size of a {@link Separator}. */

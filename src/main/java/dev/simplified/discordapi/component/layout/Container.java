@@ -8,6 +8,7 @@ import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -30,6 +30,7 @@ import java.util.Optional;
  * @see ContainerComponent
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Container implements LayoutComponent {
 
@@ -49,18 +50,6 @@ public final class Container implements LayoutComponent {
      */
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Container container = (Container) o;
-
-        return Objects.equals(this.getAccent(), container.getAccent())
-            && Objects.equals(this.getComponents(), container.getComponents())
-            && this.isSpoiler() == container.isSpoiler();
     }
 
     /**
@@ -97,11 +86,6 @@ public final class Container implements LayoutComponent {
     @Override
     public @NotNull Type getType() {
         return Type.CONTAINER;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getAccent(), this.getComponents(), this.isSpoiler());
     }
 
     /**

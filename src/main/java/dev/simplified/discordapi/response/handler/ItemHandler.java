@@ -13,6 +13,7 @@ import dev.simplified.discordapi.response.page.Paging;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.NumberUtil;
+import dev.simplified.annotations.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -35,6 +36,10 @@ import java.util.function.BiFunction;
  * @see Section
  * @see Container
  */
+@EqualsAndHashCode(
+    exclude = { "staticItems", "transformer", "staticItemApplier", "cachedFilteredItems", "cachedStaticItems", "cachedSections" },
+    useAccessors = true
+)
 public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     private final @NotNull ConcurrentList<T> items;
@@ -80,23 +85,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
 
     public static <T> @NotNull Builder<T> builder() {
         return new Builder<>();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ItemHandler<?> that = (ItemHandler<?>) o;
-
-        return Objects.equals(this.getItems(), that.getItems())
-            && Objects.equals(this.getVariables(), that.getVariables())
-            && this.getAmountPerPage() == that.getAmountPerPage()
-            && Objects.equals(this.getSortHandler(), that.getSortHandler())
-            && Objects.equals(this.getFilterHandler(), that.getFilterHandler())
-            && Objects.equals(this.getSearchHandler(), that.getSearchHandler())
-            && this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
-            && this.getCurrentIndex() == that.getCurrentIndex();
     }
 
     public static <T> @NotNull Builder<T> from(@NotNull ItemHandler<T> handler) {
@@ -289,11 +277,6 @@ public final class ItemHandler<T> implements OutputHandler<T>, Paging<Integer> {
     @Override
     public void gotoPreviousPage() {
         this.gotoPage(this.currentIndex - 1);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getItems(), this.getVariables(), this.getAmountPerPage(), this.getSortHandler(), this.getFilterHandler(), this.getSearchHandler(), this.isCacheUpdateRequired(), this.getCurrentIndex());
     }
 
     /** Whether there is a next item page. */

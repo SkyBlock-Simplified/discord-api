@@ -10,6 +10,7 @@ import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -21,12 +22,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -85,21 +86,6 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
         return new Builder<>();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Sorter<?> sorter = (Sorter<?>) o;
-
-        return Objects.equals(this.getIdentifier(), sorter.getIdentifier())
-            && Objects.equals(this.getLabel(), sorter.getLabel())
-            && Objects.equals(this.getDescription(), sorter.getDescription())
-            && this.isEnabled() == sorter.isEnabled()
-            && Objects.equals(this.getComparators(), sorter.getComparators())
-            && Objects.equals(this.getOrder(), sorter.getOrder());
-    }
-
     public static <T> @NotNull Builder<T> from(@NotNull Sorter<T> sorter) {
         return new Builder<T>()
             .withIdentifier(sorter.getIdentifier())
@@ -108,11 +94,6 @@ public class Sorter<T> implements BiFunction<ConcurrentList<T>, Boolean, Concurr
             .isEnabled(sorter.isEnabled())
             .withComparators(sorter.getComparators())
             .withOrder(sorter.getOrder());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getLabel(), this.getDescription(), this.isEnabled(), this.getComparators(), this.getOrder());
     }
 
     public @NotNull Builder<T> mutate() {

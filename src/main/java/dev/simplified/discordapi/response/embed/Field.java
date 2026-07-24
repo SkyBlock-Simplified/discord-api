@@ -7,6 +7,7 @@ import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import discord4j.core.spec.EmbedCreateFields;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -14,9 +15,9 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor
 public final class Field {
@@ -37,19 +38,6 @@ public final class Field {
 
     public static @NotNull Field empty(boolean inline) {
         return builder().isInline(inline).build();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Field field = (Field) o;
-
-        return Objects.equals(this.getName(), field.getName())
-            && Objects.equals(this.getValue(), field.getValue())
-            && this.isInline() == field.isInline()
-            && Objects.equals(this.getEmoji(), field.getEmoji());
     }
 
     public static @NotNull Builder from(@NotNull Field field) {
@@ -77,11 +65,6 @@ public final class Field {
             this.getValue().orElse(" "),
             this.isInline()
         );
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getName(), this.getValue(), this.isInline(), this.getEmoji());
     }
 
     public @NotNull Builder mutate() {

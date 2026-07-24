@@ -26,6 +26,7 @@ import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.discordjson.possible.Possible;
 import dev.simplified.annotations.AccessLevel;
 import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +36,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -64,6 +64,7 @@ import java.util.stream.Stream;
  * @see TextInput
  * @see Label
  */
+@EqualsAndHashCode
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Modal implements EventInteractable<ModalContext>, UserInteractable {
@@ -84,17 +85,6 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
      */
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Modal modal = (Modal) o;
-
-        return Objects.equals(this.getIdentifier(), modal.getIdentifier())
-            && Objects.equals(this.getTitle(), modal.getTitle())
-            && Objects.equals(this.getComponents(), modal.getComponents());
     }
 
     /**
@@ -197,11 +187,6 @@ public final class Modal implements EventInteractable<ModalContext>, UserInterac
             .filter(Label.class::isInstance)
             .map(Label.class::cast)
             .map(Label::getComponent);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getTitle(), this.getComponents());
     }
 
     /** {@inheritDoc} */

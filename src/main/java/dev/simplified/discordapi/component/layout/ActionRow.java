@@ -6,12 +6,12 @@ import dev.simplified.discordapi.component.scope.ActionComponent;
 import dev.simplified.discordapi.component.scope.ContainerComponent;
 import dev.simplified.discordapi.component.scope.LayoutComponent;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * An immutable layout component that arranges {@link ActionComponent ActionComponents} in a
@@ -24,22 +24,13 @@ import java.util.Objects;
  *
  * @see ActionComponent
  */
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ActionRow implements ContainerComponent, LayoutComponent {
 
     /** The action components arranged in this row. */
     private final @NotNull ConcurrentList<ActionComponent> components;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ActionRow actionRow = (ActionRow) o;
-
-        return Objects.equals(this.getComponents(), actionRow.getComponents());
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -56,11 +47,6 @@ public final class ActionRow implements ContainerComponent, LayoutComponent {
     @Override
     public @NotNull Type getType() {
         return Type.ACTION_ROW;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getComponents());
     }
 
     /**

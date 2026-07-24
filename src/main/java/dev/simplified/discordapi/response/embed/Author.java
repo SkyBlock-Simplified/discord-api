@@ -5,6 +5,7 @@ import dev.simplified.reflection.builder.BuildFlag;
 import dev.simplified.util.StringUtil;
 import discord4j.core.spec.EmbedCreateFields;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -12,9 +13,9 @@ import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor
 public final class Author {
@@ -27,25 +28,8 @@ public final class Author {
         return new Builder();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Author author = (Author) o;
-
-        return Objects.equals(this.getName(), author.getName())
-            && Objects.equals(this.getUrl(), author.getUrl())
-            && Objects.equals(this.getIconUrl(), author.getIconUrl());
-    }
-
     public @NotNull EmbedCreateFields.Author getD4jAuthor() {
         return EmbedCreateFields.Author.of(this.getName(), this.getUrl().orElse(null), this.getIconUrl().orElse(null));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getName(), this.getUrl(), this.getIconUrl());
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)

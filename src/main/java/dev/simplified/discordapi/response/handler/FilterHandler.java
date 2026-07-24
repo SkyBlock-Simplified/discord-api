@@ -1,35 +1,21 @@
 package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.ConcurrentList;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import dev.simplified.annotations.Setter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
 import java.util.Set;
 
+@EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor
 public class FilterHandler<T> implements OutputHandler<Filter<T>> {
 
     private final @NotNull ConcurrentList<Filter<T>> items;
     @Setter private boolean cacheUpdateRequired;
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        FilterHandler<?> that = (FilterHandler<?>) o;
-
-        return this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
-            && Objects.equals(this.getItems(), that.getItems());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getItems(), this.isCacheUpdateRequired());
-    }
 
     /**
      * Enables exactly the filters whose identifiers appear in the given set and disables the

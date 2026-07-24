@@ -8,6 +8,7 @@ import dev.simplified.util.StringUtil;
 import discord4j.core.object.component.UnfurledMediaItem;
 import discord4j.core.spec.MessageCreateFields;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +39,7 @@ import java.util.UUID;
  * @see Thumbnail
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MediaData {
 
@@ -79,24 +80,6 @@ public final class MediaData {
      */
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        MediaData mediaData = (MediaData) o;
-
-        return this.getComponentId() == mediaData.getComponentId()
-            && Objects.equals(this.getName(), mediaData.getName())
-            && this.isSpoiler() == mediaData.isSpoiler()
-            && Objects.equals(this.getUrl(), mediaData.getUrl())
-            && Objects.equals(this.getUploadStream(), mediaData.getUploadStream())
-            && Objects.equals(this.getProxyUrl(), mediaData.getProxyUrl())
-            && this.getWidth() == mediaData.getWidth()
-            && this.getHeight() == mediaData.getHeight()
-            && Objects.equals(this.getContentType(), mediaData.getContentType())
-            && Objects.equals(this.getState(), mediaData.getState());
     }
 
     /**
@@ -150,11 +133,6 @@ public final class MediaData {
             return UnfurledMediaItem.of(this.getD4jFile());
         else
             return UnfurledMediaItem.of(this.getUrl());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getComponentId(), this.getName(), this.isSpoiler(), this.getUrl(), this.getUploadStream(), this.getProxyUrl(), this.getWidth(), this.getHeight(), this.getContentType(), this.getState());
     }
 
     /**

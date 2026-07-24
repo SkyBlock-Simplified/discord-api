@@ -6,15 +6,16 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.emoji.CustomEmoji;
 import discord4j.core.object.emoji.UnicodeEmoji;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+@EqualsAndHashCode(exclude = "interaction")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class Emoji {
@@ -53,24 +54,6 @@ public abstract class Emoji {
 
     public static @NotNull String getUrl(long snowflake, boolean animated) {
         return String.format("https://cdn.discordapp.com/emojis/%s.%s", snowflake, (animated ? "gif" : "webp"));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Emoji emoji = (Emoji) o;
-
-        return Objects.equals(this.getId(), emoji.getId())
-            && Objects.equals(this.getName(), emoji.getName())
-            && this.isAnimated() == emoji.isAnimated()
-            && Objects.equals(this.getRaw(), emoji.getRaw());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getId(), this.getName(), this.isAnimated(), this.getRaw());
     }
 
     public final boolean isUnicode() {

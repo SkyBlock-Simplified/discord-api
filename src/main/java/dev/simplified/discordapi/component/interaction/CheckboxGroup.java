@@ -15,6 +15,7 @@ import dev.simplified.util.StringUtil;
 import discord4j.discordjson.json.ComponentData;
 import dev.simplified.annotations.AccessLevel;
 import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
@@ -46,6 +47,7 @@ import java.util.function.Function;
  * @see Option
  * @see Label
  */
+@EqualsAndHashCode(exclude = "submitProcessor")
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CheckboxGroup implements ActionComponent, LabelComponent, Toggleable, ModalProcessable {
@@ -82,22 +84,6 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
      */
     public static @NotNull Builder builder() {
         return new Builder().withIdentifier(UUID.randomUUID().toString());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        CheckboxGroup that = (CheckboxGroup) o;
-
-        return this.getMinValues() == that.getMinValues()
-            && this.getMaxValues() == that.getMaxValues()
-            && this.isRequired() == that.isRequired()
-            && this.isEnabled() == that.isEnabled()
-            && Objects.equals(this.getIdentifier(), that.getIdentifier())
-            && Objects.equals(this.getOptions(), that.getOptions())
-            && Objects.equals(this.getSelected(), that.getSelected());
     }
 
     /**
@@ -151,11 +137,6 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
     @Override
     public @NotNull Component.Type getType() {
         return Component.Type.CHECKBOX_GROUP;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getIdentifier(), this.getOptions(), this.getMinValues(), this.getMaxValues(), this.isRequired(), this.getSelected(), this.isEnabled());
     }
 
     /**
@@ -393,6 +374,7 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
      * Each option has a display label, a submission value, and may include an optional
      * description.
      */
+    @EqualsAndHashCode
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Option {
@@ -416,19 +398,6 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
          */
         public static @NotNull Builder builder() {
             return new Builder(UUID.randomUUID());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Option option = (Option) o;
-
-            return Objects.equals(this.getUniqueId(), option.getUniqueId())
-                && Objects.equals(this.getLabel(), option.getLabel())
-                && Objects.equals(this.getValue(), option.getValue())
-                && Objects.equals(this.getDescription(), option.getDescription());
         }
 
         /**
@@ -458,11 +427,6 @@ public final class CheckboxGroup implements ActionComponent, LabelComponent, Tog
                 d4jOption = d4jOption.withDescription(this.getDescription().get());
 
             return d4jOption;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.getUniqueId(), this.getLabel(), this.getValue(), this.getDescription());
         }
 
         /**

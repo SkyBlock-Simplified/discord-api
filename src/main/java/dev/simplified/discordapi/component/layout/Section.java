@@ -13,13 +13,13 @@ import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import discord4j.core.object.component.ICanBeUsedInSectionComponent;
 import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.NoArgsConstructor;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -39,6 +39,7 @@ import java.util.stream.Stream;
  * @see AccessoryComponent
  */
 @Getter
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Section implements LayoutComponent, ContainerComponent {
 
@@ -55,17 +56,6 @@ public final class Section implements LayoutComponent, ContainerComponent {
      */
     public static @NotNull Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Section section = (Section) o;
-
-        return Objects.equals(this.getAccessory(), section.getAccessory())
-            && Objects.equals(this.getComponents(), section.getComponents());
     }
 
     /**
@@ -112,11 +102,6 @@ public final class Section implements LayoutComponent, ContainerComponent {
     @Override
     public @NotNull Component.Type getType() {
         return Component.Type.SECTION;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getAccessory(), this.getComponents());
     }
 
     /**

@@ -1,13 +1,14 @@
 package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.ConcurrentList;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.Setter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @Getter
 public class SortHandler<T> implements OutputHandler<Sorter<T>> {
 
@@ -19,23 +20,6 @@ public class SortHandler<T> implements OutputHandler<Sorter<T>> {
     public SortHandler(@NotNull ConcurrentList<Sorter<T>> items) {
         this.items = items;
         this.gotoNext();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SortHandler<?> that = (SortHandler<?>) o;
-
-        return this.getCurrentSorterIndex() == that.getCurrentSorterIndex()
-            && this.isReversed() == that.isReversed()
-            && this.isCacheUpdateRequired() == that.isCacheUpdateRequired()
-            && Objects.equals(this.getItems(), that.getItems());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getItems(), this.getCurrentSorterIndex(), this.isReversed(), this.isCacheUpdateRequired());
     }
 
     public @NotNull Optional<Sorter<T>> getCurrent() {
