@@ -453,6 +453,7 @@ public sealed interface SelectMenu
      * {@code ROLE} defaults.
      */
     @Getter
+    @EqualsAndHashCode
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     final class DefaultValue {
 
@@ -505,22 +506,6 @@ public sealed interface SelectMenu
                 case CHANNEL -> discord4j.core.object.component.SelectMenu.DefaultValue.Type.CHANNEL;
                 case STRING, MENTIONABLE -> throw new IllegalStateException("DefaultValue kind '%s' is not representable in Discord4J".formatted(this.kind));
             });
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            DefaultValue that = (DefaultValue) o;
-
-            return Objects.equals(this.id, that.id)
-                && this.kind == that.kind;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.id, this.kind);
         }
 
     }
