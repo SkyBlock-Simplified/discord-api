@@ -5,12 +5,12 @@ import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.response.handler.HistoryHandler;
 import dev.simplified.discordapi.response.page.Page;
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -22,6 +22,7 @@ import java.util.Optional;
  * the ordered history of visited page identifiers used by back-navigation.
  */
 @Getter
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 @RequiredArgsConstructor
 public final class NavState implements Serializable {
 
@@ -93,20 +94,6 @@ public final class NavState implements Serializable {
     public @NotNull NavState withCurrentItemPage(int itemPage) {
         ConcurrentList<String> history = Concurrent.newList(this.pageHistory);
         return new NavState(this.currentPageId, itemPage, history);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NavState other)) return false;
-        return this.currentItemPage == other.currentItemPage
-            && this.currentPageId.equals(other.currentPageId)
-            && this.pageHistory.equals(other.pageHistory);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.currentPageId, this.currentItemPage, this.pageHistory);
     }
 
 }
