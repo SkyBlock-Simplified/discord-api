@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -102,13 +101,12 @@ public final class NavState implements Serializable {
         if (!(o instanceof NavState other)) return false;
         return this.currentItemPage == other.currentItemPage
             && this.currentPageId.equals(other.currentPageId)
-            && this.pageHistory.stream().toList().equals(other.pageHistory.stream().toList());
+            && this.pageHistory.equals(other.pageHistory);
     }
 
     @Override
     public int hashCode() {
-        List<String> history = this.pageHistory.stream().toList();
-        return Objects.hash(this.currentPageId, this.currentItemPage, history);
+        return Objects.hash(this.currentPageId, this.currentItemPage, this.pageHistory);
     }
 
 }
