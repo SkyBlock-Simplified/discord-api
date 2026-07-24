@@ -1,8 +1,8 @@
 package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.ConcurrentList;
-import lombok.Getter;
-import lombok.Setter;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

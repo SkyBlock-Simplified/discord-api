@@ -2,14 +2,14 @@ package dev.simplified.discordapi.integration;
 
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.handler.DiscordConfig;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A concrete {@link DiscordBot} for the offline harness. Runs the blocking two-phase startup on a
  * daemon thread so the test thread can drive simulated events once the bot reports connected.
  */
-@Log4j2
+@Log
 public final class HarnessBot extends DiscordBot {
 
     public HarnessBot(@NotNull DiscordConfig config) {

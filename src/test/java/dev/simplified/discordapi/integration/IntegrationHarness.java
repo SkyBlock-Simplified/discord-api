@@ -14,7 +14,7 @@ import dev.simplified.util.Logging;
 import discord4j.common.ReactorResources;
 import discord4j.common.util.Snowflake;
 import discord4j.discordjson.json.ComponentData;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.netty.http.client.HttpClient;
@@ -35,7 +35,7 @@ import java.util.function.Predicate;
  * at INFO and each wait/teardown at DEBUG; raise the {@code dev.simplified.discordapi.integration} logger to
  * DEBUG or TRACE for more detail.
  */
-@Log4j2
+@Log
 public final class IntegrationHarness implements AutoCloseable {
 
     private final HarnessConfig config;

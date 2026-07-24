@@ -6,7 +6,7 @@ import dev.simplified.discordapi.context.scope.CommandContext;
 import dev.simplified.util.SystemUtil;
 import io.sentry.Sentry;
 import io.sentry.SentryLevel;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

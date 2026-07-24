@@ -5,9 +5,9 @@ import dev.simplified.discordapi.exception.DiscordException;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.emoji.CustomEmoji;
 import discord4j.core.object.emoji.UnicodeEmoji;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

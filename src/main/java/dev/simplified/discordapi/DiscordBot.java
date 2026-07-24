@@ -83,9 +83,9 @@ import discord4j.rest.request.RouterOptions;
 import discord4j.rest.response.ResponseFunction;
 import discord4j.rest.route.Routes;
 import io.netty.channel.unix.Errors;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.reactivestreams.Publisher;
@@ -141,7 +141,7 @@ import java.util.UUID;
  * @see <a href="https://github.com/Discord4J/Discord4J">Discord4J</a>
  */
 @Getter
-@Log4j2
+@Log
 public abstract class DiscordBot {
 
     private final @NotNull Scheduler scheduler = new Scheduler();

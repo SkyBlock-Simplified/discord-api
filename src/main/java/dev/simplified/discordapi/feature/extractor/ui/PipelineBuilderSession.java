@@ -12,10 +12,10 @@ import dev.simplified.dataflow.stage.Stage;
 import dev.simplified.dataflow.stage.source.EmbedSource;
 import dev.simplified.dataflow.stage.terminal.collect.MapCollect;
 import dev.simplified.discordapi.feature.extractor.Extractor;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NamingStyle;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,8 +38,7 @@ import java.util.regex.Pattern;
  * @see StageConfigParser
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@Getter
-@Accessors(fluent = true)
+@Getter(style = NamingStyle.FLUENT)
 public final class PipelineBuilderSession {
 
     private final @NotNull AtomicReference<PipelineBuilderState> stateRef;

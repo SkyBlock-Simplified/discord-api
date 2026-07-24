@@ -5,7 +5,7 @@ import dev.simplified.discordapi.harness.json.HarnessEntities;
 import discord4j.discordjson.json.ApplicationCommandInteractionData;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.json.gateway.Dispatch;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -15,7 +15,7 @@ import java.util.List;
  * Builds the message-attached {@code INTERACTION_CREATE} dispatches: button clicks, string select menus, and
  * modal submits (single text input, or a radio group plus checkbox).
  */
-@Log4j2
+@Log
 public final class ComponentDispatches {
 
     private static final long COMPONENT_INTERACTION_ID = 950000000000000011L;

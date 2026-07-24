@@ -2,8 +2,8 @@ package dev.simplified.discordapi.component;
 
 import dev.simplified.discordapi.component.scope.LayoutComponent;
 import discord4j.core.object.entity.Message;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

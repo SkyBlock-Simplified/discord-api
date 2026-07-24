@@ -1,8 +1,8 @@
 package dev.simplified.discordapi.handler;
 
 import dev.simplified.util.StringUtil;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;

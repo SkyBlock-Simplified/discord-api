@@ -6,7 +6,7 @@ import dev.simplified.discordapi.harness.json.HarnessEntities;
 import dev.simplified.discordapi.harness.rest.LocalDiscordServer;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
 import discord4j.discordjson.json.gateway.Dispatch;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -25,7 +25,7 @@ import java.util.function.Predicate;
  * Narrates construction and teardown through Log4j2; raise the {@code dev.simplified.discordapi.harness}
  * logger to DEBUG or TRACE to see the REST and dispatch detail.
  */
-@Log4j2
+@Log
 public final class OfflineHarness implements AutoCloseable {
 
     private final HarnessConfig config;

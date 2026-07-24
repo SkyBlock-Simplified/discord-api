@@ -29,7 +29,7 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.rest.util.Permission;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

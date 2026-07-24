@@ -10,7 +10,7 @@ import discord4j.discordjson.json.ApplicationCommandInteractionResolvedData;
 import discord4j.discordjson.json.ImmutableApplicationCommandInteractionData;
 import discord4j.discordjson.json.ImmutableApplicationCommandInteractionOptionData;
 import discord4j.discordjson.json.gateway.Dispatch;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +21,7 @@ import java.util.Map;
  * Builds the command {@code INTERACTION_CREATE} dispatches: chat-input slash commands (flat and nested) and
  * the right-click user/message context-menu commands.
  */
-@Log4j2
+@Log
 public final class InteractionDispatches {
 
     private static final long SLASH_INTERACTION_ID = 950000000000000010L;

@@ -27,10 +27,9 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
 import discord4j.rest.util.PermissionSet;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -63,7 +62,6 @@ import java.util.stream.Stream;
  * @see DiscordCommand
  * @see Structure
  */
-@Log4j2
 @SuppressWarnings("rawtypes")
 public final class CommandHandler extends DiscordReference {
 

@@ -3,7 +3,7 @@ package dev.simplified.discordapi.command.exception;
 import dev.simplified.collection.ConcurrentSet;
 import dev.simplified.discordapi.context.scope.CommandContext;
 import discord4j.rest.util.Permission;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 
 /**

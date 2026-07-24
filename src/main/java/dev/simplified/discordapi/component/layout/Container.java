@@ -7,10 +7,10 @@ import dev.simplified.discordapi.component.scope.LayoutComponent;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NoArgsConstructor;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

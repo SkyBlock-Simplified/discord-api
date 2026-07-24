@@ -7,9 +7,9 @@ import dev.simplified.discordapi.command.parameter.Argument;
 import dev.simplified.discordapi.command.parameter.Parameter;
 import dev.simplified.discordapi.context.scope.CommandContext;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;

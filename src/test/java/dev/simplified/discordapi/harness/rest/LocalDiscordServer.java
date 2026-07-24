@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.simplified.discordapi.harness.HarnessConfig;
 import dev.simplified.discordapi.harness.json.HarnessEntities;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.RequiredArgsConstructor;
+import dev.simplified.annotations.Log;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * The endpoint list lives in the {@link Route} table; {@code start()} loads it and appends a catch-all. The
  * response bodies come from the shared {@link HarnessEntities}, so this class holds only server plumbing.
  */
-@Log4j2
+@Log
 @RequiredArgsConstructor
 public final class LocalDiscordServer {
 

@@ -13,10 +13,10 @@ import discord4j.core.object.entity.ApplicationEmoji;
 import discord4j.core.object.entity.ApplicationInfo;
 import discord4j.core.spec.ApplicationEmojiCreateSpec;
 import discord4j.rest.util.Image;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -34,7 +34,7 @@ import java.util.function.Function;
  * @see Emoji
  */
 @Getter
-@Log4j2
+@Log
 public final class EmojiHandler extends DiscordReference implements EmojiResolver {
 
     /** Valid Discord emoji name length range. */

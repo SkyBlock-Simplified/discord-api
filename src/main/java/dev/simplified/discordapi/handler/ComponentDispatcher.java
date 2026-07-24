@@ -14,10 +14,9 @@ import dev.simplified.discordapi.listener.EternalComponentListener;
 import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.Reflection;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
@@ -55,7 +54,6 @@ import java.util.regex.PatternSyntaxException;
  * @see Component
  * @see EternalComponentListener
  */
-@Log4j2
 public final class ComponentDispatcher extends DiscordReference {
 
     /** Routing entry for a {@link Component @Component}-annotated method. */

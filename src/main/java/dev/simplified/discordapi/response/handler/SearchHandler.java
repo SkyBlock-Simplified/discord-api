@@ -2,8 +2,8 @@ package dev.simplified.discordapi.response.handler;
 
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.interaction.TextInput;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

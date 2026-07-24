@@ -22,8 +22,8 @@ import dev.simplified.discordapi.handler.locale.LocaleEntry;
 import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.Reflection;
 import discord4j.core.object.entity.channel.GuildChannel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

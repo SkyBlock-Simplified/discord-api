@@ -1,8 +1,8 @@
 package dev.simplified.discordapi.feature.extractor;
 
 import dev.simplified.discordapi.handler.DiscordConfig;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;

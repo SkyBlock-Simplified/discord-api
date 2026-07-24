@@ -2,10 +2,10 @@ package dev.simplified.discordapi.handler.locale;
 
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.handler.DiscordLocale;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NoArgsConstructor;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 /**

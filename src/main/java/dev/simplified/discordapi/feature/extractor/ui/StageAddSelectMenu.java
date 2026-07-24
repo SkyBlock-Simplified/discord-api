@@ -4,8 +4,8 @@ import dev.simplified.dataflow.stage.Stage;
 import dev.simplified.dataflow.stage.StageRegistry;
 import dev.simplified.dataflow.stage.meta.StageSpec;
 import dev.simplified.discordapi.component.interaction.SelectMenu;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 /**

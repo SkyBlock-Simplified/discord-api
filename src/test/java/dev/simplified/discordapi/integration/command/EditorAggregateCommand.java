@@ -13,7 +13,7 @@ import dev.simplified.discordapi.response.page.editor.EditorPage;
 import dev.simplified.discordapi.response.page.editor.field.AggregateField;
 import dev.simplified.discordapi.response.page.editor.field.Choice;
 import dev.simplified.discordapi.response.page.editor.field.FieldKind;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

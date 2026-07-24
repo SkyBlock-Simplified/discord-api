@@ -15,8 +15,8 @@ import discord4j.discordjson.json.SessionStartLimitData;
 import discord4j.discordjson.json.UserData;
 import discord4j.discordjson.possible.Possible;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.RequiredArgsConstructor;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.OffsetDateTime;
@@ -33,7 +33,7 @@ import java.util.Optional;
  * Consolidating them here keeps the user/message/entity shapes in one place rather than duplicated across the
  * dispatch factory and the REST server.
  */
-@Log4j2
+@Log
 @RequiredArgsConstructor
 public final class HarnessEntities {
 

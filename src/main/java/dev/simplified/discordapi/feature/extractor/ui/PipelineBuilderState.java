@@ -2,9 +2,9 @@ package dev.simplified.discordapi.feature.extractor.ui;
 
 import dev.simplified.dataflow.DataPipeline;
 import dev.simplified.discordapi.feature.extractor.Extractor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import dev.simplified.annotations.ClassBuilder;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NamingStyle;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,9 +23,8 @@ import org.jetbrains.annotations.Nullable;
  * @param banner an optional ephemeral notice displayed above the live preview, used for
  *               validation errors and rejected mutations; cleared on the next successful edit
  */
-@Getter
-@Builder(toBuilder = true)
-@Accessors(fluent = true)
+@Getter(style = NamingStyle.FLUENT)
+@ClassBuilder(style = NamingStyle.LOMBOK)
 public final class PipelineBuilderState {
 
     private final @NotNull DataPipeline<?> pipeline;

@@ -6,9 +6,9 @@ import dev.simplified.discordapi.context.scope.CommandContext;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import discord4j.core.object.entity.Message;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;

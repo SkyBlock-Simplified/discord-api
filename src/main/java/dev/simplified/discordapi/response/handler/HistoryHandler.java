@@ -6,11 +6,11 @@ import dev.simplified.discordapi.exception.DiscordException;
 import dev.simplified.discordapi.response.page.Paging;
 import dev.simplified.discordapi.response.page.Subpages;
 import dev.simplified.util.NumberUtil;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NoArgsConstructor;
+import dev.simplified.annotations.RequiredArgsConstructor;
+import dev.simplified.annotations.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

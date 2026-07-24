@@ -5,7 +5,7 @@ import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.util.StringUtil;
 import discord4j.core.event.domain.Event;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 

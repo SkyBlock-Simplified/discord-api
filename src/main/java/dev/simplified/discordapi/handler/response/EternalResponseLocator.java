@@ -9,8 +9,8 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.RequiredArgsConstructor;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  * @see EternalResponseRepository
  * @see CompositeResponseLocator
  */
-@Log4j2
+@Log
 @RequiredArgsConstructor
 public final class EternalResponseLocator implements ResponseLocator {
 

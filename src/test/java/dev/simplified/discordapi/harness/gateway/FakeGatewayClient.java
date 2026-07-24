@@ -6,7 +6,7 @@ import discord4j.gateway.GatewayClient;
 import discord4j.gateway.GatewayConnection;
 import discord4j.gateway.json.GatewayPayload;
 import io.netty.buffer.ByteBuf;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -27,7 +27,7 @@ import java.util.function.Function;
  * Discord4J's real {@code DefaultGatewayClient} logs the gateway lifecycle; this stand-in replaces it, so
  * it logs its own handshake replay and close at DEBUG and every emitted dispatch at TRACE to fill the gap.
  */
-@Log4j2
+@Log
 public final class FakeGatewayClient implements GatewayClient {
 
     private final Sinks.Many<Dispatch> dispatchSink = Sinks.many().replay().all();

@@ -1,7 +1,7 @@
 package dev.simplified.discordapi.command.exception;
 
 import dev.simplified.discordapi.command.parameter.Parameter;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -5,8 +5,8 @@ import dev.simplified.dataflow.stage.meta.StageSpec;
 import dev.simplified.discordapi.component.TextDisplay;
 import dev.simplified.discordapi.component.interaction.Button;
 import dev.simplified.discordapi.component.layout.Section;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

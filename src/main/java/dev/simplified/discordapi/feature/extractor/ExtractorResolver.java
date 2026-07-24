@@ -3,8 +3,8 @@ package dev.simplified.discordapi.feature.extractor;
 import dev.simplified.dataflow.DataPipeline;
 import dev.simplified.dataflow.DataPipelineResolver;
 import dev.simplified.dataflow.PipelineContext;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

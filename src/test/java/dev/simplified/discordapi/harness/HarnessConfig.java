@@ -1,8 +1,8 @@
 package dev.simplified.discordapi.harness;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;

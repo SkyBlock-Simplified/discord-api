@@ -6,9 +6,9 @@ import dev.simplified.discordapi.context.scope.ActionComponentContext;
 import dev.simplified.discordapi.handler.response.CachedResponse;
 import dev.simplified.discordapi.response.Response;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

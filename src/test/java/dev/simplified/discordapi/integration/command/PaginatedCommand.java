@@ -18,7 +18,7 @@ import dev.simplified.discordapi.response.handler.ItemHandler;
 import dev.simplified.discordapi.response.handler.Sorter;
 import dev.simplified.discordapi.response.page.Page;
 import dev.simplified.discordapi.response.page.TreePage;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

@@ -11,7 +11,7 @@ import dev.simplified.discordapi.handler.locale.LocaleEntry;
 import dev.simplified.discordapi.util.DiscordReference;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.info.ResourceInfo;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * @see DiscordLocale
  * @see <a href="https://discord.com/developers/docs/interactions/application-commands#localization">Application Commands - Localization</a>
  */
-@Log4j2
+@Log
 public final class LocaleHandler extends DiscordReference {
 
     /** Classpath prefix under which locale files are discovered. */

@@ -3,14 +3,14 @@ package dev.simplified.discordapi.harness.gateway.dispatch;
 import dev.simplified.discordapi.harness.json.HarnessEntities;
 import discord4j.discordjson.json.gateway.Dispatch;
 import discord4j.discordjson.json.gateway.MessageCreate;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Builds the message/channel/guild gateway event dispatches. Currently the bot-authored {@code MESSAGE_CREATE}
  * used to drive a cached response's {@code onCreate} handler.
  */
-@Log4j2
+@Log
 public final class MessageDispatches {
 
     private final HarnessEntities entities;

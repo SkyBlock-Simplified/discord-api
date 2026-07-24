@@ -13,17 +13,17 @@ java {
 }
 
 repositories {
+    mavenLocal() // annotations is not yet published to Maven Central
     mavenCentral()
     maven(url = "https://central.sonatype.com/repository/maven-snapshots")
     maven(url = "https://jitpack.io")
 }
 
 dependencies {
-    // Lombok Annotations
-    compileOnly(libs.lombok)
-    annotationProcessor(libs.lombok)
-    testCompileOnly(libs.lombok)
-    testAnnotationProcessor(libs.lombok)
+    // Simplified Annotations
+    implementation("io.github.simplified-dev:annotations:2.5.0")
+    annotationProcessor("io.github.simplified-dev:annotations:2.5.0")
+    testAnnotationProcessor("io.github.simplified-dev:annotations:2.5.0")
 
     // Tests
     testImplementation(libs.hamcrest)

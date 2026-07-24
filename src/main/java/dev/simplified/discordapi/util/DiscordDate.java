@@ -2,7 +2,7 @@ package dev.simplified.discordapi.util;
 
 import dev.simplified.util.time.SimpleDate;
 import discord4j.common.util.Snowflake;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -27,9 +27,9 @@ import discord4j.gateway.GatewayOptions;
 import discord4j.gateway.ShardInfo;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.util.AllowedMentions;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;

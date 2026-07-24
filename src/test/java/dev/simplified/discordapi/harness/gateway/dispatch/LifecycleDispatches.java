@@ -6,7 +6,7 @@ import discord4j.discordjson.json.PartialApplicationInfoData;
 import discord4j.discordjson.json.gateway.Dispatch;
 import discord4j.discordjson.json.gateway.Ready;
 import discord4j.gateway.retry.GatewayStateChange;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Builds the gateway lifecycle dispatches: the {@code READY} and the startup handshake replayed on connect.
  */
-@Log4j2
+@Log
 public final class LifecycleDispatches {
 
     private final HarnessConfig config;

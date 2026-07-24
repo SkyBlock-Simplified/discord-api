@@ -6,7 +6,7 @@ import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentMap;
 import dev.simplified.discordapi.handler.DiscordConfig;
 import discord4j.common.util.Snowflake;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
@@ -35,7 +35,7 @@ import java.util.UUID;
  * approach the locale loader uses. The in-memory maps mirror {@link InMemoryEternalResponseRepository};
  * every mutation writes the whole file through atomically (temp file + move).
  */
-@Log4j2
+@Log
 public final class GsonEternalResponseRepository implements EternalResponseRepository {
 
     private static final @NotNull Gson GSON = new Gson();

@@ -34,7 +34,7 @@ import dev.simplified.discordapi.response.page.editor.modal.FieldModalFactory;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
 import discord4j.core.object.entity.Message;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

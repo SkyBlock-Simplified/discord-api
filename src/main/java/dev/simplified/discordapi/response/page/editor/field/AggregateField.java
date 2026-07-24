@@ -3,8 +3,8 @@ package dev.simplified.discordapi.response.page.editor.field;
 import dev.simplified.discordapi.response.page.editor.EditorPage;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.reflection.builder.BuildFlag;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

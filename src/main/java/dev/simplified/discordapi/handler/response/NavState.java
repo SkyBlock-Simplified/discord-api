@@ -5,8 +5,8 @@ import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.response.Response;
 import dev.simplified.discordapi.response.handler.HistoryHandler;
 import dev.simplified.discordapi.response.page.Page;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

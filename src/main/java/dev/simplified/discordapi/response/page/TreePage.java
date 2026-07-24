@@ -1,5 +1,10 @@
 package dev.simplified.discordapi.response.page;
 
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EqualsAndHashCode;
+import dev.simplified.annotations.EqualsInclude;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.discordapi.component.interaction.SelectMenu;
@@ -10,19 +15,16 @@ import dev.simplified.discordapi.response.handler.HistoryHandler;
 import dev.simplified.discordapi.response.handler.ItemHandler;
 import dev.simplified.reflection.Reflection;
 import dev.simplified.util.StringUtil;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 @Getter
+@EqualsAndHashCode(useAccessors = true)
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TreePage implements Page, Subpages<TreePage> {
 
@@ -40,22 +42,6 @@ public final class TreePage implements Page, Subpages<TreePage> {
         return new TreePageBuilder();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TreePage treePage = (TreePage) o;
-
-        return Objects.equals(this.getOption(), treePage.getOption())
-            && Objects.equals(this.getComponents(), treePage.getComponents())
-            && Objects.equals(this.getReactions(), treePage.getReactions())
-            && Objects.equals(this.getItemHandler(), treePage.getItemHandler())
-            && Objects.equals(this.getHistoryHandler(), treePage.getHistoryHandler())
-            && Objects.equals(this.getPages(), treePage.getPages())
-            && Objects.equals(this.getContent(), treePage.getContent())
-            && Objects.equals(this.getEmbeds(), treePage.getEmbeds());
-    }
-
     public static @NotNull TreePageBuilder from(@NotNull TreePage page) {
         return new TreePageBuilder()
             .withOption(page.getOption())
@@ -68,13 +54,9 @@ public final class TreePage implements Page, Subpages<TreePage> {
     }
 
     @Override
+    @EqualsInclude
     public @NotNull ConcurrentList<TreePage> getPages() {
         return this.getHistoryHandler().getItems();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getOption(), this.getComponents(), this.getReactions(), this.getItemHandler(), this.getHistoryHandler(), this.getPages(), this.getContent(), this.getEmbeds());
     }
 
     @Override

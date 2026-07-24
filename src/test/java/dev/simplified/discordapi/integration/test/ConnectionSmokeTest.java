@@ -2,7 +2,7 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.harness.rest.RecordedRequest;
-import lombok.extern.log4j.Log4j2;
+import dev.simplified.annotations.Log;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * M1 walking skeleton: proves the bot reaches a fully wired connected state offline (localhost REST
  * mock + fake in-JVM gateway), including the post-connect command and emoji sync, with no network.
  */
-@Log4j2
+@Log
 class ConnectionSmokeTest {
 
     @Test

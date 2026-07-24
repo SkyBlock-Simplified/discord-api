@@ -9,7 +9,7 @@ import discord4j.core.shard.GatewayBootstrap;
 import discord4j.gateway.GatewayClient;
 import discord4j.rest.util.Multimap;
 import discord4j.rest.util.RouteUtils;
-import lombok.Getter;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 

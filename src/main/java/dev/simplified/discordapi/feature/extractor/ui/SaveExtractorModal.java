@@ -3,8 +3,8 @@ package dev.simplified.discordapi.feature.extractor.ui;
 import dev.simplified.discordapi.component.interaction.Modal;
 import dev.simplified.discordapi.component.interaction.TextInput;
 import dev.simplified.discordapi.component.layout.Label;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 /**

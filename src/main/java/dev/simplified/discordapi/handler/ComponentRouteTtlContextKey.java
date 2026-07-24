@@ -3,7 +3,7 @@ package dev.simplified.discordapi.handler;
 import dev.simplified.discordapi.listener.Component;
 import dev.simplified.discordapi.listener.component.ComponentListener;
 import dev.simplified.discordapi.response.Response;
-import lombok.experimental.UtilityClass;
+import dev.simplified.annotations.UtilityClass;
 import reactor.util.context.Context;
 
 import java.time.Duration;
@@ -37,7 +37,7 @@ import java.time.Duration;
  * the binding survives scheduler boundaries within a single reactive pipeline,
  * which the Discord4J dispatch chain relies on.
  */
-@UtilityClass
+@UtilityClass(members = UtilityClass.Members.MAKE_STATIC)
 public final class ComponentRouteTtlContextKey {
 
     /** The Reactor {@link Context} key under which the per-route TTL {@link Duration} is stored. */

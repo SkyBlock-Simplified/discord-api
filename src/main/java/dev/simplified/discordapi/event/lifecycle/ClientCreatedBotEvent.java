@@ -3,8 +3,8 @@ package dev.simplified.discordapi.event.lifecycle;
 import dev.simplified.discordapi.DiscordBot;
 import dev.simplified.discordapi.event.BotEvent;
 import discord4j.core.DiscordClient;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 /**
