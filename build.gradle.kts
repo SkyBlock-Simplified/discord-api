@@ -24,7 +24,7 @@ dependencies {
     testAnnotationProcessor("io.github.simplified-dev:annotations:2.5.0")
 
     // Offline Discord stand-in (extracted to github.com/simplified-dev/discord4j-fauxrig)
-    testImplementation("com.github.simplified-dev:discord4j-fauxrig") { version { strictly("d051a5d") } }
+    testImplementation("com.github.simplified-dev:discord4j-fauxrig") { version { strictly("bd23842") } }
 
     // Tests
     testImplementation(libs.hamcrest)
