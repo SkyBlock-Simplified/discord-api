@@ -2,7 +2,7 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.command.InMemoryCommandStateResolver;
-import dev.simplified.discordfauxrig.HarnessConfig;
+import dev.simplified.discordfauxrig.FauxConfig;
 import dev.simplified.discordfauxrig.gateway.SlashOption;
 import dev.simplified.discordfauxrig.rest.RecordedRequest;
 import dev.simplified.discordapi.integration.IntegrationHarness;
@@ -66,7 +66,7 @@ class CommandStateTest {
         // Point the interaction actor at the application owner, so isDeveloper() is true and the disabled gate
         // is bypassed even though the command is disabled for everyone else.
         long developerId = 555555555555555555L;
-        HarnessConfig asDeveloper = HarnessConfig.builder()
+        FauxConfig asDeveloper = FauxConfig.builder()
             .withUserId(developerId)
             .withDeveloperUserId(developerId)
             .build();

@@ -3,7 +3,7 @@ package dev.simplified.discordapi.integration.test;
 import dev.simplified.discordapi.handler.response.EternalResponseRepository;
 import dev.simplified.discordapi.handler.response.GsonEternalResponseRepository;
 import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
-import dev.simplified.discordfauxrig.HarnessConfig;
+import dev.simplified.discordfauxrig.FauxConfig;
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.EternalButtonCommand;
 import dev.simplified.discordfauxrig.rest.RecordedRequest;
@@ -57,11 +57,11 @@ class EternalResponseInteractionTest {
      * file-backed factory genuinely proves cross-restart survival through disk.
      */
     private static void runRebootScenario(@NotNull Supplier<EternalResponseRepository> coldStoreFactory) {
-        long eternalMessageId = HarnessConfig.builder().build().getReplyMessageId();
+        long eternalMessageId = FauxConfig.builder().build().getReplyMessageId();
 
         // Boot #1: create the eternal message; it writes through to the cold store.
         EternalResponseRepository firstBootStore = coldStoreFactory.get();
-        try (IntegrationHarness harness = new IntegrationHarness(HarnessConfig.builder().build(), firstBootStore).boot(Duration.ofSeconds(30))) {
+        try (IntegrationHarness harness = new IntegrationHarness(FauxConfig.builder().build(), firstBootStore).boot(Duration.ofSeconds(30))) {
             harness.sendSlashCommand("eternal");
             harness.awaitInteractionReply();
             awaitColdRecord(() -> firstBootStore, eternalMessageId, Duration.ofSeconds(10));
@@ -76,7 +76,7 @@ class EternalResponseInteractionTest {
 
         // Boot #2: a fresh hot tier + a fresh cold store over the same backing store, with a distinct
         // reply id so the warm-up reply is cached under a different message than the eternal one.
-        HarnessConfig secondBoot = HarnessConfig.builder().withReplyMessageId(SECOND_BOOT_REPLY_ID).build();
+        FauxConfig secondBoot = FauxConfig.builder().withReplyMessageId(SECOND_BOOT_REPLY_ID).build();
         try (IntegrationHarness harness = new IntegrationHarness(secondBoot, coldStoreFactory.get()).boot(Duration.ofSeconds(30))) {
             // Warm the listener pipeline up (registers the component listener alongside the slash listener).
             harness.sendSlashCommand("annotated");

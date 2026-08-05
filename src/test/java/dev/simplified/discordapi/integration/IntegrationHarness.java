@@ -3,10 +3,10 @@ package dev.simplified.discordapi.integration;
 import dev.simplified.discordapi.handler.DiscordConfig;
 import dev.simplified.discordapi.handler.response.EternalResponseRepository;
 import dev.simplified.discordapi.handler.response.InMemoryEternalResponseRepository;
-import dev.simplified.discordfauxrig.HarnessConfig;
-import dev.simplified.discordfauxrig.OfflineHarness;
+import dev.simplified.discordfauxrig.FauxConfig;
+import dev.simplified.discordfauxrig.FauxDiscord;
 import dev.simplified.discordfauxrig.gateway.DispatchFactory;
-import dev.simplified.discordfauxrig.gateway.FakeGatewayClient;
+import dev.simplified.discordfauxrig.gateway.FauxGatewayClient;
 import dev.simplified.discordfauxrig.gateway.SlashOption;
 import dev.simplified.discordfauxrig.gateway.dispatch.ComponentDispatches;
 import dev.simplified.discordfauxrig.rest.RecordedRequest;
@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 
 /**
  * The consumer side of the offline harness: connects this project's {@link HarnessBot} to an
- * {@link OfflineHarness} server and drives it. It builds the bot's {@link DiscordConfig} pointed at the
+ * {@link FauxDiscord} server and drives it. It builds the bot's {@link DiscordConfig} pointed at the
  * server's REST mock and fake gateway, boots the bot on a daemon thread, then exposes a DSL to push simulated
  * gateway events and assert on the captured REST traffic.
  * <p>
@@ -38,14 +38,14 @@ import java.util.function.Predicate;
 @Log
 public final class IntegrationHarness implements AutoCloseable {
 
-    private final HarnessConfig config;
+    private final FauxConfig config;
     private final EternalResponseRepository eternalRepository;
-    private final OfflineHarness server;
+    private final FauxDiscord server;
     private final HarnessBot bot;
 
-    /** Boots with the standard harness identity ({@code HarnessConfig.builder().build()}). */
+    /** Boots with the standard harness identity ({@code FauxConfig.builder().build()}). */
     public IntegrationHarness() {
-        this(HarnessConfig.builder().build());
+        this(FauxConfig.builder().build());
     }
 
     /**
@@ -53,23 +53,23 @@ public final class IntegrationHarness implements AutoCloseable {
      *
      * @param config the harness identity to use
      */
-    public IntegrationHarness(@NotNull HarnessConfig config) {
+    public IntegrationHarness(@NotNull FauxConfig config) {
         this(config, InMemoryEternalResponseRepository.of());
     }
 
     /**
      * Boots with the given harness identity and an explicit {@link EternalResponseRepository}, connecting the
-     * bot to a fresh {@link OfflineHarness} server backed by that store. Pass the same store to two successive
+     * bot to a fresh {@link FauxDiscord} server backed by that store. Pass the same store to two successive
      * harnesses to simulate a reboot: the first creates an eternal message, the second (with a fresh hot tier)
      * re-hydrates it from the shared cold store.
      *
      * @param config the harness identity to use
      * @param eternalRepository the eternal cold store to back this run
      */
-    public IntegrationHarness(@NotNull HarnessConfig config, @NotNull EternalResponseRepository eternalRepository) {
+    public IntegrationHarness(@NotNull FauxConfig config, @NotNull EternalResponseRepository eternalRepository) {
         this.config = config;
         this.eternalRepository = eternalRepository;
-        this.server = new OfflineHarness(config);
+        this.server = new FauxDiscord(config);
 
         ReactorResources plaintextRest = ReactorResources.builder()
             .httpClient(HttpClient.create().compress(true).followRedirect(true)) // no .secure() -> plaintext http
@@ -91,7 +91,7 @@ public final class IntegrationHarness implements AutoCloseable {
     }
 
     /** The harness identity backing this run (ids, token, command-id scheme). */
-    public @NotNull HarnessConfig config() {
+    public @NotNull FauxConfig config() {
         return this.config;
     }
 
@@ -115,7 +115,7 @@ public final class IntegrationHarness implements AutoCloseable {
     }
 
     /** The fake in-JVM gateway; call {@code emit(...)} to push a raw dispatch into the live pipeline. */
-    public @NotNull FakeGatewayClient gateway() {
+    public @NotNull FauxGatewayClient gateway() {
         return this.server.gateway();
     }
 
