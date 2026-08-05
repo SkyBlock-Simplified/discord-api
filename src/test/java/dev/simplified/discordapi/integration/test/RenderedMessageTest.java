@@ -1,8 +1,9 @@
-package dev.simplified.discordapi.harness.rest;
+package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.ButtonCommand;
+import dev.simplified.discordfauxrig.rest.RenderedMessage;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

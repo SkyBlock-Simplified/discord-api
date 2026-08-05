@@ -23,7 +23,15 @@ This module (Java 21, Gradle 9.4+) is an **included build** named `discord4j-fra
 ./gradlew :discord4j-framework:test
 ```
 
-**Required environment variables:** `DISCORD_TOKEN`, `DEVELOPER_ERROR_LOG_CHANNEL_ID` (for running a real bot; the offline harness tests use fakes and need none).
+**Required environment variables:** `DISCORD_TOKEN`, `DEVELOPER_ERROR_LOG_CHANNEL_ID` (for running a real bot; the offline test suite needs none).
+
+### Testing against discord4j-fauxrig
+
+The offline harness now lives in its own repository, **`discord4j-fauxrig`** (base package `dev.simplified.discordfauxrig`), and is consumed here as `testImplementation("com.github.simplified-dev:discord4j-fauxrig")`. It is a localhost REST server plus an in-JVM gateway that stands in for Discord; it depends only on Discord4J and must never depend on this framework. `IntegrationHarness` (`src/test/.../integration/`) is the framework-side driver that wraps it - readiness waits, send helpers, the eternal two-boot flow.
+
+It resolves from JitPack by pinned commit sha, exactly like the other simplified-dev libraries. Both `./gradlew test` here and `./gradlew :discord4j-framework:test` from the monorepo root work; the latter substitutes the sibling checkout via the monorepo's `includeBuild`, so local harness edits are picked up there without republishing.
+
+Run `./gradlew test -Dharness.debug=true` to elevate the harness's per-request REST firehose to INFO - the fastest way to see how far a pathway got.
 
 ## Architecture Overview
 

@@ -2,8 +2,8 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.component.Component;
 import dev.simplified.discordapi.handler.response.CachedResponse;
-import dev.simplified.discordapi.harness.rest.RecordedRequest;
-import dev.simplified.discordapi.harness.rest.RenderedMessage;
+import dev.simplified.discordfauxrig.rest.RecordedRequest;
+import dev.simplified.discordfauxrig.rest.RenderedMessage;
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.PaginatedCommand;
 import dev.simplified.discordapi.response.handler.Filter;

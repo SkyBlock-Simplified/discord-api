@@ -12,9 +12,9 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 /**
- * Reactive abstraction over the discord-api response cache. Default
- * implementation is an in-memory locator indexed by {@code messageId} and
- * {@code uniqueId} for O(1) lookup.
+ * Reactive abstraction over the response cache. Default implementation is an
+ * in-memory locator indexed by {@code messageId} and {@code uniqueId} for O(1)
+ * lookup.
  *
  * @see CachedResponse
  */

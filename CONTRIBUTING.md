@@ -1,4 +1,4 @@
-# Contributing to Discord API
+# Contributing to discord4j-framework
 
 Thank you for your interest in contributing! This document explains how to get
 started, what to expect during the review process, and the conventions this
@@ -9,7 +9,6 @@ project follows.
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Development Setup](#development-setup)
-  - [Running the Debug Bot](#running-the-debug-bot)
 - [Making Changes](#making-changes)
   - [Branching Strategy](#branching-strategy)
   - [Code Style](#code-style)
@@ -29,9 +28,10 @@ project follows.
 | [JDK](https://adoptium.net/) | **21+** | Required |
 | [Git](https://git-scm.com/) | 2.x+ | For cloning and contributing |
 | [IntelliJ IDEA](https://www.jetbrains.com/idea/) | Latest | Recommended IDE |
-| Discord bot token | - | Create one at the [Discord Developer Portal](https://discord.com/developers/applications) |
+| Discord bot token | - | Only to run a real bot; **not** needed to build or test |
 
-**Required environment variables:**
+**Environment variables** - required only when running a real bot against
+Discord. The test suite runs fully offline and needs neither.
 
 | Variable | Description |
 |----------|-------------|
@@ -42,41 +42,31 @@ project follows.
 
 1. **Fork and clone the repository**
 
-   [Fork the repository](https://github.com/SkyBlock-Simplified/discord-api/fork),
+   [Fork the repository](https://github.com/simplified-dev/discord4j-framework/fork),
    then clone your fork:
 
    ```bash
-   git clone https://github.com/<your-username>/discord-api.git
-   cd discord-api
+   git clone https://github.com/<your-username>/discord4j-framework.git
+   cd discord4j-framework
    ```
 
 2. **Build the project**
 
    ```bash
-   cd discord-api
    ./gradlew build
    ```
 
 3. **Open in IntelliJ IDEA**
 
-   Open the project root as a Gradle project. Ensure the Lombok plugin is
-   installed and annotation processing is enabled.
+   Open the project root as a Gradle project. Ensure annotation processing is
+   enabled - the `io.github.simplified-dev:annotations` processor generates the
+   getters, logger fields, and equality pairs.
 
-5. **Verify the setup**
+4. **Verify the setup**
 
    ```bash
    ./gradlew test
    ```
-
-### Running the Debug Bot
-
-A `DebugBot` class in `src/test/` allows testing commands in isolation without
-starting the full bot. Set the required environment variables and run it
-directly from IntelliJ or via Gradle:
-
-```bash
-./gradlew test --tests "*.debug.DebugBot"
-```
 
 ## Making Changes
 
@@ -100,8 +90,9 @@ git checkout -b feat/my-feature master
   etc. instead of standard Java collections.
 - **Annotations** - Use `@NotNull` / `@Nullable` from `org.jetbrains.annotations`
   on all public method parameters and return types.
-- **Lombok** - Use `@Getter`, `@RequiredArgsConstructor`, `@Log4j2`, etc.
-  The logger field is non-static (`lombok.log.fieldIsStatic = false`).
+- **Annotation processor** - Use `@Getter`, `@Log`, and the equality-pair
+  generator from `io.github.simplified-dev:annotations`. Lombok is no longer
+  used anywhere in this project.
 - **Builder pattern** - Use `ClassBuilder<T>` with `@BuildFlag` validation.
   Follow the existing pattern in `Response.builder()`, `Page.builder()`,
   `Button.builder()`, etc.
@@ -139,16 +130,23 @@ components with optional accent color and spoiler support.
 
 ### Testing
 
-Tests use JUnit 5 (Jupiter):
+Tests use JUnit 5 (Jupiter) and run **fully offline** - no token, no network:
 
 ```bash
 ./gradlew test
+./gradlew test -Dharness.debug=true   # show every REST call the bot made
 ```
 
-- The `DebugBot` in `src/test/` is the primary way to test commands
-  interactively against a live Discord gateway.
-- Unit tests for component builders, context logic, and handler state
-  don't require a live connection.
+- **Integration tests** boot a real bot against
+  [discord4j-fauxrig](https://github.com/simplified-dev/discord4j-fauxrig), a
+  localhost stand-in for Discord. `IntegrationHarness` wraps it with readiness
+  waits and send helpers; add test commands under `integration/command/`, which
+  is classpath-scanned.
+- **Unit tests** for component builders, context logic, and handler state need
+  no harness at all.
+
+A change to command dispatch, component routing, or the response lifecycle
+should come with an integration test that drives the real path.
 
 ## Submitting a Pull Request
 
@@ -159,7 +157,7 @@ Tests use JUnit 5 (Jupiter):
    ```
 
 2. **Open a Pull Request** against the `master` branch of
-   [SkyBlock-Simplified/discord-api](https://github.com/SkyBlock-Simplified/discord-api).
+   [simplified-dev/discord4j-framework](https://github.com/simplified-dev/discord4j-framework).
 
 3. **In the PR description**, include:
    - A summary of the changes and the motivation behind them.
@@ -173,12 +171,13 @@ Tests use JUnit 5 (Jupiter):
 
 - Correctness of reactive chains (no blocking calls, proper error handling).
 - Adherence to the builder pattern and component type system.
-- Impact on downstream modules (`simplified-bot`).
+- Impact on downstream bots that consume this framework.
 - Compatibility with Discord's API and Components V2 flag behavior.
+- Integration coverage for anything touching dispatch or the response lifecycle.
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/SkyBlock-Simplified/discord-api/issues)
+Use [GitHub Issues](https://github.com/simplified-dev/discord4j-framework/issues)
 to report bugs or request features.
 
 When reporting a bug, include:
@@ -195,10 +194,11 @@ When reporting a bug, include:
 A brief overview to help you find your way around the codebase:
 
 ```
-src/main/java/dev/sbs/discordapi/
+src/main/java/dev/simplified/discordapi/
 ├── DiscordBot.java             # Abstract entry point (configure -> login -> connect)
 ├── command/
 │   ├── DiscordCommand.java     # Base command class with @Structure annotation
+│   ├── CommandStateResolver.java  # Runtime enable/disable, keyed by CommandKey
 │   ├── exception/              # CommandException, PermissionException, InputException, etc.
 │   └── parameter/              # Parameter, Argument
 ├── component/
@@ -219,30 +219,36 @@ src/main/java/dev/sbs/discordapi/
 │   │                           # ModalContext, CheckboxContext, RadioGroupContext, etc.
 │   └── message/                # MessageContext, ReactionContext
 ├── exception/                  # DiscordException, DiscordUserException, etc.
+├── event/                      # BotEvent + lifecycle bot events
 ├── handler/
 │   ├── DiscordConfig.java      # Builder-pattern bot configuration
 │   ├── CommandHandler.java     # Command registration and routing
+│   ├── ComponentDispatcher.java   # @Component / @Eternal route registry
 │   ├── EmojiHandler.java       # Custom emoji upload/lookup
 │   ├── DiscordLocale.java      # BCP 47 locale enum
 │   ├── exception/              # ExceptionHandler, DiscordExceptionHandler,
 │   │                           # SentryExceptionHandler, CompositeExceptionHandler
-│   ├── response/               # ResponseHandler, CachedResponse, ResponseEntry,
-│   │                           # ResponseFollowup
+│   ├── response/               # ResponseLocator (InMemory/Eternal/Composite),
+│   │                           # CachedResponse, NavState, ResponseExpiryTask,
+│   │                           # EternalResponseRepository + Record
 │   └── shard/                  # ShardHandler, Shard
 ├── listener/
+│   ├── Component.java          # @Component click-handler annotation
+│   ├── Eternal.java            # @Eternal response-rebuild annotation
 │   ├── command/                # Slash, user, message command listeners
-│   ├── component/              # Button, select menu, modal, checkbox,
-│   │                           # radio group listeners
+│   ├── component/              # ComponentListener (all kinds, polymorphic)
 │   ├── message/                # Message create/delete, reaction listeners
 │   └── lifecycle/              # Disconnect, guild create listeners
 ├── response/
-│   ├── Response.java           # Response interface + TreeResponse/FormResponse
+│   ├── Response.java           # Final class; built via Response.builder()
 │   ├── Emoji.java              # Emoji representation
+│   ├── EmojiResolver.java      # Emoji resolution injected at render time
 │   ├── embed/                  # Embed, Author, Field, Footer
 │   ├── handler/                # HistoryHandler, PaginationHandler, OutputHandler,
 │   │   │                       # FilterHandler, SortHandler, SearchHandler
 │   │   └── item/               # ItemHandler, EmbedItemHandler, ComponentItemHandler
-│   └── page/                   # Page, TreePage, FormPage, Paging, Summary, Subpages
+│   └── page/                   # Page, TreePage, Paging, Subpages
+│       ├── editor/             # EditorPage, InPageEditSession, field/, modal/
 │       └── item/               # Item, AuthorItem, TitleItem, DescriptionItem, etc.
 │           └── field/          # FieldItem, StringItem, NumberItem, ToggleItem, etc.
 └── util/                       # DiscordReference, DiscordDate, DiscordProtocol, ProgressBar
@@ -254,11 +260,14 @@ src/main/java/dev/sbs/discordapi/
   context type) and annotate with `@Structure`.
 - **New component** - Implement the relevant `Component` interface and add a
   builder following the existing pattern.
-- **New listener** - Extend `DiscordListener<T extends Event>` in the
-  `listener/` package. It will be discovered automatically via classpath
+- **New listener** - Extend `DiscordListener<T extends Event>` (Discord4J
+  events) or `BotEventListener<T extends BotEvent>` (bot lifecycle events) in
+  the `listener/` package. Both are discovered automatically via classpath
   scanning.
-- **New response type** - Implement the `Response` interface with a custom
-  `HistoryHandler`.
+- **New page type** - `Response` is a final class; extend the page hierarchy
+  (`Page` / `TreePage` / `EditorPage`) rather than the response itself.
+- **New shared click handler** - Annotate a method with `@Component(customId)`
+  on a `DiscordCommand` or an `EternalComponentListener` subclass.
 - **New exception handler** - Extend `ExceptionHandler` and register it via
   `DiscordConfig` or wrap it in a `CompositeExceptionHandler`.
 

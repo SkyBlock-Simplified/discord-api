@@ -2,9 +2,9 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.command.DiscordCommand;
 import dev.simplified.discordapi.command.InMemoryCommandStateResolver;
-import dev.simplified.discordapi.harness.HarnessConfig;
-import dev.simplified.discordapi.harness.gateway.SlashOption;
-import dev.simplified.discordapi.harness.rest.RecordedRequest;
+import dev.simplified.discordfauxrig.HarnessConfig;
+import dev.simplified.discordfauxrig.gateway.SlashOption;
+import dev.simplified.discordfauxrig.rest.RecordedRequest;
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.ConfigGetCommand;
 import dev.simplified.discordapi.integration.command.PingCommand;

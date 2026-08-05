@@ -12,11 +12,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * Generates SVG type-hierarchy diagrams for the discord-api module's context and component
- * packages using the {@link TypeHierarchyDiagram} engine.
+ * Generates SVG type-hierarchy diagrams for this module's context and component packages using the
+ * {@link TypeHierarchyDiagram} engine.
  *
  * <p>
- * Run via Gradle: {@code ./gradlew :discord-api:generateDiagrams}
+ * Run via Gradle: {@code ./gradlew generateDiagrams}
  *
  * @see EventContext
  * @see Component
@@ -31,7 +31,7 @@ public class DiagramGenerator {
      * @throws IOException if a file write fails
      */
     public static void main(String[] args) throws IOException {
-        Path base = Path.of("src/main/java/dev/sbs/discordapi");
+        Path base = Path.of("src/main/java/dev/simplified/discordapi");
         contextDiagram().writeTo(base);
         componentDiagram().writeTo(base);
         System.out.println("Generated context and component diagrams.");

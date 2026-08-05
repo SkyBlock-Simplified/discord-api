@@ -1,7 +1,6 @@
-# Discord API
+# discord4j-framework
 
-Builder-driven, reactive Discord bot framework for the
-[SkyBlock Simplified](https://github.com/SkyBlock-Simplified) ecosystem.
+Builder-driven, reactive Discord bot framework.
 Built on [Discord4J](https://github.com/Discord4J/Discord4J) and
 [Project Reactor](https://projectreactor.io/), it provides a structured
 command system, component builders, paginated responses, and event listener
@@ -14,6 +13,7 @@ discovery.
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Quick Example](#quick-example)
+- [Testing](#testing)
 - [Architecture](#architecture)
   - [Entry Point](#entry-point)
   - [Command System](#command-system)
@@ -30,9 +30,11 @@ discovery.
 
 - **Command framework** - Slash commands, user commands, and message commands
   via `@Structure`-annotated classes with automatic Discord registration
-- **Paginated responses** - Tree-based (`TreeResponse`) and form-based
-  (`FormResponse`) paginated message builders with subpage navigation, item
-  handlers, sort/filter/search, and auto-expiration
+- **Paginated responses** - A single `Response` built from `TreePage` (subpage
+  navigation) or `EditorPage` (in-place field editing), with item handlers,
+  sort/filter/search, and auto-expiration
+- **Eternal responses** - Responses that survive a reboot, rebuilt on demand
+  from a small persisted coordinate by an `@Eternal`-annotated builder
 - **Component builders** - Quality-of-life builders for Discord's interaction
   components (`Button`, `SelectMenu`, `TextInput`, `Modal`, `RadioGroup`,
   `Checkbox`, `CheckboxGroup`) and layout components (`ActionRow`, `Container`,
@@ -67,8 +69,8 @@ discovery.
 > coordinates declared in `build.gradle.kts`.
 
 ```bash
-git clone https://github.com/SkyBlock-Simplified/discord-api.git
-cd discord-api
+git clone https://github.com/simplified-dev/discord4j-framework.git
+cd discord4j-framework
 ```
 
 Build the library:
@@ -84,7 +86,8 @@ Run tests:
 ```
 
 > [!IMPORTANT]
-> **Required environment variables:**
+> **Required environment variables** - for running a real bot only. The test
+> suite runs fully offline and needs neither.
 >
 > ```
 > DISCORD_TOKEN                   - Discord bot token
@@ -119,6 +122,37 @@ public class MyBot extends DiscordBot {
     }
 }
 ```
+
+## Testing
+
+The suite runs **fully offline** - no token, no network, no Discord. It boots a
+real bot against
+[discord4j-fauxrig](https://github.com/simplified-dev/discord4j-fauxrig), a
+localhost REST server plus an in-JVM gateway that stands in for Discord, then
+pushes simulated gateway events and asserts on the REST calls the bot makes in
+response. The whole path from listener through `apply()`/`process()` to the
+reply is the real one.
+
+```bash
+./gradlew test
+./gradlew test -Dharness.debug=true   # show every REST call the bot made
+```
+
+`IntegrationHarness` (in `src/test/`) wraps fauxrig with readiness waits and
+one-liner send helpers, so a test reads top to bottom:
+
+```java
+try (IntegrationHarness harness = new IntegrationHarness().boot(Duration.ofSeconds(30))) {
+    harness.sendSlashCommand("ping");
+    harness.awaitInteractionCallback();                 // apply() defers
+    RecordedRequest reply = harness.awaitInteractionReply();
+    assertTrue(reply.bodyContains("pong"));
+}
+```
+
+Add a test command under `integration/command/` (discovered by classpath scan of
+that package) and use `context.buildResponse()` rather than a bare
+`Response.builder()`, which needs a bot.
 
 ## Architecture
 
@@ -156,7 +190,8 @@ behavior is determined by the `Page` type used:
 | Page Type | Builder | Navigation | Use Case |
 |-----------|---------|------------|----------|
 | `TreePage` | `Page.builder()` | Hierarchical subpage tree | Multi-level menus |
-| `FormPage` | `Page.form()` | Sequential question-based | Wizards, multi-step forms |
+| `EditorPage` | `EditorPage.Builder.builder(seed)` | In-place field editing | Config editors |
+| `EditorPage.Aggregate` | `EditorPage.Aggregate.builder(initial)` | In-place editing over an aggregate | Multi-field builders |
 
 Responses support multiple `Page` instances (select menu navigation),
 `ItemHandler` (paginated items with sort/filter/search via `EmbedItemHandler`
@@ -212,21 +247,30 @@ Contexts provide: `reply()`, `edit()`, `followup()`, `presentModal()`,
 
 ### Listener System
 
-Listeners extend `DiscordListener<T extends Event>` and are auto-registered
-via classpath scanning. Built-in listeners handle:
+There are two parallel listener hierarchies, both auto-registered via classpath
+scanning of the `listener` package:
+
+- **`DiscordListener<T extends Event>`** - handles Discord4J gateway events,
+  subscribed to Discord4J's `EventDispatcher`. Errors route through the
+  `ExceptionHandler` chain.
+- **`BotEventListener<T extends BotEvent>`** - handles bot-internal lifecycle
+  events emitted by `DiscordBot` itself, subscribed to a replay sink so
+  listeners registered during `connect()` still see events from `login()`.
+
+Built-in listeners handle:
 
 - **Commands** - `SlashCommandListener`, `UserCommandListener`,
   `MessageCommandListener`, `AutoCompleteListener`
-- **Components** - `ComponentListener`, `ButtonListener`,
-  `SelectMenuListener`, `ModalListener`, `CheckboxListener`,
-  `CheckboxGroupListener`, `RadioGroupListener`
+- **Components** - a single `ComponentListener`; every component kind is
+  dispatched polymorphically
 - **Messages** - `MessageCreateListener`, `MessageDeleteListener`,
   `ReactionAddListener`, `ReactionRemoveListener`
-- **Lifecycle** - `DisconnectListener`, `GuildCreateListener`
+- **Lifecycle** - `DisconnectListener` (bot event), `GuildCreateListener`
 
 > [!TIP]
 > Additional listeners can be registered via
-> `DiscordConfig.Builder.withListeners()`.
+> `DiscordConfig.Builder.withListeners()` for Discord4J events, or
+> `withBotEventListeners()` for bot events.
 
 ### Exception Handling
 
@@ -246,11 +290,12 @@ embeds automatically.
 ## Project Structure
 
 ```
-discord-api/
-├── src/main/java/dev/sbs/discordapi/
+discord4j-framework/
+├── src/main/java/dev/simplified/discordapi/
 │   ├── DiscordBot.java                 # Abstract bot entry point
 │   ├── command/
 │   │   ├── DiscordCommand.java         # Base command class with @Structure
+│   │   ├── CommandStateResolver.java   # Runtime enable/disable, keyed by CommandKey
 │   │   ├── exception/                  # CommandException, PermissionException, etc.
 │   │   └── parameter/                  # Parameter, Argument
 │   ├── component/
@@ -266,42 +311,49 @@ discord-api/
 │   │                                   # SectionComponent, TopLevelMessageComponent, etc.
 │   ├── context/
 │   │   ├── EventContext.java           # Root context interface
+│   │   ├── EternalBuildContext.java    # Passed to @Eternal rebuild methods
 │   │   ├── command/                    # CommandContext, SlashCommandContext, etc.
 │   │   ├── component/                  # ComponentContext, ButtonContext, ModalContext,
 │   │   │                               # CheckboxContext, RadioGroupContext, etc.
 │   │   └── message/                    # MessageContext, ReactionContext
+│   ├── event/                          # BotEvent + lifecycle bot events
 │   ├── exception/                      # DiscordException, DiscordUserException, etc.
 │   ├── handler/
 │   │   ├── DiscordConfig.java          # Builder-pattern bot configuration
 │   │   ├── CommandHandler.java         # Command registration and routing
+│   │   ├── ComponentDispatcher.java    # @Component / @Eternal route registry
 │   │   ├── EmojiHandler.java           # Custom emoji upload/lookup
 │   │   ├── DiscordLocale.java          # BCP 47 locale enum
 │   │   ├── exception/                  # ExceptionHandler, DiscordExceptionHandler,
 │   │   │                               # SentryExceptionHandler, CompositeExceptionHandler
-│   │   ├── response/                   # ResponseHandler, CachedResponse,
-│   │   │                               # ResponseEntry, ResponseFollowup
+│   │   ├── response/                   # ResponseLocator (+ InMemory/Eternal/Composite),
+│   │   │                               # CachedResponse, NavState, ResponseExpiryTask,
+│   │   │                               # EternalResponseRepository + Record
 │   │   └── shard/                      # ShardHandler, Shard
 │   ├── listener/
+│   │   ├── Component.java              # @Component click-handler annotation
+│   │   ├── Eternal.java                # @Eternal response-rebuild annotation
 │   │   ├── command/                    # Slash, user, message command listeners
-│   │   ├── component/                  # Button, select menu, modal, checkbox,
-│   │   │                               # radio group listeners
+│   │   ├── component/                  # ComponentListener (all kinds, polymorphic)
 │   │   ├── message/                    # Message create/delete, reaction listeners
 │   │   └── lifecycle/                  # Disconnect, guild create listeners
 │   ├── response/
-│   │   ├── Response.java               # Response interface + TreeResponse/FormResponse
+│   │   ├── Response.java               # Final class; built via Response.builder()
 │   │   ├── Emoji.java                  # Emoji representation
+│   │   ├── EmojiResolver.java          # Emoji resolution injected at render time
 │   │   ├── embed/                      # Embed, Author, Field, Footer
 │   │   ├── handler/                    # HistoryHandler, PaginationHandler, OutputHandler,
 │   │   │   │                           # FilterHandler, SortHandler, SearchHandler,
 │   │   │   │                           # Filter, Sorter, Search
 │   │   │   └── item/                   # ItemHandler, EmbedItemHandler, ComponentItemHandler
-│   │   └── page/                       # Page, TreePage, FormPage, Paging, Summary,
-│   │       │                           # Subpages, Question
+│   │   └── page/                       # Page, TreePage, Paging, Subpages
+│   │       ├── editor/                 # EditorPage, InPageEditSession, field/, modal/
 │   │       └── item/                   # Item, AuthorItem, TitleItem, DescriptionItem, etc.
 │   │           └── field/              # FieldItem, StringItem, NumberItem, ToggleItem, etc.
 │   └── util/                           # DiscordReference, DiscordDate, DiscordProtocol,
 │                                       # ProgressBar
-├── src/test/java/                      # JUnit 5 tests, DebugBot, DiagramGenerator
+├── src/test/java/                      # JUnit 5 unit tests, offline integration suite
+│                                       # (IntegrationHarness), DiagramGenerator
 ├── build.gradle.kts
 └── gradle/libs.versions.toml           # Version catalog
 ```

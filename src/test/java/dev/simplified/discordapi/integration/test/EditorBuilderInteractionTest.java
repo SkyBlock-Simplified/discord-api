@@ -1,6 +1,6 @@
 package dev.simplified.discordapi.integration.test;
 
-import dev.simplified.discordapi.harness.rest.RenderedMessage;
+import dev.simplified.discordfauxrig.rest.RenderedMessage;
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.EditorBuilderCommand;
 import org.junit.jupiter.api.Test;

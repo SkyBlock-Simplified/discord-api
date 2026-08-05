@@ -2,7 +2,7 @@ package dev.simplified.discordapi.integration.test;
 
 import dev.simplified.discordapi.integration.IntegrationHarness;
 import dev.simplified.discordapi.integration.command.ModalCommand;
-import dev.simplified.discordapi.harness.rest.RecordedRequest;
+import dev.simplified.discordfauxrig.rest.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
