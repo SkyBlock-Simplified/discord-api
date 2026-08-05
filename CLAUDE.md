@@ -209,4 +209,4 @@ event/lifecycle/          — ClientCreatedBotEvent, GatewayConnectBotEvent,
 
 - **`DiscordReference`** — base class for anything needing bot access; provides `getDiscordBot()`, `getEmoji()`, `isDeveloper()`, permission helpers.
 - **`Component.Type`** enum maps to Discord's integer component type IDs and tracks which types require the Components V2 flag.
-- **Library dependencies** — declared directly as JitPack coordinates (`com.github.simplified-dev:*:master-SNAPSHOT`) in `build.gradle.kts`. The module is standalone and does not depend on a SkyBlock-Simplified `api` module.
+- **Library dependencies** — JitPack coordinates pinned to a commit sha in `build.gradle.kts`, not to a moving branch snapshot: `api("com.github.simplified-dev:collections") { version { strictly("c741e14") } }`. (`io.github.simplified-dev:annotations` is the exception - it comes from Maven Central with an ordinary version.) Check how far each pin has drifted with `toolsmith jitpack pins`; verify a new sha is built before pinning it with `toolsmith jitpack status <module>`. The module is standalone and does not depend on a SkyBlock-Simplified `api` module.
